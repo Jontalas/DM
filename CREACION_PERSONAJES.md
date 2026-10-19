@@ -1,5 +1,7 @@
 # Creación automática: primer recorrido jugable
 
+Este es un primer bloque del creador final. La ampliación deberá mantener las reglas de los manuales aportados como autoridad en todas sus opciones y cálculos; el alcance reducido actual no supone sustituirlas por un reglamento simplificado. Esta obligación se aplica también al resto de sistemas del juego y queda recogida en [AGENTS.md](AGENTS.md).
+
 «Crear personaje» abre un asistente con cuatro pasos: concepto, características, elecciones y equipo/resumen. También aparece «Crear mi personaje» en la conversación cuando el jugador no controla ninguna ficha. La edición manual queda dentro de opciones avanzadas. La referencia funcional es el [Charactermancer y la hoja Pathfinder de Roll20](https://help.roll20.net/hc/en-us/articles/360037773733-Pathfinder-by-Roll20); se consultó su documentación, sin instrumentar una partida de Roll20 ni afirmar equivalencia completa.
 
 ## Qué puede crearse
