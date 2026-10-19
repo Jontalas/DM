@@ -1,0 +1,58 @@
+{
+  "reglas": {
+    "pages": 577,
+    "low_text_pages": [
+      7,
+      19,
+      29,
+      85,
+      111,
+      139,
+      165,
+      177,
+      205,
+      223,
+      373,
+      395,
+      409,
+      447,
+      457
+    ],
+    "ocr": "no ejecutado",
+    "visually_verified_tables": [],
+    "page_numbering": "PDF; folio impreso solo cuando se ha verificado"
+  },
+  "bestiario": {
+    "pages": 329,
+    "low_text_pages": [],
+    "ocr": "no ejecutado",
+    "visually_verified_tables": [],
+    "page_numbering": "PDF; folio impreso solo cuando se ha verificado"
+  },
+  "trey": {
+    "pages": 102,
+    "low_text_pages": [
+      4,
+      9,
+      10,
+      16,
+      24,
+      28,
+      29,
+      30,
+      36,
+      37,
+      38,
+      42,
+      44,
+      45,
+      46
+    ],
+    "ocr": "no ejecutado",
+    "visually_verified_tables": [
+      19,
+      23
+    ],
+    "page_numbering": "PDF; folio impreso solo cuando se ha verificado"
+  }
+}

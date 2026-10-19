@@ -1,0 +1,7 @@
+.deps/
+data/*.sqlite*
+__pycache__/
+.env
+data/*.json
+!data/extraction-report.json
+data/*.png

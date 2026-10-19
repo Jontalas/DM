@@ -1,0 +1,68 @@
+"""Pruebas HTTP reales. El adaptador de IA se sustituye solo en esta prueba."""
+import json, tempfile, threading, unittest, urllib.request, urllib.error
+from pathlib import Path
+import server
+
+class IntegrationTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.tmp=tempfile.TemporaryDirectory(); cls.oldDB=server.DB; server.DB=Path(cls.tmp.name)/'test.sqlite';server.initialize()
+        cls.http=server.ThreadingHTTPServer(('127.0.0.1',0),server.Handler); cls.url='http://127.0.0.1:'+str(cls.http.server_port)
+        cls.thread=threading.Thread(target=cls.http.serve_forever,daemon=True);cls.thread.start()
+    @classmethod
+    def tearDownClass(cls):
+        cls.http.shutdown();cls.http.server_close();server.DB=cls.oldDB;cls.tmp.cleanup()
+    def request(self,path,body=None,token=''):
+        req=urllib.request.Request(self.url+path,data=json.dumps(body).encode() if body is not None else None,headers={'Content-Type':'application/json','Authorization':'Bearer '+token})
+        with urllib.request.urlopen(req) as r:return json.load(r)
+    def setUp(self):
+        self.token=self.request('/api/create',{'title':'Prueba','player':'Ana'})['token']
+    def state(self,token=None):return self.request('/api/state',token=token or self.token)
+    def action(self,type,token=None,**data):
+        state=self.state(token); body={'id':server.secrets.token_hex(12),'version':state['version'],'type':type,**data}
+        self.request('/api/action',body,token or self.token);return body
+    def test_shared_identity_and_permissions(self):
+        guest=self.request('/api/join',{'name':'Luis','invite':self.state()['invite']})['token'];self.action('character',character={'name':'Aria'})
+        self.action('talk',guest,text='Hola',director=False,kind='dialogue');state=self.state();self.assertEqual(state['state']['messages'][-1]['speaker'],'Luis')
+        cid=state['state']['characters'][0]['id']
+        with self.assertRaises(urllib.error.HTTPError) as e:self.action('move',guest,character=cid,path=[[1,0]],acknowledge=True)
+        self.assertEqual(e.exception.code,403)
+        self.action('talk',text='Secreto',kind='private',director=False)
+        self.assertFalse(any(m['text']=='Secreto' for m in self.state(guest)['state']['messages']))
+    def test_deduplication_and_stale_write(self):
+        body=self.action('roll',n=1,sides=20,modifier=2,physical=[14]);before=self.state()
+        response=self.request('/api/action',body,self.token);self.assertTrue(response['duplicate']);self.assertEqual(before['version'],self.state()['version'])
+        body['id']='new-action'
+        with self.assertRaises(urllib.error.HTTPError) as e:self.request('/api/action',body,self.token)
+        self.assertEqual(e.exception.code,409)
+    def test_persistent_recovery_and_export(self):
+        self.action('character',character={'name':'Aria'});self.action('oracle',question='¿Hay luz?',uncertain=True,physical=[8,4,1])
+        before=self.state();server.initialize();after=self.state();self.assertEqual(before['state'],after['state'])
+        exported=self.request('/api/export',{},self.token);self.action('scene',location='Ruinas');self.request('/api/import',{'campaign':exported},self.token);self.assertEqual(self.state()['state']['scene'],1)
+    def test_real_ai_unavailable_does_not_create_fake_reply(self):
+        old=server.os.environ.pop('OLLAMA_MODEL',None)
+        try:
+            before=self.state()
+            with self.assertRaises(urllib.error.HTTPError):self.action('talk',text='Inicio',director=True)
+            self.assertEqual(before['state'],self.state()['state'])
+        finally:
+            if old:server.os.environ['OLLAMA_MODEL']=old
+    def test_ai_adapter_contract_with_explicit_test_fixture(self):
+        original=server.ai_reply
+        try:
+            server.ai_reply=lambda *a,**k:{'narration':'Respuesta de prueba de integración; no es IA real.','proposals':[]}
+            self.action('character',character={'name':'Aria'});self.action('talk',text='Busco a la posadera',director=True)
+            self.assertEqual(self.state()['state']['messages'][-1]['kind'],'director')
+        finally:server.ai_reply=original
+    def test_reference_search_page(self):
+        results=self.request('/api/search?q=diagonales&book=reglas',token=self.token)
+        self.assertTrue(any(int(r['page'])==194 for r in results))
+        self.assertIn('diagonal',next(r['text'] for r in results if int(r['page'])==194).lower())
+    def test_combat_state_shared_after_assisted_damage(self):
+        guest=self.request('/api/join',{'name':'Luis','invite':self.state()['invite']})['token']
+        self.action('character',character={'name':'Aria'});cid=self.state()['state']['characters'][0]['id']
+        self.action('combat');self.action('move',character=cid,path=[[1,0]],acknowledge=True)
+        self.action('manual',reason='Ataque resuelto',resolution='d20 y daño físicos verificados por anfitrión',reference='Resolución de prueba',character=cid,hpDelta=-3,resources='Poción gastada',actionCost='standard')
+        public=self.state(guest)['state'];self.assertEqual(public['characters'][0]['hp'],7);self.assertEqual(public['characters'][0]['x'],1);self.assertEqual(public['characters'][0]['resources'],'Poción gastada');self.assertTrue(public['board']['spent'][cid]['standard'])
+
+if __name__=='__main__':unittest.main()
