@@ -1,8 +1,23 @@
-# Premisa obligatoria: mínimo coste de uso
+# Premisas primordiales de la aplicación
+
+## Experiencia de videojuego y automatización
+
+La aplicación debe funcionar básicamente como un videojuego de rol para los jugadores. Estos declaran sus acciones, interpretan a sus personajes, interactúan entre sí y con el maestro de juego y tiran dados cuando corresponde. La aplicación debe encargarse automáticamente del funcionamiento del juego en la medida de lo posible.
+
+- Automatizar la aplicación de reglas, validación de acciones, modificadores, dificultades, turnos, iniciativa, movimiento, recursos, daño, condiciones, duraciones, desencadenantes, sucesos y consecuencias conforme a Pathfinder 1e y TREY. Implementar progresivamente los casos pendientes; no inventar reglas para simular cobertura.
+- El recorrido objetivo es: declaración del jugador, interpretación de su intención, comprobación de requisitos, solicitud de la tirada necesaria, resolución de reglas, aplicación de consecuencias y actualización compartida del estado y la narración. Solicitar aclaración solo cuando la intención o una decisión del personaje sea ambigua.
+- No obligar al jugador ni al anfitrión a calcular modificadores, consultar tablas, editar fichas, descontar recursos o confirmar cada consecuencia que el motor pueda resolver con seguridad. Las herramientas manuales deben servir para excepciones y correcciones, no ser el recorrido habitual.
+- Mantener la agencia del jugador: automatizar las mecánicas no autoriza a decidir lo que piensa, dice o elige su personaje. Explicar brevemente las tiradas y consecuencias relevantes; permitir revisar su origen y corregir resoluciones excepcionales con permisos adecuados.
+- Usar código determinista para reglas y estado. La IA interpreta intenciones, dirige la ficción y propone acciones estructuradas cuando sea necesario; el servidor valida su legalidad y aplica los cambios. Una narración por sí sola no cambia el estado ni sustituye una tirada requerida.
+- Resolver automáticamente los sucesos y desencadenantes verificables, incluidos los de TREY, sin trasladar al jugador el seguimiento administrativo. Para reglas aún no implementadas o situaciones sin resolución verificable, mostrar la limitación y ofrecer una adjudicación excepcional explícita.
+- Integrar esta automatización con el mínimo coste de uso: la automatización de mecánicas no debe depender de una llamada de IA por cálculo, evento o cambio de ficha. Agrupar las consecuencias de una acción para evitar operaciones remotas redundantes, conservando consistencia y trazabilidad.
+- Evaluar cada función por cuánto trabajo administrativo elimina al jugador y qué parte del recorrido completa. Distinguir siempre el objetivo de producto de la cobertura realmente implementada; la versión actual todavía contiene procedimientos manuales.
+
+## Mínimo coste de uso
 
 El uso de IA, base de datos y almacenamiento remoto debe ser el mínimo imprescindible en todo momento para ahorrar la mayor cantidad posible de dinero pagado por el uso de la aplicación. Esta premisa se aplica a toda función nueva, corrección y decisión de arquitectura.
 
-- Resolver mediante código determinista, cálculo local o intervención del jugador todo lo que no requiera IA. Llamar al modelo solo cuando aporte una respuesta necesaria para la partida; evitar llamadas automáticas por navegación, sincronización o acciones administrativas.
+- Resolver mediante código determinista o cálculo local todo lo que no requiera IA. Reservar la intervención del jugador para decisiones de su personaje, tiradas y aclaraciones necesarias; no trasladarle administración mecánica para ahorrar IA. Llamar al modelo solo cuando aporte una respuesta necesaria para la partida; evitar llamadas automáticas por navegación, sincronización o acciones administrativas.
 - Reducir las llamadas y los tokens: enviar únicamente el contexto pertinente, limitar la salida y reutilizar resultados cuando sean válidos y respeten los permisos. Evitar duplicados y reintentos facturables innecesarios.
 - Minimizar lecturas, escrituras, consultas y transferencias de Firebase. Evitar consultas periódicas sin necesidad, escrituras sin cambios y volver a cargar o indexar recursos que no han cambiado. Priorizar caché, consultas acotadas, agrupación de cambios y sincronización adaptativa cuando sean compatibles con la consistencia requerida.
 - Conservar solo los datos e índices necesarios. Definir una política de retención y limpieza para datos temporales u obsoletos; proteger partidas, originales y copias necesarias antes de eliminar cualquier dato.

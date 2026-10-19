@@ -2,6 +2,16 @@
 
 Aplicación cliente/servidor para Pathfinder **primera edición** y TREY, con **Cloud Firestore**, **Firebase Storage** y **Claude Haiku**. Esta entrega es una base funcional ampliable; **no completa todas las etapas solicitadas**. No contiene una aventura de respuestas prefijadas ni un director simulado.
 
+## Premisa primordial: jugar como en un videojuego de rol
+
+**Los jugadores se centran en interpretar a sus personajes, declarar acciones, interactuar entre sí y con el maestro de juego y tirar dados cuando sea necesario. La aplicación automatiza el funcionamiento del juego en la medida de lo posible.**
+
+El recorrido objetivo es declarar una acción, comprobar sus requisitos, pedir la tirada pertinente y resolver automáticamente reglas y consecuencias: modificadores, turnos, movimiento, daño, recursos, condiciones, duraciones y sucesos. La ficha, el tablero y la partida compartida deben reflejar el resultado sin exigir ajustes administrativos habituales a los jugadores o al anfitrión. Las decisiones del personaje siguen perteneciendo a su jugador.
+
+Las reglas y los cambios de estado se resuelven mediante código determinista validado por el servidor. Claude dirige la ficción e interpreta intenciones cuando hace falta; no se necesita IA para cada cálculo o suceso. Las herramientas manuales quedan como recurso para excepciones, correcciones y reglas todavía no implementadas.
+
+Esta es una base obligatoria para el desarrollo, **no una descripción de automatización ya completada**: la versión actual todavía requiere adjudicación manual en distintos procedimientos. Las nuevas funciones deben reducir ese trabajo y ampliar la cobertura verificable de Pathfinder 1e y TREY, manteniendo la premisa de ahorro y las instrucciones de [AGENTS.md](AGENTS.md).
+
 ## Premisa básica: mínimo coste de uso
 
 **El uso de IA, base de datos y almacenamiento remoto debe ser el mínimo imprescindible en todo momento para ahorrar la mayor cantidad posible de dinero pagado por el uso de la aplicación.** Toda función y decisión técnica debe seguir esta premisa.
