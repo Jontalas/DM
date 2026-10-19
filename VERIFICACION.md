@@ -54,3 +54,11 @@ Se incorporó Roll20 como referencia principal en las premisas permanentes y en 
 Se completó el controlador local de adversarios básicos, con selección de objetivo, búsqueda de ruta, movimiento acotado y ataque. Las excepciones pausan la automatización; el anfitrión puede tomar el control y reanudar. No decide acciones de personajes jugadores ni realiza inferencias.
 
 Validación: 86 pruebas Python con el emulador oficial pasaron sin omisiones; después pasaron tres pruebas adicionales de enemigos consecutivos, caída del último jugador e incapacitación, junto con la comprobación de la nueva hoja CSS bajo Waitress. Playwright pasó con dos navegadores, tanto en escritorio como a 390×844: conversación y mapa simultáneos, respuesta automática del enemigo, medición sin cambiar la versión guardada, dados rápidos y ausencia de desbordamiento horizontal de la página móvil. No hubo errores de JavaScript. La interfaz y las capturas se inspeccionaron localmente. No se crearon partidas de prueba en producción ni se consumió API de Claude.
+
+## Reconstrucción funcional de interacciones
+
+Se creó [COMPATIBILIDAD_ROLL20.md](COMPATIBILIDAD_ROLL20.md) con contratos, fuentes oficiales y diferencias. La referencia se investigó mediante documentación pública; no se instrumentó una sesión interactiva de Roll20.
+
+Se añadieron arrastre de fichas con ruta, puntos intermedios con Espacio, cancelación, regla arrastrable con línea, mano y botón derecho, zoom con rueda/modificadores y teclas, doble clic y atajos de panel. Las previsualizaciones conservan la confirmación previa al guardado. No añaden inferencias ni escrituras por movimiento del puntero.
+
+Verificación: 89 pruebas Python correctas con el emulador, sin omisiones; 160.000 pares geométricos y límites comprobados en Node; sincronización y sintaxis correctas. Playwright probó los gestos, anclaje del zoom, actualización de la regla al cambiar escala, integridad de la escritura, permisos, doble clic sobre otra ficha del anfitrión, arrastre y medición táctiles a 390×844. Los gestos locales produjeron cero envíos de acciones y ninguna versión nueva; confirmar un recorrido produjo exactamente un envío y un incremento de versión. El recorrido previo con dos jugadores y adversarios automáticos también pasó. No se consumieron servicios de IA ni se crearon partidas en Firebase real.

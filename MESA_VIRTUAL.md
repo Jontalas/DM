@@ -4,6 +4,8 @@ La aplicación debe aproximarse lo máximo posible a Roll20 en experiencia y cap
 
 Las tres bases son inseparables: mesa virtual familiar, automatización que permita a los jugadores centrarse en rolear y mínimo coste de IA/Firebase. No se afirma equivalencia funcional completa con Roll20.
 
+Se aplica ingeniería inversa funcional: contratos documentados, implementación propia y pruebas de los gestos. La evidencia, matriz y diferencias están en [COMPATIBILIDAD_ROLL20.md](COMPATIBILIDAD_ROLL20.md). La primera ampliación incluye mano/botón derecho, zoom, arrastre con ruta y puntos intermedios, regla arrastrable, doble clic y atajos. Los recorridos se previsualizan localmente y conservan la confirmación reglamentaria antes de guardar.
+
 ## Primer recorrido disponible
 
 En escritorio desde 1100 píxeles, el tablero permanece visible junto al panel derecho de conversación, diario, documentos o dados. El grupo se muestra a la izquierda. En pantallas pequeñas, los paneles se alternan mediante pestañas para conservar espacio y acceso táctil. No se duplica el historial ni se abren suscripciones remotas para la vista dividida.

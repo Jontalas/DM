@@ -9,6 +9,8 @@ La aplicación debe parecerse a Roll20 en la mayor medida viable, tanto en organ
 - El maestro de IA debe dirigir la ficción conectado con el estado real. Las reglas, dados, turnos, sucesos y consecuencias verificables se gestionan automáticamente por el motor; los jugadores conservan sus decisiones y el control de sus personajes.
 - Las herramientas manuales complementan la automatización para preparación, excepciones y correcciones. No convertir la referencia a una mesa virtual en una obligación de administrar manualmente cada regla.
 - Las interacciones de interfaz, selección, zoom, medición y consulta de datos ya cargados se resuelven localmente. No generar llamadas a IA ni operaciones de base de datos solo por navegar o cambiar de herramienta.
+- Aplicar ingeniería inversa funcional a Roll20: documentar comportamientos observables y fuentes, convertirlos en contratos de interacción, implementarlos con código propio y probarlos. Buscar la máxima fidelidad de gestos, disposición y recorridos, además de apariencia. Registrar expresamente las adaptaciones exigidas por Pathfinder, automatización, IA y ahorro.
+- Mantener una matriz de compatibilidad con comportamiento de referencia, estado implementado, pruebas y diferencias. Distinguir documentación consultada, observación directa en una sesión y prueba de nuestra aplicación; no afirmar equivalencia completa ni verificación directa cuando no se hayan realizado.
 
 ## Experiencia de videojuego y automatización
 

@@ -8,6 +8,8 @@ La referencia principal es una **mesa virtual lo más parecida posible a Roll20*
 
 Esta dirección se aplica a la interfaz y al desarrollo progresivo de funcionalidades; no significa que ya exista equivalencia con Roll20. Consulta [MESA_VIRTUAL.md](MESA_VIRTUAL.md) para conocer el alcance actual y lo pendiente.
 
+La fidelidad se trabaja mediante ingeniería inversa funcional y contratos de interacción. [COMPATIBILIDAD_ROLL20.md](COMPATIBILIDAD_ROLL20.md) registra fuentes, gestos reproducidos, pruebas y diferencias; distingue documentación consultada de observación directa pendiente.
+
 ## Premisa primordial: jugar como en un videojuego de rol
 
 **Los jugadores se centran en interpretar a sus personajes, declarar acciones, interactuar entre sí y con el maestro de juego y tirar dados cuando sea necesario. La aplicación automatiza el funcionamiento del juego en la medida de lo posible.**
