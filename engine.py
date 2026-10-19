@@ -1,6 +1,7 @@
 """Motor determinista: ninguna respuesta narrativa puede escribir el estado."""
 import math, secrets, time, copy
 import combat
+import tactics
 
 def initial_state(config):
     return {'scene':1,'location':config.get('location','Por decidir'),'worldTime':'Comienzo de la aventura','goal':config.get('goal','Definir el objetivo con el grupo'),'objectives':[], 'allies':[],'enemies':[],'facts':{},'unknowns':[],'consequences':[], 'tokens':0,'threshold':int(config.get('threshold',15)),'turned':False,'voluntaryScene':0,'characters':[],'messages':[],'pending':[],'bookmarks':[],'private':{},'secrets':'','notes':'','tone':config.get('tone','Fantasía aventurera'),'limits':config.get('limits',''),'difficulty':config.get('difficulty','Estándar; encuentros pendientes de validar'),'mode':config.get('mode','solo'),'agreement':'Adaptación multijugador: reserva común de FH; el anfitrión registra el consentimiento unánime antes del gasto. Decisiones colectivas por consenso. No se alteran estadísticas para equilibrar encuentros.','criteria':['TREY p.25: el ejemplo d8=7 dice objetivo en curso; la tabla p.23 indica objetivo final. Se usa la tabla.','TREY p.25: ejemplo d6=5 dice retrasado; se aplica demorado, tabla p.23.','Pathfinder 1e: las ventajas de FH son una adaptación TREY; requieren adjudicación manual y registro.'],'board':{'active':False,'round':1,'turn':0,'order':[],'terrain':{},'spent':{}},'oracleLog':[]}
@@ -35,6 +36,67 @@ def event(s,exceptional=False,values=None,award=None):
         if s['tokens']>=s['threshold']: s['turned']=True
     s['consequences'].append(e)
     return e
+
+
+def begin_turn(s):
+    board=s['board'];upcoming=board['order'][board['turn']]['id']
+    debt=board['spent'].get(upcoming,{}).get('swiftDebt')
+    board['spent'][upcoming]={'swift':True} if debt else {}
+    if 'acted' in board and upcoming not in board['acted']:board['acted'].append(upcoming)
+    patient=next(c for c in s['characters'] if c['id']==upcoming)
+    if patient.get('meleeProfile') and patient['hp']<0 and combat.health_status(patient)=='moribundo':
+        if patient.get('conditions','').strip():
+            log(s,patient['name']+': estabilización pendiente; las condiciones requieren resolución excepcional.')
+        else:
+            raw=dice([20])[0];modifier=(patient['abilities'][2]-10)//2+patient['hp']
+            if raw==20 or raw+modifier>=10:patient['stable']=True
+            else:patient['hp']-=1
+            log(s,f"{patient['name']}: estabilización d20 {raw} {modifier:+} contra CD 10 → {combat.health_status(patient)}; PG {patient['hp']}.",refs=[{'book':'reglas','page':191}])
+
+
+def advance_turn(s):
+    board=s['board'];board['turn']+=1
+    if board['turn']>=len(board['order']):board['turn']=0;board['round']+=1
+    begin_turn(s)
+    log(s,f"Siguiente turno · asalto {board['round']}")
+
+
+def run_automatic_turns(s):
+    board=s['board']
+    if not board['active'] or not board.get('autoEnemies'):return
+    board.pop('autoPaused',None)
+    def pause(character,reason):
+        board['autoPaused']={'character':character['id'],'reason':reason}
+        log(s,character['name']+': automatización pausada. '+reason)
+    # At most one initiative cycle; never loop through an all-unconscious party.
+    for _ in range(len(board['order'])):
+        current=next(c for c in s['characters'] if c['id']==board['order'][board['turn']]['id'])
+        if not any(not c['enemy'] and c['hp']>=0 for c in s['characters']):
+            pause(current,'No quedan personajes jugadores conscientes; revisa el desenlace y la asistencia a los caídos.')
+            return
+        if current['hp']<0:
+            if combat.health_status(current)=='moribundo' and (not current.get('meleeProfile') or current.get('conditions','').strip()):
+                pause(current,'La estabilización requiere una resolución excepcional.');return
+            log(s,current['name']+': sin acciones por su estado; se conserva su iniciativa.')
+            advance_turn(s);continue
+        if not current['enemy']:return  # Never choose a player's actions.
+        spent=board['spent'].get(current['id'],{})
+        try:
+            if not spent.get('standard') and not (current['hp']==0 and spent.get('move')):
+                decision=tactics.plan(s,current,allow_move=not spent.get('move'))
+                controller={'id':current['owner'],'name':'Motor táctico','host':True}
+                if decision['path']:
+                    apply_action(s,{'type':'move','character':current['id'],'path':decision['path'],'acknowledge':True},controller)
+                if decision['target']:
+                    apply_action(s,{'type':'attack','character':current['id'],'target':decision['target']},controller)
+                elif not decision['path']:log(s,current['name']+': espera; no hay un ataque básico disponible.')
+        except ValueError as exc:
+            pause(current,str(exc));return
+        log(s,current['name']+': termina su turno automático.')
+        advance_turn(s)
+    pause(current,'Ciclo automático detenido para revisar la iniciativa.')
+
+
 def apply_action(s,b,me):
     kind=b['type']
     if kind=='talk':
@@ -134,31 +196,29 @@ def apply_action(s,b,me):
         host(me)
         if s['board']['active']: raise ValueError('Ya hay combate activo')
         if not s['characters']: raise ValueError('Añade participantes en la ficha')
+        automatic=b.get('automateEnemies',False)
+        if type(automatic)!=bool:raise ValueError('El control automático debe ser verdadero o falso')
+        if automatic and not any(not c['enemy'] for c in s['characters']):raise ValueError('Añade al menos un personaje jugador')
         order=[{'id':c['id'],'roll':dice([20])[0],'modifier':c['initiative'],'dex':c['abilities'][1]} for c in s['characters']]
         order.sort(key=lambda v:(v['roll']+v['modifier'],v['modifier'],secrets.randbits(16)),reverse=True)
-        s['board'].update(active=True,round=1,turn=0,order=order,spent={},acted=[order[0]['id']])
+        s['board'].update(active=True,round=1,turn=0,order=order,spent={},acted=[],autoEnemies=automatic)
+        s['board'].pop('autoPaused',None);begin_turn(s)
         log(s,'Iniciativa d20 + modificador declarado: '+str(order)+'. Empates: modificador total y después azar. Reglas básicas: Iniciativa, impresa p.178 / PDF p.179. Sorpresa: resolución excepcional. CA desprevenido automática en ataques básicos con perfil preparado.',refs=[{'book':'reglas','page':179}])
     elif kind=='endcombat':
-        host(me); s['board']['active']=False; log(s,'Combate finalizado; negociación, retirada o conclusión registradas por la mesa')
+        host(me); s['board']['active']=False;s['board'].pop('autoPaused',None)
+        log(s,'Combate finalizado; negociación, retirada o conclusión registradas por la mesa')
+    elif kind=='automation':
+        host(me);board=s['board']
+        if not board['active']:raise ValueError('No hay combate')
+        if type(b.get('enabled'))!=bool:raise ValueError('El control automático debe ser verdadero o falso')
+        if b['enabled'] and 'acted' not in board:raise ValueError('Reinicia este combate antiguo antes de activar la automatización')
+        board['autoEnemies']=b['enabled'];board.pop('autoPaused',None)
+        log(s,'Control de adversarios: '+('automático' if b['enabled'] else 'anfitrión'))
     elif kind=='turn':
         board=s['board']
         if not board['active']: raise ValueError('No hay combate')
         current=board['order'][board['turn']]['id']; char(s,current,me)
-        board['turn']+=1
-        if board['turn']>=len(board['order']): board['turn']=0; board['round']+=1
-        upcoming=board['order'][board['turn']]['id']; debt=board['spent'].get(upcoming,{}).get('swiftDebt')
-        board['spent'][upcoming]={'swift':True} if debt else {}
-        if 'acted' in board and upcoming not in board['acted']:board['acted'].append(upcoming)
-        patient=next(c for c in s['characters'] if c['id']==upcoming)
-        if patient.get('meleeProfile') and patient['hp']<0 and combat.health_status(patient)=='moribundo':
-            if patient.get('conditions','').strip():
-                log(s,patient['name']+': estabilización pendiente; las condiciones requieren resolución excepcional.')
-            else:
-                raw=dice([20])[0];modifier=(patient['abilities'][2]-10)//2+patient['hp']
-                if raw==20 or raw+modifier>=10:patient['stable']=True
-                else:patient['hp']-=1
-                log(s,f"{patient['name']}: estabilización d20 {raw} {modifier:+} contra CD 10 → {combat.health_status(patient)}; PG {patient['hp']}.",refs=[{'book':'reglas','page':191}])
-        log(s,f"Siguiente turno · asalto {board['round']}")
+        advance_turn(s)
     elif kind=='terrain':
         host(me)
         x,y=int(b['x']),int(b['y']); t=b['terrain']
@@ -189,7 +249,7 @@ def apply_action(s,b,me):
             if used.get('move'): raise ValueError('Acción de movimiento gastada. Más movimiento requiere resolución asistida')
             if cost>c['speed']: raise ValueError('El recorrido supera una acción de movimiento')
             used['move']=True; board['spent'][c['id']]=used
-        c.update(x=x,y=y); log(s,f"{c['name']} se mueve {cost*5} pies a ({x},{y}). Recorrido {path}. Diagonales 5/10 pies; diagonal difícil 15 pies. Reglas básicas, Movimiento, posición y distancia: impresa p.193 / PDF p.194. AdO, alcance y visibilidad: revisión manual confirmada.",refs=[{'book':'reglas','page':194}])
+        c.update(x=x,y=y); log(s,f"{c['name']} se mueve {cost*5} pies a ({x},{y}). Recorrido {path}. Diagonales 5/10 pies; diagonal difícil 15 pies. Reglas básicas, Movimiento, posición y distancia: impresa p.193 / PDF p.194. AdO, alcance y visibilidad especiales se resuelven aparte.",refs=[{'book':'reglas','page':194}])
     elif kind=='manual':
         host(me); reason=str(b['reason']).strip(); resolution=str(b['resolution']).strip()
         if not reason or not resolution: raise ValueError('Indica motivo y resolución')
@@ -216,3 +276,4 @@ def apply_action(s,b,me):
         log(s,'RESOLUCIÓN MANUAL ASISTIDA · '+reason+' · '+resolution+' · Coste de acción: '+str(b.get('actionCost','none'))+' · Referencia: '+str(b.get('reference','Sin verificar; criterio provisional')))
         if b.get('pendingIndex') is not None: s['pending'].pop(int(b['pendingIndex']))
     else: raise ValueError('Acción no implementada; usa resolución manual asistida')
+    if kind in ('combat','turn','automation'):run_automatic_turns(s)

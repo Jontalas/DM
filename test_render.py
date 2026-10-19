@@ -40,7 +40,7 @@ class ProductionServerTests(test_server.IntegrationTests):
 
     def test_static_health_and_head(self):
         self.assertEqual(self.request('/healthz'),{'status':'ok'})
-        for path in ['/','/app.js','/style.css']:
+        for path in ['/','/app.js','/style.css','/tabletop.css']:
             with urllib.request.urlopen(self.url+path) as response:
                 self.assertEqual(response.status,200);self.assertGreater(len(response.read()),100)
         with urllib.request.urlopen(urllib.request.Request(self.url+'/',method='HEAD')) as response:

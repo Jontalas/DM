@@ -1,5 +1,15 @@
 # Premisas primordiales de la aplicación
 
+## Referencia principal: mesa virtual al estilo de Roll20
+
+La aplicación debe parecerse a Roll20 en la mayor medida viable, tanto en organización de la mesa como en las interacciones y capacidades de una mesa virtual. Esta referencia se combina obligatoriamente con un maestro de juego controlado por IA, automatización de la partida y mínimo coste de uso.
+
+- Priorizar mapa/tablero y fichas como superficie central; chat y registro de tiradas, personajes, diario, documentos, herramientas e iniciativa accesibles durante la partida. En escritorio, poder ver el tablero y la conversación simultáneamente; adaptar la navegación a pantallas pequeñas.
+- Ampliar progresivamente selección y movimiento de fichas, medición, mapas y escenas, recursos visuales, permisos, capas y visibilidad, hojas de personaje y acciones desde la ficha. Usar Roll20 como referencia funcional y de experiencia sin presentar capacidades pendientes como disponibles.
+- El maestro de IA debe dirigir la ficción conectado con el estado real. Las reglas, dados, turnos, sucesos y consecuencias verificables se gestionan automáticamente por el motor; los jugadores conservan sus decisiones y el control de sus personajes.
+- Las herramientas manuales complementan la automatización para preparación, excepciones y correcciones. No convertir la referencia a una mesa virtual en una obligación de administrar manualmente cada regla.
+- Las interacciones de interfaz, selección, zoom, medición y consulta de datos ya cargados se resuelven localmente. No generar llamadas a IA ni operaciones de base de datos solo por navegar o cambiar de herramienta.
+
 ## Experiencia de videojuego y automatización
 
 La aplicación debe funcionar básicamente como un videojuego de rol para los jugadores. Estos declaran sus acciones, interpretan a sus personajes, interactúan entre sí y con el maestro de juego y tiran dados cuando corresponde. La aplicación debe encargarse automáticamente del funcionamiento del juego en la medida de lo posible.

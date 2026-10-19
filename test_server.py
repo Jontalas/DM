@@ -94,4 +94,26 @@ class IntegrationTests(unittest.TestCase):
             self.assertEqual(error.exception.code,400);error.exception.close();dice.assert_not_called()
         self.assertEqual(self.state(guest)['state'],after['state'])
 
+    def test_enemy_turn_is_one_atomic_action_without_ai_and_replay_is_safe(self):
+        guest=self.request('/api/join',{'name':'Luis','invite':self.state()['invite']})['token']
+        profile={'flatAc':12,'criticalMin':20,'multiplier':2}
+        self.action('character',character={'name':'Aria','owner':self.state(guest)['me']['id'],
+            'initiative':100,'attack':4,'damage':'1d6+2','ac':14,'maxHp':20,'meleeProfile':profile})
+        self.action('character',character={'name':'Bandido','enemy':True,'initiative':-100,
+            'attack':4,'ac':14,'damage':'1d6+2','meleeProfile':profile})
+        self.action('combat',automateEnemies=True)
+        before=self.state(guest)
+        with patch('engine.dice',side_effect=[[12],[4]]) as dice,patch.object(server,'ai_reply') as ai:
+            body=self.action('turn',guest);after=self.state(guest)
+            self.assertEqual(after['version'],before['version']+1)
+            self.assertEqual(after['state']['characters'][0]['hp'],14)
+            self.assertEqual(after['state']['board']['round'],2)
+            self.assertTrue(self.request('/api/action',body,guest)['duplicate'])
+            self.assertEqual(dice.call_count,2);ai.assert_not_called()
+        self.assertEqual(self.state(guest)['state'],after['state'])
+        before=self.state(guest)
+        with self.assertRaises(urllib.error.HTTPError) as error:self.action('automation',guest,enabled=False)
+        self.assertEqual(error.exception.code,403);error.exception.close()
+        self.assertEqual(self.state(guest)['version'],before['version'])
+
 if __name__=='__main__':unittest.main()

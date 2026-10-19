@@ -2,6 +2,12 @@
 
 Aplicación cliente/servidor para Pathfinder **primera edición** y TREY, con **Cloud Firestore**, **Firebase Storage** y **Claude Haiku**. Esta entrega es una base funcional ampliable; **no completa todas las etapas solicitadas**. No contiene una aventura de respuestas prefijadas ni un director simulado.
 
+## Referencia de producto: Roll20 con maestro de IA y automatización
+
+La referencia principal es una **mesa virtual lo más parecida posible a Roll20**, combinada con un maestro de juego de IA y la automatización de reglas y control de partida. El tablero y las fichas ocupan el centro; conversación, dados, iniciativa, personajes, diario y documentos acompañan la partida. La navegación y las herramientas locales no deben generar consumo de IA ni escrituras remotas.
+
+Esta dirección se aplica a la interfaz y al desarrollo progresivo de funcionalidades; no significa que ya exista equivalencia con Roll20. Consulta [MESA_VIRTUAL.md](MESA_VIRTUAL.md) para conocer el alcance actual y lo pendiente.
+
 ## Premisa primordial: jugar como en un videojuego de rol
 
 **Los jugadores se centran en interpretar a sus personajes, declarar acciones, interactuar entre sí y con el maestro de juego y tirar dados cuando sea necesario. La aplicación automatiza el funcionamiento del juego en la medida de lo posible.**

@@ -46,10 +46,10 @@ const assert=require('node:assert/strict');
    await form.locator('button.primary').click();await a.locator('#modal').waitFor({state:'hidden'});
   }
   await character('Aria',false);await character('Bandido',true);
-  await a.locator('[data-tab=board]').click();await a.locator('#startCombat').click();
+  assert.equal(await a.locator('#board').isVisible(),true);await a.locator('#startCombat').click();
   await a.waitForFunction(()=>document.querySelector('#turnInfo').textContent.includes('Aria'));
   await b.reload();await b.locator('#app').waitFor({state:'visible'});
-  await b.locator('[data-tab=board]').click();
+  assert.equal(await b.locator('#board').isVisible(),true);
   assert.equal(await b.locator('#attackButton').isEnabled(),true);
   await b.locator('#attackButton').click();
   await b.waitForFunction(()=>document.querySelector('#attackButton').disabled);
@@ -61,12 +61,47 @@ const assert=require('node:assert/strict');
   });
   assert.equal(state.characters.find(c=>c.name==='Bandido').hp,12);
   assert.equal(state.messages.at(-1).combat.damage,8);
+  assert.equal(await b.locator('#story').isVisible(),true);
+  assert.equal(await b.locator('#board').isVisible(),true);
+  // Finishing a player turn resolves the enemy and returns control in one save.
+  await b.locator('#nextTurn').click();
+  await b.waitForFunction(()=>document.querySelector('#attackButton').disabled===false);
+  const afterEnemy=await b.evaluate(async()=>{
+   const token=localStorage.getItem('cronicas-token');
+   return (await (await fetch('/api/state',{headers:{Authorization:'Bearer '+token}})).json());
+  });
+  assert.equal(afterEnemy.state.characters.find(c=>c.name==='Aria').hp,12);
+  assert.equal(afterEnemy.state.board.round,2);
+  // A ruler and token selection only change local UI, never the shared version.
+  await b.locator('#tool').selectOption('measure');
+  await b.locator('[data-x="0"][data-y="0"]').click();
+  await b.locator('[data-x="3"][data-y="2"]').click();
+  assert.match(await b.locator('#pathInfo').textContent(),/20 pies/);
+  assert.equal(await b.locator('#confirmMove').isDisabled(),true);
+  await b.locator('#tool').selectOption('move');
+  await b.locator('[data-x="0"][data-y="0"]').click();
+  const localVersion=await b.evaluate(async()=>{
+   const token=localStorage.getItem('cronicas-token');
+   return (await (await fetch('/api/state',{headers:{Authorization:'Bearer '+token}})).json()).version;
+  });
+  assert.equal(localVersion,afterEnemy.version);
+  // Explicit quick dice are saved, without enabling the AI checkbox's behavior.
+  await b.locator('[data-quick-die="20"]').click();
+  await b.getByText('Tirada rápida d20:',{exact:false}).waitFor();
   await a.reload();await a.locator('#app').waitFor({state:'visible'});
   await a.locator('[data-tab=story]').click();await a.getByText('Aria ataca a Bandido:',{exact:false}).waitFor();
   assert.deepEqual(errors,[]);
-  await b.locator('[data-tab=board]').click();
+  assert.equal(await b.locator('#board').isVisible(),true);
   await b.screenshot({path:'.deps/combat-browser.png',fullPage:true});
-  console.log('OK: two browsers, profile setup, guest attack, automatic damage, action budget, shared persistence, no JS errors.');
+  await b.setViewportSize({width:390,height:844});
+  await b.locator('[data-tab=board]').click();
+  assert.equal(await b.locator('#board').isVisible(),true);
+  await b.locator('[data-tab=story]').click();
+  assert.equal(await b.locator('#story').isVisible(),true);
+  await b.screenshot({path:'.deps/tabletop-mobile.png',fullPage:true});
+  assert.equal(await b.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth),true);
+  assert.deepEqual(errors,[]);
+  console.log('OK: two players, automatic enemies, ruler without writes, quick dice, desktop map/chat, mobile panels, no JS errors.');
  }finally{
   if(browser)await browser.close();
   fixture.kill();

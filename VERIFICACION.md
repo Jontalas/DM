@@ -46,3 +46,11 @@ El usuario confirmó que Claude funciona tras corregir su clave API. Esa confirm
 Se añadió el primer recorrido de ataque cuerpo a cuerpo automático descrito en [COMBATE.md](COMBATE.md). Se verificaron 68 pruebas Python con el emulador oficial sin omisiones, incluida la persistencia del ataque en HTTP y Waitress, y después una prueba adicional de precondición temporal con la suite de siete pruebas específicas de Firestore. Playwright completó el recorrido con dos navegadores aislados: preparación de perfiles, ataque del invitado, daño automático, gasto de acción y recuperación del resultado por el anfitrión al recargar, sin errores de JavaScript. Todas estas pruebas usan datos desechables y no modifican partidas reales.
 
 La confirmación de campañas usa ahora un lote atómico con precondición temporal en lugar de una transacción con bloqueos de lectura. Las pruebas reproducen y cubren acciones simultáneas, deduplicación, rechazo de metadatos cambiados y ausencia del marcador cuando el lote no se confirma.
+
+## Mesa virtual y adversarios automáticos
+
+Se incorporó Roll20 como referencia principal en las premisas permanentes y en [MESA_VIRTUAL.md](MESA_VIRTUAL.md). La primera adaptación muestra tablero y panel de conversación simultáneos en escritorio, conserva pestañas móviles y añade selección de fichas, PG y turno visibles, medición local y dados rápidos.
+
+Se completó el controlador local de adversarios básicos, con selección de objetivo, búsqueda de ruta, movimiento acotado y ataque. Las excepciones pausan la automatización; el anfitrión puede tomar el control y reanudar. No decide acciones de personajes jugadores ni realiza inferencias.
+
+Validación: 86 pruebas Python con el emulador oficial pasaron sin omisiones; después pasaron tres pruebas adicionales de enemigos consecutivos, caída del último jugador e incapacitación, junto con la comprobación de la nueva hoja CSS bajo Waitress. Playwright pasó con dos navegadores, tanto en escritorio como a 390×844: conversación y mapa simultáneos, respuesta automática del enemigo, medición sin cambiar la versión guardada, dados rápidos y ausencia de desbordamiento horizontal de la página móvil. No hubo errores de JavaScript. La interfaz y las capturas se inspeccionaron localmente. No se crearon partidas de prueba en producción ni se consumió API de Claude.

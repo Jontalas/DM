@@ -43,6 +43,18 @@ def adjacent(a,b):
     return max(abs(a['x']-b['x']),abs(a['y']-b['y']))==1
 
 
+def basic_pair(source,target,board):
+    source_profile=profile(source);target_profile=profile(target)
+    if source.get('conditions','').strip() or target.get('conditions','').strip():
+        raise ValueError('Hay condiciones que requieren una resolución excepcional antes de usar el ataque básico')
+    if not adjacent(source,target):raise ValueError('El objetivo debe estar a 5 pies, en una casilla adyacente')
+    for c in (source,target):
+        if any(board['terrain'].get(f'{x},{y}')=='wall'
+               for x in range(c['x']-1,c['x']+2) for y in range(c['y']-1,c['y']+2)):
+            raise ValueError('Un muro cercano puede dar cobertura; requiere resolución excepcional')
+    return source_profile,target_profile
+
+
 def attack(state,body,actor,dice):
     board=state['board']
     if not board['active']:raise ValueError('Inicia el combate antes de atacar')
@@ -54,15 +66,7 @@ def attack(state,body,actor,dice):
     if source['id']==target['id'] or source['enemy']==target['enemy']:raise ValueError('Selecciona un adversario')
     if source['hp']<0:raise ValueError('Un personaje inconsciente o muerto no puede atacar')
     if target['hp']<=0:raise ValueError('Atacar a un adversario caído requiere una resolución excepcional')
-    source_profile=profile(source);target_profile=profile(target)
-    if source.get('conditions','').strip() or target.get('conditions','').strip():
-        raise ValueError('Hay condiciones que requieren una resolución excepcional antes de usar el ataque básico')
-    if not adjacent(source,target):raise ValueError('El objetivo debe estar a 5 pies, en una casilla adyacente')
-    # Until cover is implemented, reject walls near the attack rather than ignore them.
-    for c in (source,target):
-        if any(board['terrain'].get(f'{x},{y}')=='wall'
-               for x in range(c['x']-1,c['x']+2) for y in range(c['y']-1,c['y']+2)):
-            raise ValueError('Un muro cercano puede dar cobertura; requiere resolución excepcional')
+    source_profile,target_profile=basic_pair(source,target,board)
     spent=board['spent'].get(source['id'],{})
     if spent.get('standard') or (source['hp']==0 and spent.get('move')):
         raise ValueError('La acción necesaria ya está gastada')
