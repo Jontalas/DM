@@ -55,6 +55,10 @@ Si falta el modelo o falla el proveedor, el envío devuelve un error visible y n
 
 La respuesta narrativa puede proponer resoluciones pendientes, pero no modifica fichas ni tira dados por texto. El anfitrión valida cambios mediante el motor. Las respuestas sobre reglas muestran los fragmentos y páginas recuperados; su corrección semántica sigue dependiendo del modelo y de la revisión humana. No se envían los libros enteros en cada turno.
 
+## Primer avance de automatización
+
+El tablero permite resolver ataques cuerpo a cuerpo básicos con impacto, crítico, daño, PG, acción estándar y registro automáticos, sin llamadas a IA. Incluye CA desprevenido, flanqueo básico y estabilización en el turno de personajes moribundos con perfil compatible. Consulta [COMBATE.md](COMBATE.md) para preparación, reglas cubiertas, pruebas y límites; no equivale a cobertura completa de Pathfinder.
+
 ## Funciones disponibles
 
 - Campaña con tono, límites de contenido, objetivo y dificultad declarada; continuación mediante credencial guardada en el navegador.

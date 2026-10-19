@@ -38,3 +38,11 @@ El 19 de octubre de 2026 se comprobó por HTTPS `https://dm-cronicas.onrender.co
 - No se crearon partidas ni se llamó a Claude. La clave está declarada en el servidor, pero todavía falta comprobar su validez, crédito y una respuesta real. Tampoco se verificó una partida entre dos navegadores en este despliegue.
 
 El servicio público está respondiendo y declara la configuración esperada. Las comprobaciones anteriores no sustituyen la prueba completa de una partida y del director de IA real.
+
+## Avance posterior: combate automático
+
+El usuario confirmó que Claude funciona tras corregir su clave API. Esa confirmación procede de su prueba real; las pruebas de desarrollo siguen evitando inferencias facturables.
+
+Se añadió el primer recorrido de ataque cuerpo a cuerpo automático descrito en [COMBATE.md](COMBATE.md). Se verificaron 68 pruebas Python con el emulador oficial sin omisiones, incluida la persistencia del ataque en HTTP y Waitress, y después una prueba adicional de precondición temporal con la suite de siete pruebas específicas de Firestore. Playwright completó el recorrido con dos navegadores aislados: preparación de perfiles, ataque del invitado, daño automático, gasto de acción y recuperación del resultado por el anfitrión al recargar, sin errores de JavaScript. Todas estas pruebas usan datos desechables y no modifican partidas reales.
+
+La confirmación de campañas usa ahora un lote atómico con precondición temporal en lugar de una transacción con bloqueos de lectura. Las pruebas reproducen y cubren acciones simultáneas, deduplicación, rechazo de metadatos cambiados y ausencia del marcador cuando el lote no se confirma.

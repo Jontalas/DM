@@ -148,20 +148,27 @@ class FirestoreStore:
 
     def commit(self,cid,aid,actor,fingerprint,version,state,title=None):
         from google.cloud import firestore
-        # RNG and AI have already run. Retrying this callback never calls either.
-        staged=self._stage(cid,state);ref=self.campaign(cid);marker=ref.collection('actions').document(digest(aid))
-        @firestore.transactional
-        def commit(tx):
-            previous=marker.get(transaction=tx);meta=ref.get(transaction=tx)
-            if previous.exists: self._check_marker(previous.to_dict(),actor,fingerprint);return True
-            if not meta.exists: raise ValueError('Campaña inexistente')
-            if meta.to_dict()['version']!=version: raise Conflict('La mesa ha cambiado. Revisa tu acción antes de enviarla')
-            update={'version':version+1,**staged}
-            if title is not None:update['title']=str(title)[:120]
-            tx.update(ref,update)
-            tx.create(marker,{'actor':actor,'fingerprint':fingerprint,'version':version+1})
-            return False
-        return commit(self.client.transaction())
+        from google.api_core.exceptions import AlreadyExists, FailedPrecondition
+        # Optimistic CAS avoids holding read locks while concurrent clients commit.
+        # The timestamp precondition and marker creation belong to the SAME atomic batch.
+        ref=self.campaign(cid);marker=ref.collection('actions').document(digest(aid))
+        previous=marker.get()
+        if previous.exists:return self._check_marker(previous.to_dict(),actor,fingerprint)
+        meta=ref.get()
+        if not meta.exists:raise ValueError('Campaña inexistente')
+        if meta.to_dict()['version']!=version:raise Conflict('La mesa ha cambiado. Revisa tu acción antes de enviarla')
+        staged=self._stage(cid,state)
+        update={'version':version+1,**staged}
+        if title is not None:update['title']=str(title)[:120]
+        batch=self.client.batch()
+        batch.update(ref,update,option=firestore.LastUpdateOption(meta.update_time))
+        batch.create(marker,{'actor':actor,'fingerprint':fingerprint,'version':version+1})
+        try:batch.commit()
+        except (AlreadyExists,FailedPrecondition):
+            previous=marker.get()
+            if previous.exists:return self._check_marker(previous.to_dict(),actor,fingerprint)
+            raise Conflict('La mesa ha cambiado. Revisa tu acción antes de enviarla') from None
+        return False
 
     def counts(self):
         return {key:(self.collection('manuals').document(key).get().to_dict() or {}).get('pages',0) for key in BOOKS}

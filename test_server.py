@@ -72,4 +72,26 @@ class IntegrationTests(unittest.TestCase):
         self.action('manual',reason='Ataque resuelto',resolution='d20 y daño físicos verificados por anfitrión',reference='Resolución de prueba',character=cid,hpDelta=-3,resources='Poción gastada',actionCost='standard')
         public=self.state(guest)['state'];self.assertEqual(public['characters'][0]['hp'],7);self.assertEqual(public['characters'][0]['x'],1);self.assertEqual(public['characters'][0]['resources'],'Poción gastada');self.assertTrue(public['board']['spent'][cid]['standard'])
 
+    def test_automatic_attack_persists_and_replay_never_rolls_or_calls_ai(self):
+        guest=self.request('/api/join',{'name':'Luis','invite':self.state()['invite']})['token']
+        profile={'flatAc':12,'criticalMin':20,'multiplier':2}
+        self.action('character',character={'name':'Aria','owner':self.state(guest)['me']['id'],
+            'initiative':100,'attack':4,'damage':'1d6+2','ac':14,'meleeProfile':profile})
+        self.action('character',character={'name':'Bandido','enemy':True,'initiative':-100,'maxHp':20,
+            'ac':14,'damage':'1d6','meleeProfile':profile})
+        self.action('combat');a,b=self.state()['state']['characters']
+        with patch('engine.dice',side_effect=[[12],[4]]) as dice,patch.object(server,'ai_reply') as ai:
+            body=self.action('attack',guest,character=a['id'],target=b['id'])
+            after=self.state(guest)
+            self.assertEqual(after['state']['characters'][1]['hp'],14)
+            self.assertTrue(after['state']['board']['spent'][a['id']]['standard'])
+            self.assertTrue(self.request('/api/action',body,guest)['duplicate'])
+            self.assertEqual(dice.call_count,2);ai.assert_not_called()
+        self.assertEqual(self.state()['version'],after['version'])
+        with patch('engine.dice') as dice:
+            with self.assertRaises(urllib.error.HTTPError) as error:
+                self.action('attack',guest,character=a['id'],target=b['id'])
+            self.assertEqual(error.exception.code,400);error.exception.close();dice.assert_not_called()
+        self.assertEqual(self.state(guest)['state'],after['state'])
+
 if __name__=='__main__':unittest.main()

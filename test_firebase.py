@@ -94,6 +94,23 @@ class FirestoreEmulatorTests(unittest.TestCase):
             except Conflict:return 'conflict'
         with ThreadPoolExecutor(max_workers=2) as pool:results=list(pool.map(commit,[1,2]))
         self.assertEqual(sorted(results),['conflict','ok']);self.assertEqual(self.store.metadata(self.cid)['version'],1)
+        markers=list(self.store.campaign(self.cid).collection('actions').stream())
+        self.assertEqual(len(markers),1)
+        saved=self.store.load(self.cid)[1]
+        self.assertEqual(markers[0].to_dict()['fingerprint'],saved['notes'])
+    def test_timestamp_precondition_rejects_changed_metadata_atomically(self):
+        row,state=self.store.load(self.cid);state['notes']='Must not be committed'
+        stage=self.store._stage
+        def change_after_read(cid,candidate):
+            self.another_client().campaign(cid).update({'title':'Changed concurrently'})
+            return stage(cid,candidate)
+        with patch.object(self.store,'_stage',side_effect=change_after_read):
+            with self.assertRaises(Conflict):
+                self.store.commit(self.cid,'precondition',self.me['id'],'signature',row['version'],state)
+        meta,saved=self.store.load(self.cid)
+        self.assertEqual(meta['version'],row['version']);self.assertEqual(meta['title'],'Changed concurrently')
+        self.assertNotEqual(saved['notes'],state['notes'])
+        self.assertFalse(self.store.completed(self.cid,'precondition',self.me['id'],'signature'))
     def test_same_action_concurrent_deduplication(self):
         row,state=self.store.load(self.cid);barrier=Barrier(2)
         def commit(_):

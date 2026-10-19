@@ -84,7 +84,7 @@ def execute_action(body,me):
             for proposal in result.get('proposals',[])[:5]:
                 state['pending'].append({'reason':str(proposal['reason'])[:1000],'source':'Propuesta de Claude Haiku; pendiente de validación humana'})
         else:apply_action(state,body,me)
-        # Firestore CAS + marker are atomic. No RNG or provider call in the retry callback.
+        # Firestore CAS + marker are atomic. A conflict never reruns RNG or the provider.
         duplicate=store.commit(cid,aid,me['id'],signature,row['version'],state,title)
         return {'duplicate':True} if duplicate else {'ok':True}
 

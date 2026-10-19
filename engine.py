@@ -1,5 +1,6 @@
 """Motor determinista: ninguna respuesta narrativa puede escribir el estado."""
 import math, secrets, time, copy
+import combat
 
 def initial_state(config):
     return {'scene':1,'location':config.get('location','Por decidir'),'worldTime':'Comienzo de la aventura','goal':config.get('goal','Definir el objetivo con el grupo'),'objectives':[], 'allies':[],'enemies':[],'facts':{},'unknowns':[],'consequences':[], 'tokens':0,'threshold':int(config.get('threshold',15)),'turned':False,'voluntaryScene':0,'characters':[],'messages':[],'pending':[],'bookmarks':[],'private':{},'secrets':'','notes':'','tone':config.get('tone','Fantasía aventurera'),'limits':config.get('limits',''),'difficulty':config.get('difficulty','Estándar; encuentros pendientes de validar'),'mode':config.get('mode','solo'),'agreement':'Adaptación multijugador: reserva común de FH; el anfitrión registra el consentimiento unánime antes del gasto. Decisiones colectivas por consenso. No se alteran estadísticas para equilibrar encuentros.','criteria':['TREY p.25: el ejemplo d8=7 dice objetivo en curso; la tabla p.23 indica objetivo final. Se usa la tabla.','TREY p.25: ejemplo d6=5 dice retrasado; se aplica demorado, tabla p.23.','Pathfinder 1e: las ventajas de FH son una adaptación TREY; requieren adjudicación manual y registro.'],'board':{'active':False,'round':1,'turn':0,'order':[],'terrain':{},'spent':{}},'oracleLog':[]}
@@ -58,6 +59,8 @@ def apply_action(s,b,me):
         if not me['host']: owner=me['id']
         data={'id':cid or secrets.token_hex(6),'name':str(d.get('name','Aventurero'))[:80],'owner':owner,'race':str(d.get('race','Humano')),'class':str(d.get('class','Sin clase')),'level':int(d.get('level',1)),'abilities':attrs,'hp':int(d.get('hp',hp)),'maxHp':hp,'ac':int(d.get('ac',10)),'saves':d.get('saves',[0,0,0]),'speed':speed,'initiative':int(d.get('initiative',(attrs[1]-10)//2)),'attack':int(d.get('attack',0)),'damage':str(d.get('damage','1d6')),'skills':d.get('skills',''),'feats':d.get('feats',''),'equipment':d.get('equipment',''),'spells':d.get('spells',''),'resources':d.get('resources',''),'conditions':d.get('conditions',''),'load':d.get('load',''),'notes':d.get('notes',''),'x':old['x'] if old else len(s['characters'])%12,'y':old['y'] if old else 0,'enemy':bool(d.get('enemy',False))}
         if data['enemy']: host(me)
+        if d.get('meleeProfile') is not None:
+            data['meleeProfile']=copy.deepcopy(d['meleeProfile']);combat.profile(data)
         if old: s['characters'][s['characters'].index(old)]=data
         else:
             occupied={(v['x'],v['y']) for v in s['characters']}
@@ -118,14 +121,23 @@ def apply_action(s,b,me):
         book=b['book']; page=int(b['page'])
         if book not in ['trey','reglas','bestiario'] or page<1: raise ValueError('Referencia inválida')
         s['bookmarks'].append({'book':book,'page':page,'label':str(b.get('label','Marcador'))[:100]})
+    elif kind=='attack':
+        result=combat.attack(s,b,me,dice)
+        source=next(c for c in s['characters'] if c['id']==result['attacker'])
+        target=next(c for c in s['characters'] if c['id']==result['target'])
+        outcome='crítico confirmado' if result['critical'] else 'impacto' if result['hit'] else 'fallo'
+        detail=(' Objetivo desprevenido.' if result['flatFooted'] else '')+(' Flanqueo +2.' if result['flanking'] else '')
+        if result['confirmation'] is not None:detail+=f" Confirmación: d20 {result['confirmation']} {result['modifier']:+}."
+        if source['hp']<0:detail+=f" {source['name']}: {result['attackerHp']} PG, {result['attackerStatus']}."
+        log(s,f"{source['name']} ataca a {target['name']}: d20 {result['roll']} {result['modifier']:+} contra CA {result['ac']} → {outcome}. Daño {result['damage']} (dados {result['damageRolls']}); PG {result['targetHp']} ({result['status']}). Acción estándar gastada.{detail}",combat=result,refs=[{'book':'reglas','page':180},{'book':'reglas','page':185}])
     elif kind=='combat':
         host(me)
         if s['board']['active']: raise ValueError('Ya hay combate activo')
         if not s['characters']: raise ValueError('Añade participantes en la ficha')
         order=[{'id':c['id'],'roll':dice([20])[0],'modifier':c['initiative'],'dex':c['abilities'][1]} for c in s['characters']]
         order.sort(key=lambda v:(v['roll']+v['modifier'],v['modifier'],secrets.randbits(16)),reverse=True)
-        s['board'].update(active=True,round=1,turn=0,order=order,spent={})
-        log(s,'Iniciativa d20 + modificador declarado: '+str(order)+'. Empates: modificador total y después azar. Reglas básicas: Iniciativa, impresa p.178 / PDF p.179. Sorpresa y desprevenido: adjudicación manual.',refs=[{'book':'reglas','page':179}])
+        s['board'].update(active=True,round=1,turn=0,order=order,spent={},acted=[order[0]['id']])
+        log(s,'Iniciativa d20 + modificador declarado: '+str(order)+'. Empates: modificador total y después azar. Reglas básicas: Iniciativa, impresa p.178 / PDF p.179. Sorpresa: resolución excepcional. CA desprevenido automática en ataques básicos con perfil preparado.',refs=[{'book':'reglas','page':179}])
     elif kind=='endcombat':
         host(me); s['board']['active']=False; log(s,'Combate finalizado; negociación, retirada o conclusión registradas por la mesa')
     elif kind=='turn':
@@ -136,6 +148,16 @@ def apply_action(s,b,me):
         if board['turn']>=len(board['order']): board['turn']=0; board['round']+=1
         upcoming=board['order'][board['turn']]['id']; debt=board['spent'].get(upcoming,{}).get('swiftDebt')
         board['spent'][upcoming]={'swift':True} if debt else {}
+        if 'acted' in board and upcoming not in board['acted']:board['acted'].append(upcoming)
+        patient=next(c for c in s['characters'] if c['id']==upcoming)
+        if patient.get('meleeProfile') and patient['hp']<0 and combat.health_status(patient)=='moribundo':
+            if patient.get('conditions','').strip():
+                log(s,patient['name']+': estabilización pendiente; las condiciones requieren resolución excepcional.')
+            else:
+                raw=dice([20])[0];modifier=(patient['abilities'][2]-10)//2+patient['hp']
+                if raw==20 or raw+modifier>=10:patient['stable']=True
+                else:patient['hp']-=1
+                log(s,f"{patient['name']}: estabilización d20 {raw} {modifier:+} contra CD 10 → {combat.health_status(patient)}; PG {patient['hp']}.",refs=[{'book':'reglas','page':191}])
         log(s,f"Siguiente turno · asalto {board['round']}")
     elif kind=='terrain':
         host(me)
@@ -145,6 +167,7 @@ def apply_action(s,b,me):
         s['board']['terrain'][f'{x},{y}']=t; log(s,f'Terreno {t} en {x},{y}; adjudicación de escenario manual')
     elif kind=='move':
         c=char(s,b['character'],me); board=s['board']; path=b['path']
+        if c['hp']<0:raise ValueError('Un personaje inconsciente o muerto no puede moverse')
         if not 1<=len(path)<=100: raise ValueError('Recorrido inválido')
         if not b.get('acknowledge'): raise ValueError('Confirma las consecuencias y las reglas pendientes')
         if board['active'] and board['order'][board['turn']]['id']!=c['id']: raise ValueError('No es tu turno')
@@ -162,6 +185,7 @@ def apply_action(s,b,me):
             cost+=(3 if dx and dy else 2) if tile=='difficult' else step; x,y=nx,ny
         if board['active']:
             used=board['spent'].get(c['id'],{})
+            if c['hp']==0 and used.get('standard'):raise ValueError('Incapacitado: solo una acción estándar o de movimiento')
             if used.get('move'): raise ValueError('Acción de movimiento gastada. Más movimiento requiere resolución asistida')
             if cost>c['speed']: raise ValueError('El recorrido supera una acción de movimiento')
             used['move']=True; board['spent'][c['id']]=used
@@ -183,7 +207,10 @@ def apply_action(s,b,me):
                 if any(spent.get(v) for v in needs): raise ValueError('La acción necesaria ya está gastada')
                 for v in needs: spent[v]=True
                 board['spent'][cid]=spent
-            if 'hpDelta' in b: c['hp']+=max(-10000,min(10000,int(b['hpDelta'])))
+            if 'hpDelta' in b:
+                delta=max(-10000,min(10000,int(b['hpDelta'])))
+                c['hp']+=delta
+                if delta:c['stable']=delta>0
             if 'conditions' in b: c['conditions']=str(b['conditions'])
             if 'resources' in b: c['resources']=str(b['resources'])
         log(s,'RESOLUCIÓN MANUAL ASISTIDA · '+reason+' · '+resolution+' · Coste de acción: '+str(b.get('actionCost','none'))+' · Referencia: '+str(b.get('reference','Sin verificar; criterio provisional')))
