@@ -14,6 +14,8 @@ La aplicación debe parecerse a Roll20 en la mayor medida viable, tanto en organ
 
 ## Experiencia de videojuego y automatización
 
+La entrada al juego es prioritaria: crear un personaje jugable debe ser un recorrido guiado y automático al estilo del Charactermancer de Roll20. El jugador elige concepto y opciones legales; el motor valida y calcula la ficha. No dar por utilizable una función dependiente de personajes si exige preparar manualmente sus estadísticas. Ampliar razas, clases y niveles por bloques verificados, indicando la cobertura real.
+
 La aplicación debe funcionar básicamente como un videojuego de rol para los jugadores. Estos declaran sus acciones, interpretan a sus personajes, interactúan entre sí y con el maestro de juego y tiran dados cuando corresponde. La aplicación debe encargarse automáticamente del funcionamiento del juego en la medida de lo posible.
 
 - Automatizar la aplicación de reglas, validación de acciones, modificadores, dificultades, turnos, iniciativa, movimiento, recursos, daño, condiciones, duraciones, desencadenantes, sucesos y consecuencias conforme a Pathfinder 1e y TREY. Implementar progresivamente los casos pendientes; no inventar reglas para simular cobertura.

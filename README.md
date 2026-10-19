@@ -129,6 +129,8 @@ Sites se consultó conforme a las instrucciones del entorno, pero las herramient
 
 ## Validación
 
+«Crear personaje» utiliza ahora el asistente automático como recorrido principal. El primer bloque produce humanos guerreros de nivel 1 listos para tirar y usar el combate básico, sin calcular estadísticas manuales. Alcance y opciones en [CREACION_PERSONAJES.md](CREACION_PERSONAJES.md).
+
 Las fichas incorporan tiradas con modificadores guardados y el director puede solicitar pruebas básicas al jugador. Alcance, permisos, coste y limitaciones en [PRUEBAS_PERSONAJE.md](PRUEBAS_PERSONAJE.md).
 
 ```powershell

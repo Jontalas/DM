@@ -13,6 +13,8 @@ Revisión del 19 de octubre de 2026: se consultó documentación oficial de Roll
 
 Para la ampliación de botones de tirada de la hoja se consultó el extracto indexado de la Wiki de Roll20; el acceso directo a esa página devolvió 403. La equivalencia sigue limitada al contrato de pulsar un botón y publicar una tirada, sin afirmar una comparación interactiva directa.
 
+Posteriormente se consultó la [documentación oficial completa de Pathfinder by Roll20](https://help.roll20.net/hc/en-us/articles/360037773733-Pathfinder-by-Roll20), incluidos cálculo automático, botones de tirada y lanzamiento del Charactermancer de nivel 1. La ampliación del creador sigue una implementación propia de pasos y revisión de elecciones; no reproduce todavía todas sus opciones.
+
 ## Fuentes de referencia
 
 - [Mesa y navegación](https://help.roll20.net/hc/en-us/articles/360039734913-Tabletop-Overview).
@@ -34,6 +36,7 @@ Las filas probadas indican cobertura de **nuestra** implementación frente al co
 | TOK-01 | Control por jugador asignado y control del maestro | Propietario único y anfitrión; sin asignación múltiple por ficha | Navegador: invitado mueve su personaje y no el adversario; servidor verifica permisos |
 | TOK-02 | Doble clic abre ajustes de la ficha | Doble clic abre nuestra hoja del personaje controlado. Es una adaptación; no reproduce todavía el diálogo de propiedades de token | Navegador: apertura y nombre correcto |
 | SHEET-01 | Botones de tirada de la hoja publican el resultado en el chat | Características, salvaciones y habilidades preparadas con modificadores guardados. Solicitudes del director con CD y resolución por propietario. Sin macros ni hojas de clase completas | Python/HTTP: permisos, cálculo y deduplicación; navegador: dos sesiones y móvil |
+| CREATE-01 | Charactermancer de nivel 1 y atributos derivados de la hoja | Creador en cuatro pasos, elecciones, vista previa local y validación del servidor. Humano guerrero 1 con opciones acotadas; hoja y perfil de combate calculados. Sin todas las razas/clases ni subida de nivel | Python: 72 combinaciones de paridad con JavaScript; HTTP/Waitress: persistencia y permisos; navegador: creación hasta ataque, sin estadísticas manuales |
 | MOV-01 | Movimiento de fichas con recorrido y puntos intermedios | Arrastre prepara ruta ajustada a casillas; Espacio fija puntos y Esc cancela. **Soltar no guarda**: se conserva la confirmación existente para revisar excepciones de reglas | Navegador: ruta, puntos, cancelación, un solo guardado confirmado |
 | RUL-01 | Medición mediante arrastre | Regla local entre centros de casilla, con línea y distancia Pathfinder 5/10 pies; también conserva medición por dos pulsaciones. Sin difusión a otros jugadores ni variantes sin ajuste/corner | Navegador: línea, distancia, zoom y cero cambios de versión |
 | KEY-01 | Atajos avanzados de selección y mano | Subconjunto S y A activo por defecto; no se activa al escribir o con un diálogo abierto. La preferencia opcional de referencia sigue pendiente | Navegador: cambio de herramienta y escritura intacta |

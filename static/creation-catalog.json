@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "budget": 20,
+  "wealthCp": 17500,
+  "costs": {"7": -4, "8": -2, "9": -1, "10": 0, "11": 1, "12": 2, "13": 3, "14": 5, "15": 7, "16": 10, "17": 13, "18": 17},
+  "abilities": ["Fuerza", "Destreza", "Constitución", "Inteligencia", "Sabiduría", "Carisma"],
+  "weapons": {
+    "longsword": {"name": "Espada larga", "dice": "1d8", "criticalMin": 19, "multiplier": 2, "hands": 1, "price": 1500, "weight": 4},
+    "greatsword": {"name": "Mandoble", "dice": "2d6", "criticalMin": 19, "multiplier": 2, "hands": 2, "price": 5000, "weight": 8},
+    "battleaxe": {"name": "Hacha de batalla", "dice": "1d8", "criticalMin": 20, "multiplier": 3, "hands": 1, "price": 1000, "weight": 6}
+  },
+  "armors": {
+    "leather": {"name": "Armadura de cuero", "ac": 2, "maxDex": 6, "penalty": 0, "speed": 6, "price": 1000, "weight": 15},
+    "studded": {"name": "Cuero tachonado", "ac": 3, "maxDex": 5, "penalty": 1, "speed": 6, "price": 2500, "weight": 20},
+    "chainshirt": {"name": "Camisote de mallas", "ac": 4, "maxDex": 4, "penalty": 2, "speed": 6, "price": 10000, "weight": 25},
+    "scale": {"name": "Cota de escamas", "ac": 5, "maxDex": 3, "penalty": 4, "speed": 4, "price": 5000, "weight": 30}
+  },
+  "shields": {
+    "none": {"name": "Sin escudo", "ac": 0, "penalty": 0, "price": 0, "weight": 0},
+    "light": {"name": "Escudo ligero de madera", "ac": 1, "penalty": 1, "price": 300, "weight": 5},
+    "heavy": {"name": "Escudo pesado de madera", "ac": 2, "penalty": 2, "price": 700, "weight": 10}
+  },
+  "feats": {
+    "focus": {"name": "Soltura con el arma elegida", "combat": true, "page": 137},
+    "initiative": {"name": "Iniciativa mejorada", "combat": true, "page": 132},
+    "toughness": {"name": "Dureza", "combat": false, "page": 127},
+    "fortitude": {"name": "Gran fortaleza", "combat": false, "page": 131},
+    "reflexes": {"name": "Reflejos rápidos", "combat": false, "page": 136},
+    "will": {"name": "Voluntad de hierro", "combat": false, "page": 138}
+  },
+  "skills": {
+    "climb": {"name": "Trepar", "ability": 0, "class": true, "armor": true},
+    "swim": {"name": "Nadar", "ability": 0, "class": true, "armor": true},
+    "ride": {"name": "Montar", "ability": 1, "class": true, "armor": true},
+    "intimidate": {"name": "Intimidar", "ability": 5, "class": true, "armor": false},
+    "survival": {"name": "Supervivencia", "ability": 4, "class": true, "armor": false},
+    "animals": {"name": "Trato con animales", "ability": 5, "class": true, "armor": false, "trained": true},
+    "dungeons": {"name": "Saber (dungeons)", "ability": 3, "class": true, "armor": false, "trained": true},
+    "engineering": {"name": "Saber (ingeniería)", "ability": 3, "class": true, "armor": false, "trained": true},
+    "perception": {"name": "Percepción", "ability": 4, "class": false, "armor": false},
+    "stealth": {"name": "Sigilo", "ability": 1, "class": false, "armor": true},
+    "acrobatics": {"name": "Acrobacias", "ability": 1, "class": false, "armor": true},
+    "heal": {"name": "Curar", "ability": 4, "class": false, "armor": false},
+    "sense": {"name": "Averiguar intenciones", "ability": 4, "class": false, "armor": false},
+    "diplomacy": {"name": "Diplomacia", "ability": 5, "class": false, "armor": false}
+  },
+  "languages": ["Élfico", "Enano", "Orco", "Gnomo", "Mediano", "Goblin", "Dracónico", "Gigante", "Silvano", "Celestial", "Infernal", "Abisal"],
+  "loads": {"10": [33, 66, 100], "11": [38, 76, 115], "12": [43, 86, 130], "13": [50, 100, 150], "14": [58, 116, 175], "15": [66, 133, 200], "16": [76, 153, 230], "17": [86, 173, 260], "18": [100, 200, 300], "19": [116, 233, 350], "20": [133, 266, 400]},
+  "kit": {"name": "Mochila, petate, odre lleno, 3 raciones, 2 antorchas, pedernal y acero", "price": 562, "weight": 16},
+  "outfit": {"name": "Atuendo de viajero inicial", "price": 0, "weight": 5},
+  "presets": {
+    "guardian": {"name": "Guardián", "description": "Espada y escudo: protección y resistencia.", "abilities": [16, 14, 14, 10, 12, 8], "bonus": 0, "weapon": "longsword", "armor": "chainshirt", "shield": "heavy"},
+    "vanguard": {"name": "Vanguardia", "description": "Mandoble a dos manos: mayor daño por impacto.", "abilities": [16, 14, 14, 10, 12, 8], "bonus": 0, "weapon": "greatsword", "armor": "chainshirt", "shield": "none"},
+    "sentinel": {"name": "Centinela", "description": "Hacha y escudo: más Constitución y puntos de golpe.", "abilities": [16, 12, 16, 10, 10, 8], "bonus": 2, "weapon": "battleaxe", "armor": "scale", "shield": "heavy"}
+  }
+}

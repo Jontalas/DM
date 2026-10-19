@@ -19,7 +19,7 @@ En escritorio desde 1100 píxeles, el tablero permanece visible junto al panel d
 | Chat y dados | Conversación, narración del director, historial de reglas y dados rápidos sin activar IA |
 | Combate | Iniciativa, acción estándar/movimiento, ataque cuerpo a cuerpo básico y estados descritos en [COMBATE.md](COMBATE.md) |
 | Adversarios | Turnos locales automáticos opcionales: selección de objetivo, movimiento seguro, ataque y devolución del control al jugador |
-| Información | Hojas editables, diario, referencias a manuales y documentos PDF privados |
+| Información | Creador automático de humano guerrero 1, hojas calculadas o edición manual avanzada, diario y manuales privados por páginas |
 | Maestro | Claude Haiku conectado a la ficción y al estado público; puede solicitar pruebas básicas que valida el motor, descritas en [PRUEBAS_PERSONAJE.md](PRUEBAS_PERSONAJE.md). Ataques, efectos y demás declaraciones mecánicas siguen su cobertura específica |
 
 ## Adversarios automáticos

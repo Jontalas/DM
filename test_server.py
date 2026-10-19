@@ -66,6 +66,21 @@ class IntegrationTests(unittest.TestCase):
         self.assertTrue(any(int(r['page'])==194 for r in results))
         self.assertIn('diagonal',next(r['text'] for r in results if int(r['page'])==194).lower())
 
+    def test_automatic_creation_is_validated_owned_persistent_and_replay_safe(self):
+        from test_character_builder import choices
+        guest=self.request('/api/join',{'name':'Luis','invite':self.state()['invite']})['token']
+        with patch.object(server,'ai_reply') as provider:
+            body=self.action('create_character',guest,choices=choices('vanguard'))
+            before=self.state();self.assertTrue(self.request('/api/action',body,guest)['duplicate'])
+            self.assertEqual(self.state()['version'],before['version']);provider.assert_not_called()
+        c=self.state(guest)['state']['characters'][0]
+        self.assertEqual(c['owner'],self.state(guest)['me']['id']);self.assertEqual(c['damage'],'2d6+6')
+        self.assertEqual(c['creation']['details']['pointCost'],20)
+        with self.assertRaises(urllib.error.HTTPError):self.action('create_character',guest,choices=choices(),enemy=True)
+        self.action('combat');before=self.state()['state']
+        with self.assertRaises(urllib.error.HTTPError):self.action('create_character',guest,choices=choices())
+        self.assertEqual(self.state()['state'],before)
+
     def test_requested_check_is_atomic_replay_safe_and_owned(self):
         guest=self.request('/api/join',{'name':'Luis','invite':self.state()['invite']})['token']
         self.action('character',guest,character={'name':'Aria','saves':[5,2,1]})

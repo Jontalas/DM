@@ -24,6 +24,8 @@ def ai_reply(state,text,refs,rules=False,check_actors=None):
     key=os.environ.get('ANTHROPIC_API_KEY')
     if not key:raise ValueError('Claude Haiku sin configurar: falta ANTHROPIC_API_KEY en el servidor. La acción no se ha guardado')
     public={k:v for k,v in state.items() if k not in {'secrets','private','messages'}}
+    # Creation audit duplicates the finished sheet and is not needed to narrate.
+    public['characters']=[{k:v for k,v in c.items() if k!='creation'} for c in state.get('characters',[])]
     history=[{'speaker':m['speaker'],'kind':m['kind'],'text':m['text']} for m in state['messages'][-30:] if m.get('visibility','public')=='public']
     context={'state':public,'history':history,'sources':[{'book':r['book'],'pdf_page':r['page'],'text':r['text'][:6500]} for r in refs],'request':text,'rulesOnly':rules,'checkActors':check_actors or []}
     body={'model':model_name(),'max_tokens':3000,'system':SYSTEM,'messages':[{'role':'user','content':json.dumps(context,ensure_ascii=False)}],'output_config':{'format':{'type':'json_schema','schema':SCHEMA}}}

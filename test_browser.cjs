@@ -34,6 +34,7 @@ const assert=require('node:assert/strict');
   await a.reload();await a.locator('#app').waitFor({state:'visible'});
   async function character(name,enemy){
    await a.locator('#addCharacter').click();
+   await a.locator('#modal details summary').last().click();await a.locator('#creatorManual').click();
    const form=a.locator('#characterForm');
    await form.locator('[name=name]').fill(name);
    await form.locator('[name=hp]').fill('20');await form.locator('[name=maxHp]').fill('20');

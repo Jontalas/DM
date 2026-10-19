@@ -3,6 +3,7 @@ import math, secrets, time, copy
 import combat
 import tactics
 import checks
+import character_builder
 
 def initial_state(config):
     return {'scene':1,'location':config.get('location','Por decidir'),'worldTime':'Comienzo de la aventura','goal':config.get('goal','Definir el objetivo con el grupo'),'objectives':[], 'allies':[],'enemies':[],'facts':{},'unknowns':[],'consequences':[], 'tokens':0,'threshold':int(config.get('threshold',15)),'turned':False,'voluntaryScene':0,'characters':[],'messages':[],'pending':[],'bookmarks':[],'private':{},'secrets':'','notes':'','tone':config.get('tone','Fantasía aventurera'),'limits':config.get('limits',''),'difficulty':config.get('difficulty','Estándar; encuentros pendientes de validar'),'mode':config.get('mode','solo'),'agreement':'Adaptación multijugador: reserva común de FH; el anfitrión registra el consentimiento unánime antes del gasto. Decisiones colectivas por consenso. No se alteran estadísticas para equilibrar encuentros.','criteria':['TREY p.25: el ejemplo d8=7 dice objetivo en curso; la tabla p.23 indica objetivo final. Se usa la tabla.','TREY p.25: ejemplo d6=5 dice retrasado; se aplica demorado, tabla p.23.','Pathfinder 1e: las ventajas de FH son una adaptación TREY; requieren adjudicación manual y registro.'],'board':{'active':False,'round':1,'turn':0,'order':[],'terrain':{},'spent':{}},'oracleLog':[]}
@@ -108,6 +109,16 @@ def apply_action(s,b,me):
         k=b.get('kind','action')
         if k not in ['action','dialogue','ooc','private']: raise ValueError('Tipo de mensaje inválido')
         log(s,text,k,speaker=speaker,owner=me['id'],visibility='private' if k=='private' else 'public')
+    elif kind=='create_character':
+        if s['board']['active']:raise ValueError('Finaliza el combate antes de crear un personaje')
+        if type(b.get('enemy',False))!=bool:raise ValueError('Tipo de participante inválido')
+        if b.get('enemy'):host(me)
+        data,creation=character_builder.build(b.get('choices'))
+        data['enemy']=b.get('enemy',False);data['owner']=me['id']
+        apply_action(s,{'type':'character','character':data},me)
+        created=s['characters'][-1];created['creation']=creation
+        log_entry=s['messages'][-1];log_entry['text']='Personaje creado automáticamente: '+created['name']+'. Humano guerrero 1; características, dotes, equipo, habilidades y perfil de combate calculados y validados.'
+        log_entry['refs']=[{'book':'reglas','page':n} for n in (17,25,59,87,141,152,170)]
     elif kind=='character':
         d=copy.deepcopy(b['character']); cid=d.get('id')
         if cid:
@@ -126,6 +137,7 @@ def apply_action(s,b,me):
         if not isinstance(saves,list) or len(saves)!=3:raise ValueError('Indica Fortaleza, Reflejos y Voluntad como tres totales')
         for value in saves:checks.integer(value)
         data['skillTotals']=checks.skill_totals(d.get('skillTotals',old.get('skillTotals',[]) if old else []))
+        if old and old.get('creation'):data['creation']={**copy.deepcopy(old['creation']),'manualOverride':True}
         if d.get('meleeProfile') is not None:
             data['meleeProfile']=copy.deepcopy(d['meleeProfile']);combat.profile(data)
         if old: s['characters'][s['characters'].index(old)]=data
