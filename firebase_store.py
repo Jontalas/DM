@@ -10,6 +10,7 @@ import zlib
 BOOKS = {'trey': 'Trey.pdf', 'reglas': 'Pathfinder_en_escastellano_subido para_elgrimorio.pdf', 'bestiario': 'bestiario pathfinder spanish [Unlocked by www.freemypdf.com].pdf'}
 CHUNK_BYTES = 192 * 1024
 MAX_STATE_BYTES = 16 * 1024 * 1024
+BOOK_BATCH_PAGES = 20
 
 
 class Conflict(ValueError): pass
@@ -178,10 +179,23 @@ class FirestoreStore:
         if not isinstance(pages,list) or not pages or any(type(p.get('page'))!=int or p['page']<1 or not isinstance(p.get('text'),str) for p in pages):
             raise ValueError('Índice inválido')
         sid=secrets.token_hex(16);ref=self.collection('manuals').document(book);collection=ref.collection('indexes').document(sid).collection('pages')
-        for start in range(0,len(pages),300):
+        def commit_pages(group):
+            from google.api_core.exceptions import InvalidArgument
             batch=self.client.batch()
-            for page in pages[start:start+300]:batch.set(collection.document(str(page['page'])),{**page,'tokens':words(page['text'])})
-            batch.commit()
+            for page in group:batch.set(collection.document(str(page['page'])),{**page,'tokens':words(page['text'])})
+            try:
+                batch.commit()
+            except InvalidArgument as exc:
+                # Firestore also counts token index entries toward transaction size.
+                # Split only this size error; permission and validation errors must surface.
+                if 'transaction too big' not in str(exc).lower():raise
+                if len(group)==1:
+                    raise ValueError(f'La página {group[0]["page"]} de {book} supera el tamaño permitido por Firestore') from exc
+                middle=len(group)//2
+                commit_pages(group[:middle])
+                commit_pages(group[middle:])
+        for start in range(0,len(pages),BOOK_BATCH_PAGES):
+            commit_pages(pages[start:start+BOOK_BATCH_PAGES])
         ref.set({'activeIndex':sid,'pages':len(pages)})
 
     def open_book(self,book):
