@@ -28,4 +28,13 @@ Resultado: base técnica comprobada para Render + Firestore + Storage + Claude H
 4. Enviar una única intervención breve con «Responder con IA» para comprobar acceso, crédito y respuesta real de Claude. Esa acción consume API; revisar el uso en Anthropic. Una suscripción de chat no demuestra crédito de API.
 5. Revisar presupuestos y consumo de Firebase, Anthropic y Render. Los avisos de presupuesto no deben confundirse con un bloqueo automático de gasto.
 
-Sin una URL de Render y esa prueba real de Claude no se puede afirmar que todo esté listo para jugar en producción.
+## Comprobación del despliegue público
+
+El 19 de octubre de 2026 se comprobó por HTTPS `https://dm-cronicas.onrender.com/`:
+
+- `/`, `/app.js` y `/style.css`: HTTP 200 con los tipos de contenido esperados. El JavaScript publicado coincide con el local, normalizando finales de línea; incluye la sincronización de ahorro.
+- `/healthz`: HTTP 200 y `status: ok`.
+- `/api/status`: HTTP 200, alojamiento Render, almacenamiento Cloud Firestore, índices de 102/577/329 páginas, proveedor Anthropic, modelo `claude-haiku-5-5` y `aiConfigured: true`.
+- No se crearon partidas ni se llamó a Claude. La clave está declarada en el servidor, pero todavía falta comprobar su validez, crédito y una respuesta real. Tampoco se verificó una partida entre dos navegadores en este despliegue.
+
+El servicio público está respondiendo y declara la configuración esperada. Las comprobaciones anteriores no sustituyen la prueba completa de una partida y del director de IA real.
