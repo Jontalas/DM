@@ -85,7 +85,7 @@ Una transacción confirma conjuntamente la nueva referencia de estado, el increm
 
 La llamada a Claude y los dados ocurren antes de la transacción; un conflicto descarta el resultado candidato. Una caída después de consumir la API y antes de confirmar puede requerir otra inferencia al reintentar, aunque el estado del juego solo se confirma una vez. No se promete facturación de inferencia exactamente una vez ante caídas.
 
-La sincronización continúa mediante consultas cada **2,5 segundos**, con respuesta de «sin cambios» cuando la versión coincide. No se ha sustituido por listeners Firebase en el navegador. Las lecturas, escrituras, almacenamiento y transferencia pueden facturarse: vigila uso y presupuesto. [Facturación de Firestore](https://firebase.google.com/docs/firestore/pricing).
+La sincronización consulta cada **15 segundos con la pestaña visible**, se pausa al ocultarla y se actualiza al volver. Los cambios propios se actualizan inmediatamente; los de otros jugadores pueden tardar hasta 15 segundos. Una versión coincidente devuelve «sin cambios». No se ha sustituido por listeners Firebase en el navegador. Las comprobaciones de salud reutilizan durante 60 segundos el último acceso correcto a Firestore, por lo que un fallo remoto puede tardar ese tiempo en detectarse. Las lecturas, escrituras, almacenamiento y transferencia pueden facturarse: vigila uso y presupuesto. [Facturación de Firestore](https://firebase.google.com/docs/firestore/pricing).
 
 ## Migrar campañas anteriores y conservar copias
 

@@ -8,7 +8,7 @@ import urllib.error
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 from threading import Barrier
-from unittest.mock import patch
+from unittest.mock import patch, Mock
 from engine import initial_state
 from firebase_store import FirestoreStore,Conflict,Unavailable,CHUNK_BYTES,encode_state,words
 from test_support import make_store
@@ -50,6 +50,17 @@ class ClaudeTests(unittest.TestCase):
 
 
 class EncodingTests(unittest.TestCase):
+    def test_health_reuses_only_recent_success_and_checks_again_after_expiry(self):
+        client=Mock();store=FirestoreStore(client)
+        read=client.collection.return_value.document.return_value.get
+        with patch('firebase_store.time.monotonic',return_value=100):
+            store.health();store.health()
+        self.assertEqual(read.call_count,1)
+        read.side_effect=PermissionError('Denied')
+        with patch('firebase_store.time.monotonic',return_value=161):
+            with self.assertRaises(PermissionError):store.health()
+            with self.assertRaises(PermissionError):store.health()
+        self.assertEqual(read.call_count,3)
     def test_spanish_token_normalization(self):self.assertEqual(words('¿Qué información hay? Información y Percepción'),['informacion','percepcion'])
     def test_missing_firebase_has_no_sqlite_fallback(self):
         with patch.dict(os.environ,{},clear=True):

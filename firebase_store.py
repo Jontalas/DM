@@ -4,6 +4,8 @@ import json
 import os
 import re
 import secrets
+import threading
+import time
 import unicodedata
 import zlib
 
@@ -53,6 +55,8 @@ def firebase_clients():
 class FirestoreStore:
     def __init__(self, client, credentials=None):
         self.client=client;self.credentials=credentials
+        self._health_until=0
+        self._health_lock=threading.Lock()
         self.prefix=os.environ.get('FIREBASE_COLLECTION_PREFIX','cronicas')
         if not re.fullmatch(r'[A-Za-z0-9_-]{1,60}',self.prefix): raise ValueError('Prefijo Firebase inválido')
 
@@ -63,7 +67,11 @@ class FirestoreStore:
 
     def health(self):
         # A successful missing-document lookup also proves API/credentials availability.
-        self.collection('system').document('health').get(timeout=5)
+        # Render probes frequently. Share a short-lived successful result across threads.
+        with self._health_lock:
+            if time.monotonic()<self._health_until:return
+            self.collection('system').document('health').get(timeout=5)
+            self._health_until=time.monotonic()+60
 
     def _stage(self,cid,state):
         from google.cloud import firestore

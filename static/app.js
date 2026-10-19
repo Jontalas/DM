@@ -64,4 +64,12 @@ $('#searchForm').onsubmit=run(()=>find($('#searchQuery').value));$('#indexBtn').
 $('#exportBtn').onclick=run(async()=>{const data=await api('/api/export',{});let url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));let a=document.createElement('a');a.href=url;a.download='cronica-'+snapshot.id+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)});
 $('#importFile').onchange=run(async e=>{const file=e.target.files[0];if(!file)return;if(!confirm('La copia sustituirá el estado de esta sala. Los personajes se asignarán al anfitrión que importa. Exporta antes si deseas conservar el estado actual.'))return;await act('import',{campaign:JSON.parse(await file.text())});toast('Copia recuperada')});
 async function init(){try{model=await api('/api/status');$('#capabilities').innerHTML=`<p><strong>● Guardado persistente</strong><br>${esc(model.storage)}</p><p>${model.aiConfigured?'● IA configurada: '+esc(model.model):'○ Director de IA sin configurar'}<br>Conexión real a Claude Haiku; sin respuestas prefijadas.</p><p>${Object.entries(model.books).map(([k,n])=>esc(names[k])+': '+n+' páginas indexadas').join('<br>')}</p>`;$('#aiHint').textContent=model.aiConfigured?'IA configurada · cada respuesta requiere el servicio Claude Haiku en ejecución.':'IA no configurada · configura ANTHROPIC_API_KEY en el servidor. Puedes desmarcar «Responder con IA» para preparar la mesa.';$('#resume').hidden=!token;const invite=new URLSearchParams(location.search).get('invite');if(invite)$('#inviteInput').value=invite;if(token&&!invite){const pending=JSON.parse(localStorage.getItem('cronicas-pending')||'null');if(pending&&pending.token===token){try{await api('/api/action',pending.body);localStorage.removeItem('cronicas-pending');toast('Envio recuperado con su identificador original')}catch(e){if(e.confirmed)localStorage.removeItem('cronicas-pending');toast(e.message)}}await refresh(true)}}catch(e){toast(e.message)}}
-setInterval(()=>{if(token&&!$('#app').hidden&&!busy)refresh().catch(()=>{$('#sync').textContent='Sin conexión · reintentando'})},2500);init();
+let syncing=false;
+async function syncVisible(){
+ if(!token||document.hidden||$('#app').hidden||busy||syncing)return;
+ syncing=true;
+ try{await refresh()}catch{$('#sync').textContent='Sin conexi\u00f3n - reintentando'}finally{syncing=false}
+}
+setInterval(syncVisible,15000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)syncVisible()});
+init();
