@@ -9,3 +9,10 @@ render-assets*.zip
 .venv/
 .env.*
 !.env.example
+firebase-service-account*.json
+service-account*.json
+firebase-backup*.json
+*-debug.log
+.firebase/
+node_modules/
+*.campaign.json

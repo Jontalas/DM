@@ -1,20 +1,19 @@
 """Pruebas HTTP reales. El adaptador de IA se sustituye solo en esta prueba."""
-import json, tempfile, threading, unittest, urllib.request, urllib.error
+import json, secrets, threading, unittest, urllib.request, urllib.error
 from pathlib import Path
 import server
+from test_support import make_store
+from unittest.mock import patch
 
 class IntegrationTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.tmp=tempfile.TemporaryDirectory(); cls.oldDB=server.DB; cls.oldIndex=server.INDEX_DIR
-        server.DB=Path(cls.tmp.name)/'test.sqlite'; server.INDEX_DIR=Path(cls.tmp.name)/'indexes';server.initialize()
-        # Authored fixture: tests page routing/search without distributing book text.
-        with server.conn() as c: c.execute('INSERT INTO pages VALUES(?,?,?)',('reglas',194,'Texto de prueba: diagonales y movimiento.'))
+        cls.oldStore=server.STORE;server.STORE=make_store();server.initialize()
         cls.http=server.ThreadingHTTPServer(('127.0.0.1',0),server.Handler); cls.url='http://127.0.0.1:'+str(cls.http.server_port)
         cls.thread=threading.Thread(target=cls.http.serve_forever,daemon=True);cls.thread.start()
     @classmethod
     def tearDownClass(cls):
-        cls.http.shutdown();cls.http.server_close();server.DB=cls.oldDB;server.INDEX_DIR=cls.oldIndex;cls.tmp.cleanup()
+        cls.http.shutdown();cls.http.server_close();server.STORE=cls.oldStore
     def request(self,path,body=None,token=''):
         req=urllib.request.Request(self.url+path,data=json.dumps(body).encode() if body is not None else None,headers={'Content-Type':'application/json','Authorization':'Bearer '+token})
         with urllib.request.urlopen(req) as r:return json.load(r)
@@ -22,7 +21,7 @@ class IntegrationTests(unittest.TestCase):
         self.token=self.request('/api/create',{'title':'Prueba','player':'Ana'})['token']
     def state(self,token=None):return self.request('/api/state',token=token or self.token)
     def action(self,type,token=None,**data):
-        state=self.state(token); body={'id':server.secrets.token_hex(12),'version':state['version'],'type':type,**data}
+        state=self.state(token); body={'id':secrets.token_hex(12),'version':state['version'],'type':type,**data}
         self.request('/api/action',body,token or self.token);return body
     def test_shared_identity_and_permissions(self):
         guest=self.request('/api/join',{'name':'Luis','invite':self.state()['invite']})['token'];self.action('character',character={'name':'Aria'})
@@ -41,15 +40,15 @@ class IntegrationTests(unittest.TestCase):
     def test_persistent_recovery_and_export(self):
         self.action('character',character={'name':'Aria'});self.action('oracle',question='¿Hay luz?',uncertain=True,physical=[8,4,1])
         before=self.state();server.initialize();after=self.state();self.assertEqual(before['state'],after['state'])
-        exported=self.request('/api/export',{},self.token);self.action('scene',location='Ruinas');self.request('/api/import',{'campaign':exported},self.token);self.assertEqual(self.state()['state']['scene'],1)
+        exported=self.request('/api/export',{},self.token);self.action('scene',location='Ruinas');self.action('import',campaign=exported);self.assertEqual(self.state()['state']['scene'],1)
     def test_real_ai_unavailable_does_not_create_fake_reply(self):
-        old=server.os.environ.pop('OLLAMA_MODEL',None)
+        old=server.os.environ.pop('ANTHROPIC_API_KEY',None)
         try:
             before=self.state()
             with self.assertRaises(urllib.error.HTTPError):self.action('talk',text='Inicio',director=True)
             self.assertEqual(before['state'],self.state()['state'])
         finally:
-            if old:server.os.environ['OLLAMA_MODEL']=old
+            if old:server.os.environ['ANTHROPIC_API_KEY']=old
     def test_ai_adapter_contract_with_explicit_test_fixture(self):
         original=server.ai_reply
         try:
@@ -57,6 +56,11 @@ class IntegrationTests(unittest.TestCase):
             self.action('character',character={'name':'Aria'});self.action('talk',text='Busco a la posadera',director=True)
             self.assertEqual(self.state()['state']['messages'][-1]['kind'],'director')
         finally:server.ai_reply=original
+    def test_confirmed_ai_action_replay_does_not_call_provider_again(self):
+        with patch.object(server,'ai_reply',return_value={'narration':'Fixture; no es IA real','proposals':[]}) as provider:
+            body=self.action('talk',text='Exploro',director=True)
+            self.assertTrue(self.request('/api/action',body,self.token)['duplicate'])
+            self.assertEqual(provider.call_count,1)
     def test_reference_search_page(self):
         results=self.request('/api/search?q=diagonales&book=reglas',token=self.token)
         self.assertTrue(any(int(r['page'])==194 for r in results))

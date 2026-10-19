@@ -1,105 +1,55 @@
-# Alojar Crónicas en Render
+# Desplegar en Render con Firebase y Claude Haiku
 
-El repositorio incluye `render.yaml`, `requirements.txt`, `.python-version` y un servidor WSGI con **Waitress**. El servidor de desarrollo `python server.py` sigue disponible para uso local; Render ejecuta **`python serve.py`**, con un único proceso y 16 hilos para mantener coherente el bloqueo del motor.
+La arquitectura actual es **Render + Cloud Firestore + Firebase Storage + Claude Haiku**. Render no almacena bases de datos ni necesita un disco persistente para esta versión.
 
-## 1. Crear el servicio
+## Preparación en Firebase y Anthropic
 
-1. En [Render Dashboard](https://dashboard.render.com/), elige **New → Blueprint**.
-2. Conecta GitHub y selecciona **Jontalas/DM**, rama **main**.
-3. Render leerá el archivo `render.yaml`. Revisa el servicio `dm-cronicas`, la región Frankfurt, el plan `0.5c-512mb` y el disco de 1 GB antes de crear recursos.
-4. Confirma la creación en Render y espera al estado Live. Abre la URL HTTPS que te asigne la plataforma.
+Sigue [FIREBASE.md](FIREBASE.md) para crear Firestore y el bucket, aplicar las reglas/índices y preparar la cuenta de servicio. Crea una API key de Anthropic con crédito y acceso al modelo Haiku configurado. No pongas secretos en GitHub ni en el chat.
 
-**Esta configuración es de pago**: los discos persistentes no están disponibles en servicios web gratuitos. No se ha creado ningún servicio ni contratado ningún plan desde esta sesión. Puedes elegir otro plan compatible en Render. [Discos de Render](https://render.com/docs/disks), [referencia de Blueprint](https://render.com/docs/blueprint-spec).
+## Despliegue
 
-Render detecta su puerto mediante `PORT`; el arranque escucha en `0.0.0.0`. La comprobación de salud es `GET /healthz`: devuelve 200 si SQLite responde y 503 si la consulta falla. No necesita manuales ni IA para estar saludable. `/api/status` informa por separado del modelo configurado y las páginas indexadas; configurar un nombre de modelo no prueba que el proveedor responda.
+1. En [Render Dashboard](https://dashboard.render.com/) elige **New → Blueprint**.
+2. Conecta el repositorio **Jontalas/DM**, rama **main**. El archivo `render.yaml` configura el servicio `dm-cronicas`.
+3. Render pedirá los valores marcados `sync: false`: `FIREBASE_PROJECT_ID`, `FIREBASE_SERVICE_ACCOUNT_JSON`, `FIREBASE_STORAGE_BUCKET` y `ANTHROPIC_API_KEY`.
+4. Revisa el plan de cómputo `0.5c-512mb`, la región Frankfurt y una instancia. Esta configuración de Render es de pago; no se ha contratado ningún servicio desde esta sesión. Firebase/Storage y Anthropic tienen sus propios requisitos de facturación, explicados en [FIREBASE.md](FIREBASE.md).
+5. Crea el servicio y abre la URL HTTPS asignada cuando aparezca Live.
 
-La base se inicializa al **arrancar**, nunca en el build: el disco persistente solo está disponible durante la ejecución del servicio. [Disponibilidad del disco](https://render.com/docs/disks#disk-limitations-and-considerations).
-
-## 2. Configuración incluida
+También puedes configurar un Web Service manualmente con estos valores:
 
 | Opción | Valor |
 |---|---|
-| Runtime | Python 3.13, último parche de esa serie según `.python-version` |
-| Build command | `pip install -r requirements.txt` |
-| Start command | `python serve.py` |
-| Health check | `/healthz` |
-| Instancias | 1 |
-| Disco | `/var/data`, 1 GB |
-| `DATA_DIR` | `/var/data/cronicas` |
-| `INDEX_DIR` | `/var/data/cronicas/indexes` |
-| `BOOKS_DIR` | `/var/data/cronicas/books` |
-| `HOST` | `0.0.0.0` |
+| Runtime | Python 3.13, según `.python-version` |
+| Build | `pip install -r requirements.txt` |
+| Arranque | `python serve.py` |
+| Salud | `/healthz` |
+| Dirección | `0.0.0.0`; el puerto se toma de `PORT` |
+| Servidor | Waitress, un proceso y 16 hilos |
+| Disco persistente | No necesario |
+| Modelo | `ANTHROPIC_MODEL=claude-haiku-5-5` |
 
-Campañas y búsquedas se guardan en `/var/data/cronicas/campaigns.sqlite`; los archivos WAL/SHM quedan al lado, en el mismo disco. `DATABASE_PATH` permite cambiar la ruta de SQLite si se necesita; debe seguir dentro del disco persistente. No la cambies para una instalación normal.
+Las credenciales de Firebase también pueden entregarse como archivo secreto: configura `GOOGLE_APPLICATION_CREDENTIALS=/etc/secrets/firebase-service-account.json` y elimina `FIREBASE_SERVICE_ACCOUNT_JSON`. El SDK usa ese archivo mediante Application Default Credentials. El proyecto debe seguir en `FIREBASE_PROJECT_ID`.
 
-No elimines el disco ni cambies las rutas al actualizar. Los redeploys conservan sus archivos, pero tendrán una breve interrupción: Render no permite despliegues sin interrupción con este disco. No aumentes los procesos ni las instancias: el motor actual depende de un bloqueo compartido en memoria. [Limitaciones del disco](https://render.com/docs/disks#disk-limitations-and-considerations).
+Los secretos no se incluyen en las respuestas del servidor. Si Firebase falta o no responde, el servicio falla al iniciar o devuelve error; no crea una base local para aparentar persistencia. `/healthz` comprueba una lectura a Firestore y devuelve 503 si falla. No prueba la disponibilidad de Claude ni de los libros; `/api/status` muestra por separado el modelo configurado y las páginas indexadas.
 
-Para crear el servicio manualmente sin Blueprint, introduce las mismas opciones y añade el disco **antes de usarlo para partidas**. Arrancar en un sistema de archivos efímero permite ejecutar código, pero no garantiza conservar campañas tras un reinicio.
+## Manuales y campañas
 
-## 3. Instalar los tres manuales sin publicarlos en GitHub
+Carga los originales y sus índices desde tu ordenador con `python scripts/firebase_books.py`, siguiendo [FIREBASE.md](FIREBASE.md). No necesitas transferirlos a la máquina de Render, ni instalar OCR allí. Los documentos no están incluidos en el repositorio.
 
-Los PDF, sus textos extraídos y las partidas no forman parte del repositorio. Al primer despliegue la mesa arranca con **0 páginas indexadas**, hasta transferir los documentos.
+Las salas nuevas se guardan directamente en Firestore. Si tienes campañas SQLite anteriores, expórtalas con `scripts/export_sqlite_campaigns.py` e impórtalas desde el diario de una sala nueva. La aplicación no migra datos silenciosamente durante un despliegue.
 
-En el ordenador que contiene los originales y los índices de `data/`, ejecuta:
+Si ya habías creado el despliegue anterior con disco, conserva el disco y sus copias hasta verificar la migración. Este cambio no borra sus datos. Revisa el estado del recurso en Render antes de retirar el disco antiguo y dejar de pagarlo; el código nuevo no lo utiliza.
 
-```powershell
-python scripts/render_assets.py pack render-assets.zip
-```
+## Comprobación después de desplegar
 
-Este paquete privado contiene solo los tres originales y sus tres JSON. No incluye SQLite, invitaciones, credenciales ni dependencias. El ZIP está ignorado por Git. Si faltan índices, genéralos primero con `python extract_fast.py`; para preparar otro equipo instala las dependencias de extracción con `python -m pip install --target .deps -r requirements-extract.txt`. El script de extracción original busca los PDF con sus nombres actuales en el Escritorio.
+1. Abre `/healthz`: debe responder `{"status":"ok"}`.
+2. Abre `/api/status`: debe indicar Firebase, Haiku y las páginas importadas (577/329/102).
+3. Crea una campaña/personaje y envía una intervención con IA. Esta será una llamada real a Anthropic.
+4. Abre una invitación desde otro navegador y comprueba identidad y estado compartido.
+5. Reinicia el servicio en Render y verifica que la campaña sigue disponible: el estado vive en Firestore.
+6. Abre una referencia de un manual para comprobar permisos del bucket y transmisión del PDF.
 
-Transfiere el ZIP de forma privada al servicio. Una opción es **Magic Wormhole**, disponible en los runtimes nativos de Render: en tu ordenador instala `magic-wormhole` y ejecuta `wormhole send render-assets.zip`. En la pestaña **Shell** del servicio:
+Se mantiene una sola instancia para conservar el orden local de generación. Firestore valida las versiones y la deduplicación de forma transaccional. Escalar más instancias requeriría gestionar también los trabajos de IA entre procesos; no se presenta como una capacidad ya completa.
 
-```sh
-cd /var/data
-wormhole receive
-# Introduce el código de transferencia y acepta el archivo.
-cd /opt/render/project/src
-python scripts/render_assets.py install /var/data/render-assets.zip
-```
+La sincronización actual consulta el servidor cada 2,5 segundos y produce lecturas a Firebase, aunque una versión sin cambios evita descargar otra vez la instantánea. Configura seguimiento del consumo en tus cuentas. La arquitectura no elimina las limitaciones de reglas descritas en [README.md](README.md).
 
-También puedes usar SCP siguiendo las instrucciones específicas que muestra Render para tu servicio. [Transferir archivos al disco](https://render.com/docs/disks#transferring-files).
-
-Después reinicia el servicio desde Render. El arranque indexará los fragmentos en SQLite. Confirma en `/api/status` que aparecen **577, 329 y 102 páginas**, y prueba abrir los libros desde la mesa. El instalador verifica las rutas permitidas y el formato básico del paquete; no hace OCR ni valida semánticamente las tablas. Sustituir índices de otros libros/ediciones en una base ya indexada necesita una migración adicional, no es una operación soportada por este instalador.
-
-No subas el ZIP a un repositorio público. La transferencia e instalación de documentos debe hacerse en la Shell del servicio en ejecución, no durante el build.
-
-## 4. Configurar la IA
-
-El servicio de Render **no incluye Ollama ni un modelo**. Tampoco puede conectarse al `127.0.0.1` de tu ordenador. En **Environment**, añade:
-
-```text
-OLLAMA_URL=https://tu-servidor-ollama
-OLLAMA_MODEL=identificador-exacto-del-modelo-instalado
-OLLAMA_AUTH_TOKEN=token-del-proxy-si-lo-requiere
-```
-
-`OLLAMA_URL` es la dirección base, sin `/api/chat`. Se necesita un servidor remoto que exponga la API de Ollama por HTTPS, o un servicio accesible en la red privada de Render. El token opcional se envía como `Authorization: Bearer ...` y se mantiene en el servidor; no se incluye en el frontend, el repositorio ni el paquete de manuales.
-
-No expongas tu Ollama doméstico sin controlar el acceso. No se ha contratado ni desplegado infraestructura de IA automáticamente. El plan de la mesa está dimensionado para la aplicación, no para alojar un modelo grande. Reinicia después de cambiar las variables y prueba una intervención real; la disponibilidad y calidad del modelo todavía deben verificarse en ese entorno.
-
-Sin IA puedes preparar la campaña, consultar libros y usar el motor con «Responder con IA» desmarcado. La aplicación no inventa respuestas prefijadas para aparentar que hay un director conectado.
-
-## 5. Copias y traslado de campañas
-
-- Exporta cada campaña desde su diario para una copia funcional de sus datos.
-- Para copiar la base completa, incluida la información de reconexión, en la Shell ejecuta:
-
-```sh
-python scripts/backup_db.py /var/data/cronicas/backups/campaigns-copia.sqlite
-```
-
-Usa un nombre nuevo para cada copia. El script usa la API de backup de SQLite para incluir cambios confirmados que todavía estén en el WAL. Descarga una copia fuera de Render mediante transferencia privada; una copia que solo está en el mismo disco no protege frente a su eliminación. No copies únicamente `campaigns.sqlite` mientras la aplicación escribe.
-
-Puedes trasladar las campañas locales exportando/importando JSON con la interfaz. La importación reasigna personajes al anfitrión actual y descarta las notas privadas anteriores, como indica el README. Las sesiones del navegador son específicas del dominio: visitar la nueva URL no recupera por sí solo el token de localhost.
-
-## 6. Comprobaciones
-
-Se prueban el mismo motor y las mismas rutas JSON tanto bajo el servidor local como bajo Waitress: identidad, permisos, persistencia, deduplicación, origen HTTPS detrás del proxy, archivos estáticos, `HEAD`, salud y acceso autenticado a libros. También se comprueba el paquete de documentos con datos de prueba y la copia SQLite.
-
-```sh
-pip install -r requirements.txt
-python -m unittest test_engine test_server test_render -v
-```
-
-Las pruebas usan textos/PDF ficticios identificados como fixtures; no requieren distribuir los manuales en Git. No sustituyen una prueba real desplegada en Render ni una conversación con un modelo real. Tras publicar, comprueba salud, crea una campaña, invita desde otro navegador, reinicia y verifica que el estado se conserva. Las limitaciones de reglas y de IA enumeradas en [README.md](README.md) siguen vigentes.
+El código y el emulador están probados localmente. No se ha creado ni validado un despliegue real en tu cuenta de Render/Firebase/Anthropic durante esta sesión.

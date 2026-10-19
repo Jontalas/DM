@@ -1,19 +1,18 @@
 """Despliegue: mismo recorrido HTTP bajo Waitress y almacenamiento separado."""
 import json
 from pathlib import Path
-import sqlite3
 import tempfile
 import threading
 import unittest
 import urllib.error
 import urllib.request
 import zipfile
-from contextlib import closing
 from unittest.mock import patch
 import server
 import test_server
 from wsgi import application
-from scripts import render_assets, backup_db
+from scripts import render_assets
+from test_support import make_store
 
 
 class ProductionServerTests(test_server.IntegrationTests):
@@ -21,12 +20,10 @@ class ProductionServerTests(test_server.IntegrationTests):
     def setUpClass(cls):
         from waitress.server import create_server
         cls.tmp=tempfile.TemporaryDirectory()
-        cls.oldDB,cls.oldIndex,cls.oldBooks=server.DB,server.INDEX_DIR,server.BOOKS_DIR
-        server.DB=Path(cls.tmp.name)/'persistent'/'campaigns.sqlite'
-        server.INDEX_DIR=Path(cls.tmp.name)/'indexes'
+        cls.oldStore,cls.oldBooks=server.STORE,server.BOOKS_DIR
+        server.STORE=make_store()
         server.BOOKS_DIR=Path(cls.tmp.name)/'books'
         server.initialize()
-        with server.conn() as c:c.execute('INSERT INTO pages VALUES(?,?,?)',('reglas',194,'Texto de prueba: diagonales y movimiento.'))
         cls.socket_map={}
         cls.http=create_server(application,host='127.0.0.1',port=0,map=cls.socket_map,threads=4)
         cls.url='http://127.0.0.1:'+str(cls.http.effective_port)
@@ -38,7 +35,7 @@ class ProductionServerTests(test_server.IntegrationTests):
         cls.http.task_dispatcher.shutdown()
         wasyncore.close_all(cls.socket_map)
         cls.thread.join(timeout=3)
-        server.DB,server.INDEX_DIR,server.BOOKS_DIR=cls.oldDB,cls.oldIndex,cls.oldBooks
+        server.STORE,server.BOOKS_DIR=cls.oldStore,cls.oldBooks
         cls.tmp.cleanup()
 
     def test_static_health_and_head(self):
@@ -68,11 +65,9 @@ class ProductionServerTests(test_server.IntegrationTests):
         with urllib.request.urlopen(self.url+'/books/trey?token='+self.token) as response:
             self.assertEqual(response.read(),fake);self.assertIn('private',response.headers['Cache-Control'])
 
-    def test_backup_includes_confirmed_campaign(self):
-        destination=Path(self.tmp.name)/'backup.sqlite'
-        backup_db.backup(destination)
-        with closing(sqlite3.connect(destination)) as db:
-            self.assertTrue(db.execute('SELECT 1 FROM campaigns WHERE id=?',(self.state()['id'],)).fetchone())
+    def test_unchanged_state_skips_snapshot_download(self):
+        state=self.state()
+        self.assertEqual(self.request('/api/state?version='+str(state['version']),token=self.token),{'unchanged':True})
 
 
 class AssetTests(unittest.TestCase):

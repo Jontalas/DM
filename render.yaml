@@ -9,18 +9,18 @@ services:
     buildCommand: pip install -r requirements.txt
     startCommand: python serve.py
     healthCheckPath: /healthz
-    disk:
-      name: cronicas-data
-      mountPath: /var/data
-      sizeGB: 1
     envVars:
       - key: HOST
         value: 0.0.0.0
-      - key: DATA_DIR
-        value: /var/data/cronicas
-      - key: INDEX_DIR
-        value: /var/data/cronicas/indexes
-      - key: BOOKS_DIR
-        value: /var/data/cronicas/books
+      - key: FIREBASE_PROJECT_ID
+        sync: false
+      - key: FIREBASE_SERVICE_ACCOUNT_JSON
+        sync: false
+      - key: FIREBASE_STORAGE_BUCKET
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: ANTHROPIC_MODEL
+        value: claude-haiku-5-5
       - key: PYTHONUNBUFFERED
         value: "1"

@@ -1,35 +1,37 @@
 # Crónicas · mesa de rol en español
 
-Aplicación local cliente/servidor para Pathfinder **primera edición** y TREY. Esta entrega es una base funcional ampliable; **no completa todas las etapas solicitadas**. No contiene una aventura de respuestas prefijadas ni un director simulado.
+Aplicación cliente/servidor para Pathfinder **primera edición** y TREY, con **Cloud Firestore**, **Firebase Storage** y **Claude Haiku**. Esta entrega es una base funcional ampliable; **no completa todas las etapas solicitadas**. No contiene una aventura de respuestas prefijadas ni un director simulado.
 
 ## Alojar en Render
 
-Incluye un Blueprint [`render.yaml`](render.yaml), un servidor de producción Waitress y configuración de almacenamiento persistente. Sigue [RENDER.md](RENDER.md) para desplegar desde GitHub, instalar los manuales en el disco privado y conectar una IA remota. La configuración usa un servicio de pago con disco; no se ha desplegado automáticamente.
+Incluye un Blueprint [`render.yaml`](render.yaml) y un servidor de producción Waitress. Sigue [RENDER.md](RENDER.md) para desplegar desde GitHub y [FIREBASE.md](FIREBASE.md) para configurar bases, libros y Claude. Render no necesita disco persistente: los datos viven en Firebase. No se ha desplegado automáticamente.
 
 ## Iniciar
 
-Requiere Python 3.11 o posterior con SQLite FTS5 (comprobado en Python 3.14 de este equipo). El servidor no necesita paquetes adicionales.
+Requiere Python 3.11 o posterior, las dependencias de `requirements.txt` y Firebase configurado según [FIREBASE.md](FIREBASE.md). Render usa Python 3.13; las pruebas locales se ejecutaron con Python 3.14. Si faltan credenciales no se crea una base local como sustituto.
 
 ```powershell
 cd C:\Users\Jonta\OneDrive\Proyectos\DM
+python -m pip install -r requirements.txt
+# Configura las variables Firebase y Anthropic; consulta .env.example.
 python server.py
 ```
 
-Abre **http://127.0.0.1:8787**. También puedes ejecutar `start.ps1`. Los originales se leen del Escritorio, sin modificarlos. Usa `BOOKS_DIR` si los cambias de carpeta.
+Abre **http://127.0.0.1:8787**. También puedes ejecutar `start.ps1`. Los originales se sirven desde Firebase Storage; para desarrollo sin bucket se permite leerlos del Escritorio con `BOOKS_DIR`. Las bases y las búsquedas siempre utilizan Firestore.
 
 ## Director de IA real
 
-La IA que escribió esta aplicación no es el servicio de IA que dirige las partidas. No se detectó Ollama ni un modelo configurado en esta sesión. El recorrido conversacional con un modelo real **no ha podido verificarse**.
+La IA que escribió esta aplicación no es el servicio de IA que dirige las partidas. El director usa Claude Haiku mediante la API de Anthropic. El recorrido conversacional con credenciales reales **no ha podido verificarse**.
 
-Instala [Ollama](https://ollama.com/), descarga un modelo conversacional apropiado para tu equipo y mantenlo en ejecución. Consulta `ollama list` para copiar el identificador exacto de un modelo instalado. Antes de arrancar el servidor:
+Antes de arrancar el servidor, además de configurar Firebase:
 
 ```powershell
-$env:OLLAMA_MODEL = 'identificador-de-tu-modelo-instalado'
-$env:OLLAMA_URL = 'http://127.0.0.1:11434'
+$env:ANTHROPIC_API_KEY = 'tu-clave-privada'
+$env:ANTHROPIC_MODEL = 'claude-haiku-5-5'
 python server.py
 ```
 
-Integración real mediante [POST /api/chat](https://docs.ollama.com/api/chat), mensajes con contexto recuperado y salida JSON. No necesita clave para un Ollama local. La configuración reside en el servidor. No se instala ni descarga un modelo de varios GB sin conocer los recursos del equipo.
+Integración real mediante [Messages de Anthropic](https://platform.claude.com/docs/en/api/messages/create), contexto recuperado y salida JSON con esquema. La configuración reside en el servidor. Las llamadas requieren acceso, crédito y conexión a Anthropic. No se ha realizado ninguna inferencia facturable con una cuenta real en esta sesión.
 
 Si falta el modelo o falla el proveedor, el envío devuelve un error visible y no añade un turno falso. Puedes desmarcar «Responder con IA» para preparar personajes, conversar entre personas, tirar dados y usar los manuales. Eso es un modo de mesa asistida, no una partida dirigida por IA.
 
@@ -38,15 +40,15 @@ La respuesta narrativa puede proponer resoluciones pendientes, pero no modifica 
 ## Funciones disponibles
 
 - Campaña con tono, límites de contenido, objetivo y dificultad declarada; continuación mediante credencial guardada en el navegador.
-- SQLite en `data/campaigns.sqlite`: personajes, mensajes, escenas, diario, objetivos, PNJ, hechos, incógnitas, consecuencias, FH, tablero y registro de resoluciones. Persistencia en disco del servidor, no solo memoria o almacenamiento del navegador.
+- Cloud Firestore: personajes, mensajes, escenas, diario, objetivos, PNJ, hechos, incógnitas, consecuencias, FH, tablero y registro de resoluciones. Persistencia remota, independiente del sistema de archivos de Render. Los PDF originales se guardan en Firebase Storage.
 - Varios jugadores por invitación y varios personajes por jugador. El servidor verifica propietarios; el anfitrión puede adjudicar y controlar adversarios. En un dispositivo compartido, el anfitrión selecciona el PJ que habla. Los jugadores con credenciales independientes usan navegadores o perfiles distintos.
-- Estado compartido mediante consulta periódica cada 2,5 s. Versión optimista, exclusión mutua y transacción SQLite. Un identificador de acción ya confirmado no vuelve a tirar dados ni gastar recursos. Un estado antiguo produce un conflicto visible. Un envío interrumpido conserva el identificador para recuperarlo al recargar.
+- Estado compartido mediante consulta periódica cada 2,5 s y control de versión. Firestore confirma atómicamente el estado, la versión y el marcador de acción. Un identificador ya confirmado no vuelve a tirar dados, gastar recursos ni solicitar narración. Un envío interrumpido conserva el identificador para recuperarlo al recargar. Una respuesta sin cambios evita descargar otra vez el estado; las consultas siguen produciendo lecturas a Firebase.
 - Mensajes de acción, diálogo de PJ, fuera de personaje, notas privadas, narración de IA y reglas. Los secretos del anfitrión y las notas privadas se filtran en el servidor y no se envían a los demás jugadores ni al modelo.
 - Ficha manual guiada: características, raza/clase/nivel, PG, CA, salvaciones, habilidades, dotes, ataques, inventario/carga, conjuros, recursos y condiciones. Totales declarados; no se presenta como generador reglamentariamente validado.
 - Dados automáticos del servidor y físicos con validación de rango, modificadores declarados, origen y visibilidad. La tirada genérica no aplica consecuencias por sí sola.
 - TREY: d10/d8/d6, probabilidades, límites 1–10, resultados excepcionales, detalle, eventos por dobles/triples originales, nueva tirada de evento, tabla posterior al giro, FH 2/3, evento voluntario una vez por escena, punto de giro y detención de nuevas FH. Gasto según tabla p.34 abre adjudicación manual; no cambia silenciosamente Pathfinder.
 - Tablero 20×20, fichas de una casilla, zoom y desplazamiento por barras; recorrido previo, costes, muros, terreno difícil, iniciativa, rondas y turnos, movimiento limitado a la velocidad y una acción de movimiento automatizada. Resolución manual permite registrar costes estándar, movimiento, asalto completo, rápida o inmediata, PG, condiciones y recursos. Revisión de restricciones y excepciones sigue siendo humana.
-- Tres originales accesibles con visor PDF nativo, página, búsqueda FTS5, búsqueda de índice, marcadores y enlaces de referencias. En móviles sin visor PDF nativo puede ser necesario abrir/descargar el original con el navegador.
+- Tres originales accesibles tras instalarlos en Firebase: visor PDF nativo, páginas, búsqueda por términos normalizados en Firestore, búsqueda de índice, marcadores y enlaces de referencias. No es una búsqueda semántica ni una función nativa de texto completo. En móviles sin visor PDF nativo puede ser necesario abrir/descargar el original con el navegador.
 - Exportación e importación JSON del anfitrión. Una importación sustituye el estado actual; reasigna los personajes al anfitrión y descarta notas privadas anteriores para no transferirlas a participantes equivocados. No exporta credenciales ni invitaciones.
 
 ## Fuentes verificadas
@@ -86,7 +88,7 @@ Sites se consultó conforme a las instrucciones del entorno, pero las herramient
 
 ## Pendiente para cumplir el objetivo completo
 
-1. Configurar y probar el director real con un modelo instalado; verificar una escena de principio a fin y calidad de consultas de reglas. El protocolo está integrado, su comportamiento narrativo no está certificado.
+1. Configurar las credenciales reales de Firebase/Anthropic y probar una escena con Haiku de principio a fin. El protocolo y las transacciones están integrados y probados con emulador; el comportamiento narrativo del modelo real no está certificado.
 2. Completar validación de creación/progresión de personajes, CA de toque/desprevenido y desglose calculado de todos los modificadores; pregenerados verificados.
 3. Completar herramientas TREY de palabras/misiones/clima, interpretación y cierre estructurado de consecuencias; interfaz del generador PNJ (el motor ya admite la acción `npc`). Control semántico de hechos repetidos. Interpretaciones automáticas todavía no confirman hechos estructurados.
 4. Automatizar combate avanzado: ataques/críticos/daño, tamaño, alcance, AdO, cobertura, visibilidad, línea de efecto, áreas, duraciones, maniobras y capacidades; sorpresa/desprevenido; varios movimientos, pasos y excepciones. Actualmente se resuelven manualmente y se registran. No hay niebla de guerra ni tokens ocultos: no coloques secretos en el tablero público.
@@ -99,11 +101,11 @@ Sites se consultó conforme a las instrucciones del entorno, pero las herramient
 
 ```powershell
 python -m pip install -r requirements.txt
-python -m unittest test_engine test_server test_render -v
+python -m unittest test_engine test_server test_render test_firebase test_migration -v
 node --check static/app.js
 python -m py_compile server.py engine.py
 ```
 
 Las pruebas cubren oráculo, dados originales, FH y giro, eventos, permisos de personajes, movimiento, PG/recursos asistidos, mensajes privados, identidad de varios jugadores, búsqueda de página, persistencia, importación/exportación, conflictos de versión y deduplicación HTTP. El adaptador narrativo usa una **respuesta de prueba solo dentro del test**, no se vende como prueba de una IA real. Otra prueba comprueba que la ausencia de IA no produzca una narración ficticia.
 
-Para regenerar texto: en este equipo `.deps` contiene las dependencias de extracción instaladas en el espacio de trabajo. `python extract_fast.py` usa PyMuPDF. Los JSON extraídos existen localmente, pero no se incluyen en Git: en un clon nuevo debes generarlos o transferir el paquete privado explicado en [RENDER.md](RENDER.md). El servidor puede arrancar sin ellos y mostrará cero páginas indexadas. Mantén los manuales y la base de datos en almacenamiento privado.
+Para regenerar texto: `python extract_fast.py` usa PyMuPDF. Los JSON extraídos existen localmente, pero no se incluyen en Git: en un clon nuevo debes generarlos y cargarlos con `scripts/firebase_books.py`, según [FIREBASE.md](FIREBASE.md). El servidor puede arrancar con Firebase conectado y sin manuales: mostrará cero páginas indexadas. El límite operativo de campaña, las pruebas con emulador, el coste de consultas y la migración de SQLite están documentados en esa guía.

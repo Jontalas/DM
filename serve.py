@@ -5,9 +5,6 @@ from wsgi import application
 
 
 def main():
-    # A Render deploy must declare a data path; never silently use the checkout.
-    if os.environ.get('RENDER') and not os.environ.get('DATA_DIR'):
-        raise RuntimeError('En Render configura DATA_DIR dentro del disco persistente, por ejemplo /var/data/cronicas')
     server.initialize()
     from waitress import serve
     host=os.environ.get('HOST','0.0.0.0')

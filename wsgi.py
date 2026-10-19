@@ -66,7 +66,16 @@ def application(environ, start_response):
         except PermissionError as exc:
             return error(start_response,401,str(exc))
         if book not in server.BOOKS: return error(start_response,404,'Libro desconocido')
-        return file_response(environ,start_response,server.BOOKS_DIR/server.BOOKS[book],True)
+        try: stream,size=server.open_book(book)
+        except FileNotFoundError:return error(start_response,404,'Manual no instalado en Firebase Storage')
+        except Exception:return error(start_response,503,'Firebase Storage no está disponible; comprueba bucket y permisos')
+        start_response('200 OK',[('Content-Type','application/pdf'),('Content-Length',str(size)),('Cache-Control','private, no-store')])
+        if method=='HEAD':stream.close();return []
+        def blocks():
+            try:
+                while chunk:=stream.read(65536):yield chunk
+            finally:stream.close()
+        return blocks()
     static_root = (server.ROOT/'static').resolve()
     target = (static_root/('index.html' if path=='/' else path.lstrip('/'))).resolve()
     if not target.is_relative_to(static_root) or not target.is_file():

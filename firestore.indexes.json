@@ -1,0 +1,7 @@
+{
+  "indexes": [],
+  "fieldOverrides": [
+    {"collectionGroup": "snapshots", "fieldPath": "data", "indexes": []},
+    {"collectionGroup": "pages", "fieldPath": "text", "indexes": []}
+  ]
+}

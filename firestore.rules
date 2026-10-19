@@ -1,0 +1,7 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Acceso mediante el servidor con IAM. No hay acceso directo desde el navegador.
+    match /{document=**} { allow read, write: if false; }
+  }
+}

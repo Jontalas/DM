@@ -1,5 +1,5 @@
 $ErrorActionPreference = 'Stop'
 Set-Location -LiteralPath $PSScriptRoot
 Write-Host 'Crónicas: http://127.0.0.1:8787'
-Write-Host 'IA: configura OLLAMA_MODEL y ejecuta Ollama antes de iniciar.'
+Write-Host 'Configura Firebase y ANTHROPIC_API_KEY en las variables de entorno antes de iniciar.'
 python server.py
