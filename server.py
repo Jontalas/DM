@@ -7,7 +7,10 @@ from urllib.parse import urlparse, parse_qs
 from engine import apply_action, initial_state
 
 ROOT = Path(__file__).resolve().parent
-DB = ROOT / 'data/campaigns.sqlite'
+DATA_DIR = Path(os.environ.get('DATA_DIR', str(ROOT / 'data')))
+DB = Path(os.environ.get('DATABASE_PATH', str(DATA_DIR / 'campaigns.sqlite')))
+INDEX_DIR = Path(os.environ.get('INDEX_DIR', str(DATA_DIR)))
+BOOKS_DIR = Path(os.environ.get('BOOKS_DIR', str(Path.home() / 'Desktop')))
 LOCK = threading.RLock()
 BOOKS = {'trey': 'Trey.pdf', 'reglas': 'Pathfinder_en_escastellano_subido para_elgrimorio.pdf', 'bestiario': 'bestiario pathfinder spanish [Unlocked by www.freemypdf.com].pdf'}
 @contextmanager
@@ -17,7 +20,7 @@ def conn():
         with c: yield c
     finally: c.close()
 def initialize():
-    DB.parent.mkdir(exist_ok=True)
+    DB.parent.mkdir(parents=True, exist_ok=True)
     with conn() as c:
         c.executescript('''PRAGMA journal_mode=WAL;
         CREATE TABLE IF NOT EXISTS campaigns(id TEXT PRIMARY KEY, title TEXT, invite TEXT UNIQUE, state TEXT, version INTEGER DEFAULT 0);
@@ -25,7 +28,7 @@ def initialize():
         CREATE TABLE IF NOT EXISTS actions(campaign TEXT, id TEXT, result TEXT, PRIMARY KEY(campaign,id));
         CREATE VIRTUAL TABLE IF NOT EXISTS pages USING fts5(book UNINDEXED,page UNINDEXED,text,tokenize='unicode61 remove_diacritics 2');''')
         for book in BOOKS:
-            f = ROOT / f'data/{book}.json'
+            f = INDEX_DIR / f'{book}.json'
             if f.exists() and not c.execute('SELECT 1 FROM pages WHERE book=? LIMIT 1',(book,)).fetchone():
                 c.executemany('INSERT INTO pages VALUES(?,?,?)',[(book,p['page'],p['text']) for p in json.loads(f.read_text(encoding='utf-8'))])
 def search(query, book=None):
@@ -61,7 +64,9 @@ def ai_reply(state, text, refs, rules=False):
     history = [{'role':'assistant' if m['kind']=='director' else 'user','content':m['speaker']+': '+m['text']} for m in state['messages'][-30:] if m.get('visibility','public')=='public']
     context = json.dumps({'state':public,'sources':[{'book':r['book'],'pdf_page':r['page'],'text':r['text'][:6500]} for r in refs]},ensure_ascii=False)
     body = {'model':model,'stream':False,'format':'json','messages':[{'role':'system','content':system+'\n'+context}]+history+[{'role':'user','content':text}]}
-    req = urllib.request.Request(endpoint+'/api/chat',data=json.dumps(body).encode(),headers={'Content-Type':'application/json'})
+    headers = {'Content-Type':'application/json'}
+    if os.environ.get('OLLAMA_AUTH_TOKEN'): headers['Authorization'] = 'Bearer '+os.environ['OLLAMA_AUTH_TOKEN']
+    req = urllib.request.Request(endpoint+'/api/chat',data=json.dumps(body).encode(),headers=headers)
     try:
         with urllib.request.urlopen(req,timeout=180) as r: output=json.load(r)
         result=json.loads(output['message']['content'])
@@ -79,9 +84,16 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         try:
             u=urlparse(self.path); q=parse_qs(u.query)
+            if u.path=='/healthz':
+                try:
+                    with conn() as c: c.execute('SELECT 1 FROM campaigns LIMIT 1').fetchone()
+                    self.reply({'status':'ok'})
+                except sqlite3.Error:
+                    self.reply({'status':'unavailable'},503)
+                return
             if u.path=='/api/status':
                 with conn() as c: counts={b:c.execute('SELECT count(*) FROM pages WHERE book=?',(b,)).fetchone()[0] for b in BOOKS}
-                self.reply({'aiConfigured':bool(os.environ.get('OLLAMA_MODEL')),'model':os.environ.get('OLLAMA_MODEL',''),'books':counts,'storage':'SQLite en el servidor','hosting':'local; Internet requiere alojamiento y HTTPS'}); return
+                self.reply({'aiConfigured':bool(os.environ.get('OLLAMA_MODEL')),'model':os.environ.get('OLLAMA_MODEL',''),'books':counts,'storage':'SQLite en el servidor','hosting':'Render' if os.environ.get('RENDER') else 'local; Internet requiere alojamiento y HTTPS'}); return
             if u.path=='/api/state':
                 me=self.auth(); row,s=load(me['campaign']); self.reply(view(row,s,me)); return
             if u.path=='/api/search':
@@ -89,7 +101,8 @@ class Handler(BaseHTTPRequestHandler):
             if u.path.startswith('/books/'):
                 me=identity(q.get('token',[''])[0]); book=u.path.split('/')[-1]
                 if book not in BOOKS: raise ValueError('Libro desconocido')
-                f=Path(os.environ.get('BOOKS_DIR',str(Path.home()/'Desktop')))/BOOKS[book]
+                f=BOOKS_DIR/BOOKS[book]
+                if not f.is_file(): self.reply({'error':'Manual no instalado en este servidor'},404); return
                 self.send_response(200); self.send_header('Content-Type','application/pdf'); self.send_header('Cache-Control','private'); self.send_header('Content-Length',str(f.stat().st_size)); self.end_headers()
                 with f.open('rb') as stream:
                     while chunk:=stream.read(65536): self.wfile.write(chunk)

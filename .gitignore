@@ -5,3 +5,7 @@ __pycache__/
 data/*.json
 !data/extraction-report.json
 data/*.png
+render-assets*.zip
+.venv/
+.env.*
+!.env.example

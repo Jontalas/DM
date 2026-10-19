@@ -2,6 +2,10 @@
 
 Aplicación local cliente/servidor para Pathfinder **primera edición** y TREY. Esta entrega es una base funcional ampliable; **no completa todas las etapas solicitadas**. No contiene una aventura de respuestas prefijadas ni un director simulado.
 
+## Alojar en Render
+
+Incluye un Blueprint [`render.yaml`](render.yaml), un servidor de producción Waitress y configuración de almacenamiento persistente. Sigue [RENDER.md](RENDER.md) para desplegar desde GitHub, instalar los manuales en el disco privado y conectar una IA remota. La configuración usa un servicio de pago con disco; no se ha desplegado automáticamente.
+
 ## Iniciar
 
 Requiere Python 3.11 o posterior con SQLite FTS5 (comprobado en Python 3.14 de este equipo). El servidor no necesita paquetes adicionales.
@@ -76,7 +80,7 @@ python server.py
 
 Los demás acceden a `http://IP-DEL-SERVIDOR:8787` y utilizan la invitación. El acceso puede requerir configuración de firewall. No se ha abierto ningún puerto del router ni modificado el firewall.
 
-Para Internet faltan despliegue en un servidor persistente, HTTPS/proxy, gestión operativa de copias y controles de acceso adecuados a ese despliegue. `ThreadingHTTPServer` es el servidor de desarrollo, no la frontera pública de producción. No hay límite fijo de jugadores; el rendimiento depende del equipo, y actualmente las acciones se serializan en una única instancia. No se admite escalar a varios procesos de escritura con este bloqueo de memoria. El tablero tiene 400 casillas; no equivale a un límite recomendado de participantes.
+Para Internet se proporciona la configuración de Render y el servidor de producción `python serve.py`, con Waitress. El despliegue real, la conexión de IA, los manuales y la gestión de copias deben configurarse como explica [RENDER.md](RENDER.md). `ThreadingHTTPServer` sigue siendo el servidor de desarrollo de `python server.py`. No hay límite fijo de jugadores; el rendimiento depende del equipo, y actualmente las acciones se serializan en una única instancia. No se admite escalar a varios procesos de escritura con este bloqueo de memoria. El tablero tiene 400 casillas; no equivale a un límite recomendado de participantes.
 
 Sites se consultó conforme a las instrucciones del entorno, pero las herramientas nativas de creación/publicación no estaban disponibles. No se ha registrado ni publicado un Site ni se ha generado una URL de Internet ficticia.
 
@@ -94,11 +98,12 @@ Sites se consultó conforme a las instrucciones del entorno, pero las herramient
 ## Validación
 
 ```powershell
-python -m unittest test_engine test_server -v
+python -m pip install -r requirements.txt
+python -m unittest test_engine test_server test_render -v
 node --check static/app.js
 python -m py_compile server.py engine.py
 ```
 
 Las pruebas cubren oráculo, dados originales, FH y giro, eventos, permisos de personajes, movimiento, PG/recursos asistidos, mensajes privados, identidad de varios jugadores, búsqueda de página, persistencia, importación/exportación, conflictos de versión y deduplicación HTTP. El adaptador narrativo usa una **respuesta de prueba solo dentro del test**, no se vende como prueba de una IA real. Otra prueba comprueba que la ausencia de IA no produzca una narración ficticia.
 
-Para regenerar texto: `.deps` contiene las dependencias de extracción instaladas en el espacio de trabajo. `python extract_fast.py` usa PyMuPDF. El servidor ya dispone de los JSON extraídos y no necesita esas dependencias para ejecutarse. Mantén los manuales y la base de datos en almacenamiento privado.
+Para regenerar texto: en este equipo `.deps` contiene las dependencias de extracción instaladas en el espacio de trabajo. `python extract_fast.py` usa PyMuPDF. Los JSON extraídos existen localmente, pero no se incluyen en Git: en un clon nuevo debes generarlos o transferir el paquete privado explicado en [RENDER.md](RENDER.md). El servidor puede arrancar sin ellos y mostrará cero páginas indexadas. Mantén los manuales y la base de datos en almacenamiento privado.

@@ -6,12 +6,15 @@ import server
 class IntegrationTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.tmp=tempfile.TemporaryDirectory(); cls.oldDB=server.DB; server.DB=Path(cls.tmp.name)/'test.sqlite';server.initialize()
+        cls.tmp=tempfile.TemporaryDirectory(); cls.oldDB=server.DB; cls.oldIndex=server.INDEX_DIR
+        server.DB=Path(cls.tmp.name)/'test.sqlite'; server.INDEX_DIR=Path(cls.tmp.name)/'indexes';server.initialize()
+        # Authored fixture: tests page routing/search without distributing book text.
+        with server.conn() as c: c.execute('INSERT INTO pages VALUES(?,?,?)',('reglas',194,'Texto de prueba: diagonales y movimiento.'))
         cls.http=server.ThreadingHTTPServer(('127.0.0.1',0),server.Handler); cls.url='http://127.0.0.1:'+str(cls.http.server_port)
         cls.thread=threading.Thread(target=cls.http.serve_forever,daemon=True);cls.thread.start()
     @classmethod
     def tearDownClass(cls):
-        cls.http.shutdown();cls.http.server_close();server.DB=cls.oldDB;cls.tmp.cleanup()
+        cls.http.shutdown();cls.http.server_close();server.DB=cls.oldDB;server.INDEX_DIR=cls.oldIndex;cls.tmp.cleanup()
     def request(self,path,body=None,token=''):
         req=urllib.request.Request(self.url+path,data=json.dumps(body).encode() if body is not None else None,headers={'Content-Type':'application/json','Authorization':'Bearer '+token})
         with urllib.request.urlopen(req) as r:return json.load(r)

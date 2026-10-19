@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: dm-cronicas
+    runtime: python
+    plan: 0.5c-512mb
+    region: frankfurt
+    numInstances: 1
+    branch: main
+    buildCommand: pip install -r requirements.txt
+    startCommand: python serve.py
+    healthCheckPath: /healthz
+    disk:
+      name: cronicas-data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: HOST
+        value: 0.0.0.0
+      - key: DATA_DIR
+        value: /var/data/cronicas
+      - key: INDEX_DIR
+        value: /var/data/cronicas/indexes
+      - key: BOOKS_DIR
+        value: /var/data/cronicas/books
+      - key: PYTHONUNBUFFERED
+        value: "1"
