@@ -66,6 +66,39 @@ class IntegrationTests(unittest.TestCase):
         self.assertTrue(any(int(r['page'])==194 for r in results))
         self.assertIn('diagonal',next(r['text'] for r in results if int(r['page'])==194).lower())
 
+    def test_requested_check_is_atomic_replay_safe_and_owned(self):
+        guest=self.request('/api/join',{'name':'Luis','invite':self.state()['invite']})['token']
+        self.action('character',guest,character={'name':'Aria','saves':[5,2,1]})
+        cid=self.state()['state']['characters'][0]['id']
+        with patch.object(server,'ai_reply') as provider:
+            self.action('request_check',character=cid,checkKind='save',key='fort',dc=15,reason='Resistir')
+            request=self.state()['state']['pending'][0]['check']['id']
+            with patch('engine.dice',return_value=[10]) as rng:
+                body=self.action('check',guest,request=request)
+                self.assertTrue(self.request('/api/action',body,guest)['duplicate']);self.assertEqual(rng.call_count,1)
+            provider.assert_not_called()
+        state=self.state()['state'];self.assertEqual(state['pending'],[])
+        self.assertEqual(state['messages'][-1]['check']['total'],15)
+        self.assertTrue(state['messages'][-1]['check']['success'])
+        with self.assertRaises(urllib.error.HTTPError):self.action('check',guest,request=request)
+
+    def test_director_checks_validate_ownership_deduplicate_and_fallback(self):
+        guest=self.request('/api/join',{'name':'Luis','invite':self.state()['invite']})['token']
+        self.action('character',character={'name':'Anfitrión'})
+        self.action('character',guest,character={'name':'Aria'})
+        host_id,guest_id=[c['id'] for c in self.state()['state']['characters']]
+        suggestion={'character':guest_id,'kind':'ability','key':'str','dc':15,'reason':'CD adjudicada: abrir la puerta'}
+        result={'narration':'Fixture: intenta abrir la puerta; espera la tirada.','proposals':[],
+            'checks':[suggestion,{**suggestion,'character':host_id},{**suggestion,'kind':'skill','key':'No preparada'}]}
+        with patch.object(server,'ai_reply',return_value=result) as provider:
+            self.action('talk',guest,character=guest_id,text='Intento abrir la puerta',director=True)
+            self.assertEqual(provider.call_args.kwargs['check_actors'],[guest_id])
+            self.action('talk',guest,character=guest_id,text='Espero mi tirada',director=True)
+        pending=self.state()['state']['pending'];requests=[p for p in pending if p.get('check')]
+        self.assertEqual(len(requests),1);self.assertEqual(requests[0]['check']['character'],guest_id)
+        self.assertEqual(len([p for p in pending if not p.get('check')]),4)
+        self.assertIn('Claude',requests[0]['source'])
+
     def test_private_reader_pages_and_etag_require_auth_even_with_cached_page(self):
         from test_reader_support import fixture_reader
         reader=fixture_reader()

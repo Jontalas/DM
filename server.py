@@ -84,10 +84,19 @@ def execute_action(body,me):
             if body.get('kind')=='private':raise ValueError('Las notas privadas no se envían a Claude')
             # Validate speaker, ownership and content before making a billable call.
             apply_action(state,body,me)
-            refs=search(body['text']);result=ai_reply(state,body['text'],refs)
+            refs=search(body['text']);actors=[c['id'] for c in state['characters'] if me['host'] or c['owner']==me['id']]
+            result=ai_reply(state,body['text'],refs,check_actors=actors)
             state['messages'].append({'kind':'director','speaker':'Director · Claude Haiku','text':result['narration'],'refs':[{'book':r['book'],'page':r['page']} for r in refs],'time':time.time()})
             for proposal in result.get('proposals',[])[:5]:
                 state['pending'].append({'reason':str(proposal['reason'])[:1000],'source':'Propuesta de Claude Haiku; pendiente de validación humana'})
+            for proposal in result.get('checks',[])[:3]:
+                try:
+                    if proposal['character'] not in actors:raise ValueError('Personaje fuera de los permisos de esta intervención')
+                    if any(p.get('check') and all(p['check'].get(k)==proposal[k] for k in ('character','kind','key','dc')) for p in state['pending']):continue
+                    apply_action(state,{'type':'request_check','character':proposal['character'],'checkKind':proposal['kind'],'key':proposal['key'],'dc':proposal['dc'],'reason':proposal['reason']},{**me,'host':True})
+                    state['pending'][-1]['source']='Solicitud de Claude Haiku; CD propuesta por el director para esta situación'
+                except (ValueError,KeyError,TypeError):
+                    state['pending'].append({'reason':'Revisar prueba propuesta: '+str(proposal.get('reason','Prueba no válida'))[:500],'source':'El motor no pudo validar la solicitud de Claude; resolución asistida'})
         else:apply_action(state,body,me)
         # Firestore CAS + marker are atomic. A conflict never reruns RNG or the provider.
         duplicate=store.commit(cid,aid,me['id'],signature,row['version'],state,title)

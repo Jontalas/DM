@@ -129,6 +129,8 @@ Sites se consultó conforme a las instrucciones del entorno, pero las herramient
 
 ## Validación
 
+Las fichas incorporan tiradas con modificadores guardados y el director puede solicitar pruebas básicas al jugador. Alcance, permisos, coste y limitaciones en [PRUEBAS_PERSONAJE.md](PRUEBAS_PERSONAJE.md).
+
 ```powershell
 python -m pip install -r requirements.txt
 python -m unittest test_engine test_server test_render test_firebase test_migration -v

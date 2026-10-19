@@ -2,6 +2,7 @@
 import math, secrets, time, copy
 import combat
 import tactics
+import checks
 
 def initial_state(config):
     return {'scene':1,'location':config.get('location','Por decidir'),'worldTime':'Comienzo de la aventura','goal':config.get('goal','Definir el objetivo con el grupo'),'objectives':[], 'allies':[],'enemies':[],'facts':{},'unknowns':[],'consequences':[], 'tokens':0,'threshold':int(config.get('threshold',15)),'turned':False,'voluntaryScene':0,'characters':[],'messages':[],'pending':[],'bookmarks':[],'private':{},'secrets':'','notes':'','tone':config.get('tone','Fantasía aventurera'),'limits':config.get('limits',''),'difficulty':config.get('difficulty','Estándar; encuentros pendientes de validar'),'mode':config.get('mode','solo'),'agreement':'Adaptación multijugador: reserva común de FH; el anfitrión registra el consentimiento unánime antes del gasto. Decisiones colectivas por consenso. No se alteran estadísticas para equilibrar encuentros.','criteria':['TREY p.25: el ejemplo d8=7 dice objetivo en curso; la tabla p.23 indica objetivo final. Se usa la tabla.','TREY p.25: ejemplo d6=5 dice retrasado; se aplica demorado, tabla p.23.','Pathfinder 1e: las ventajas de FH son una adaptación TREY; requieren adjudicación manual y registro.'],'board':{'active':False,'round':1,'turn':0,'order':[],'terrain':{},'spent':{}},'oracleLog':[]}
@@ -121,6 +122,10 @@ def apply_action(s,b,me):
         if not me['host']: owner=me['id']
         data={'id':cid or secrets.token_hex(6),'name':str(d.get('name','Aventurero'))[:80],'owner':owner,'race':str(d.get('race','Humano')),'class':str(d.get('class','Sin clase')),'level':int(d.get('level',1)),'abilities':attrs,'hp':int(d.get('hp',hp)),'maxHp':hp,'ac':int(d.get('ac',10)),'saves':d.get('saves',[0,0,0]),'speed':speed,'initiative':int(d.get('initiative',(attrs[1]-10)//2)),'attack':int(d.get('attack',0)),'damage':str(d.get('damage','1d6')),'skills':d.get('skills',''),'feats':d.get('feats',''),'equipment':d.get('equipment',''),'spells':d.get('spells',''),'resources':d.get('resources',''),'conditions':d.get('conditions',''),'load':d.get('load',''),'notes':d.get('notes',''),'x':old['x'] if old else len(s['characters'])%12,'y':old['y'] if old else 0,'enemy':bool(d.get('enemy',False))}
         if data['enemy']: host(me)
+        saves=data['saves']
+        if not isinstance(saves,list) or len(saves)!=3:raise ValueError('Indica Fortaleza, Reflejos y Voluntad como tres totales')
+        for value in saves:checks.integer(value)
+        data['skillTotals']=checks.skill_totals(d.get('skillTotals',old.get('skillTotals',[]) if old else []))
         if d.get('meleeProfile') is not None:
             data['meleeProfile']=copy.deepcopy(d['meleeProfile']);combat.profile(data)
         if old: s['characters'][s['characters'].index(old)]=data
@@ -130,6 +135,35 @@ def apply_action(s,b,me):
             if free is None: raise ValueError('Tablero de 20×20 lleno; libera una casilla antes de incorporar otra ficha')
             data['x'],data['y']=free; s['characters'].append(data)
         log(s,'Ficha manual guardada: '+data['name']+'. Clase, dotes y modificadores requieren verificación; no es un pregenerado certificado.')
+    elif kind=='request_check':
+        host(me);c=char(s,b['character'],me)
+        checks.modifier(c,b['checkKind'],b['key']);dc=checks.integer(b.get('dc'),0,1000)
+        reason=str(b.get('reason','')).strip()
+        if not reason or len(reason)>500:raise ValueError('Describe el motivo de la prueba en hasta 500 caracteres')
+        if sum('check' in p for p in s['pending'])>=30:raise ValueError('Resuelve o cancela las pruebas pendientes antes de solicitar más')
+        s['pending'].append({'reason':reason,'source':'Prueba solicitada por el anfitrión',
+            'check':{'id':secrets.token_hex(12),'character':c['id'],'kind':b['checkKind'],'key':b['key'],'dc':dc}})
+        log(s,c['name']+': prueba solicitada. '+reason)
+    elif kind=='cancel_check':
+        host(me);pending=next((p for p in s['pending'] if p.get('check') and p['check']['id']==b.get('request')),None)
+        if pending is None:raise ValueError('Esta prueba ya no está pendiente')
+        s['pending'].remove(pending);log(s,'Prueba cancelada: '+pending['reason'])
+    elif kind=='check':
+        pending=None
+        if b.get('request'):
+            pending=next((p for p in s['pending'] if p.get('check',{}).get('id')==b['request']),None)
+            if pending is None:raise ValueError('Esta prueba ya fue resuelta o cancelada')
+            spec=pending['check'];c=char(s,spec['character'],me);dc=spec['dc']
+        else:
+            c=char(s,b['character'],me);spec={'kind':b['checkKind'],'key':b['key']};dc=None
+        checks.modifier(c,spec['kind'],spec['key'])  # Validate before generating any dice.
+        if b.get('physical') is not None:host(me)
+        raw=dice([20],b.get('physical'))[0];result=checks.resolve(c,spec['kind'],spec['key'],raw,dc)
+        if pending:s['pending'].remove(pending)
+        outcome='' if dc is None else f" contra CD {dc}: {'éxito' if result['success'] else 'fallo'}"
+        if result['natural']:outcome+=' ('+result['natural']+')'
+        reason=' · '+pending['reason'] if pending else ''
+        log(s,f"{c['name']} · {result['name']}: d20 {raw} {result['modifier']:+} = {result['total']}{outcome}{reason}. {result['basis']}. Origen: {'físico' if b.get('physical') is not None else 'servidor'}. No aplica efectos ni coste de acción por sí sola.",check=result,refs=[{'book':'reglas','page':182 if spec['kind']=='save' else 87 if spec['kind']=='skill' else 17}])
     elif kind=='roll':
         n=int(b.get('n',1)); sides=int(b.get('sides',20)); mod=int(b.get('modifier',0))
         if not 1<=n<=30 or sides not in [2,3,4,6,8,10,12,20,100] or abs(mod)>1000: raise ValueError('Tirada inválida')

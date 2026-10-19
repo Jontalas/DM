@@ -26,6 +26,11 @@ fieldset{border:1px solid var(--line);border-radius:6px;margin:16px 0;padding:16
 #bookPageImage{display:block;width:100%;max-width:none;height:auto;margin:0 auto}
 #bookLoadStatus{font-size:14px;color:var(--muted)}
 .reader-tools button{min-height:40px}
+.check-request{padding:14px;border:1px solid var(--gold);border-radius:6px;margin:10px 0;background:var(--panel)}
+.check-request p{margin:6px 0}
+.sheet-checks{border-bottom:1px solid var(--line);padding-bottom:14px;margin-bottom:20px}
+.sheet-checks .toolbar{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr))}
+.sheet-checks button{min-height:44px}
 body.reader-wide #composer{display:none}
 @media(max-width:1099px){body.reader-wide .sidebar{display:none}body.reader-wide #bookViewport{max-height:none}}
 @media(min-width:1100px){

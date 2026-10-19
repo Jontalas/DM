@@ -11,6 +11,8 @@ Objetivo obligatorio: máxima fidelidad viable a la mesa de Roll20 en comportami
 
 Revisión del 19 de octubre de 2026: se consultó documentación oficial de Roll20. Las pruebas automatizadas y capturas corresponden a nuestra aplicación local. **No se abrió ni instrumentó una partida interactiva de Roll20, no se inspeccionó su implementación interna y no se certifica equivalencia entre ambas aplicaciones.** Esta fase constituye reconstrucción funcional a partir de contratos documentados.
 
+Para la ampliación de botones de tirada de la hoja se consultó el extracto indexado de la Wiki de Roll20; el acceso directo a esa página devolvió 403. La equivalencia sigue limitada al contrato de pulsar un botón y publicar una tirada, sin afirmar una comparación interactiva directa.
+
 ## Fuentes de referencia
 
 - [Mesa y navegación](https://help.roll20.net/hc/en-us/articles/360039734913-Tabletop-Overview).
@@ -19,6 +21,7 @@ Revisión del 19 de octubre de 2026: se consultó documentación oficial de Roll
 - [Atajos avanzados](https://help.roll20.net/hc/pt/articles/360039178974-Atalhos-Avan%C3%A7ados).
 - [Herramientas heredadas y regla](https://help.roll20.net/hc/fr/articles/14953988339735-Barre-d-outils-h%C3%A9rit%C3%A9e). La documentación heredada no prueba el comportamiento de todas las variantes actuales.
 - [Recorridos y puntos intermedios en el modelo público de objetos](https://help.roll20.net/hc/en-us/articles/360037772793-Mod-Scripts-Objects).
+- [Tiradas desde la hoja y resultado en el chat](https://wiki.roll20.net/Roll_Dice).
 
 ## Matriz de interacción
 
@@ -30,6 +33,7 @@ Las filas probadas indican cobertura de **nuestra** implementación frente al co
 | NAV-02 | Control deslizante, rueda modificada y teclas de zoom | Alt/Ctrl/Meta + rueda, +/−, deslizador y reinicio por doble clic. Mantiene el punto bajo el cursor; rango actual 50–250 %, no todos los ajustes de referencia | Navegador: zoom, anclaje, reinicio y regla redibujada |
 | TOK-01 | Control por jugador asignado y control del maestro | Propietario único y anfitrión; sin asignación múltiple por ficha | Navegador: invitado mueve su personaje y no el adversario; servidor verifica permisos |
 | TOK-02 | Doble clic abre ajustes de la ficha | Doble clic abre nuestra hoja del personaje controlado. Es una adaptación; no reproduce todavía el diálogo de propiedades de token | Navegador: apertura y nombre correcto |
+| SHEET-01 | Botones de tirada de la hoja publican el resultado en el chat | Características, salvaciones y habilidades preparadas con modificadores guardados. Solicitudes del director con CD y resolución por propietario. Sin macros ni hojas de clase completas | Python/HTTP: permisos, cálculo y deduplicación; navegador: dos sesiones y móvil |
 | MOV-01 | Movimiento de fichas con recorrido y puntos intermedios | Arrastre prepara ruta ajustada a casillas; Espacio fija puntos y Esc cancela. **Soltar no guarda**: se conserva la confirmación existente para revisar excepciones de reglas | Navegador: ruta, puntos, cancelación, un solo guardado confirmado |
 | RUL-01 | Medición mediante arrastre | Regla local entre centros de casilla, con línea y distancia Pathfinder 5/10 pies; también conserva medición por dos pulsaciones. Sin difusión a otros jugadores ni variantes sin ajuste/corner | Navegador: línea, distancia, zoom y cero cambios de versión |
 | KEY-01 | Atajos avanzados de selección y mano | Subconjunto S y A activo por defecto; no se activa al escribir o con un diálogo abierto. La preferencia opcional de referencia sigue pendiente | Navegador: cambio de herramienta y escritura intacta |
