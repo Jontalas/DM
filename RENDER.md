@@ -46,7 +46,7 @@ Si ya habías creado el despliegue anterior con disco, conserva el disco y sus c
 3. Crea una campaña/personaje y envía una intervención con IA. Esta será una llamada real a Anthropic.
 4. Abre una invitación desde otro navegador y comprueba identidad y estado compartido.
 5. Reinicia el servicio en Render y verifica que la campaña sigue disponible: el estado vive en Firestore.
-6. Abre una referencia de un manual para comprobar permisos del bucket y transmisión del PDF.
+6. Abre una referencia de un manual para comprobar permisos del bucket y carga de una página individual. Prepara antes las páginas privadas siguiendo [LECTOR.md](LECTOR.md); el visor no descarga el PDF completo.
 
 Se mantiene una sola instancia para conservar el orden local de generación. Firestore valida las versiones y la deduplicación de forma transaccional. Escalar más instancias requeriría gestionar también los trabajos de IA entre procesos; no se presenta como una capacidad ya completa.
 

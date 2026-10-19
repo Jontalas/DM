@@ -57,6 +57,8 @@ class FirestoreStore:
         self.client=client;self.credentials=credentials
         self._health_until=0
         self._health_lock=threading.Lock()
+        self._reader=None
+        self._reader_lock=threading.Lock()
         self.prefix=os.environ.get('FIREBASE_COLLECTION_PREFIX','cronicas')
         if not re.fullmatch(r'[A-Za-z0-9_-]{1,60}',self.prefix): raise ValueError('Prefijo Firebase inválido')
 
@@ -230,3 +232,18 @@ class FirestoreStore:
         if not bucket:raise ValueError('Configura FIREBASE_STORAGE_BUCKET')
         client=storage.Client(project=self.client.project,credentials=self.credentials)
         client.bucket(bucket).blob(f'manuals/{book}/original.pdf').upload_from_filename(str(path),content_type='application/pdf')
+
+    def reader_assets(self):
+        from book_pages import ReaderAssets
+        from google.cloud import storage
+        from google.api_core.exceptions import NotFound
+        with self._reader_lock:
+            if self._reader is None:
+                name=os.environ.get('FIREBASE_STORAGE_BUCKET')
+                if not name:raise FileNotFoundError('Lector por páginas sin configurar')
+                bucket=storage.Client(project=self.client.project,credentials=self.credentials).bucket(name)
+                def download(path):
+                    try:return bucket.blob(path).download_as_bytes(timeout=30)
+                    except NotFound as exc:raise FileNotFoundError('Manual pendiente de preparación para lectura por páginas') from exc
+                self._reader=ReaderAssets(download)
+            return self._reader

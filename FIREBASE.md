@@ -66,7 +66,7 @@ python extract_fast.py
 
 El script valida los archivos locales, sube cada PDF privado a `manuals/CLAVE/original.pdf` y escribe las páginas/términos en Firestore. El índice se activa solo después de escribir todas sus páginas. Puedes seleccionar `--book trey`, `--book reglas` o `--book bestiario`; sin selección carga los tres. Comprueba después en `/api/status` **577 páginas de reglas, 329 de bestiario y 102 de TREY**.
 
-Los libros se sirven a través del backend tras validar la sesión; no se crean enlaces públicos permanentes. En desarrollo se permite leer originales del Escritorio si no has configurado un bucket; las campañas y las búsquedas siguen requiriendo Firestore. En Render los PDF se leen siempre de Firebase Storage.
+Los libros se sirven a través del backend tras validar la sesión; no se crean enlaces públicos permanentes. En desarrollo se permite leer originales del Escritorio si no has configurado un bucket; las campañas y las búsquedas siguen requiriendo Firestore. En Render los originales se leen siempre de Firebase Storage. El visor habitual utiliza páginas WebP privadas: hay que prepararlas una sola vez con `python scripts/prepare_book_pages.py --books-dir "$env:USERPROFILE\Desktop" --upload`, tras instalar `requirements-extract.txt`. Consulta [LECTOR.md](LECTOR.md) para cachés, actualización y costes. No es necesario volver a indexar el texto.
 
 Los PDF y sus JSON no se suben a GitHub. `scripts/render_assets.py` se conserva como herramienta opcional de empaquetado/transporte privado de archivos locales; no instala nada en la base de datos. Para publicar los documentos se usa `scripts/firebase_books.py`.
 

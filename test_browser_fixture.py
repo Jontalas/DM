@@ -11,6 +11,8 @@ def main():
     os.environ.pop('ANTHROPIC_API_KEY',None)
     os.environ.pop('FIREBASE_STORAGE_BUCKET',None)
     server.STORE=TestStore()
+    from test_reader_support import fixture_reader
+    server.READER=fixture_reader()
     # Predictable dice only inside this explicitly isolated test process.
     engine.secrets.randbelow=lambda sides:min(11,sides-1)
     http=create_server(application,host='127.0.0.1',port=0,threads=4)

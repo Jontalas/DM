@@ -52,7 +52,7 @@ def application(environ, start_response):
     path = environ.get('PATH_INFO','/')
     if method not in {'GET','HEAD','POST'}:
         return error(start_response,405,'Método no permitido')
-    if path.startswith('/api/') or path=='/healthz':
+    if path.startswith('/api/') or path=='/healthz' or path.startswith('/book-pages/'):
         request = ApiRequest(environ)
         if method=='POST': request.do_POST()
         else: request.do_GET()

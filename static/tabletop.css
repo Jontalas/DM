@@ -22,6 +22,19 @@ fieldset{border:1px solid var(--line);border-radius:6px;margin:16px 0;padding:16
 .dragging-token,.dragging-token .cell{cursor:grabbing}
 .ruler-overlay{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
 .ruler-overlay line{stroke:#ffe0a0;stroke-width:3;stroke-dasharray:8 4;filter:drop-shadow(0 1px 2px #000)}
+#bookViewport{width:100%;min-height:250px;max-height:70vh;overflow:auto;background:#2c302e;border:1px solid var(--line);overscroll-behavior:contain}
+#bookPageImage{display:block;width:100%;max-width:none;height:auto;margin:0 auto}
+#bookLoadStatus{font-size:14px;color:var(--muted)}
+.reader-tools button{min-height:40px}
+body.reader-wide #composer{display:none}
+@media(max-width:1099px){body.reader-wide .sidebar{display:none}body.reader-wide #bookViewport{max-height:none}}
+@media(min-width:1100px){
+ body.reader-wide main{grid-template-columns:minmax(0,1fr);grid-template-rows:52px minmax(0,1fr)}
+ body.reader-wide main>#board,body.reader-wide #composer{display:none}
+ body.reader-wide main>.tabs,body.reader-wide main>#books{grid-column:1}
+ body.reader-wide #bookViewport{max-height:none;overflow:auto}
+ body.reader-wide #books{overflow:auto}
+}
 @media(min-width:1100px){
  header{height:64px;padding:0 20px}
  .workspace{grid-template-columns:180px minmax(0,1fr);height:calc(100dvh - 64px)}

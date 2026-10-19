@@ -17,6 +17,7 @@ DATA_DIR=Path(os.environ.get('DATA_DIR',str(ROOT/'data')))
 INDEX_DIR=Path(os.environ.get('INDEX_DIR',str(DATA_DIR)))
 BOOKS_DIR=Path(os.environ.get('BOOKS_DIR',str(Path.home()/'Desktop')))
 STORE=None
+READER=None  # Explicit test injection only; production obtains private assets from Storage.
 LOCK=threading.RLock()
 
 
@@ -30,6 +31,10 @@ def initialize():
 def repository():
     if STORE is None:raise Unavailable('Firebase sin inicializar. Configura proyecto y credenciales en el servidor')
     return STORE
+
+
+def reader_assets():
+    return READER if READER is not None else repository().reader_assets()
 
 
 def search(query,book=None):return repository().search(query,book)
@@ -104,6 +109,25 @@ class Handler(BaseHTTPRequestHandler):
                 return
             if url.path=='/api/status':
                 self.reply({'aiConfigured':bool(os.environ.get('ANTHROPIC_API_KEY')),'provider':'Anthropic','model':model_name(),'books':repository().counts(),'storage':'Firebase · Cloud Firestore','hosting':'Render' if os.environ.get('RENDER') else 'local con Firebase remoto'});return
+            if url.path=='/api/book-info':
+                self.auth()
+                try:self.reply(reader_assets().describe(query.get('book',[''])[0]))
+                except FileNotFoundError:self.reply({'error':'El manual todavía no está preparado para lectura por páginas'},404)
+                return
+            if url.path.startswith('/book-pages/'):
+                self.auth()  # Authorize before ALL cache hits and conditional responses.
+                import re
+                match=re.fullmatch(r'/book-pages/(trey|reglas|bestiario)/([a-f0-9]{32})/([1-9][0-9]{0,3})\.(jpg|webp)',url.path)
+                if not match:raise ValueError('Página inválida')
+                try:raw,etag,mime=reader_assets().image(match[1],match[2],int(match[3]),match[4])
+                except FileNotFoundError:self.reply({'error':'Página no disponible; vuelve a abrir el manual'},404);return
+                unchanged=self.headers.get('If-None-Match')==etag
+                self.send_response(304 if unchanged else 200)
+                for name,value in [('Content-Type',mime),('Cache-Control','private, max-age=31536000, immutable'),('Vary','Authorization'),('ETag',etag),('X-Content-Type-Options','nosniff')]:self.send_header(name,value)
+                if not unchanged:self.send_header('Content-Length',str(len(raw)))
+                self.end_headers()
+                if not unchanged:self.wfile.write(raw)
+                return
             if url.path=='/api/state':
                 me=self.auth();row=repository().metadata(me['campaign'])
                 if query.get('version',[''])[0]==str(row['version']):self.reply({'unchanged':True});return

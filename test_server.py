@@ -65,6 +65,26 @@ class IntegrationTests(unittest.TestCase):
         results=self.request('/api/search?q=diagonales&book=reglas',token=self.token)
         self.assertTrue(any(int(r['page'])==194 for r in results))
         self.assertIn('diagonal',next(r['text'] for r in results if int(r['page'])==194).lower())
+
+    def test_private_reader_pages_and_etag_require_auth_even_with_cached_page(self):
+        from test_reader_support import fixture_reader
+        reader=fixture_reader()
+        with patch.object(server,'READER',reader),patch.object(server,'open_book') as original:
+            info=self.request('/api/book-info?book=reglas',token=self.token)
+            path='/book-pages/reglas/'+info['revision']+'/1.jpg'
+            req=urllib.request.Request(self.url+path,headers={'Authorization':'Bearer '+self.token})
+            with urllib.request.urlopen(req) as response:
+                body=response.read();etag=response.headers['ETag']
+                self.assertTrue(body.startswith(b'\xff\xd8'));self.assertEqual(response.headers['Content-Type'],'image/jpeg')
+                self.assertIn('private',response.headers['Cache-Control'])
+            req.add_header('If-None-Match',etag)
+            with self.assertRaises(urllib.error.HTTPError) as error:urllib.request.urlopen(req)
+            self.assertEqual(error.exception.code,304);error.exception.close()
+            with self.assertRaises(urllib.error.HTTPError) as error:urllib.request.urlopen(self.url+path)
+            self.assertEqual(error.exception.code,401);error.exception.close()
+            with self.assertRaises(urllib.error.HTTPError) as error:self.request('/api/book-info?book=reglas')
+            self.assertEqual(error.exception.code,401);error.exception.close()
+            original.assert_not_called()
     def test_combat_state_shared_after_assisted_damage(self):
         guest=self.request('/api/join',{'name':'Luis','invite':self.state()['invite']})['token']
         self.action('character',character={'name':'Aria'});cid=self.state()['state']['characters'][0]['id']
