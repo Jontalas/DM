@@ -2,6 +2,14 @@
 
 Aplicación cliente/servidor para Pathfinder **primera edición** y TREY, con **Cloud Firestore**, **Firebase Storage** y **Claude Haiku**. Esta entrega es una base funcional ampliable; **no completa todas las etapas solicitadas**. No contiene una aventura de respuestas prefijadas ni un director simulado.
 
+## Premisa básica: mínimo coste de uso
+
+**El uso de IA, base de datos y almacenamiento remoto debe ser el mínimo imprescindible en todo momento para ahorrar la mayor cantidad posible de dinero pagado por el uso de la aplicación.** Toda función y decisión técnica debe seguir esta premisa.
+
+Priorizar código determinista frente a IA, contexto y respuestas acotados, reutilización segura de resultados, caché y sincronización que evite operaciones sin cambios. Reducir lecturas, escrituras, indexaciones y transferencias; elegir la opción viable de menor coste total sin comprometer seguridad, persistencia ni coherencia de la partida. Las instrucciones permanentes de desarrollo están en [AGENTS.md](AGENTS.md).
+
+Esta es una regla de diseño y desarrollo, no una afirmación de que el consumo actual ya sea mínimo. Por ejemplo, la consulta periódica cada 2,5 segundos todavía genera lecturas de Firestore y debe revisarse conforme a esta premisa.
+
 ## Alojar en Render
 
 Incluye un Blueprint [`render.yaml`](render.yaml) y un servidor de producción Waitress. Sigue [RENDER.md](RENDER.md) para desplegar desde GitHub y [FIREBASE.md](FIREBASE.md) para configurar bases, libros y Claude. Render no necesita disco persistente: los datos viven en Firebase. No se ha desplegado automáticamente.
