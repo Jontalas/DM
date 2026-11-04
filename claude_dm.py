@@ -9,8 +9,8 @@ from narrative_text import normalize_response, repair_text
 import adventure_modules
 import adventure_routes
 from director_prompt import system_prompt
+from model_config import model_name,DEFAULT_MODEL
 
-DEFAULT_MODEL='claude-haiku-5-5'
 SCHEMA={'type':'object','properties':{'narration':{'type':'string'},'proposals':{'type':'array','items':{'type':'object','properties':{'type':{'type':'string','enum':['manual']},'reason':{'type':'string'}},'required':['type','reason'],'additionalProperties':False}}},'required':['narration','proposals'],'additionalProperties':False}
 SCHEMA['properties']['checks']={'type':'array','items':{'type':'object','properties':{
     'character':{'type':'string'},'kind':{'type':'string','enum':['ability','save','skill']},
@@ -22,12 +22,6 @@ SCHEMA['properties']['generatedAdventure']=adventure_modules.GENERATED_SCHEMA
 SCHEMA['properties']['investigation']={'type':'object','properties':{
     'requested':{'type':'boolean'},'character':{'type':'string'},'opportunity':{'type':'string'}},
     'required':['requested','character','opportunity'],'additionalProperties':False}
-def model_name():
-    name=os.environ.get('ANTHROPIC_MODEL',DEFAULT_MODEL)
-    if not name.startswith('claude-haiku-'):raise ValueError('ANTHROPIC_MODEL debe ser un modelo Claude Haiku')
-    return name
-
-
 def response_schema(state,rules=False,starting=False):
     """The provider cannot propose player actions in an opening or rules lookup."""
     schema=copy.deepcopy(SCHEMA)

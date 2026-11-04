@@ -7,7 +7,8 @@ import rulesets
 import server
 import test_server
 import test_render
-from systems import cairn_creator,cairn_adventure
+from systems import cairn_creator,cairn_adventure,cairn_director
+from test_cairn_director import reply as narrative_reply
 
 DESCRIPTOR={'id':'cairn-1e','name':'Cairn 1e (test only)','status':'experimental'}
 
@@ -93,6 +94,40 @@ class CairnServerTests(unittest.TestCase):
                 self.action('choose_route',route='sendero')
         self.assertTrue(self.state()['state']['adventureView']['completed'])
         self.assertNotIn('adventure',self.state()['state'])
+
+    def test_native_narration_is_atomic_private_replay_safe_and_cannot_apply_arbitrary_stats(self):
+        self.confirmed_character();character=self.state()['state']['characters'][0]
+        self.action('start_cairn_adventure',character=character['id'])
+        private=narrative_reply(memory={'summary':'Lúa responde al saludo declarado.','preparation':'PRIVATE-NATIVE-MEMORY'})
+        with patch.object(cairn_director,'ai_reply',return_value=private) as provider:
+            body=self.action('talk',character=character['id'],kind='dialogue',text='Hola, Lúa.')
+            self.assertTrue(self.request('/api/action',body,self.token)['duplicate']);self.assertEqual(provider.call_count,1)
+        state=self.state();self.assertEqual(state['state']['narrativeView']['revision'],1)
+        self.assertNotIn('PRIVATE-NATIVE-MEMORY',str(state))
+        exported=self.request('/api/export',{},self.token);self.assertEqual(exported['state']['narrative']['preparation'],'PRIVATE-NATIVE-MEMORY')
+        self.action('import',campaign=exported)
+        self.assertEqual(self.state()['state']['narrativeView'],state['state']['narrativeView'])
+        before=self.state()
+        with patch.object(cairn_director,'ai_reply',return_value=narrative_reply(abilities={'DEX':18})):
+            with self.assertRaises(urllib.error.HTTPError) as error:self.action('talk',character=character['id'],text='Hola otra vez')
+            error.exception.close()
+        self.assertEqual(self.state(),before)
+
+    def test_native_intent_queues_save_then_continuation_uses_the_actual_result_once(self):
+        self.confirmed_character();character=self.state()['state']['characters'][0]
+        self.action('start_cairn_adventure',character=character['id'])
+        intent=narrative_reply(intent={'type':'choose_route','route':'pasarela'})
+        with patch.object(cairn_director,'ai_reply',return_value=intent):
+            self.action('talk',character=character['id'],kind='action',text='Cruzo por la pasarela húmeda')
+        pending=self.state()['state']['adventureView']['pending'];self.assertIsNotNone(pending)
+        with patch.object(cairn_adventure.secrets,'randbelow',return_value=0):self.action('resolve_save',request=pending['id'],physical=20)
+        with patch.object(cairn_director,'ai_reply',return_value=narrative_reply()) as provider:
+            body=self.action('continue_cairn_adventure')
+            self.assertEqual(provider.call_args.args[1]['abilities']['DEX'],2)
+            self.assertTrue(self.request('/api/action',body,self.token)['duplicate'])
+            with self.assertRaises(urllib.error.HTTPError) as error:self.action('continue_cairn_adventure')
+            error.exception.close();self.assertEqual(provider.call_count,1)
+        self.assertEqual(self.state()['state']['characters'][0]['abilities']['DEX'],2)
 
     def test_export_import_validates_characters_and_reassigns_them_without_recalculation(self):
         self.confirmed_character();exported=self.request('/api/export',{},self.token)

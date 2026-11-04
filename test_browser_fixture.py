@@ -14,6 +14,17 @@ def main():
     if os.environ.get('TEST_CAIRN_FIXTURE')=='1':
         import rulesets
         rulesets.SYSTEMS['cairn-1e']={'id':'cairn-1e','name':'Cairn 1e (test only)','status':'experimental'}
+        from systems import cairn_director,cairn_adventure
+        def cairn_fixture_reply(state,actor,text,kind='dialogue',operation='talk'):
+            view=cairn_adventure.public_view(state);intent={'type':'none','route':''}
+            if kind=='action' and operation=='talk':
+                for route in ('pasarela','sendero'):
+                    if route in text.casefold():intent={'type':'choose_route','route':route}
+            return {'narration':'Lúa conversa sin elegir por tu personaje. DEX confirmada: '+str(actor['abilities']['DEX'])+'.',
+                'memory':{'summary':'La escena conserva sus resultados. DEX actual: '+str(actor['abilities']['DEX'])+'. Objetivo completado: '+str(view['completed'])+'.',
+                    'preparation':'Continuidad privada de la prueba; los resultados pertenecen al motor.'},
+                'intent':intent,'limitation':''}
+        cairn_director.ai_reply=cairn_fixture_reply
     # Explicit isolated fixture only; never available in the production startup path.
     if os.environ.get('TEST_ADVENTURE_FIXTURE')=='1':
         from test_adventure import reply,memory

@@ -35,6 +35,8 @@ Métodos al reanudar: regression-testing permitió comprobar la base completa un
 
 ## Siguientes bloques
 
+**Aclaración actual del usuario: importar reglas sin modificar código por sistema.** Se actualizó PRODUCTO.md: el objetivo es manuales → extracción asistida → paquete declarativo validado → motor común. La ampliación de adaptadores Python específicos no satisface por sí sola ese requisito. Reorientar el siguiente bloque hacia ese motor y formato de paquetes, reutilizando las fuentes, catálogos, validaciones y pruebas ya obtenidos con Pathfinder/Cairn. No habilitar el prototipo Cairn como si completara la arquitectura final. La narración Cairn en curso queda como trabajo experimental reutilizable, sin desplegar. Últimas pruebas locales de ese trabajo: 27 casos correctos con emulador; no se ha hecho inferencia real. El objetivo autónomo sigue activo con esta precisión; no hay bloqueo del usuario.
+
 4. Texto breve y rutas aportadas están desplegados en su alcance descrito; quedan PDF/Word, adaptación fiel, grupo, escenas con peligros y evaluación narrativa real de estos nuevos recorridos.
 5. Continuar el adaptador aislado de Cairn: creador completo con equipo e inventario verificados, persistencia y recorrido propio antes de registrarlo. Revisar visualmente las tablas originales al incorporarlas. Después ampliar presentación audiovisual coherente.
 

@@ -1,6 +1,7 @@
 /* System workspace within the existing shell; all editing of loaded rolls is local. */
 window.CairnUI=(()=>{
  let resourcesPromise;
+ const talkDrafts=new Map();
  const labels={tools:'Herramientas',trinkets:'Objetos personales',armor:'Armadura',weapons:'Armas'};
  const option=(value,text,selected)=>`<option value="${esc(value)}" ${String(value)===String(selected)?'selected':''}>${esc(text)}</option>`;
  async function resources(){
@@ -48,6 +49,40 @@ window.CairnUI=(()=>{
    $('#cairnSave').onsubmit=run(e=>{const value=e.target.elements.physical.value.trim();return act('resolve_save',{request:view.pending.id,...(value?{physical:Number(value)}:{})})});
   }
   if($('#cairnRest'))$('#cairnRest').onclick=run(()=>act('rest_and_recover'));
+  renderConversation(c,view);
+ }
+ function renderConversation(character,view){
+  const key='cairn-talk:'+snapshot.id+':'+snapshot.me.id+':'+character.id;
+  if(!talkDrafts.has(key)){
+   let saved;try{saved=JSON.parse(localStorage.getItem(key)||'null')}catch{}
+   talkDrafts.set(key,saved&&typeof saved.text==='string'&&saved.text.length<=2000?{
+    text:saved.text,kind:['action','dialogue','ooc'].includes(saved.kind)?saved.kind:'dialogue',director:!!saved.director
+   }:{text:'',kind:'dialogue',director:!!model.aiConfigured});
+  }
+  const saved=talkDrafts.get(key),owned=character.owner===snapshot.me.id;
+  $('#cairnScene').insertAdjacentHTML('beforeend',`<section class="card"><h3>Conversación con el director</h3>${snapshot.state.narrativeView?`<details><summary>El hilo de la aventura · revisión ${snapshot.state.narrativeView.revision}</summary><p>${esc(snapshot.state.narrativeView.summary)}</p></details>`:''}<form id="cairnTalk"><label>Cómo intervienes<select name="kind"><option value="dialogue">Hablar como personaje</option><option value="action">Declarar una acción</option><option value="ooc">Fuera de personaje · sin IA</option></select></label><label>Tu intervención<textarea id="cairnMessage" name="text" maxlength="2000" rows="3" required>${esc(saved.text)}</textarea></label><label class="check"><input type="checkbox" name="director" ${saved.director?'checked':''}> Responder con IA</label><button class="primary" id="cairnTalkSend">Enviar intervención</button><small id="cairnTalkHint"></small></form>${owned&&!view.pending&&model.aiConfigured?'<button id="cairnContinue">Narrar las consecuencias ya resueltas</button>':''}</section>`);
+  const form=$('#cairnTalk');form.elements.kind.value=saved.kind;
+  function remember(){
+   const draft={text:form.elements.text.value,kind:form.elements.kind.value,director:form.elements.director.checked};talkDrafts.set(key,draft);
+   try{const raw=JSON.stringify(draft);if(localStorage.getItem(key)!==raw)localStorage.setItem(key,raw)}catch{}
+  }
+  function permissions(){
+   const kind=form.elements.kind.value,ooc=kind==='ooc';
+   form.elements.director.disabled=ooc||!model.aiConfigured;
+   if(form.elements.director.disabled)form.elements.director.checked=false;
+   const allowed=ooc||owned&&character.status.canAct&&!(kind==='action'&&view.pending);
+   $('#cairnTalkSend').disabled=!allowed;
+   $('#cairnTalkHint').textContent=ooc?'Esta intervención se guarda sin llamar a IA.':!owned?'Solo quien controla este personaje declara sus acciones.':!character.status.canAct?'El personaje necesita recuperarse; puedes elegir los cuidados disponibles.':kind==='action'&&view.pending?'Resuelve primero la salvación pendiente.':!model.aiConfigured?'IA no configurada: puedes registrar tu intervención; no se simula una respuesta del director.':'La IA interpreta la declaración; el motor valida sus posibles consecuencias. Editar este texto no genera llamadas.';
+  }
+  form.oninput=remember;form.onchange=e=>{if(e.target===form.elements.kind&&e.target.value!=='ooc')form.elements.director.checked=!!model.aiConfigured;permissions();remember()};
+  form.onsubmit=run(async()=>{
+   remember();const sent={...talkDrafts.get(key)};
+   await act('talk',{text:sent.text,kind:sent.kind,director:sent.director,character:sent.kind==='ooc'?'':character.id});
+   if(talkDrafts.get(key).text===sent.text){talkDrafts.set(key,{...sent,text:''});try{localStorage.removeItem(key)}catch{}
+    if($('#cairnMessage')?.value===sent.text)$('#cairnMessage').value='';}
+  });
+  if($('#cairnContinue'))$('#cairnContinue').onclick=run(()=>act('continue_cairn_adventure'));
+  permissions();
  }
  async function render(){
   const data=await resources();if(snapshot.state.ruleset!=='cairn-1e'||$('#app').hidden)return;

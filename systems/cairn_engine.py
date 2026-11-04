@@ -5,11 +5,11 @@ import secrets
 import time
 import math
 from pathlib import Path
-from systems import cairn_1e as rules,cairn_creator as creator,cairn_inventory as inventory,cairn_adventure as adventure
+from systems import cairn_1e as rules,cairn_creator as creator,cairn_inventory as inventory,cairn_adventure as adventure,cairn_narrative as narrative
 
 
 def initial_state(config):
-    return {'ruleset':rules.ID,'characters':[],'creationDrafts':{},'importedDrafts':{},'messages':[],'adventure':None,
+    return {'ruleset':rules.ID,'characters':[],'creationDrafts':{},'importedDrafts':{},'messages':[],'adventure':None,'narrative':narrative.initial_memory(),
         'tone':str(config.get('tone','Fantasía y misterio'))[:200],
         'limits':str(config.get('limits',''))[:2000],'goal':str(config.get('goal',''))[:2000]}
 
@@ -23,6 +23,9 @@ def resources():
 def public_view(state,me):
     result=copy.deepcopy(state)
     result.pop('adventure',None)
+    result.pop('narrative',None)
+    if state.get('narrative',{}).get('revision'):
+        result['narrativeView']={key:state['narrative'][key] for key in ('summary','revision')}
     result['creationDrafts']={key:value for key,value in result.get('creationDrafts',{}).items() if key==me['id']}
     if not me['host']:result.pop('importedDrafts',None)
     for character in result['characters']:
@@ -35,6 +38,7 @@ def public_view(state,me):
 def execute_action(state,body,me):
     # The server owns id/version and checks their replay marker before dispatching.
     action={k:v for k,v in body.items() if k not in ('id','version')}
+    if action.get('type') in ('talk','continue_cairn_adventure'):return narrative.apply(state,action,me)
     if action.get('type') in ('start_cairn_adventure','choose_route','resolve_save','rest_and_recover'):
         return adventure.apply(state,action,me)
     if action.get('type')=='confirm_character':
@@ -62,7 +66,7 @@ def execute_action(state,body,me):
 
 def validate_restored(state):
     if isinstance(state,dict):
-        state.setdefault('importedDrafts',{});state.setdefault('adventure',None)
+        state.setdefault('importedDrafts',{});state.setdefault('adventure',None);state.setdefault('narrative',narrative.initial_memory())
     if not isinstance(state,dict) or set(state)!=set(initial_state({})) or state.get('ruleset')!=rules.ID:
         raise ValueError('Estado de Cairn incompleto o incompatible')
     if not isinstance(state['characters'],list) or len(state['characters'])>400:raise ValueError('Personajes de Cairn inválidos')
@@ -75,8 +79,8 @@ def validate_restored(state):
         if not isinstance(state[key],str) or len(state[key])>limit:raise ValueError('Texto de campaña inválido')
     if not isinstance(state['messages'],list) or len(state['messages'])>10000:raise ValueError('Historial de Cairn inválido')
     for message in state['messages']:
-        if (not isinstance(message,dict) or set(message)!={'kind','speaker','text','time','character'} or message['kind']!='rules'
-            or any(not isinstance(message[k],str) or len(message[k])>6000 for k in ('speaker','text','character'))
+        if (not isinstance(message,dict) or set(message)!={'kind','speaker','text','time','character'} or message['kind'] not in ('rules','action','dialogue','ooc','director','limit')
+            or any(not isinstance(message[k],str) or len(message[k])>10000 for k in ('speaker','text','character'))
             or type(message['time']) not in (int,float) or not math.isfinite(message['time'])):raise ValueError('Mensaje de Cairn inválido')
     if not isinstance(state['creationDrafts'],dict) or len(state['creationDrafts'])>100:raise ValueError('Borradores de Cairn inválidos')
     for owner,draft in state['creationDrafts'].items():
@@ -87,6 +91,7 @@ def validate_restored(state):
         if not isinstance(key,str) or not key or len(key)>200:raise ValueError('Referencia de borrador inválida')
         creator.validate(draft)
     adventure.validate_restored(state)
+    narrative.validate_restored(state)
 
 
 def import_campaign(incoming,me):

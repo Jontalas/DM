@@ -12,6 +12,14 @@ Mesa inspirada funcionalmente en Roll20, con identidad propia; tablero y convers
 
 ## Arquitectura y reglas
 
+### Incorporación de juegos sin programar cada sistema (aclaración del usuario)
+
+El recorrido deseado es entregar reglas o manuales a la aplicación e incorporar un juego mediante un paquete de reglas, sin tener que modificar el código de la aplicación por cada sistema. Los adaptadores específicos actuales son una fase provisional, no la arquitectura final requerida.
+
+Desarrollar un motor común que interprete definiciones de ficha, fórmulas, dados, tablas, requisitos, acciones, recursos, condiciones, efectos y desencadenantes descritos como datos. La IA puede ayudar a extraer y convertir las fuentes una vez; las reglas activadas deben quedar validadas, versionadas y trazables, con cálculos deterministas durante la partida. Mostrar ambigüedades y cobertura real antes de activar un paquete; subir un PDF no certifica automáticamente una implementación completa.
+
+Incorporar otro juego debe consistir normalmente en importar un paquete, no desplegar código nuevo. Si una mecánica exige una operación que el motor todavía no sabe interpretar, ampliar esa capacidad general de forma explícita y reutilizable; no resolverlo acumulando código específico de cada juego ni prometiendo compatibilidad universal sin pruebas. Sistemas distintos se seleccionan por campaña; mezclarlos requiere una adaptación o regla casera explícita.
+
 Conservar Python/Waitress en Render, Firestore/Storage y Anthropic. Motor determinista para mecánicas y persistencia; modelo para ficción e intenciones estructuradas. Validar cada propuesta antes de aplicar consecuencias. Una narración no cambia la ficha.
 
 Introducir módulos de sistemas con identificador, edición, fuentes, cobertura y opciones; conservar las campañas actuales. Descargar reglas de fuentes oficiales que permitan el uso previsto, comprobando consulta, procesamiento y redistribución por separado. Pathfinder 1e, Bestiario y TREY fundamentan el módulo actual; otros módulos usan sus propias fuentes. Documentar reglas verificadas, adjudicaciones y límites.
