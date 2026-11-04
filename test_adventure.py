@@ -107,3 +107,11 @@ class AdventureTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError,'director:module') as error:
                 claude_dm.ai_reply(state,'Crear',[],starting=True)
             self.assertNotIn('PRIVATE-MODULE-PREPARATION',str(error.exception))
+
+    def test_opening_schema_cannot_request_player_actions_and_requires_module(self):
+        state=self.state();schema=claude_dm.response_schema(state,starting=True)
+        self.assertNotIn('investigation',schema['properties']);self.assertNotIn('checks',schema['properties'])
+        self.assertIn('adventureModule',schema['required']);self.assertIn('memory',schema['required'])
+        rules=claude_dm.response_schema(state,rules=True)
+        self.assertEqual(set(rules['properties']),{'narration','proposals'})
+        self.assertNotIn('adventureModule',claude_dm.SCHEMA['required'])
