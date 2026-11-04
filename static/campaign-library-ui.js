@@ -21,7 +21,7 @@ async function openSavedCampaign(id,characterId){
  snapshot=next;lastVersion=next.version;path=[];ruler=[];rememberCampaign();render();
  if($('#modal').open)$('#modal').close();
  if(characterId&&next.state.characters.some(c=>c.id===characterId&&c.owner===next.me.id)){
-  if(next.state.ruleset==='cairn-1e')CairnUI.openCharacter(characterId);else characterForm(characterId);
+  if(next.state.ruleset==='rule-pack')RulePackUI.openCharacter(characterId);else if(next.state.ruleset==='cairn-1e')CairnUI.openCharacter(characterId);else characterForm(characterId);
  }
 }
 function libraryHtml(library,inCampaign=false){

@@ -40,3 +40,11 @@ const cairnEntry=library.read(storage).entries.find(e=>e.ruleset==='cairn-1e');
 assert.deepEqual(cairnEntry.characters,[{id:'woodlander',name:'Agune Abernathy',background:'Alchemist'}]);
 assert.ok(!storage.getItem(library.key).includes('not-cached'));
 assert.throws(()=>library.template(cairnEntry,cairnEntry.characters[0],'pathfinder-1e'));
+const generic={id:'generic-room',title:'Imported rules',me:{id:'ana',name:'Ana',host:true},state:{ruleset:'rule-pack',package:{document:{privateSource:'NOT-CACHED'}},characters:[
+ {id:'traveler',name:'Lúa',owner:'ana',sheet:{fields:{energy:3}}}]}};
+library.record(storage,generic,'d'.repeat(64));
+const genericEntry=library.read(storage).entries.find(e=>e.ruleset==='rule-pack');
+assert.deepEqual(genericEntry.characters,[{id:'traveler',name:'Lúa'}]);
+assert.ok(!storage.getItem(library.key).includes('NOT-CACHED'));assert.ok(!('level' in genericEntry.characters[0]));
+const genericWrites=storage.writes;library.record(storage,generic,'d'.repeat(64));assert.equal(storage.writes,genericWrites);
+assert.throws(()=>library.template(genericEntry,genericEntry.characters[0],'rule-pack'));

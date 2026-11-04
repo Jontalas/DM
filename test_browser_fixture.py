@@ -11,6 +11,9 @@ def main():
     os.environ.pop('ANTHROPIC_API_KEY',None)
     os.environ.pop('FIREBASE_STORAGE_BUCKET',None)
     server.STORE=TestStore()
+    if os.environ.get('TEST_RULE_PACK_FIXTURE')=='1':
+        import rulesets
+        rulesets.SYSTEMS['rule-pack']={'id':'rule-pack','name':'Paquete de reglas (test only)','status':'experimental'}
     if os.environ.get('TEST_CAIRN_FIXTURE')=='1':
         import rulesets
         rulesets.SYSTEMS['cairn-1e']={'id':'cairn-1e','name':'Cairn 1e (test only)','status':'experimental'}

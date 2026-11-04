@@ -12,6 +12,7 @@
    const token=checkedText(entry.token,256);if(!/^[a-zA-Z0-9_-]{32,256}$/.test(token))throw Error('Credencial de campaña inválida');
    if(!Array.isArray(entry.characters)||entry.characters.length>400)throw Error('Lista de personajes inválida');
    const characters=entry.characters.map(c=>{
+    if(entry.ruleset==='rule-pack')return {id:checkedText(c.id,200),name:checkedText(c.name,80)};
     if(entry.ruleset==='cairn-1e')return {id:checkedText(c.id,200),name:checkedText(c.name,80),background:checkedText(c.background,80)};
     const item={id:checkedText(c.id,200),name:checkedText(c.name,80),race:checkedText(c.race,80),class:checkedText(c.class,80),level:c.level};
     if(!Number.isInteger(item.level)||item.level<1||item.level>100)throw Error('Nivel de personaje inválido');
@@ -28,7 +29,7 @@
   const library=read(storage),entry={id:snapshot.id+':'+snapshot.me.id,campaign:snapshot.id,player:snapshot.me.id,token,
    title:snapshot.title,playerName:snapshot.me.name,ruleset:snapshot.state.ruleset||'pathfinder-1e',host:!!snapshot.me.host,
    characters:snapshot.state.characters.filter(c=>c.owner===snapshot.me.id&&!c.enemy).map(c=>snapshot.state.ruleset==='cairn-1e'?{
-    id:c.id,name:c.name,background:c.background}:({
+    id:c.id,name:c.name,background:c.background}:snapshot.state.ruleset==='rule-pack'?{id:c.id,name:c.name}:({
     id:c.id,name:c.name,race:c.race,class:c.class,level:c.level,
     ...(c.creation&&!c.creation.manualOverride?{choices:c.creation.choices}:{})}))};
   const previous=library.entries.findIndex(v=>v.id===entry.id);

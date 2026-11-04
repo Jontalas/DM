@@ -1,0 +1,6 @@
+.pack-columns{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px;align-items:start}
+.pack-columns>*{min-width:0}.pack-columns .card{margin-top:0;overflow-wrap:anywhere}
+.pack-history article{border-top:1px solid var(--line);padding:12px 0}
+.pack-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:16px}
+.pack-fields dd{margin:6px 0;font-size:1.3rem;color:var(--gold)}
+@media(max-width:800px){.pack-columns{grid-template-columns:minmax(0,1fr);gap:0}}
