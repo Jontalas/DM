@@ -6,6 +6,8 @@ Primer recorrido de aventuras: tras crear un personaje con el asistente, «Inici
 
 El primer formato de [investigaciones estructuradas](INVESTIGACIONES.md) permite generar una escena breve, jugar el ejemplo «La carta perdida» o importar un JSON compatible. Percepción, elegir 10/20, hallazgos y objetivos se resuelven sin IA por cálculo. Su cobertura es una escena tranquila; no equivale a importar cualquier PDF o a dirigir automáticamente todo Pathfinder.
 
+[Mis partidas y personajes](BIBLIOTECA.md) conserva accesos en el perfil del navegador, permite volver a las fichas originales y crear copias iniciales recalculadas en otra campaña. Incluye copia y recuperación privada de accesos; no es todavía una cuenta global ni una transferencia de progresión entre campañas.
+
 El diario incluye «Preparación del maestro de IA»: su contenido se envía a Anthropic durante la narración, se oculta a invitados y se excluye de consultas de reglas. Los secretos antiguos y las notas privadas conservan su exclusión del proveedor. El anfitrión tiene acceso administrativo. La reserva del contenido en la narración depende del modelo; no se ha certificado mediante inferencia real.
 
 Aplicación cliente/servidor para Pathfinder **primera edición** y TREY, con **Cloud Firestore**, **Firebase Storage** y **Claude Haiku**. Esta entrega es una base funcional ampliable; **no completa todas las etapas solicitadas**. No contiene una aventura de respuestas prefijadas ni un director simulado.

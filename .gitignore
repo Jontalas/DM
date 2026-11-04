@@ -16,3 +16,4 @@ firebase-backup*.json
 .firebase/
 node_modules/
 *.campaign.json
+cronicas-accesos-privados*.json

@@ -111,7 +111,16 @@ class AdventureTests(unittest.TestCase):
     def test_opening_schema_cannot_request_player_actions_and_requires_module(self):
         state=self.state();schema=claude_dm.response_schema(state,starting=True)
         self.assertNotIn('investigation',schema['properties']);self.assertNotIn('checks',schema['properties'])
+        self.assertNotIn('proposals',schema['properties'])
         self.assertIn('adventureModule',schema['required']);self.assertIn('memory',schema['required'])
         rules=claude_dm.response_schema(state,rules=True)
         self.assertEqual(set(rules['properties']),{'narration','proposals'})
         self.assertNotIn('adventureModule',claude_dm.SCHEMA['required'])
+
+    def test_start_reply_can_omit_irrelevant_manual_proposals(self):
+        import adventure_modules
+        result={'narration':'El lugar está tranquilo.','memory':memory(),
+                'adventureModule':adventure_modules.builtin('la-carta-perdida')}
+        response={'stop_reason':'end_turn','content':[{'type':'text','text':json.dumps(result)}]}
+        with patch.dict('os.environ',{'ANTHROPIC_API_KEY':'test-only'}),patch('urllib.request.urlopen',return_value=io.BytesIO(json.dumps(response).encode())):
+            self.assertEqual(claude_dm.ai_reply(self.state(),'Crear',[],starting=True),dict(result,proposals=[]))
