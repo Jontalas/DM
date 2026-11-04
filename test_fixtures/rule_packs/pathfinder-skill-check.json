@@ -1,0 +1,25 @@
+{
+  "format":"cronicas-rules-1","id":"pathfinder-skill-check","version":"0.1.0","engineVersion":1,
+  "name":"Pathfinder 1e · prueba con habilidad preparada","edition":"Reglas básicas, edición castellana Devir",
+  "license":{"id":"private-reference","attribution":"Fórmulas nuevas basadas en las reglas verificadas del manual del usuario. Sin texto ni tablas del libro; paquete de prueba, no certificado para redistribuir el manual."},
+  "sources":[{"id":"pf1-core","title":"Reglas básicas de Pathfinder 1e","edition":"Devir, castellano","locator":"PDF p.87, folio impreso 86: pruebas de habilidad"}],
+  "coverage":{"implemented":["d20 más total preparado frente a CD","Margen aritmético informativo, sin efectos adicionales"],"pending":["Cálculo de la ficha y modificadores","Otras mecánicas","Importación automática de manuales"]},
+  "requires":["scalar-fields","expressions","dice","actions"],
+  "fields":{
+    "bonus":{"type":"integer","label":"Total preparado de habilidad","initial":4,"min":-100,"max":100,"sources":["pf1-core"]},
+    "dc":{"type":"integer","label":"CD de la situación","initial":15,"min":0,"max":1000,"sources":["pf1-core"]},
+    "total":{"type":"integer","label":"Resultado total","initial":0,"min":-100,"max":120,"sources":["pf1-core"]},
+    "margin":{"type":"integer","label":"Margen informativo","derive":{"op":"sub","args":[{"ref":["fields","total"]},{"ref":["fields","dc"]}]},"sources":["pf1-core"]},
+    "success":{"type":"boolean","label":"Resultado de habilidad","initial":false,"sources":["pf1-core"]}
+  },
+  "tables":{},
+  "actions":{
+    "check":{"label":"Resolver prueba de habilidad","sources":["pf1-core"],
+      "inputs":{"dc":{"type":"integer","label":"CD previamente establecida","min":0,"max":1000,"default":15}},
+      "requires":[],"rolls":[{"id":"d20","count":1,"sides":20,"keep":"all"}],
+      "effects":[{"field":"dc","value":{"ref":["inputs","dc"]}},
+        {"field":"total","value":{"op":"add","args":[{"ref":["rolls","d20","total"]},{"ref":["fields","bonus"]}]}},
+        {"field":"success","value":{"op":"ge","args":[{"op":"add","args":[{"ref":["rolls","d20","total"]},{"ref":["fields","bonus"]}]},{"ref":["inputs","dc"]}]}}]}
+  },
+  "triggers":{}
+}

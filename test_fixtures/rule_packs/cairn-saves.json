@@ -1,0 +1,30 @@
+{
+  "format":"cronicas-rules-1","id":"cairn-saves","version":"0.1.0","engineVersion":1,
+  "name":"Cairn 1e · demostración de atributos y salvación","edition":"First Edition SRD v1.0",
+  "license":{"id":"CC-BY-SA-4.0","attribution":"Basado en Cairn, Yochai Gal. Adaptación nueva a expresiones y datos; no es el juego completo.","url":"https://creativecommons.org/licenses/by-sa/4.0/"},
+  "sources":[{"id":"cairn-srd","title":"Cairn SRD","edition":"First Edition v1.0","locator":"Character Creation / Ability Scores; Rules / Saves","url":"https://cairnrpg.com/first-edition/cairn-srd/"}],
+  "coverage":{"implemented":["3d6 para un atributo inicial","Salvación d20 igual o menor; 1 éxito y 20 fallo"],"pending":["Creador completo","Resto de reglas del juego","Importación automática de manuales"]},
+  "requires":["scalar-fields","expressions","dice","actions"],
+  "fields":{
+    "created":{"type":"boolean","label":"Atributo generado","initial":false,"sources":["cairn-srd"]},
+    "dex":{"type":"integer","label":"Destreza preparada","initial":0,"min":0,"max":30,"sources":["cairn-srd"]},
+    "last_die":{"type":"integer","label":"Último d20","initial":0,"min":0,"max":20,"sources":["cairn-srd"]},
+    "success":{"type":"boolean","label":"Resultado de salvación","initial":false,"sources":["cairn-srd"]}
+  },
+  "tables":{},
+  "actions":{
+    "generate_attribute":{"label":"Generar atributo inicial","sources":["cairn-srd"],"inputs":{},
+      "requires":[{"op":"not","args":[{"ref":["fields","created"]}]}],
+      "rolls":[{"id":"ability","count":3,"sides":6,"keep":"all"}],
+      "effects":[{"field":"dex","value":{"ref":["rolls","ability","total"]}},{"field":"created","value":true}]},
+    "save":{"label":"Resolver salvación de DEX","sources":["cairn-srd"],"inputs":{},
+      "requires":[{"ref":["fields","created"]},{"op":"gt","args":[{"ref":["fields","dex"]},0]}],
+      "rolls":[{"id":"save","count":1,"sides":20,"keep":"all"}],
+      "effects":[{"field":"last_die","value":{"ref":["rolls","save","total"]}},
+        {"field":"success","value":{"op":"or","args":[
+          {"op":"eq","args":[{"ref":["rolls","save","total"]},1]},
+          {"op":"and","args":[{"op":"ne","args":[{"ref":["rolls","save","total"]},20]},
+            {"op":"le","args":[{"ref":["rolls","save","total"]},{"ref":["fields","dex"]}]}]}]}}]}
+  },
+  "triggers":{}
+}

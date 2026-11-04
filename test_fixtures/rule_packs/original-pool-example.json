@@ -1,0 +1,23 @@
+{
+  "format":"cronicas-rules-1","id":"original-pool-example","version":"1.0.0","engineVersion":1,
+  "name":"Ejemplo propio de dados, recursos y desencadenantes","edition":"Definición de prueba original 1",
+  "license":{"id":"CC0-1.0","attribution":"Definición propia para probar el intérprete. No corresponde a un juego comercial."},
+  "sources":[{"id":"original-example","title":"Ejemplo original de pruebas","edition":"1","locator":"Acción: gastar un punto y tirar 2d6; 7–12 es éxito. Sin energía se activa agotamiento."}],
+  "coverage":{"implemented":["Recurso, 2d6, tabla y condición automática"],"pending":["No es un sistema de juego completo"]},
+  "requires":["scalar-fields","expressions","dice","tables","actions","triggers"],
+  "fields":{
+    "energy":{"type":"integer","label":"Energía","initial":3,"min":0,"max":3,"sources":["original-example"]},
+    "total":{"type":"integer","label":"Total de dados","initial":0,"min":0,"max":12,"sources":["original-example"]},
+    "success":{"type":"boolean","label":"Resultado","initial":false,"sources":["original-example"]},
+    "exhausted":{"type":"boolean","label":"Agotamiento","initial":false,"sources":["original-example"]}
+  },
+  "tables":{"outcomes":{"label":"Resultado de 2d6","sources":["original-example"],"rows":[{"min":2,"max":6,"value":false},{"min":7,"max":12,"value":true}]}},
+  "actions":{"attempt":{"label":"Intentar una acción","sources":["original-example"],"inputs":{},
+    "requires":[{"op":"gt","args":[{"ref":["fields","energy"]},0]}],
+    "rolls":[{"id":"pool","count":2,"sides":6,"keep":"all"}],
+    "effects":[{"field":"energy","value":{"op":"sub","args":[{"ref":["fields","energy"]},1]}},
+      {"field":"total","value":{"ref":["rolls","pool","total"]}},{"field":"success","value":{"table":"outcomes","at":{"ref":["rolls","pool","total"]}}}]}},
+  "triggers":{
+    "exhaustion":{"label":"Agotamiento al vaciar el recurso","sources":["original-example"],"when":{"op":"eq","args":[{"ref":["fields","energy"]},0]},"effects":[{"field":"exhausted","value":true}]}
+  }
+}
