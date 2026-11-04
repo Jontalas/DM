@@ -9,6 +9,29 @@ def rolls():
 
 
 class CairnCoreTests(unittest.TestCase):
+    def test_identity_resolves_original_multi_column_tables_in_die_order(self):
+        traits={key:10 for key in cairn.TRAITS}
+        identity=cairn.identity_from_rolls('female-names',1,20,6,traits)
+        self.assertEqual(identity['name'],'Agune Wolder')
+        self.assertEqual(identity['background'],'Cleric')
+        self.assertEqual(identity['traits'],dict(zip(cairn.TRAITS,
+            ['Towering','Weathered','Wispy','Sunken','Whispery','Soiled','Tolerant','Vengeful','Wise','Exiled'])))
+        self.assertEqual(cairn.table_result('male-names',11),'Grinwit')
+        self.assertEqual(cairn.table_result('surnames',11),'Harper')
+        traits['skin']=1;self.assertEqual(identity['provenance']['traits']['skin'],10)
+        for invalid in [0,11,True,'1']:
+            bad={key:1 for key in cairn.TRAITS};bad['skin']=invalid
+            with self.assertRaises(ValueError):cairn.identity_from_rolls('female-names',1,1,1,bad)
+        with self.assertRaises(ValueError):cairn.identity_from_rolls('male-names',1,1,1,{})
+
+    def test_catalog_is_complete_local_and_unknown_tables_are_rejected(self):
+        for key in ('female-names','male-names','surnames','background')+cairn.TRAITS:
+            sides=10 if key in cairn.TRAITS else 20
+            for raw in range(1,sides+1):self.assertTrue(cairn.table_result(key,raw).strip())
+            with self.assertRaises(ValueError):cairn.table_result(key,sides+1)
+        for key in ['unknown',{},None]:
+            with self.assertRaises(ValueError):cairn.table_result(key,1)
+
     def test_initial_arithmetic_preserves_raw_rolls_and_is_explicitly_incomplete(self):
         inputs=rolls();core=cairn.core_from_rolls(inputs)
         self.assertEqual(core['abilities'],{'STR':12,'DEX':9,'WIL':13})

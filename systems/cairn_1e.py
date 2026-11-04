@@ -8,10 +8,38 @@ This file and its rule descriptions are distributed under CC BY-SA 4.0.
 No Pathfinder mechanics, classes, levels or DCs are inferred.
 """
 import copy
+import json
+from pathlib import Path
+from functools import lru_cache
 
 ID='cairn-1e'
 ABILITIES=('STR','DEX','WIL')
 SOURCE='https://cairnrpg.com/first-edition/cairn-srd/'
+TRAITS=('physique','skin','hair','face','speech','clothing','virtue','vice','reputation','misfortunes')
+
+
+@lru_cache(maxsize=1)
+def _tables():
+    return json.loads(Path(__file__).with_name('cairn_1e_tables.json').read_text(encoding='utf-8'))['tables']
+
+
+def table_result(table,raw):
+    if not isinstance(table,str) or table not in _tables():raise ValueError('Tabla de Cairn no disponible')
+    entries=_tables()[table]
+    _dice([raw],1,len(entries))
+    return entries[raw-1]
+
+
+def identity_from_rolls(name_table,name_roll,surname_roll,background_roll,trait_rolls):
+    """Resolve identity tables only; descriptors never determine player decisions."""
+    if name_table not in ('female-names','male-names'):raise ValueError('Elige una tabla de nombres de Cairn')
+    if not isinstance(trait_rolls,dict) or set(trait_rolls)!=set(TRAITS):raise ValueError('Tiradas de rasgos incompletas')
+    name=table_result(name_table,name_roll)+' '+table_result('surnames',surname_roll)
+    background=table_result('background',background_roll)
+    traits={key:table_result(key,trait_rolls[key]) for key in TRAITS}
+    return {'name':name,'background':background,'traits':traits,
+        'provenance':{'source':SOURCE+'#name--background-d20','nameTable':name_table,
+            'name':name_roll,'surname':surname_roll,'background':background_roll,'traits':copy.deepcopy(trait_rolls)}}
 
 
 def _dice(values,count,sides):
