@@ -5,7 +5,10 @@ const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypt
 const {pathToFileURL}=require('node:url');
 const {chromium}=require('../.deps/browser-tests/node_modules/playwright');
 const groups=[['female-names','male-names','surnames','background'],
- ['physique','skin','hair','face','speech'],['clothing','virtue','vice','reputation','misfortunes']];
+ ['physique','skin','hair','face','speech'],['clothing','virtue','vice','reputation','misfortunes'],
+ ['armor','helmets--shields','weapons','bonus-item-roll-on-table-indicated'],
+ ['expeditionary-gear','tools','trinkets'],['spellbooks-d100'],['armor-1','weapons-1']];
+const traits=new Set(groups[1].concat(groups[2])),visualOnly=new Set(['armor-1','weapons-1']);
 (async()=>{
  const source=path.resolve('.deps/rules-sources/cairn-1e-srd.html');
  const hash=crypto.createHash('sha256').update(fs.readFileSync(source)).digest('hex');
@@ -28,12 +31,23 @@ const groups=[['female-names','male-names','surnames','background'],
    licenseUrl:'https://creativecommons.org/licenses/by-sa/4.0/',sourceHtmlSha256:hash,
    changes:'Selected table cells indexed by die result; original English values retained.',tables:{}};
   for(const [id,table] of Object.entries(tables)){
+   if(visualOnly.has(id))continue;
    const entries={};
+   if(groups[3].includes(id)){
+    const [ranges,values]=table.rows;
+    ranges.forEach((range,i)=>{
+     if(!/^\d+(?:-\d+)?$/.test(range))throw Error('Unexpected range: '+id+' '+range);
+     const [lo,hi=lo]=range.split('-').map(Number);
+     for(let n=lo;n<=hi;n++){if(entries[n])throw Error('Overlapping range: '+id);entries[n]=values[i]}
+    });
+   }
+   else{
    for(const row of table.rows)for(let n=0;n<row.length;n+=2)if(/^\d+$/.test(row[n])){
     if(entries[row[n]]||!row[n+1])throw Error('Duplicate or empty table result: '+id);
     entries[row[n]]=row[n+1];
    }
-   const count=groups[0].includes(id)?20:10;
+   }
+   const count=traits.has(id)?10:id==='spellbooks-d100'?100:20;
    if(Object.keys(entries).length!==count||Array.from({length:count},(_,i)=>i+1).some(n=>!entries[n]))throw Error('Incomplete table: '+id);
    result.tables[id]=Array.from({length:count},(_,i)=>entries[i+1]);
   }
@@ -43,6 +57,6 @@ const groups=[['female-names','male-names','surnames','background'],
    await page.screenshot({path:'.deps/cairn-original-tables-'+(i+1)+'.png',fullPage:true});
   }
   fs.writeFileSync('systems/cairn_1e_tables.json',JSON.stringify(result,null,2)+'\n');
-  console.log('Extracted 14 original tables; three visual evidence images saved. No network requests.');
+  console.log('Extracted '+Object.keys(result.tables).length+' original tables; '+groups.length+' visual evidence images saved. No network requests.');
  }finally{await browser.close()}
 })().catch(e=>{console.error(e);process.exitCode=1});
