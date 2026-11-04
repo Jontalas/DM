@@ -113,14 +113,15 @@ def execute_action(body,me):
             incoming=data['state'];rulesets.identify(incoming)
             if incoming['ruleset']!=state['ruleset']:raise ValueError('Recupera la copia en una campaña del mismo sistema; no se convierten sus reglas')
             state=incoming
-            if rulesets.adapter(state['ruleset']) is not None:
-                raise ValueError('La importación de campañas de este sistema todavía está en preparación')
-            for key in initial_state({}):
-                if key not in state:raise ValueError('Falta '+key)
-            for character in state['characters']:character['owner']=me['id']
-            adventure_modules.validate_restored(state)
-            adventure_routes.validate_restored(state)
-            state['private']={};title=str(data['title'])[:120]
+            if selected is not None:state=selected.import_campaign(state,me)
+            else:
+                for key in initial_state({}):
+                    if key not in state:raise ValueError('Falta '+key)
+                for character in state['characters']:character['owner']=me['id']
+                adventure_modules.validate_restored(state)
+                adventure_routes.validate_restored(state)
+                state['private']={}
+            title=str(data['title'])[:120]
         elif selected is not None:
             state=selected.execute_action(state,body,me)
         elif body['type']=='start_adventure':

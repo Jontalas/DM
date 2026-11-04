@@ -48,6 +48,66 @@ class CairnServerTests(unittest.TestCase):
         self.assertEqual(draft['core'],before['state']['creationDrafts'][owner]['core'])
         self.assertNotIn('board',restored['state']);self.assertNotIn('tokens',restored['state'])
 
+    def confirmed_character(self,token=None):
+        with patch.object(cairn_creator.secrets,'randbelow',return_value=0):
+            self.action('begin_character',token,nameTable='female-names')
+            self.action('choose_bonus',token,table='tools')
+        return self.action('confirm_character',token,choices={'weapons':{'weapons':'Dagger'}})
+
+    def test_confirmation_is_server_calculated_owned_and_replay_safe(self):
+        with patch.object(cairn_creator.secrets,'randbelow',return_value=0):
+            self.action('begin_character',nameTable='female-names');self.action('choose_bonus',table='tools')
+        before=self.state()
+        with patch.object(cairn_creator.secrets,'randbelow',side_effect=AssertionError('Confirmation rerolled')):
+            with self.assertRaises(urllib.error.HTTPError) as error:
+                self.action('confirm_character',choices={'weapons':{'weapons':'Dagger'},'abilities':{'STR':18}})
+            error.exception.close();self.assertEqual(self.state(),before)
+            body=self.action('confirm_character',choices={'weapons':{'weapons':'Dagger'}})
+            self.assertTrue(self.request('/api/action',body,self.token)['duplicate'])
+            with self.assertRaises(urllib.error.HTTPError) as error:
+                self.action('confirm_character',choices={'weapons':{'weapons':'Dagger'}})
+            error.exception.close()
+        result=self.state();character=result['state']['characters'][0]
+        self.assertEqual(len(result['state']['characters']),1)
+        self.assertEqual(character['owner'],result['me']['id']);self.assertEqual(character['abilities']['STR'],3)
+        self.assertTrue(character['creation']['complete']);self.assertFalse(result['state']['creationDrafts'])
+        self.assertEqual(character['creation']['draft']['core'],before['state']['creationDrafts'][result['me']['id']]['core'])
+
+    def test_export_import_validates_characters_and_reassigns_them_without_recalculation(self):
+        self.confirmed_character();exported=self.request('/api/export',{},self.token)
+        tampered=copy.deepcopy(exported);tampered['state']['characters'][0]['abilities']['STR']=18
+        before=self.state()
+        with self.assertRaises(urllib.error.HTTPError) as error:self.action('import',campaign=tampered)
+        error.exception.close();self.assertEqual(self.state(),before)
+        target=self.request('/api/create',{'title':'Restored','player':'Nueva','ruleset':'cairn-1e'})['token']
+        self.action('import',target,campaign=exported)
+        restored=self.state(target);character=restored['state']['characters'][0]
+        self.assertEqual(character['id'],exported['state']['characters'][0]['id'])
+        self.assertEqual(character['owner'],restored['me']['id'])
+        self.assertEqual(character['creation']['draft']['owner'],restored['me']['id'])
+        self.assertEqual(character['abilities'],exported['state']['characters'][0]['abilities'])
+        guest=self.request('/api/join',{'name':'Guest','invite':restored['invite']})['token']
+        self.assertNotIn('creation',self.state(guest)['state']['characters'][0])
+
+    def test_import_keeps_multiple_drafts_and_recovery_never_replaces_an_active_draft(self):
+        guest=self.request('/api/join',{'name':'Guest','invite':self.state()['invite']})['token']
+        with patch.object(cairn_creator.secrets,'randbelow',return_value=0):
+            self.action('begin_character',nameTable='female-names');self.action('begin_character',guest,nameTable='male-names')
+        exported=self.request('/api/export',{},self.token)
+        self.action('import',campaign=exported)
+        state=self.state();archive=state['state']['importedDrafts'];self.assertEqual(len(archive),2)
+        first,second=list(archive)
+        with self.assertRaises(urllib.error.HTTPError) as error:self.action('recover_imported_draft',guest,draft=first)
+        self.assertEqual(error.exception.code,403);error.exception.close()
+        with patch.object(cairn_creator.secrets,'randbelow',side_effect=AssertionError('Recovery rerolled')):
+            self.action('recover_imported_draft',draft=first)
+            before=self.state()
+            with self.assertRaises(urllib.error.HTTPError) as error:self.action('recover_imported_draft',draft=second)
+            error.exception.close();self.assertEqual(self.state(),before)
+        recovered=self.state()['state']['creationDrafts'][state['me']['id']]
+        self.assertEqual(recovered['core'],archive[first]['core'])
+        self.assertEqual(len(self.state()['state']['importedDrafts']),1)
+
     def test_drafts_are_private_even_from_host_and_client_cannot_select_another_owner(self):
         guest=self.request('/api/join',{'invite':self.state()['invite'],'name':'Luis'})['token']
         with patch.object(cairn_creator.secrets,'randbelow',return_value=0):

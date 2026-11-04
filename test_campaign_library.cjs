@@ -33,3 +33,10 @@ const quota={getItem:key=>storage.getItem(key),setItem:()=>{throw Error('QuotaEx
 const changed=JSON.parse(JSON.stringify(snapshot));changed.title='Changed';assert.throws(()=>library.record(quota,changed,token));
 assert.equal(library.read(storage).entries[0].title,'Primera campaña');
 console.log('OK: profile access persistence, owner-only characters, no cached secrets, no redundant writes, backup validation, corruption preservation and compatible initial templates.');
+const cairn={id:'cairn-room',title:'Cairn',me:{id:'ana',name:'Ana',host:true},state:{ruleset:'cairn-1e',characters:[
+ {id:'woodlander',name:'Agune Abernathy',owner:'ana',background:'Alchemist',creation:{draft:{SECRET:'not-cached'}}}]}};
+library.record(storage,cairn,'c'.repeat(64));
+const cairnEntry=library.read(storage).entries.find(e=>e.ruleset==='cairn-1e');
+assert.deepEqual(cairnEntry.characters,[{id:'woodlander',name:'Agune Abernathy',background:'Alchemist'}]);
+assert.ok(!storage.getItem(library.key).includes('not-cached'));
+assert.throws(()=>library.template(cairnEntry,cairnEntry.characters[0],'pathfinder-1e'));

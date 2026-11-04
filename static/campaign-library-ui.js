@@ -20,11 +20,13 @@ async function openSavedCampaign(id,characterId){
  bookReader.reset();document.body.classList.remove('reader-wide');readerExpanded=false;
  snapshot=next;lastVersion=next.version;path=[];ruler=[];rememberCampaign();render();
  if($('#modal').open)$('#modal').close();
- if(characterId&&next.state.characters.some(c=>c.id===characterId&&c.owner===next.me.id))characterForm(characterId);
+ if(characterId&&next.state.characters.some(c=>c.id===characterId&&c.owner===next.me.id)){
+  if(next.state.ruleset==='cairn-1e')CairnUI.openCharacter(characterId);else characterForm(characterId);
+ }
 }
 function libraryHtml(library,inCampaign=false){
  if(!library.entries.length)return '<p>Tus partidas y personajes aparecerán aquí al entrar en una campaña.</p>';
- return library.entries.map(entry=>`<article class="library-entry"><h3>${esc(entry.title)}</h3><small>${esc(entry.playerName)} · ${entry.ruleset==='pathfinder-1e'?'Pathfinder 1e':esc(entry.ruleset)} · ${entry.host?'Anfitrión':'Jugador'}</small><div class="toolbar"><button data-library-open="${esc(entry.id)}">Volver a esta partida</button></div>${entry.characters.map(c=>`<div class="library-character"><strong>${esc(c.name)}</strong><small>${esc(c.race)} · ${esc(c.class)} ${c.level}</small><div class="toolbar"><button data-library-open="${esc(entry.id)}" data-library-character="${esc(c.id)}">Abrir personaje original</button>${inCampaign&&c.choices?`<button data-library-copy="${esc(entry.id)}" data-library-character="${esc(c.id)}">Crear copia inicial aquí</button>`:''}</div></div>`).join('')}</article>`).join('');
+ return library.entries.map(entry=>`<article class="library-entry"><h3>${esc(entry.title)}</h3><small>${esc(entry.playerName)} · ${entry.ruleset==='pathfinder-1e'?'Pathfinder 1e':esc(entry.ruleset)} · ${entry.host?'Anfitrión':'Jugador'}</small><div class="toolbar"><button data-library-open="${esc(entry.id)}">Volver a esta partida</button></div>${entry.characters.map(c=>`<div class="library-character"><strong>${esc(c.name)}</strong><small>${entry.ruleset==='cairn-1e'?'Cairn 1e · '+esc(c.background):esc(c.race)+' · '+esc(c.class)+' '+c.level}</small><div class="toolbar"><button data-library-open="${esc(entry.id)}" data-library-character="${esc(c.id)}">Abrir personaje original</button>${inCampaign&&entry.ruleset==='pathfinder-1e'&&(snapshot.state.ruleset||'pathfinder-1e')===entry.ruleset&&c.choices?`<button data-library-copy="${esc(entry.id)}" data-library-character="${esc(c.id)}">Crear copia inicial aquí</button>`:''}</div></div>`).join('')}</article>`).join('');
 }
 function renderSavedCampaigns(){
  const target=$('#savedCampaigns');if(!target)return;
@@ -47,7 +49,7 @@ document.addEventListener('click',e=>{
  const button=e.target.closest('[data-library-open],[data-library-copy]');if(!button)return;
  run(async()=>{
   if(button.dataset.libraryOpen){await openSavedCampaign(button.dataset.libraryOpen,button.dataset.libraryCharacter);return}
-  if(snapshot.state.board.active)throw Error('Finaliza el combate antes de crear una copia.');
+  if(snapshot.state.board?.active)throw Error('Finaliza el combate antes de crear una copia.');
   const entry=CampaignLibrary.read(localStorage).entries.find(v=>v.id===button.dataset.libraryCopy);
   const character=entry?.characters.find(v=>v.id===button.dataset.libraryCharacter);
   if(!entry||!character)throw Error('Personaje guardado no encontrado');

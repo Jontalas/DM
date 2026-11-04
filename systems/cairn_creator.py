@@ -29,7 +29,7 @@ def begin(owner,name_table,draw=None):
     core.update(HP=_draw(draw,6),gold=_draw(draw,6,3),age=_draw(draw,20,2))
     identity={'name':_draw(draw,20)[0],'surname':_draw(draw,20)[0],
         'background':_draw(draw,20)[0],'traits':{key:_draw(draw,10)[0] for key in rules.TRAITS}}
-    draft={'format':FORMAT,'owner':owner,'nameTable':name_table,'core':core,'identity':identity,
+    draft={'format':FORMAT,'draftId':secrets.token_hex(12),'owner':owner,'nameTable':name_table,'core':core,'identity':identity,
         'gear':{key:_draw(draw,20)[0] for key in GEAR_TABLES},'bonusRoll':_draw(draw,20)[0],'bonus':None}
     options=bonus_options(draft)
     if len(options)==1:
@@ -44,8 +44,10 @@ def bonus_options(draft):
 
 
 def validate(draft):
-    if (not isinstance(draft,dict) or set(draft)!={'format','owner','nameTable','core','identity','gear','bonusRoll','bonus'}
+    required={'format','owner','nameTable','core','identity','gear','bonusRoll','bonus'}
+    if (not isinstance(draft,dict) or not required<=set(draft) or set(draft)-required-{'draftId'}
         or draft['format']!=FORMAT):raise ValueError('Borrador de Cairn inválido')
+    if 'draftId' in draft and (not isinstance(draft['draftId'],str) or not draft['draftId'] or len(draft['draftId'])>100):raise ValueError('Identidad del borrador inválida')
     if not isinstance(draft['owner'],str) or not draft['owner'] or len(draft['owner'])>100:raise ValueError('Propietario de creación inválido')
     rules.core_from_rolls(draft['core'])
     identity=draft['identity']
@@ -126,9 +128,29 @@ def preview(draft,choices,actor):
     if set(disposition)-ids:raise ValueError('No puedes añadir equipo ajeno a los resultados')
     for entry in gear:entry['state']=disposition.get(entry['id'],entry['state'])
     core=inventory.apply_inventory(core,gear)
-    core['creation'].update(complete=False,pending=pending+['adapterIntegration'],draft=copy.deepcopy(draft),choices=copy.deepcopy(choices),
+    core['creation'].update(complete=False,pending=pending,draft=copy.deepcopy(draft),choices=copy.deepcopy(choices),
         identity=resolved['provenance'])
     return core
+
+
+def finalize(draft,choices,actor):
+    """Confirm creation only; completion does not imply a complete game adapter."""
+    core=preview(draft,choices,actor)
+    if core['creation']['pending']:raise ValueError('Resuelve las elecciones pendientes antes de confirmar el personaje')
+    core['creation']['complete']=True
+    core['maxAbilities']=copy.deepcopy(core['abilities'])
+    core['maxHitProtection']=core['initialHitProtection']
+    return core
+
+
+def validate_created(character):
+    if not isinstance(character,dict) or not isinstance(character.get('creation'),dict):raise ValueError('Ficha de Cairn sin origen de creación')
+    creation=character['creation'];identifier=character.get('id')
+    if not isinstance(identifier,str) or not identifier or len(identifier)>200:raise ValueError('Identificador de personaje inválido')
+    expected=finalize(creation.get('draft'),creation.get('choices'),character.get('owner'))
+    expected['id']=identifier
+    if character!=expected:raise ValueError('La ficha no coincide con sus resultados y elecciones iniciales verificadas')
+    return copy.deepcopy(expected)
 
 
 def draft_action(state,body,actor,draw=None):
@@ -142,6 +164,7 @@ def draft_action(state,body,actor,draw=None):
     if kind=='begin_character':
         if set(body)!={'type','nameTable'}:raise ValueError('La creación no admite estadísticas ni propietario del cliente')
         if actor in drafts:raise ValueError('Ya tienes un borrador; recupera sus tiradas originales')
+        if len(drafts)>=100 or len(drafts)+len(state.get('importedDrafts',{}))>=400:raise ValueError('Límite de borradores de la campaña alcanzado')
         changed=begin(actor,body['nameTable'],draw)
     elif kind=='choose_bonus':
         if set(body)!={'type','table'}:raise ValueError('La elección adicional solo admite una tabla disponible')

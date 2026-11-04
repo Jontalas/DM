@@ -62,7 +62,7 @@ class CairnCreatorTests(unittest.TestCase):
         self.assertEqual(b['background'],'Ranger')
         self.assertEqual(a['creation']['rolls'],b['creation']['rolls'])
         self.assertEqual(a['inventorySlots'],7)
-        self.assertFalse(a['creation']['complete']);self.assertEqual(a['creation']['pending'],['adapterIntegration'])
+        self.assertFalse(a['creation']['complete']);self.assertEqual(a['creation']['pending'],[])
 
     def test_armor_none_and_combined_helmet_shield_do_not_change_original_choices(self):
         draft=draft_with_bonus(14);draft['gear']['helmets--shields']=20
