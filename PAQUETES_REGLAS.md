@@ -4,7 +4,7 @@
 
 El usuario entrega reglas a la aplicación, que prepara e instala un paquete sin programar un adaptador por juego. El núcleo de partida interpreta esos datos; la IA ayuda a extraer fuentes y a dirigir ficción, no sustituye los cálculos. La incorporación de reglas debe llegar a ser un recorrido de la aplicación, con ambigüedades y límites visibles.
 
-Estado actual: existe un primer intérprete local en `rule_pack_runtime.py`. No hay aún importador de manuales, instalador integrado ni creador/interfaz genéricos. Los adaptadores existentes siguen funcionando y conservan las campañas. Este núcleo es un paso hacia la arquitectura acordada, no una declaración de soporte universal ni la entrega final del recorrido «subir manual y jugar».
+Estado actual: existe un primer intérprete local en `rule_pack_runtime.py` y su integración transaccional en `rule_pack_campaign.py`, comprobada por HTTP y Waitress con Firestore emulado. La integración permanece experimental, fuera del catálogo público. No hay aún importador de manuales ni interfaz genérica. Los adaptadores existentes siguen funcionando y conservan las campañas. Este núcleo es un paso hacia la arquitectura acordada, no una declaración de soporte universal ni la entrega final del recorrido «subir manual y jugar».
 
 ## Contrato de datos v1
 
@@ -27,7 +27,11 @@ Los valores calculados no se guardan como copias editables: se derivan al consul
 
 ## Resolución y persistencia
 
-`RulePack` lee y valida el documento. `new_sheet(owner)` crea una ficha inicial; `view(sheet)` calcula su vista; `execute(sheet, action, inputs, actor, ...)` devuelve una ficha nueva y la trazabilidad. El núcleo es independiente del almacenamiento: no confirma en Firebase por sí mismo. La siguiente integración debe envolverlo con las versiones, permisos y marcadores de acción transaccionales existentes, conservando tiradas ante reenvíos.
+`RulePack` lee y valida el documento. `new_sheet(owner)` crea una ficha inicial; `view(sheet)` calcula su vista; `execute(sheet, action, inputs, actor, ...)` devuelve una ficha nueva y la trazabilidad. El núcleo es independiente del almacenamiento: no confirma en Firebase por sí mismo. `rule_pack_campaign.py` lo integra con las versiones, permisos y marcadores de acción transaccionales existentes, conservando tiradas ante reenvíos. Un único adaptador genérico atiende paquetes con identificadores nuevos sin registrar cada juego en Python.
+
+El anfitrión instala el paquete en borrador. Para ejecutar sus definiciones debe seleccionar expresamente la política de reglas aportadas (`provided-rules`): esto no certifica correspondencia con el manual. No se admite declarar una política «verificada» desde el cliente. Las fichas se crean con valores iniciales, no mediante un creador completo. La sustitución del paquete se bloquea cuando existen fichas hasta disponer de migraciones verificadas. En esta versión los campos y el paquete son compartidos por los miembros autorizados de la campaña; no hay campos privados ni soporte de secretos dentro del paquete.
+
+La inspección estructural es local y sin almacenamiento, IA ni dados. La caché de compilación se acota y separa por campaña. La recuperación reproduce las resoluciones con los dados guardados y compara trazas y estado final; no vuelve a tirar ni certifica la identidad histórica de un archivo externo. Al importar una copia, la propiedad se reasigna al anfitrión. El estado se limita a 750.000 bytes y el importador a 5.000 entradas, sin borrar automáticamente historial.
 
 La ficha queda ligada a identificador, versión y SHA-256 del paquete. No se reinterpreta silenciosamente con otro contenido, aunque conserve el mismo nombre o número de versión. Los cambios de versión necesitarán una migración explícita y probada.
 
@@ -44,6 +48,8 @@ Los archivos de prueba son documentos reales cargados por el mismo intérprete, 
 - `test_fixtures/rule_packs/original-pool-example.json`: ejemplo propio de 2d6, recurso y agotamiento por desencadenante. No se presenta como otro juego comercial.
 
 Diez casos automatizados comprueban 440 combinaciones de salvación y 300 de habilidad, diferencia de resultados naturales, versiones, conservación de entradas, permisos, lectura sin tiradas, tablas, dados conservados, tiradas condicionales, asignaciones simultáneas, límites y aborto ante ciclos/huecos. No equivalen a verificar todos los reglamentos ni a una sesión real con IA.
+
+La primera integración añade siete casos repetidos bajo HTTP y Waitress: inspección sin almacenamiento, instalación reservada al anfitrión, borrador y política explícita, identificador nuevo sin código específico, deduplicación de dados, recurso y desencadenante atómicos, propiedad, rechazo previo al RNG, recuperación sin azar, rechazo de valores/trazas/hash alterados y límite de historial sin pérdida de eventos. Resultado conjunto: 24 pruebas correctas con el emulador oficial de Firestore (10,468 s). Regresión del registro, HTTP existente y Waitress: 62 pruebas correctas (35,863 s). No hay prueba de interfaz ni despliegue de este bloque todavía.
 
 ## Trabajo necesario para cumplir el objetivo
 

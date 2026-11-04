@@ -267,6 +267,10 @@ class Handler(BaseHTTPRequestHandler):
                 self.reply({'token':token});return
             if path=='/api/join':
                 self.reply({'token':repository().join(str(body['invite']),str(body['name']))});return
+            if path=='/api/rule-pack/inspect':
+                if not isinstance(body,dict) or set(body)!={'package'}:raise ValueError('Inspección de paquete inválida')
+                from rule_pack_campaign import inspect_document
+                self.reply(inspect_document(body['package']));return
             me=self.auth()
             if path in {'/api/action','/api/import'}:
                 if path=='/api/import':body={**body,'type':'import'}

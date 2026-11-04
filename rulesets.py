@@ -43,4 +43,7 @@ def adapter(identifier):
     if identifier=='cairn-1e':
         from systems import cairn_engine
         return cairn_engine
+    if identifier=='rule-pack':
+        import rule_pack_campaign
+        return rule_pack_campaign
     raise ValueError('El sistema no tiene un adaptador implementado')
