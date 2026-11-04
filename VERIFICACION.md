@@ -1,5 +1,11 @@
 # Verificación de despliegue — 19 de octubre de 2026
 
+## Actualización: aventuras con memoria, 4 de noviembre de 2026
+
+Se desplegó 0329a8a: inicio de aventura desde un personaje generado, memoria narrativa pública/privada validada y continuación explícita tras resultados del motor. Pasaron 144 pruebas Python con emulador oficial de Firestore y los recorridos de navegador de aventura, creador y pruebas de personaje. Render sirve la nueva interfaz y `/healthz` responde HTTP 200.
+
+Se comprobó además una campaña de verificación separada con dos intervenciones reales de Anthropic: apertura y diálogo; memoria persistida y recuperada en revisión 2, sin cambios mecánicos de personaje. Se detectaron defectos de codificación en la apertura y una adición narrativa no declarada en el resumen. Detalle, coste de llamadas y límites en [AVENTURAS.md](AVENTURAS.md). Las afirmaciones históricas siguientes corresponden a revisiones anteriores.
+
 Resultado: base técnica comprobada para Render + Firestore + Storage + Claude Haiku. El funcionamiento completo en producción todavía necesita la URL desplegada y una prueba real del director. Esta revisión no certifica que estén completadas todas las funciones del juego descritas en la petición original.
 
 ## Comprobado
