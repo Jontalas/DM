@@ -24,6 +24,27 @@ MODULE_SCHEMA={'type':'object','properties':{
     'required':['format','ruleset','scope','title','premise','location','description','goal','preparation','conclusion','opportunities','objectives'],
     'additionalProperties':False}
 
+GENERATED_SCHEMA={'type':'object','properties':{
+    **{key:{'type':'string'} for key in ('title','premise','location','description','goal','preparation','conclusion')},
+    **{key:{'type':'object','properties':{'label':{'type':'string'},'dc':{'type':'integer'},
+            'discovery':{'type':'string'},'failure':{'type':'string'}},
+            'required':['label','dc','discovery','failure'],'additionalProperties':False} for key in ('firstSearch','secondSearch')}},
+    'required':['title','premise','location','description','goal','preparation','conclusion','firstSearch','secondSearch'],
+    'additionalProperties':False}
+
+
+def from_generated(raw):
+    """The model writes prose; IDs, dependencies and completion belong to code."""
+    if not isinstance(raw,dict) or set(raw)!=set(GENERATED_SCHEMA['required']):raise ValueError('Contenido generado incompleto')
+    module={key:raw[key] for key in ('title','premise','location','description','goal','preparation','conclusion')}
+    module.update(format='cronicas-adventure-1',ruleset='pathfinder-1e',scope='single-scene-neutral-perception',opportunities=[])
+    for index,key in enumerate(('firstSearch','secondSearch'),1):
+        item=raw[key]
+        if not isinstance(item,dict) or set(item)!={'label','dc','discovery','failure'}:raise ValueError('Búsqueda generada inválida')
+        module['opportunities'].append({**item,'id':'search-'+str(index),'requires':[] if index==1 else ['search-1']})
+    module['objectives']=[{'id':'discovery-goal','text':raw['goal'],'requires':['search-2']}]
+    return validate_module(module)
+
 
 def _text(value,limit):
     if not isinstance(value,str) or not value.strip() or len(value)>limit:raise ValueError('Texto de aventura inválido')

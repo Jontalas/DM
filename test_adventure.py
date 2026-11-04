@@ -112,7 +112,7 @@ class AdventureTests(unittest.TestCase):
         state=self.state();schema=claude_dm.response_schema(state,starting=True)
         self.assertNotIn('investigation',schema['properties']);self.assertNotIn('checks',schema['properties'])
         self.assertNotIn('proposals',schema['properties'])
-        self.assertIn('adventureModule',schema['required']);self.assertIn('memory',schema['required'])
+        self.assertIn('generatedAdventure',schema['required']);self.assertIn('memory',schema['required'])
         rules=claude_dm.response_schema(state,rules=True)
         self.assertEqual(set(rules['properties']),{'narration','proposals'})
         self.assertNotIn('adventureModule',claude_dm.SCHEMA['required'])
@@ -124,3 +124,18 @@ class AdventureTests(unittest.TestCase):
         response={'stop_reason':'end_turn','content':[{'type':'text','text':json.dumps(result)}]}
         with patch.dict('os.environ',{'ANTHROPIC_API_KEY':'test-only'}),patch('urllib.request.urlopen',return_value=io.BytesIO(json.dumps(response).encode())):
             self.assertEqual(claude_dm.ai_reply(self.state(),'Crear',[],starting=True),dict(result,proposals=[]))
+
+    def test_generated_response_becomes_a_validated_module_with_server_owned_links(self):
+        import adventure_modules
+        module=adventure_modules.builtin('la-carta-perdida')
+        generated={k:module[k] for k in ('title','premise','location','description','goal','preparation','conclusion')}
+        for key,item in zip(('firstSearch','secondSearch'),module['opportunities']):
+            generated[key]={k:item[k] for k in ('label','dc','discovery','failure')}
+        result={'narration':'El lugar está tranquilo.','memory':memory(),'generatedAdventure':generated}
+        response={'stop_reason':'end_turn','content':[{'type':'text','text':json.dumps(result)}]}
+        with patch.dict('os.environ',{'ANTHROPIC_API_KEY':'test-only'}),patch('urllib.request.urlopen',return_value=io.BytesIO(json.dumps(response).encode())) as provider:
+            out=claude_dm.ai_reply(self.state(),'Crear',[],starting=True)
+        self.assertNotIn('generatedAdventure',out)
+        self.assertEqual(out['adventureModule']['objectives'][0]['requires'],['search-2'])
+        schema=json.loads(provider.call_args.args[0].data)['output_config']['format']['schema']
+        self.assertEqual(schema['properties']['generatedAdventure']['properties']['firstSearch']['properties']['dc']['enum'][-1],22)

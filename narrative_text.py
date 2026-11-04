@@ -58,4 +58,13 @@ def normalize_response(result):
                 if isinstance(item,dict):
                     for key in fields:
                         if key in item:item[key]=repair_text(item[key])
+    generated=output.get('generatedAdventure')
+    if isinstance(generated,dict):
+        for key in ('title','premise','location','description','goal','preparation','conclusion'):
+            if key in generated:generated[key]=repair_text(generated[key])
+        for key in ('firstSearch','secondSearch'):
+            item=generated.get(key)
+            if isinstance(item,dict):
+                for field in ('label','discovery','failure'):
+                    if field in item:item[field]=repair_text(item[field])
     return output

@@ -176,7 +176,7 @@ class Handler(BaseHTTPRequestHandler):
                 except Exception:self.reply({'status':'unavailable'},503)
                 return
             if url.path=='/api/status':
-                self.reply({'aiConfigured':bool(os.environ.get('ANTHROPIC_API_KEY')),'provider':'Anthropic','model':model_name(),'release':os.environ.get('RENDER_GIT_COMMIT','local'),'directorContract':'operation-prompts-v3','books':repository().counts(),'storage':'Firebase · Cloud Firestore','hosting':'Render' if os.environ.get('RENDER') else 'local con Firebase remoto'});return
+                self.reply({'aiConfigured':bool(os.environ.get('ANTHROPIC_API_KEY')),'provider':'Anthropic','model':model_name(),'release':os.environ.get('RENDER_GIT_COMMIT','local'),'directorContract':'generated-links-v4','books':repository().counts(),'storage':'Firebase · Cloud Firestore','hosting':'Render' if os.environ.get('RENDER') else 'local con Firebase remoto'});return
             if url.path=='/api/book-info':
                 self.auth()
                 try:self.reply(reader_assets().describe(query.get('book',[''])[0]))

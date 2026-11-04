@@ -17,6 +17,7 @@ SCHEMA['properties']['checks']={'type':'array','items':{'type':'object','propert
     'required':['character','kind','key','dc','reason'],'additionalProperties':False}}
 SCHEMA['properties']['memory']=MEMORY_SCHEMA
 SCHEMA['properties']['adventureModule']=adventure_modules.MODULE_SCHEMA
+SCHEMA['properties']['generatedAdventure']=adventure_modules.GENERATED_SCHEMA
 SCHEMA['properties']['investigation']={'type':'object','properties':{
     'requested':{'type':'boolean'},'character':{'type':'string'},'opportunity':{'type':'string'}},
     'required':['requested','character','opportunity'],'additionalProperties':False}
@@ -34,7 +35,12 @@ def response_schema(state,rules=False,starting=False):
         allowed.discard('proposals');schema['required']=['narration']
         allowed.add('memory');schema['required'].append('memory')
         if not state.get('adventureModule'):
-            allowed.add('adventureModule');schema['required'].append('adventureModule')
+            allowed.add('generatedAdventure');schema['required'].append('generatedAdventure')
+            totals=[row['total'] for c in state['characters'] if not c.get('enemy') and c.get('hp',0)>0 and not c.get('conditions','').strip()
+                    for row in c.get('skillTotals',[]) if row.get('name')=='Percepción' and type(row.get('total'))==int]
+            maximum=min(40,max(0,20+max(totals))) if totals else 0
+            for field in ('firstSearch','secondSearch'):
+                schema['properties']['generatedAdventure']['properties'][field]['properties']['dc']['enum']=list(range(maximum+1))
     elif not rules:
         allowed.add('checks')
         if state.get('adventure'):allowed.add('memory')
@@ -117,6 +123,11 @@ def ai_reply(state,text,refs,rules=False,check_actors=None,starting=False):
             stage='module'
             if rules or not starting or state.get('adventureModule'):raise ValueError('El director no puede sustituir una aventura aportada o iniciada')
             result['adventureModule']=adventure_modules.validate_module(result['adventureModule'])
+        if 'generatedAdventure' in result:
+            stage='generated-adventure'
+            if rules or not starting or state.get('adventureModule') or result.get('adventureModule'):
+                raise ValueError('Generación de aventura fuera de la operación permitida')
+            result['adventureModule']=adventure_modules.from_generated(result.pop('generatedAdventure'))
         return result
     except urllib.error.HTTPError as exc:
         code=exc.code;exc.close()
@@ -124,7 +135,7 @@ def ai_reply(state,text,refs,rules=False,check_actors=None,starting=False):
     except (OSError,KeyError,TypeError,ValueError,AttributeError) as exc:
         if stage=='completion' and stop_reason=='max_tokens':
             raise ValueError('El director agotó el límite de salida antes de completar la aventura. La acción no se ha aplicado (director:output_limit)') from None
-        if stage=='module' and type(exc)==ValueError:
+        if stage in ('module','generated-adventure') and type(exc)==ValueError:
             # This stage only calls our allowlisted module validator; its errors never quote source prose.
             raise ValueError('El director entregó una aventura incompatible: '+str(exc)+'. La acción no se ha aplicado (director:module)') from None
         raise ValueError('Claude Haiku no entregó una respuesta completa y válida. La acción no se ha aplicado (director:'+stage+')') from None

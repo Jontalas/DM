@@ -98,3 +98,17 @@ class InvestigationTests(unittest.TestCase):
         before=copy.deepcopy(state)
         with self.assertRaises(ValueError):modules.install(state,module)
         self.assertEqual(state,before)
+
+    def test_generated_prose_cannot_invent_dependency_ids_or_goal_references(self):
+        authored=modules.builtin('la-carta-perdida')
+        generated={k:authored[k] for k in ('title','premise','location','description','goal','preparation','conclusion')}
+        for key,opportunity in zip(('firstSearch','secondSearch'),authored['opportunities']):
+            generated[key]={k:opportunity[k] for k in ('label','dc','discovery','failure')}
+        canonical=modules.from_generated(generated)
+        self.assertEqual([v['id'] for v in canonical['opportunities']],['search-1','search-2'])
+        self.assertEqual(canonical['opportunities'][1]['requires'],['search-1'])
+        self.assertEqual(canonical['objectives'][0]['requires'],['search-2'])
+        state=self.state();modules.install(state,canonical)
+        with patch('engine.secrets.randbelow',side_effect=AssertionError('No dice when choosing 20')):
+            self.search(state,'search-1','take20');self.search(state,'search-2','take20')
+        self.assertTrue(state['moduleProgress']['completed'])
