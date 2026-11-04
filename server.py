@@ -10,6 +10,7 @@ from urllib.parse import urlparse, parse_qs
 from engine import apply_action, initial_state
 from firebase_store import BOOKS, FirestoreStore, Conflict, Unavailable
 from claude_dm import ai_reply, model_name
+import adventure
 
 ROOT=Path(__file__).resolve().parent
 # Local paths are only for extracting/importing PDF assets, never for databases.
@@ -48,6 +49,7 @@ def view(row,state,me):
     if not me['host']:
         state.pop('secrets',None)
         state.pop('directorNotes',None)
+        state.pop('directorMemory',None)
     state['private']={k:v for k,v in state.get('private',{}).items() if k==me['id'] or me['host']}
     return {'id':row['id'],'title':row['title'],'version':row['version'],'state':state,'me':me,'players':repository().players(row['id']),'invite':row['invite'] if me['host'] else None}
 
@@ -82,13 +84,31 @@ def execute_action(body,me):
                 if key not in state:raise ValueError('Falta '+key)
             for character in state['characters']:character['owner']=me['id']
             state['private']={};title=str(data['title'])[:120]
-        elif body['type']=='talk' and body.get('director',True):
-            if body.get('kind')=='private':raise ValueError('Las notas privadas no se envían a Claude')
-            # Validate speaker, ownership and content before making a billable call.
-            apply_action(state,body,me)
-            refs=search(body['text']);actors=[c['id'] for c in state['characters'] if me['host'] or c['owner']==me['id']]
-            result=ai_reply(state,body['text'],refs,check_actors=actors)
-            state['messages'].append({'kind':'director','speaker':'Director · Claude Haiku','text':result['narration'],'refs':[{'book':r['book'],'page':r['page']} for r in refs],'time':time.time()})
+        elif body['type']=='start_adventure':
+            premise=adventure.validate_start(state,body,me)
+            actors=[c['id'] for c in adventure.ready_characters(state)]
+            result=ai_reply(state,premise,[],check_actors=actors,starting=True)
+            if result.get('checks'):raise ValueError('La apertura no puede resolver ni solicitar acciones de los personajes')
+            if result.get('proposals'):raise ValueError('La apertura requiere una situación dentro de la cobertura disponible')
+            adventure.apply_memory(state,result.get('memory'),starting=True)
+            state['messages'].append({'kind':'director','speaker':'Director · Claude Haiku','text':result['narration'],
+                                      'time':time.time(),'adventureStart':True})
+        elif body['type']=='continue_adventure' or body['type']=='talk' and body.get('director',True):
+            if body['type']=='continue_adventure':
+                text=adventure.continuation_request(state,me);refs=[]
+            else:
+                if body.get('kind')=='private':raise ValueError('Las notas privadas no se envían a Claude')
+                # Validate speaker, ownership and content before making a billable call.
+                apply_action(state,body,me)
+                text=body['text'];refs=search(text)
+            actors=[c['id'] for c in state['characters'] if me['host'] or c['owner']==me['id']]
+            result=ai_reply(state,text,refs,check_actors=actors)
+            if body['type']=='continue_adventure' and result.get('checks'):
+                raise ValueError('La continuación debe narrar el resultado confirmado, sin solicitar otra prueba')
+            if (state.get('adventure') and body.get('kind','action')!='ooc' and not result.get('checks')
+                and not any(p.get('check') for p in state['pending'])):
+                adventure.apply_memory(state,result.get('memory'))
+            state['messages'].append({'kind':'director','speaker':'Director · Claude Haiku','text':result['narration'],'refs':[{'book':r['book'],'page':r['page']} for r in refs],'time':time.time(),'ooc':body.get('kind')=='ooc'})
             for proposal in result.get('proposals',[])[:5]:
                 state['pending'].append({'reason':str(proposal['reason'])[:1000],'source':'Propuesta de Claude Haiku; pendiente de validación humana'})
             for proposal in result.get('checks',[])[:3]:

@@ -11,6 +11,18 @@ def main():
     os.environ.pop('ANTHROPIC_API_KEY',None)
     os.environ.pop('FIREBASE_STORAGE_BUCKET',None)
     server.STORE=TestStore()
+    # Explicit isolated fixture only; never available in the production startup path.
+    if os.environ.get('TEST_ADVENTURE_FIXTURE')=='1':
+        from test_adventure import reply,memory
+        def fixture_reply(state,text,refs,**options):
+            if options.get('starting'):return reply()
+            if 'intento abrir' in text.casefold():
+                actor=options['check_actors'][0]
+                return reply(narration='La puerta se resiste; prueba de Fuerza pendiente.',
+                             checks=[{'character':actor,'kind':'ability','key':'str','dc':10,'reason':'CD adjudicada de prueba'}])
+            return reply(narration='La puerta se abre tras el resultado confirmado.',
+                         memory=memory(summary='Aria abrió la puerta tras superar la prueba.'))
+        server.ai_reply=fixture_reply
     from test_reader_support import fixture_reader
     server.READER=fixture_reader()
     # Predictable dice only inside this explicitly isolated test process.

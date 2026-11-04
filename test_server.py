@@ -46,6 +46,91 @@ class IntegrationTests(unittest.TestCase):
         with self.assertRaises(urllib.error.HTTPError) as error:
             self.action('journal',guest,directorNotes='Overwrite')
         self.assertEqual(error.exception.code,403)
+
+    def test_adventure_start_continuity_replay_and_secret_boundaries(self):
+        from test_adventure import reply,memory
+        from test_character_builder import choices
+        self.action('create_character',choices=choices())
+        before=self.state()
+        with patch.object(server,'ai_reply',return_value=reply()) as provider:
+            body=self.action('start_adventure',premise='Investigar las luces')
+            self.assertTrue(self.request('/api/action',body,self.token)['duplicate'])
+            self.assertEqual(provider.call_count,1)
+            self.assertTrue(provider.call_args.kwargs['starting'])
+            with self.assertRaises(urllib.error.HTTPError) as error:self.action('start_adventure',premise='Otra')
+            error.exception.close();self.assertEqual(provider.call_count,1)
+        state=self.state()['state']
+        self.assertEqual(state['adventure']['revision'],1)
+        self.assertEqual(state['characters'],before['state']['characters'])
+        self.assertEqual(state['directorMemory'],memory()['preparation'])
+        guest=self.request('/api/join',{'name':'Luis','invite':self.state()['invite']})['token']
+        self.assertNotIn(memory()['preparation'],json.dumps(self.state(guest)))
+        with patch.object(server,'ai_reply',return_value=reply(memory=memory(summary='La molinera saluda.'))):
+            self.action('talk',text='Saludo a la molinera',kind='dialogue',director=True)
+        server.initialize()
+        self.assertEqual(self.state()['state']['adventure']['summary'],'La molinera saluda.')
+        self.assertEqual(self.state()['state']['adventure']['revision'],2)
+        exported=self.request('/api/export',{},self.token)
+        self.action('import',campaign=exported)
+        self.assertEqual(self.state()['state']['adventure']['summary'],'La molinera saluda.')
+
+    def test_invalid_adventure_or_provider_failure_has_no_partial_state(self):
+        from test_adventure import reply,memory
+        from test_character_builder import choices
+        with patch.object(server,'ai_reply') as provider:
+            with self.assertRaises(urllib.error.HTTPError) as error:self.action('start_adventure',premise='Algo')
+            error.exception.close();provider.assert_not_called()
+        self.action('create_character',choices=choices())
+        for output in [reply(memory=memory(hp=99)),reply(memory=None),reply(proposals=[{'type':'manual','reason':'Arbitrar'}])]:
+            before=self.state()
+            with patch.object(server,'ai_reply',return_value=output):
+                with self.assertRaises(urllib.error.HTTPError) as error:self.action('start_adventure',premise='Algo')
+                error.exception.close()
+            self.assertEqual(self.state()['state'],before['state'])
+        guest=self.request('/api/join',{'name':'Luis','invite':self.state()['invite']})['token']
+        with patch.object(server,'ai_reply') as provider:
+            with self.assertRaises(urllib.error.HTTPError) as error:self.action('start_adventure',guest,premise='Algo')
+            self.assertEqual(error.exception.code,403);error.exception.close();provider.assert_not_called()
+
+    def test_check_requests_and_ooc_do_not_advance_adventure_memory(self):
+        from test_adventure import reply,memory
+        from test_character_builder import choices
+        self.action('create_character',choices=choices())
+        with patch.object(server,'ai_reply',return_value=reply()):self.action('start_adventure',premise='Algo')
+        original=self.state()['state']['adventure'];cid=self.state()['state']['characters'][0]['id']
+        check={'character':cid,'kind':'ability','key':'str','dc':15,'reason':'CD adjudicada'}
+        with patch.object(server,'ai_reply',return_value=reply(checks=[check],memory=memory(summary='No confirmado'))):
+            self.action('talk',text='Intento abrir',kind='action',director=True)
+        self.assertEqual(self.state()['state']['adventure'],original)
+        with patch.object(server,'ai_reply',return_value=reply(memory=memory(summary='No confirmado'))):
+            self.action('talk',text='Esperamos',kind='action',director=True)
+            self.action('talk',text='Pausa',kind='ooc',director=True)
+        self.assertEqual(self.state()['state']['adventure'],original)
+        self.action('check',character=cid,request=self.state()['state']['pending'][-1]['check']['id'],physical=[20])
+        before=self.state()['state'];resolved=before['messages'][-1]['check']
+        with patch.object(server,'ai_reply',return_value=reply(memory=memory(summary='La puerta se abre tras el éxito confirmado.'))) as provider:
+            body=self.action('continue_adventure')
+            self.assertTrue(self.request('/api/action',body,self.token)['duplicate'])
+            self.assertEqual(provider.call_count,1)
+            self.assertIn('ya resueltas',provider.call_args.args[1])
+            with self.assertRaises(urllib.error.HTTPError) as error:self.action('continue_adventure')
+            error.exception.close();self.assertEqual(provider.call_count,1)
+        after=self.state()['state']
+        self.assertEqual(after['characters'],before['characters'])
+        self.assertEqual([m['check'] for m in after['messages'] if m.get('check')][-1],resolved)
+        self.assertEqual(after['adventure']['revision'],2)
+
+    def test_active_adventure_rejects_invalid_memory_atomically(self):
+        from test_adventure import reply,memory
+        from test_character_builder import choices
+        self.action('create_character',choices=choices())
+        with patch.object(server,'ai_reply',return_value=reply()):self.action('start_adventure',premise='Algo')
+        before=self.state()
+        for output in [reply(memory=None),reply(memory=memory(characters=[]))]:
+            with patch.object(server,'ai_reply',return_value=output):
+                with self.assertRaises(urllib.error.HTTPError) as error:self.action('talk',text='Avanzo',director=True)
+                error.exception.close()
+            self.assertEqual(self.state()['state'],before['state'])
     def test_persistent_recovery_and_export(self):
         self.action('character',character={'name':'Aria'});self.action('oracle',question='¿Hay luz?',uncertain=True,physical=[8,4,1])
         before=self.state();server.initialize();after=self.state();self.assertEqual(before['state'],after['state'])

@@ -106,3 +106,7 @@ body.reader-wide #composer{display:none}
  #board .cell{min-height:0}
 }
 @media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+
+#adventureSummary, #directorMemoryText { white-space: pre-wrap; }
+#adventureEntry .card small { display: block; margin-top: 10px; }
+#continueAdventure { margin: 16px 0; }
