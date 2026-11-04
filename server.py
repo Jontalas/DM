@@ -50,6 +50,11 @@ def load(cid):
 
 
 def view(row,state,me):
+    selected=rulesets.adapter(state.get('ruleset',rulesets.DEFAULT))
+    if selected is not None:
+        return {'id':row['id'],'title':row['title'],'version':row['version'],
+            'state':selected.public_view(state,me),'me':me,'players':repository().players(row['id']),
+            'invite':row['invite'] if me['host'] else None}
     state=json.loads(json.dumps(state))
     module_view=adventure_modules.public_view(state)
     route_view=adventure_routes.public_view(state)
@@ -99,19 +104,25 @@ def execute_action(body,me):
         if store.completed(cid,aid,me['id'],signature):return {'duplicate':True}
         row,state=load(cid)
         if body.get('version')!=row['version']:raise Conflict('La mesa ha cambiado. Revisa tu acción antes de enviarla')
+        selected=rulesets.adapter(state['ruleset'])
         title=None
         if body['type']=='import':
             if not me['host']:raise PermissionError('Solo el anfitrión importa')
             data=body['campaign']
             if data.get('format')!='cronicas-1':raise ValueError('Formato incompatible')
-            state=data['state']
-            rulesets.identify(state)
+            incoming=data['state'];rulesets.identify(incoming)
+            if incoming['ruleset']!=state['ruleset']:raise ValueError('Recupera la copia en una campaña del mismo sistema; no se convierten sus reglas')
+            state=incoming
+            if rulesets.adapter(state['ruleset']) is not None:
+                raise ValueError('La importación de campañas de este sistema todavía está en preparación')
             for key in initial_state({}):
                 if key not in state:raise ValueError('Falta '+key)
             for character in state['characters']:character['owner']=me['id']
             adventure_modules.validate_restored(state)
             adventure_routes.validate_restored(state)
             state['private']={};title=str(data['title'])[:120]
+        elif selected is not None:
+            state=selected.execute_action(state,body,me)
         elif body['type']=='start_adventure':
             premise=adventure.validate_start(state,body,me)
             if type(body.get('structured',False))!=bool:raise ValueError('Modo de aventura inválido')
@@ -198,6 +209,10 @@ class Handler(BaseHTTPRequestHandler):
                 self.reply({'aiConfigured':bool(os.environ.get('ANTHROPIC_API_KEY')),'provider':'Anthropic','model':model_name(),'release':os.environ.get('RENDER_GIT_COMMIT','local'),'directorContract':'generated-links-v4','books':repository().counts(),'storage':'Firebase · Cloud Firestore','hosting':'Render' if os.environ.get('RENDER') else 'local con Firebase remoto'});return
             if url.path=='/api/systems':
                 self.reply({'systems':rulesets.catalog()});return
+            if url.path=='/api/system-resources':
+                selected=rulesets.adapter(query.get('system',[''])[0])
+                if selected is None:raise ValueError('Este sistema usa sus catálogos existentes')
+                self.reply(selected.resources());return
             if url.path=='/api/book-info':
                 self.auth()
                 try:self.reply(reader_assets().describe(query.get('book',[''])[0]))
@@ -256,7 +271,9 @@ class Handler(BaseHTTPRequestHandler):
                 if path=='/api/import':body={**body,'type':'import'}
                 self.reply(execute_action(body,me));return
             if path=='/api/rules':
-                _,state=load(me['campaign']);refs=search(body['q']);result=ai_reply(state,body['q'],refs,True)
+                _,state=load(me['campaign'])
+                if rulesets.adapter(state['ruleset']) is not None:raise ValueError('La consulta narrativa de este sistema todavía está en preparación')
+                refs=search(body['q']);result=ai_reply(state,body['q'],refs,True)
                 self.reply({'answer':result['narration'],'refs':[{'book':r['book'],'page':r['page']} for r in refs]});return
             if path=='/api/export':
                 if not me['host']:raise PermissionError('Solo el anfitrión exporta la campaña completa')

@@ -29,6 +29,18 @@ def identify(state):
 
 def new_campaign(config):
     descriptor=require(config.get('ruleset',DEFAULT))
+    selected=adapter(descriptor['id'])
+    if selected is not None:return selected.initial_state(config)
     from engine import initial_state
     state=initial_state(config);state['ruleset']=descriptor['id']
     return state
+
+
+def adapter(identifier):
+    """Availability is always checked before loading system-specific operations."""
+    require(identifier)
+    if identifier==DEFAULT:return None
+    if identifier=='cairn-1e':
+        from systems import cairn_engine
+        return cairn_engine
+    raise ValueError('El sistema no tiene un adaptador implementado')

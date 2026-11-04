@@ -11,6 +11,9 @@ def main():
     os.environ.pop('ANTHROPIC_API_KEY',None)
     os.environ.pop('FIREBASE_STORAGE_BUCKET',None)
     server.STORE=TestStore()
+    if os.environ.get('TEST_CAIRN_FIXTURE')=='1':
+        import rulesets
+        rulesets.SYSTEMS['cairn-1e']={'id':'cairn-1e','name':'Cairn 1e (test only)','status':'experimental'}
     # Explicit isolated fixture only; never available in the production startup path.
     if os.environ.get('TEST_ADVENTURE_FIXTURE')=='1':
         from test_adventure import reply,memory
@@ -37,7 +40,7 @@ def main():
     from test_reader_support import fixture_reader
     server.READER=fixture_reader()
     # Predictable dice only inside this explicitly isolated test process.
-    engine.secrets.randbelow=lambda sides:min(11,sides-1)
+    engine.secrets.randbelow=lambda sides:0 if os.environ.get('TEST_CAIRN_FIXTURE')=='1' else min(11,sides-1)
     http=create_server(application,host='127.0.0.1',port=0,threads=4)
     print('http://127.0.0.1:'+str(http.effective_port),flush=True)
     http.run()
