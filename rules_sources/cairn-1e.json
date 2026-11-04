@@ -15,5 +15,5 @@
   "implemented_mechanics": ["Isolated initial arithmetic; incomplete character", "Optional initial ability swap", "Pure save calculation; no consequences or live integration"],
   "source_snapshot": {"bytes": 58263, "sha256": "62d09f6769971a6aa61a1d41fb498c2640a4809df2638ad664b8938795681c14"},
   "html_snapshot": {"bytes": 219545, "sha256": "b2bad28c814de2b0f1af946ca0eefbf1958d8c0c3374e96251016f9570ea451c"},
-  "notes": "Candidate for a separate adapter. No classes, levels or Pathfinder modifiers are inferred. Source text is locally cached under .deps; runtime does not download or index it per action. Attribution and ShareAlike obligations for reused/adapted material must be retained; this manifest does not license the whole application."
+  "notes": "Isolated experimental arithmetic exists in systems/cairn_1e.py; no playable character or live integration yet. No classes, levels or Pathfinder modifiers are inferred. Source text is locally cached under .deps; runtime does not download or index it per action. Attribution and ShareAlike notices are retained in the isolated module and CAIRN.md; this manifest does not license the whole application."
 }

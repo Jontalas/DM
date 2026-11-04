@@ -2,6 +2,8 @@
 
 **Desarrollo reanudado por el usuario el 4 de noviembre de 2026.** Este archivo conserva el punto de pausa como referencia histórica; el estado actual se registra en TRABAJO.md. Vuelve a aplicarse la autonomía permanente.
 
+Avance posterior: texto breve y rutas individuales desplegados y comprobados (main `0bd4b6d`). Rama de trabajo actual: `feature/cairn-1e-adapter`, prototipo de Cairn todavía no jugable. Suite actual: 189 pruebas con emulador oficial, sin omisiones. Al retomar, leer TRABAJO.md antes de aplicar los pasos históricos de este archivo; no volver a integrar la antigua rama de pausa ni repetir inferencias reales.
+
 ## Punto guardado
 
 - Proyecto: `C:\Users\Jonta\OneDrive\Proyectos\DM`.
