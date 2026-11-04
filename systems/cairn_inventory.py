@@ -64,7 +64,7 @@ def apply_inventory(core,loadout):
             if descriptor.get('requiresHandRuling'):raise ValueError('El uso de manos del arma requiere una resolución contextual; solo se han verificado sus dados y espacios')
             if not descriptor['equip']:raise ValueError('El uso de este objeto todavía no está implementado; puede transportarse')
             equipped.append(descriptor['name']);armor+=descriptor['armor'];hands+=descriptor['hands']
-    if slots>10:raise ValueError('El equipo transportado supera los diez espacios; elige qué guardar o dejar')
+    if slots>10:raise ValueError('El equipo transportado ocupa '+str(slots)+' de diez espacios; elige qué guardar o dejar')
     if hands>2:raise ValueError('El equipo seleccionado requiere más de dos manos')
     if any(equipped.count(name)>1 for name in ('Helmet','Shield')):
         raise ValueError('Esta combinación repetida de protecciones requiere adjudicación; no se han sumado sus bonos')
