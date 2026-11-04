@@ -218,7 +218,7 @@ def apply_action(s,b,me):
         log(s,f"Gasto de {cost} FH: {benefit}. Consenso registrado. {b['interpretation']}. Pendiente de aplicar con resolución asistida.")
     elif kind=='journal':
         host(me)
-        for key in ['location','worldTime','goal','notes','secrets']:
+        for key in ['location','worldTime','goal','notes','secrets','directorNotes']:
             if key in b: s[key]=str(b[key])[:30000]
         for key in ['objectives','allies','enemies','unknowns']:
             if key in b: s[key]=[str(v)[:1000] for v in b[key]][:1000]

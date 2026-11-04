@@ -45,7 +45,9 @@ def load(cid):return repository().load(cid)
 def view(row,state,me):
     state=json.loads(json.dumps(state))
     state['messages']=[m for m in state['messages'] if m.get('visibility','public')=='public' or me['host'] or m.get('owner')==me['id']]
-    if not me['host']:state.pop('secrets',None)
+    if not me['host']:
+        state.pop('secrets',None)
+        state.pop('directorNotes',None)
     state['private']={k:v for k,v in state.get('private',{}).items() if k==me['id'] or me['host']}
     return {'id':row['id'],'title':row['title'],'version':row['version'],'state':state,'me':me,'players':repository().players(row['id']),'invite':row['invite'] if me['host'] else None}
 

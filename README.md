@@ -1,5 +1,9 @@
 # Crónicas · mesa de rol en español
 
+La dirección actual y las prioridades están en [PRODUCTO.md](PRODUCTO.md). Objetivo: campañas sin maestro humano y varios sistemas por módulos; la cobertura actual sigue siendo parcial.
+
+El diario incluye «Preparación del maestro de IA»: su contenido se envía a Anthropic durante la narración, se oculta a invitados y se excluye de consultas de reglas. Los secretos antiguos y las notas privadas conservan su exclusión del proveedor. El anfitrión tiene acceso administrativo. La reserva del contenido en la narración depende del modelo; no se ha certificado mediante inferencia real.
+
 Aplicación cliente/servidor para Pathfinder **primera edición** y TREY, con **Cloud Firestore**, **Firebase Storage** y **Claude Haiku**. Esta entrega es una base funcional ampliable; **no completa todas las etapas solicitadas**. No contiene una aventura de respuestas prefijadas ni un director simulado.
 
 ## Referencia de producto: Roll20 con maestro de IA y automatización

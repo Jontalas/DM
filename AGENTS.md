@@ -1,5 +1,15 @@
 # Premisas primordiales de la aplicación
 
+## Objetivo rector y autonomía (actualización del usuario, 4 de noviembre de 2026)
+
+La aplicación debe permitir aventuras y campañas persistentes sin un maestro humano, desde un jugador hasta un grupo manejable. La IA dirige ficción y PNJ; el motor valida reglas y cambios de estado; los jugadores conservan sus decisiones. Se reutilizan Render, Firebase y Anthropic. La especificación y prioridades actuales están en PRODUCTO.md.
+
+La arquitectura debe admitir varios sistemas por módulos con edición, fuentes oficiales y permisos de uso identificados. Los manuales siguientes siguen siendo autoridad del módulo Pathfinder/TREY; no se imponen a otros sistemas. Primero completar un recorrido jugable del módulo actual, sin anunciar soporte inexistente.
+
+Realizar autónomamente análisis, desarrollo, pruebas, documentación y despliegue dentro de los accesos y autorizaciones existentes. Solicitar intervención solo por una dependencia imprescindible; agrupar solicitudes y continuar el trabajo independiente. No contratar servicios ni gastos recurrentes nuevos sin autorización. Proteger datos y verificar cada despliegue.
+
+Evaluar skills y métodos por beneficios comprobables y coste. Aplicar los disponibles cuando sean pertinentes; documentar dependencias y límites. La colaboración entre agentes se puede proponer cuando justifique su consumo, sin convertirla en requisito de trabajo.
+
 ## Referencia principal: mesa virtual al estilo de Roll20
 
 La aplicación debe parecerse a Roll20 en la mayor medida viable, tanto en organización de la mesa como en las interacciones y capacidades de una mesa virtual. Esta referencia se combina obligatoriamente con un maestro de juego controlado por IA, automatización de la partida y mínimo coste de uso.

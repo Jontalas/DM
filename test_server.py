@@ -37,6 +37,15 @@ class IntegrationTests(unittest.TestCase):
         body['id']='new-action'
         with self.assertRaises(urllib.error.HTTPError) as e:self.request('/api/action',body,self.token)
         self.assertEqual(e.exception.code,409)
+
+    def test_director_preparation_stays_out_of_guest_state(self):
+        self.action('journal',directorNotes='HIDDEN-ADVENTURE')
+        guest=self.request('/api/join',{'name':'Luis','invite':self.state()['invite']})['token']
+        self.assertEqual(self.state()['state']['directorNotes'],'HIDDEN-ADVENTURE')
+        self.assertNotIn('HIDDEN-ADVENTURE',json.dumps(self.state(guest)))
+        with self.assertRaises(urllib.error.HTTPError) as error:
+            self.action('journal',guest,directorNotes='Overwrite')
+        self.assertEqual(error.exception.code,403)
     def test_persistent_recovery_and_export(self):
         self.action('character',character={'name':'Aria'});self.action('oracle',question='¿Hay luz?',uncertain=True,physical=[8,4,1])
         before=self.state();server.initialize();after=self.state();self.assertEqual(before['state'],after['state'])

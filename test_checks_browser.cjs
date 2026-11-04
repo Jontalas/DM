@@ -18,6 +18,11 @@ const path=require('node:path'),assert=require('node:assert/strict');
   const a=await host.newPage(),b=await guest.newPage(),errors=[];
   for(const page of [a,b]){page.on('pageerror',e=>errors.push(e.message));await page.goto(url);await page.locator('#app').waitFor({state:'visible'})}
   assert.equal(await b.locator('#requestCheck').isVisible(),false);
+  // Director preparation is available to the host, never displayed to a guest.
+  for(const page of [a,b])await page.locator('[data-tab="journal"]').click();
+  assert.equal(await a.locator('[name=directorNotes]').isVisible(),true);
+  assert.equal(await b.locator('[name=directorNotes]').isVisible(),false);
+  for(const page of [a,b])await page.locator('nav [data-tab="story"]').click();
   await b.locator('.party-person').click();
   assert.equal(await b.locator('[data-check-key="str"]').textContent(),'Fuerza -1');
   await b.locator('[data-check-key="Percepción"]').click();

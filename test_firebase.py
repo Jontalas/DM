@@ -17,7 +17,7 @@ import claude_dm
 
 class ClaudeTests(unittest.TestCase):
     def state(self):
-        state=initial_state({});state['secrets']='SECRET-DM';state['private']={'owner':'SECRET-PLAYER'}
+        state=initial_state({});state['secrets']='SECRET-DM';state['directorNotes']='AI-PREPARATION';state['private']={'owner':'SECRET-PLAYER'}
         state['messages']=[{'kind':'private','speaker':'Ana','text':'PRIVATE-MESSAGE','visibility':'private'}]
         return state
     def response(self,stop='end_turn',narration='La posadera se acerca.'):
@@ -29,7 +29,11 @@ class ClaudeTests(unittest.TestCase):
             self.assertEqual(request.full_url,'https://api.anthropic.com/v1/messages')
             self.assertEqual(request.get_header('X-api-key'),'fake-test-key')
             self.assertEqual(body['model'],claude_dm.DEFAULT_MODEL);self.assertIn('output_config',body)
-            self.assertNotIn('SECRET-DM',request.data.decode());self.assertNotIn('SECRET-PLAYER',request.data.decode());self.assertNotIn('PRIVATE-MESSAGE',request.data.decode())
+            context=json.loads(body['messages'][0]['content'])
+            self.assertEqual(context['directorKnowledge']['preparation'],'AI-PREPARATION')
+            self.assertNotIn('secrets',context['state'])
+            self.assertNotIn('SECRET-DM',request.data.decode())
+            self.assertNotIn('SECRET-PLAYER',request.data.decode());self.assertNotIn('PRIVATE-MESSAGE',request.data.decode())
             self.assertEqual(result['narration'],'La posadera se acerca.')
     def test_no_key_no_fake_reply(self):
         with patch.dict(os.environ,{},clear=True),patch('claude_dm.urllib.request.urlopen') as call:
