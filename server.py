@@ -109,15 +109,17 @@ def execute_action(body,me):
         elif body['type']=='start_adventure':
             premise=adventure.validate_start(state,body,me)
             if type(body.get('structured',False))!=bool:raise ValueError('Modo de aventura inválido')
+            source=adventure.source_text(body)
             if body.get('moduleId') and body.get('module') is not None:raise ValueError('Elige una sola fuente de aventura')
             if body.get('moduleId'):adventure_modules.install(state,adventure_modules.builtin(body['moduleId']))
             elif body.get('module') is not None:adventure_modules.install(state,body['module'])
             if state.get('adventureModule'):premise=state['adventureModule']['premise']
             actors=[c['id'] for c in adventure.ready_characters(state)]
-            result=ai_reply(state,premise,[],check_actors=actors,starting=True)
+            source_options={'source_text':source} if source is not None else {}
+            result=ai_reply(state,premise,[],check_actors=actors,starting=True,**source_options)
             if result.get('checks') or result.get('investigation'):raise ValueError('La apertura no puede resolver ni solicitar acciones de los personajes')
             if result.get('proposals'):raise ValueError('La apertura requiere una situación dentro de la cobertura disponible')
-            if body.get('structured') and not state.get('adventureModule') and result.get('adventureModule') is None:
+            if (body.get('structured') or source is not None) and not state.get('adventureModule') and result.get('adventureModule') is None:
                 raise ValueError('El director no entregó la investigación estructurada solicitada; la campaña no se ha modificado')
             if result.get('adventureModule') is not None:
                 if state.get('adventureModule'):raise ValueError('El director no puede sustituir una aventura aportada')

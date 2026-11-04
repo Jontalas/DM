@@ -6,18 +6,32 @@ function renderAdventure(){
  entry.hidden=active;
  entry.innerHTML=active?'':`<div class="card"><div class="eyebrow">LA PRIMERA PÁGINA</div><h3>El mundo espera a tu personaje</h3><p>${host?'La IA preparará un comienzo, personajes y secretos a partir de la premisa de tu campaña. Después, tú decides cómo actuar.':'El anfitrión puede iniciar la aventura cuando haya un personaje listo.'}</p>${host?`<button id="beginAdventure" class="primary" ${!ready||!model.aiConfigured||s.board.active?'disabled':''}>Iniciar aventura con IA</button><small>${!ready?'Crea primero un personaje con el asistente.':!model.aiConfigured?'Falta configurar el director de IA.':s.board.active?'Finaliza el combate para comenzar.':'El comienzo se guarda para continuar en otra sesión.'}</small>`:''}</div>`;
  if($('#beginAdventure'))$('#beginAdventure').onclick=()=>{
-  modal(`<div class="eyebrow">UN NUEVO COMIENZO</div><h2>¿Qué historia te apetece vivir?</h2><form id="adventureForm"><label>Aventura<select name="source"><option value="generated">Crear a partir de mi premisa</option><option value="example">La carta perdida · investigación breve</option><option value="import">Usar una aventura JSON compatible</option></select></label><label id="premiseField">Premisa<textarea name="premise" required maxlength="2000" rows="4">${esc(s.goal)}</textarea></label><label id="moduleFileField" hidden>Archivo de aventura<input type="file" name="moduleFile" accept=".json,application/json"><small>Formato cronicas-adventure-1, una escena tranquila con Percepción; hasta 64 KiB. Usa contenido que tengas derecho a utilizar.</small></label><p>El director respetará el tono y los límites de tu campaña. Preparará la aventura sin decidir las acciones de tu personaje.</p><button class="primary">Preparar y comenzar</button><p id="adventureProgress" role="status" aria-live="polite"></p><small>Se utiliza la IA configurada. El combate y las reglas aún tienen cobertura limitada.</small></form>`);
+  modal(`<div class="eyebrow">UN NUEVO COMIENZO</div><h2>¿Qué historia te apetece vivir?</h2><form id="adventureForm"><label>Aventura<select name="source"><option value="generated">Crear a partir de mi premisa</option><option value="text">Adaptar un texto o documento breve</option><option value="example">La carta perdida · investigación breve</option><option value="import">Usar una aventura JSON compatible</option></select></label><label id="premiseField">Premisa<textarea name="premise" required maxlength="2000" rows="4">${esc(s.goal)}</textarea></label><label id="moduleFileField" hidden>Archivo de aventura<input type="file" name="moduleFile" accept=".json,application/json"><small>Formato cronicas-adventure-1, una escena tranquila con Percepción; hasta 64 KiB. Usa contenido que tengas derecho a utilizar.</small></label><div id="sourceTextField" hidden><label>Texto de la aventura<textarea name="sourceText" maxlength="12000" rows="6" placeholder="Pega un fragmento de la aventura"></textarea></label><label>Cargar texto desde un archivo<input type="file" name="sourceFile" accept=".txt,.md,text/plain,text/markdown"></label><small>Hasta 12.000 caracteres en UTF-8. Usa contenido que tengas derecho a utilizar. La IA adaptará una sola situación a dos búsquedas de Percepción, sin peligros ni combate; no convierte la aventura completa. El texto se envía al director al comenzar y puede contener secretos. Se conserva la adaptación; guarda tu original aparte.</small></div><p>El director respetará el tono y los límites de tu campaña. Preparará la aventura sin decidir las acciones de tu personaje.</p><button class="primary">Preparar y comenzar</button><p id="adventureProgress" role="status" aria-live="polite"></p><small>Se utiliza la IA configurada. El combate y las reglas aún tienen cobertura limitada.</small></form>`);
   $('#adventureForm [name=source]').onchange=e=>{
    $('#premiseField').hidden=e.target.value!=='generated';
    $('#adventureForm [name=premise]').required=e.target.value==='generated';
+   $('#sourceTextField').hidden=e.target.value!=='text';
+   $('#adventureForm [name=sourceText]').required=e.target.value==='text';
    $('#moduleFileField').hidden=e.target.value!=='import';
    $('#adventureForm [name=moduleFile]').required=e.target.value==='import';
   };
+  $('#adventureForm [name=sourceFile]').onchange=run(async e=>{
+   const file=e.target.files[0];if(!file)return;
+   if(!/\.(txt|md)$/i.test(file.name)||file.size>48000)throw Error('Elige un archivo .txt o .md UTF-8 de hasta 48.000 bytes.');
+   let text;try{text=new TextDecoder('utf-8',{fatal:true}).decode(await file.arrayBuffer())}catch{throw Error('El archivo debe estar codificado en UTF-8.')}
+   if(!text.trim()||[...text].length>12000||/[\x00-\x08\x0b\x0c\x0e-\x1f]/.test(text))throw Error('El documento debe contener texto legible, entre 1 y 12.000 caracteres.');
+   $('#adventureForm [name=sourceText]').value=text;
+  });
   $('#adventureForm').onsubmit=run(async e=>{
    const form=e.target,button=form.querySelector('button');button.disabled=true;
    $('#adventureProgress').textContent='El director está preparando la aventura…';
    try{
     const data={premise:form.elements.premise.value,structured:form.elements.source.value==='generated'};
+    if(form.elements.source.value==='text'){
+     data.sourceText=form.elements.sourceText.value.trim();
+     if(!data.sourceText||[...data.sourceText].length>12000)throw Error('Aporta entre 1 y 12.000 caracteres de texto.');
+     data.structured=true;
+    }
     if(form.elements.source.value==='example')data.moduleId='la-carta-perdida';
     if(form.elements.source.value==='import'){
      const file=form.elements.moduleFile.files[0];if(!file||file.size>64000)throw Error('Elige un archivo JSON de hasta 64 KiB.');

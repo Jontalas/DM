@@ -22,6 +22,14 @@ La conversación conserva decisiones libres y respuestas de PNJ. Las vías alter
 
 ## Formato e importación
 
+### Adaptación desde texto (4 de noviembre de 2026)
+
+El inicio admite pegar texto o cargar localmente un archivo `.txt`/`.md` UTF-8, hasta 12.000 caracteres (archivo hasta 48.000 bytes). El jugador puede revisar y editar el fragmento antes de comenzar. No se admite PDF, Word ni una conversión completa de aventuras: se solicita una adaptación de una situación tranquila a las dos búsquedas soportadas, con sus límites expresos en el formulario. Mantener el original aparte.
+
+El servidor valida permisos, tamaño, caracteres de control y exclusión de otras fuentes antes de inferir. El documento solo entra como material privado delimitado en el contexto de inicio; no se añade al mensaje público ni al estado de campaña y no se vuelve a enviar en cada intervención. Se conserva el módulo adaptado y su progreso. El contrato exige tratar las instrucciones dentro del documento como datos y respetar los secretos. Esto no demuestra inmunidad semántica de la IA frente a instrucciones maliciosas ni fidelidad al original.
+
+Se usa la misma inferencia de inicio y una sola confirmación; no hay una llamada previa para extracción ni otra para convertir el texto. Leer el archivo, editarlo y cambiar la fuente es local. Un resultado sin módulo válido no confirma estado parcial. Las pruebas de HTTP, Waitress y navegador usan proveedor simulado: no se ha realizado una nueva evaluación de esta adaptación con Anthropic real.
+
 El archivo usa `format: cronicas-adventure-1`, `ruleset: pathfinder-1e` y el alcance anterior. Incluye título, premisa, localización, descripción pública, objetivo, preparación privada, conclusión condicionada, oportunidades y objetivos. La referencia ejecutable está en adventure_modules.py y el ejemplo propio en adventures/la-carta-perdida.json.
 
 Cada oportunidad tiene id, etiqueta pública, CD, texto de hallazgo, texto de fallo y requisitos de pistas previas. Cada objetivo identifica las pistas necesarias. El servidor rechaza claves desconocidas, efectos mecánicos no soportados, duplicados, referencias inexistentes y ciclos. Límites: 64 KiB, ocho oportunidades y cuatro objetivos. La generación se limita por instrucciones a una o dos oportunidades y un objetivo para acotar tokens y coste.

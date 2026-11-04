@@ -1,6 +1,6 @@
 # Reanudar el desarrollo
 
-Pausa solicitada por el usuario el **4 de noviembre de 2026**. No continuar ni programar trabajo hasta que el usuario pida reanudar. La instrucción de autonomía permanente vuelve a aplicarse cuando reanude.
+**Desarrollo reanudado por el usuario el 4 de noviembre de 2026.** Este archivo conserva el punto de pausa como referencia histórica; el estado actual se registra en TRABAJO.md. Vuelve a aplicarse la autonomía permanente.
 
 ## Punto guardado
 

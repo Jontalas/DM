@@ -34,6 +34,17 @@ def ready_characters(state):
             and not c.get('conditions','').strip()]
 
 
+def source_text(body):
+    """Bound imported prose before inference; documents are untrusted private data."""
+    if 'sourceText' not in body:return None
+    if body.get('moduleId') or body.get('module') is not None:
+        raise ValueError('Elige una sola fuente de aventura')
+    value=text(body['sourceText'],12000,'texto aportado (máximo 12.000 caracteres)')
+    if any(ord(c)<32 and c not in '\n\r\t' for c in value):
+        raise ValueError('El documento debe contener texto legible, no datos binarios')
+    return value
+
+
 def validate_start(state,body,me):
     if not me['host']:raise PermissionError('Solo el anfitrión inicia la aventura compartida')
     if state.get('adventure'):raise ValueError('La aventura ya está iniciada; continúa en la conversación')
