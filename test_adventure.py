@@ -90,3 +90,20 @@ class AdventureTests(unittest.TestCase):
         with self.assertRaises(PermissionError):adventure.continuation_request(state,{'id':'other','host':False})
         state['messages'].append({'kind':'director','text':'Narrado'})
         with self.assertRaises(ValueError):adventure.continuation_request(state,HOST)
+
+    def test_provider_reports_safe_failure_stage_and_uses_generation_headroom(self):
+        import adventure_modules
+        state=self.state()
+        response={'stop_reason':'max_tokens','content':[{'type':'text','text':'PRIVATE-PARTIAL-PAYLOAD'}]}
+        with patch.dict('os.environ',{'ANTHROPIC_API_KEY':'test-only'}),patch('urllib.request.urlopen',return_value=io.BytesIO(json.dumps(response).encode())) as provider:
+            with self.assertRaisesRegex(ValueError,'director:output_limit') as error:
+                claude_dm.ai_reply(state,'Crear',[],starting=True)
+            self.assertNotIn('PRIVATE-PARTIAL-PAYLOAD',str(error.exception))
+            self.assertEqual(json.loads(provider.call_args.args[0].data)['max_tokens'],4500)
+        module=adventure_modules.builtin('la-carta-perdida');module['scope']='unsupported';module['preparation']='PRIVATE-MODULE-PREPARATION'
+        result=reply(adventureModule=module)
+        response={'stop_reason':'end_turn','content':[{'type':'text','text':json.dumps(result)}]}
+        with patch.dict('os.environ',{'ANTHROPIC_API_KEY':'test-only'}),patch('urllib.request.urlopen',return_value=io.BytesIO(json.dumps(response).encode())):
+            with self.assertRaisesRegex(ValueError,'director:module') as error:
+                claude_dm.ai_reply(state,'Crear',[],starting=True)
+            self.assertNotIn('PRIVATE-MODULE-PREPARATION',str(error.exception))

@@ -67,35 +67,49 @@ def ai_reply(state,text,refs,rules=False,check_actors=None,starting=False):
     key=os.environ.get('ANTHROPIC_API_KEY')
     if not key:raise ValueError('Claude Haiku sin configurar: falta ANTHROPIC_API_KEY en el servidor. La acción no se ha guardado')
     context=build_context(state,text,refs,rules,check_actors,starting)
-    body={'model':model_name(),'max_tokens':3000,'system':SYSTEM,'messages':[{'role':'user','content':json.dumps(context,ensure_ascii=False)}],'output_config':{'format':{'type':'json_schema','schema':SCHEMA}}}
+    budget=4500 if starting and not state.get('adventureModule') else 3000
+    body={'model':model_name(),'max_tokens':budget,'system':SYSTEM,'messages':[{'role':'user','content':json.dumps(context,ensure_ascii=False)}],'output_config':{'format':{'type':'json_schema','schema':SCHEMA}}}
     req=urllib.request.Request('https://api.anthropic.com/v1/messages',data=json.dumps(body).encode(),headers={'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'})
+    stage='transport';stop_reason=None
     try:
         with urllib.request.urlopen(req,timeout=120) as response:output=json.load(response)
+        stage='completion';stop_reason=output.get('stop_reason')
         if output.get('stop_reason')!='end_turn':raise ValueError('Claude no completó la respuesta')
+        stage='json'
         text=''.join(block['text'] for block in output.get('content',[]) if block.get('type')=='text')
         result=normalize_response(json.loads(text))
+        stage='narration'
         if not isinstance(result,dict) or not isinstance(result.get('narration'),str) or not result['narration'].strip() or not isinstance(result.get('proposals'),list):raise ValueError('Respuesta inválida')
         if len(result['narration'])>30000 or any(not isinstance(p,dict) or p.get('type')!='manual' or not isinstance(p.get('reason'),str) for p in result['proposals']):raise ValueError('Propuestas inválidas')
         requests=result.get('checks',[])
+        stage='checks'
         if not isinstance(requests,list) or len(requests)>3:raise ValueError('Pruebas inválidas')
         for item in requests:
             if (not isinstance(item,dict) or item.get('kind') not in ('ability','save','skill')
                 or any(not isinstance(item.get(k),str) or not item[k].strip() for k in ('character','key','reason'))
                 or len(item['reason'])>500 or type(item.get('dc'))!=int or not 0<=item['dc']<=1000):raise ValueError('Pruebas inválidas')
         if 'memory' in result:
+            stage='memory'
             if rules:raise ValueError('Una consulta de reglas no puede actualizar la aventura')
             result['memory']=validate_memory(result['memory'])
         if 'investigation' in result:
+            stage='investigation'
             item=result['investigation']
             if (rules or not isinstance(item,dict) or set(item)!={'character','opportunity'} or result.get('checks')
                 or any(not isinstance(v,str) or not v.strip() or len(v)>200 for v in item.values())):
                 raise ValueError('Investigación inválida')
         if 'adventureModule' in result:
+            stage='module'
             if rules or not starting or state.get('adventureModule'):raise ValueError('El director no puede sustituir una aventura aportada o iniciada')
             result['adventureModule']=adventure_modules.validate_module(result['adventureModule'])
         return result
     except urllib.error.HTTPError as exc:
         code=exc.code;exc.close()
         raise ValueError(f'Claude Haiku devolvió HTTP {code}. Comprueba clave, permisos, modelo y cuota. La acción no se ha aplicado') from None
-    except (OSError,KeyError,TypeError,ValueError,AttributeError):
-        raise ValueError('Claude Haiku no entregó una respuesta completa y válida. La acción no se ha aplicado; puedes reintentar') from None
+    except (OSError,KeyError,TypeError,ValueError,AttributeError) as exc:
+        if stage=='completion' and stop_reason=='max_tokens':
+            raise ValueError('El director agotó el límite de salida antes de completar la aventura. La acción no se ha aplicado (director:output_limit)') from None
+        if stage=='module' and type(exc)==ValueError:
+            # This stage only calls our allowlisted module validator; its errors never quote source prose.
+            raise ValueError('El director entregó una aventura incompatible: '+str(exc)+'. La acción no se ha aplicado (director:module)') from None
+        raise ValueError('Claude Haiku no entregó una respuesta completa y válida. La acción no se ha aplicado (director:'+stage+')') from None
