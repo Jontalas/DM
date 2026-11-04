@@ -59,7 +59,7 @@ def prepare_input(raw):
     _keys(raw['license'],('id','attribution'));_text(raw['license']['id'],200);_text(raw['license']['attribution'],2000)
     if raw['permission'] not in ('private-use','redistributable'):raise RulePackError('Indica el ámbito de uso aportado; la aplicación no certifica permisos')
     _text(raw['scope'],1200)
-    document=raw['document'];_keys(document,('title','edition','pages'))
+    document=raw['document'];_keys(document,('title','edition','pages','origin') if isinstance(document,dict) and 'origin' in document else ('title','edition','pages'))
     _text(document['title'],200);_text(document['edition'],200)
     pages=document['pages']
     if not isinstance(pages,list) or not 1<=len(pages)<=32:raise RulePackError('Selecciona entre una y treinta y dos páginas o fragmentos')
@@ -69,9 +69,15 @@ def prepare_input(raw):
         if type(page['page'])!=int or not 1<=page['page']<=100000 or page['page'] in seen:raise RulePackError('Página de documento inválida o repetida')
         seen.add(page['page']);_text(page['text'],MAX_TEXT);size+=len(page['text'])
     if size>MAX_TEXT:raise RulePackError('Selecciona fragmentos pertinentes de hasta 24.000 caracteres en total; no se envía el manual entero')
+    origin=document.get('origin')
+    if origin is not None:
+        _keys(origin,('kind','sha256','pageCount','extractor'))
+        if origin['kind']!='pdf' or not isinstance(origin['sha256'],str) or not re.fullmatch('[a-f0-9]{64}',origin['sha256']):raise RulePackError('Origen PDF sin huella válida')
+        if type(origin['pageCount'])!=int or not 1<=origin['pageCount']<=2500 or max(seen)>origin['pageCount']:raise RulePackError('La selección no corresponde al número de páginas declarado')
+        if not isinstance(origin['extractor'],str) or not re.fullmatch(r'pdfjs-[0-9]+\.[0-9]+\.[0-9]+',origin['extractor']):raise RulePackError('Versión de extracción PDF inválida')
     digest=hashlib.sha256(canonical(raw).encode('utf-8')).hexdigest()
     sources=[{'id':'source-'+digest[:12]+'-p'+str(page['page']),'title':document['title'],
-        'edition':document['edition'],'locator':'Página/fragmento aportado '+str(page['page'])} for page in pages]
+        'edition':document['edition'],'locator':('PDF p.'+str(page['page'])+' · archivo SHA-256 '+origin['sha256'] if origin else 'Página/fragmento aportado '+str(page['page']))} for page in pages]
     return {'request':raw,'sha256':digest,'sources':sources,
         'fragments':[{'source':source['id'],'sha256':hashlib.sha256(page['text'].encode('utf-8')).hexdigest(),'text':page['text']}
             for source,page in zip(sources,pages)]}

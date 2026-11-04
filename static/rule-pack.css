@@ -4,4 +4,6 @@
 .pack-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:16px}
 .pack-fields dd{margin:6px 0;font-size:1.3rem;color:var(--gold)}
 .pack-source{white-space:pre-wrap;overflow-wrap:anywhere;font:inherit;max-height:350px;overflow:auto}
+.pack-pdf-tools{border-block:1px solid var(--line);padding:12px 0;margin:16px 0;overflow-wrap:anywhere}
+.pack-pdf-canvas{display:block;width:100%;height:auto;max-width:100%;background:white;margin:12px 0}
 @media(max-width:800px){.pack-columns{grid-template-columns:minmax(0,1fr);gap:0}}

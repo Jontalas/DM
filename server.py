@@ -26,6 +26,14 @@ READER=None  # Explicit test injection only; production obtains private assets f
 LOCK=threading.RLock()
 
 
+def static_cache_control(path):
+    try:parts=path.resolve().relative_to((ROOT/'static').resolve()).parts
+    except ValueError:return 'no-cache'
+    version=parts[1].removeprefix('pdfjs-') if len(parts)>2 and parts[0]=='vendor' and parts[1].startswith('pdfjs-') else ''
+    immutable=version and len(version.split('.'))==3 and all(n.isdigit() for n in version.split('.'))
+    return 'public, max-age=31536000, immutable' if immutable else 'no-cache'
+
+
 def initialize():
     global STORE
     if STORE is None: STORE=FirestoreStore.from_environment()
@@ -249,8 +257,8 @@ class Handler(BaseHTTPRequestHandler):
                 return
             path=ROOT/'static'/('index.html' if url.path=='/' else url.path.lstrip('/'))
             if not path.resolve().is_relative_to((ROOT/'static').resolve()) or not path.is_file():self.reply({'error':'No encontrado'},404);return
-            types={'.html':'text/html; charset=utf-8','.css':'text/css','.js':'text/javascript; charset=utf-8'}
-            raw=path.read_bytes();self.send_response(200);self.send_header('Content-Type',types.get(path.suffix,'application/octet-stream'));self.send_header('Content-Length',str(len(raw)));self.end_headers();self.wfile.write(raw)
+            types={'.html':'text/html; charset=utf-8','.css':'text/css','.js':'text/javascript; charset=utf-8','.mjs':'text/javascript; charset=utf-8','.wasm':'application/wasm'}
+            raw=path.read_bytes();self.send_response(200);self.send_header('Content-Type',types.get(path.suffix,'application/octet-stream'));self.send_header('Content-Length',str(len(raw)));self.send_header('Cache-Control',static_cache_control(path));self.end_headers();self.wfile.write(raw)
         except PermissionError as exc:self.reply({'error':str(exc)},401)
         except (ValueError,OSError) as exc:self.reply({'error':str(exc)},400)
         except Exception:self.reply({'error':'Firebase no está disponible; no se ha utilizado almacenamiento local'},503)

@@ -43,6 +43,17 @@ class RulePackAuthoringTests(unittest.TestCase):
         self.assertNotEqual(view['fragments'][0]['text'],prepared['fragments'][0]['text'])
         self.assertNotIn('permission',authoring.context(prepared))
 
+    def test_pdf_provenance_preserves_page_numbers_and_rejects_invalid_claims(self):
+        raw=request();raw['document']['origin']={'kind':'pdf','sha256':'a'*64,'pageCount':4,'extractor':'pdfjs-6.5.438'}
+        prepared=authoring.prepare_input(raw)
+        self.assertIn('PDF p.1',prepared['sources'][0]['locator']);self.assertIn('a'*64,prepared['sources'][0]['locator'])
+        self.assertNotEqual(prepared['sha256'],self.prepared['sha256'])
+        for key,value in [('sha256','bad'),('pageCount',True),('extractor','python-eval'),('pageCount',0)]:
+            altered=copy.deepcopy(raw);altered['document']['origin'][key]=value
+            with self.subTest(key=key,value=value),self.assertRaises(RulePackError):authoring.prepare_input(altered)
+        raw['document']['pages'][0]['page']=5
+        with self.assertRaises(RulePackError):authoring.prepare_input(raw)
+
     def test_preflight_rejects_unbounded_missing_and_ambiguous_input_shape(self):
         for mutate in ('large','duplicate','bool-page','permission','unknown','empty'):
             raw=request()

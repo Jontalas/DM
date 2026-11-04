@@ -40,8 +40,9 @@ def file_response(environ, start_response, path, private=False):
         return error(start_response,404,'Archivo no instalado en este servidor')
     size = path.stat().st_size
     content_type = mimetypes.guess_type(str(path))[0] or 'application/octet-stream'
-    if path.suffix in {'.js','.css','.html'}: content_type += '; charset=utf-8'
-    start_response('200 OK',[('Content-Type',content_type),('Content-Length',str(size)),('Cache-Control','private, no-store' if private else 'no-cache')])
+    if path.suffix=='.mjs':content_type='text/javascript'
+    if path.suffix in {'.js','.mjs','.css','.html'}: content_type += '; charset=utf-8'
+    start_response('200 OK',[('Content-Type',content_type),('Content-Length',str(size)),('Cache-Control','private, no-store' if private else server.static_cache_control(path))])
     if environ['REQUEST_METHOD']=='HEAD': stream.close(); return []
     wrapper = environ.get('wsgi.file_wrapper',FileWrapper)
     return wrapper(stream,65536)

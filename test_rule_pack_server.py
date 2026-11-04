@@ -2,6 +2,7 @@
 import copy
 import unittest
 import urllib.error
+import urllib.request
 from unittest.mock import patch
 import rulesets
 import server
@@ -51,6 +52,13 @@ class RulePackServerTests(unittest.TestCase):
         self.assertEqual(result['sourceVerification'],'unverified')
         self.assertEqual(result['structuralValidation'],'passed')
         self.assertEqual(result['actions'],1)
+
+    def test_pdf_library_modules_are_local_versioned_and_cacheable(self):
+        for asset,mime in [('build/pdf.min.mjs','text/javascript'),('wasm/jbig2.wasm','application/wasm')]:
+            with urllib.request.urlopen(self.url+'/vendor/pdfjs-6.5.438/'+asset) as response:
+                self.assertEqual(response.headers.get_content_type(),mime)
+                self.assertIn('immutable',response.headers['Cache-Control']);self.assertGreater(len(response.read()),1000)
+        with urllib.request.urlopen(self.url+'/rule-source-pdf.js') as response:self.assertEqual(response.headers['Cache-Control'],'no-cache')
 
     def test_draft_requires_explicit_policy_and_host_installation(self):
         guest=self.request('/api/join',{'name':'Luis','invite':self.state()['invite']})['token']

@@ -1,0 +1,3 @@
+# Pinned third-party distributions and PDF offsets require original byte streams.
+static/vendor/** -text
+test_fixtures/*.pdf -text
