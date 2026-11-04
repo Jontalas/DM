@@ -1,0 +1,19 @@
+{
+  "format": "cronicas-adventure-1",
+  "ruleset": "pathfinder-1e",
+  "scope": "single-scene-neutral-perception",
+  "title": "La carta perdida",
+  "premise": "Una investigación breve y tranquila en una posada. Lucio ha perdido una carta sellada y necesita localizarla antes de continuar su viaje. Los personajes deciden si ayudan y cómo actúan.",
+  "location": "La Posada del Ciervo Cansado",
+  "description": "La sala está bien iluminada y tranquila. Lucio, un mensajero preocupado, revisa su morral. Gaspar atiende la barra. Junto al hogar hay un banco de madera y un abrigo de viaje colgado en una percha.",
+  "goal": "Localizar la carta perdida de Lucio",
+  "preparation": "La carta se enganchó accidentalmente en el forro suelto del abrigo que Lucio llevaba junto al morral. Al quitarse el abrigo junto al banco, lo colgó en la percha. Gaspar vio el morral abierto, pero no sabe dónde está la carta. Nadie ha robado nada. Los hallazgos solo se confirman mediante las investigaciones del motor. Adapta las conversaciones libremente sin elegir acciones del jugador. Si declara una vía alternativa razonable, atiéndela en la ficción sin atribuir al motor un hallazgo que no haya confirmado.",
+  "conclusion": "La carta sellada ha sido localizada intacta. Lucio puede continuar su viaje. Su entrega, las conversaciones y la decisión de ayudarlo pertenecen a los jugadores; encontrarla no obliga a entregarla.",
+  "opportunities": [
+    {"id":"rastro","label":"Examinar de cerca la zona del banco","dc":10,"discovery":"Bajo el banco hay una marca de cera roja y una fibra de lana que coincide con el abrigo de la percha.","failure":"No distingues un rastro claro. El lugar sigue accesible y puedes volver a examinarlo.","requires":[]},
+    {"id":"carta","label":"Examinar de cerca el forro suelto del abrigo","dc":10,"discovery":"En el hueco del forro asoma la carta sellada de Lucio. La localizas sin abrirla ni decidir todavía qué hacer con ella.","failure":"El pliegue del forro oculta lo que buscas. Puedes seguir investigando mientras el abrigo permanezca aquí.","requires":["rastro"]}
+  ],
+  "objectives": [
+    {"id":"localizar","text":"Localizar la carta de Lucio","requires":["carta"]}
+  ]
+}

@@ -1,5 +1,6 @@
 """Validated narrative memory. This module never resolves game mechanics."""
 import time
+import adventure_modules
 
 MEMORY_SCHEMA={'type':'object','properties':{
     'summary':{'type':'string'},'location':{'type':'string'},'goal':{'type':'string'},
@@ -54,6 +55,11 @@ def apply_memory(state,value,starting=False):
                         'source':'Memoria narrativa de IA; no certifica reglas ni consecuencias mecánicas'}
     state['directorMemory']=memory['preparation']
     state['location']=memory['location'];state['goal']=memory['goal'];state['objectives']=memory['objectives']
+    if state.get('adventureModule'):
+        # The authored module and confirmed discoveries outrank a narrative paraphrase.
+        module=state['adventureModule'];public=adventure_modules.public_view(state)
+        state['location']=module['location'];state['goal']=module['goal']
+        state['objectives']=[item['text'] for item in public['objectives'] if not item['completed']]
 
 
 def continuation_request(state,me):

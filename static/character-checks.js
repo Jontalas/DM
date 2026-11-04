@@ -20,7 +20,7 @@ function renderChecks(){
  $('#checkRequests').innerHTML=rows.map(p=>{
   const c=snapshot.state.characters.find(c=>c.id===p.check.character),allowed=c&&(me.host||c.owner===me.id);
   const name=c&&characterChecks(c).find(v=>v.kind===p.check.kind&&v.key===p.check.key)?.name||p.check.key;
-  return `<article class="check-request"><strong>${esc(c?.name||'Personaje')} · ${esc(name)} · CD ${p.check.dc}</strong><p>${esc(p.reason)}</p><small>${esc(p.source)}</small><div class="toolbar"><button class="primary" data-resolve-check="${esc(p.check.id)}" ${!allowed?'disabled':''}>Tirar d20 y resolver</button>${me.host?`<button data-cancel-check="${esc(p.check.id)}">Cancelar</button>`:''}</div></article>`;
+  return `<article class="check-request"><strong>${esc(c?.name||'Personaje')} · ${esc(name)} · CD ${p.check.dc}</strong><p>${esc(p.reason)}</p><small>${esc(p.source)}</small><div class="toolbar"><button class="primary" data-resolve-check="${esc(p.check.id)}" ${!allowed?'disabled':''}>Tirar d20 y resolver</button>${p.investigation?`<button data-resolve-check="${esc(p.check.id)}" data-check-method="take10" ${!allowed?'disabled':''}>Elegir 10</button><button data-resolve-check="${esc(p.check.id)}" data-check-method="take20" ${!allowed?'disabled':''}>Elegir 20 · veinte búsquedas</button>`:''}${me.host?`<button data-cancel-check="${esc(p.check.id)}">Cancelar</button>`:''}</div></article>`;
  }).join('');
 }
 function requestCheckForm(){
@@ -36,7 +36,7 @@ document.addEventListener('click',e=>{
  const button=e.target.closest('[data-sheet-check],[data-resolve-check],[data-cancel-check]');if(!button)return;
  run(async()=>{
  if(button.dataset.sheetCheck){await act('check',{character:button.dataset.checkCharacter,checkKind:button.dataset.sheetCheck,key:button.dataset.checkKey});toast(snapshot.state.messages.at(-1).text)}
- else if(button.dataset.resolveCheck)await act('check',{request:button.dataset.resolveCheck});
+ else if(button.dataset.resolveCheck)await act('check',{request:button.dataset.resolveCheck,...(button.dataset.checkMethod?{method:button.dataset.checkMethod}:{})});
  else await act('cancel_check',{request:button.dataset.cancelCheck});
  })(e);
 });

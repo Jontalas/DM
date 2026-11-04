@@ -4,6 +4,7 @@ import combat
 import tactics
 import checks
 import character_builder
+import adventure_modules
 
 def initial_state(config):
     return {'scene':1,'location':config.get('location','Por decidir'),'worldTime':'Comienzo de la aventura','goal':config.get('goal','Definir el objetivo con el grupo'),'objectives':[], 'allies':[],'enemies':[],'facts':{},'unknowns':[],'consequences':[], 'tokens':0,'threshold':int(config.get('threshold',15)),'turned':False,'voluntaryScene':0,'characters':[],'messages':[],'pending':[],'bookmarks':[],'private':{},'secrets':'','notes':'','tone':config.get('tone','Fantasía aventurera'),'limits':config.get('limits',''),'difficulty':config.get('difficulty','Estándar; encuentros pendientes de validar'),'mode':config.get('mode','solo'),'agreement':'Adaptación multijugador: reserva común de FH; el anfitrión registra el consentimiento unánime antes del gasto. Decisiones colectivas por consenso. No se alteran estadísticas para equilibrar encuentros.','criteria':['TREY p.25: el ejemplo d8=7 dice objetivo en curso; la tabla p.23 indica objetivo final. Se usa la tabla.','TREY p.25: ejemplo d6=5 dice retrasado; se aplica demorado, tabla p.23.','Pathfinder 1e: las ventajas de FH son una adaptación TREY; requieren adjudicación manual y registro.'],'board':{'active':False,'round':1,'turn':0,'order':[],'terrain':{},'spent':{}},'oracleLog':[]}
@@ -169,13 +170,29 @@ def apply_action(s,b,me):
         else:
             c=char(s,b['character'],me);spec={'kind':b['checkKind'],'key':b['key']};dc=None
         checks.modifier(c,spec['kind'],spec['key'])  # Validate before generating any dice.
+        if pending:adventure_modules.validate_pending(s,pending)
+        method=b.get('method','roll')
+        if method not in ('roll','take10','take20'):raise ValueError('Método de prueba inválido')
+        if method!='roll' and (not pending or not pending.get('investigation')):
+            raise ValueError('Elegir 10/20 solo está verificado en las investigaciones tranquilas de aventura')
+        if method!='roll' and b.get('physical') is not None:raise ValueError('Elegir 10/20 no utiliza dados físicos')
         if b.get('physical') is not None:host(me)
-        raw=dice([20],b.get('physical'))[0];result=checks.resolve(c,spec['kind'],spec['key'],raw,dc)
+        raw=10 if method=='take10' else 20 if method=='take20' else dice([20],b.get('physical'))[0]
+        result=checks.resolve(c,spec['kind'],spec['key'],raw,dc)
+        if method!='roll':result['method']=method
         if pending:s['pending'].remove(pending)
         outcome='' if dc is None else f" contra CD {dc}: {'éxito' if result['success'] else 'fallo'}"
         if result['natural']:outcome+=' ('+result['natural']+')'
         reason=' · '+pending['reason'] if pending else ''
-        log(s,f"{c['name']} · {result['name']}: d20 {raw} {result['modifier']:+} = {result['total']}{outcome}{reason}. {result['basis']}. Origen: {'físico' if b.get('physical') is not None else 'servidor'}. No aplica efectos ni coste de acción por sí sola.",check=result,refs=[{'book':'reglas','page':182 if spec['kind']=='save' else 87 if spec['kind']=='skill' else 17}])
+        origin='elegir 10' if method=='take10' else 'elegir 20' if method=='take20' else 'físico' if b.get('physical') is not None else 'servidor'
+        die_label='valor fijo' if method!='roll' else 'd20'
+        log(s,f"{c['name']} · {result['name']}: {die_label} {raw} {result['modifier']:+} = {result['total']}{outcome}{reason}. {result['basis']}. Origen: {origin}. No aplica efectos ni coste de acción por sí sola.",check=result,refs=[{'book':'reglas','page':182 if spec['kind']=='save' else 87 if spec['kind']=='skill' else 17}])
+        if pending and pending.get('investigation'):
+            discovery=adventure_modules.resolve(s,pending,result)
+            log(s,discovery+' Se registra una acción de movimiento de búsqueda fuera de combate; sin conversión automática a tiempo transcurrido.',
+                discovery={'opportunity':pending['investigation'],'success':result['success']},refs=[{'book':'reglas','page':101}])
+            if s['moduleProgress']['completed']:
+                log(s,s['adventureModule']['conclusion'],adventureComplete=True)
     elif kind=='roll':
         n=int(b.get('n',1)); sides=int(b.get('sides',20)); mod=int(b.get('modifier',0))
         if not 1<=n<=30 or sides not in [2,3,4,6,8,10,12,20,100] or abs(mod)>1000: raise ValueError('Tirada inválida')

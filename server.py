@@ -11,6 +11,7 @@ from engine import apply_action, initial_state
 from firebase_store import BOOKS, FirestoreStore, Conflict, Unavailable
 from claude_dm import ai_reply, model_name
 import adventure
+import adventure_modules
 from narrative_text import repair_text
 
 ROOT=Path(__file__).resolve().parent
@@ -46,6 +47,7 @@ def load(cid):return repository().load(cid)
 
 def view(row,state,me):
     state=json.loads(json.dumps(state))
+    module_view=adventure_modules.public_view(state)
     # Repair historical model prose on the copy, preserving originals in storage/export.
     for message in state['messages']:
         if message.get('kind')=='director':message['text']=repair_text(message.get('text',''))
@@ -56,6 +58,8 @@ def view(row,state,me):
         state.pop('secrets',None)
         state.pop('directorNotes',None)
         state.pop('directorMemory',None)
+        state.pop('adventureModule',None)
+    if module_view:state['adventureModuleView']=module_view
     state['private']={k:v for k,v in state.get('private',{}).items() if k==me['id'] or me['host']}
     return {'id':row['id'],'title':row['title'],'version':row['version'],'state':state,'me':me,'players':repository().players(row['id']),'invite':row['invite'] if me['host'] else None}
 
@@ -70,6 +74,13 @@ def open_book(book):
 
 def fingerprint(body):
     return hashlib.sha256(json.dumps(body,sort_keys=True,separators=(',',':'),ensure_ascii=False).encode()).hexdigest()
+
+
+def queue_investigation(state,body,me):
+    spec=adventure_modules.investigation(state,body,me)
+    apply_action(state,{'type':'request_check',**{k:v for k,v in spec.items() if k!='opportunity'}},{**me,'host':True})
+    state['pending'][-1]['investigation']=spec['opportunity']
+    state['pending'][-1]['source']='Investigación de aventura; Percepción: Reglas PDF p.101. CD adjudicada por su autor.'
 
 
 def execute_action(body,me):
@@ -89,16 +100,31 @@ def execute_action(body,me):
             for key in initial_state({}):
                 if key not in state:raise ValueError('Falta '+key)
             for character in state['characters']:character['owner']=me['id']
+            adventure_modules.validate_restored(state)
             state['private']={};title=str(data['title'])[:120]
         elif body['type']=='start_adventure':
             premise=adventure.validate_start(state,body,me)
+            if type(body.get('structured',False))!=bool:raise ValueError('Modo de aventura inválido')
+            if body.get('moduleId') and body.get('module') is not None:raise ValueError('Elige una sola fuente de aventura')
+            if body.get('moduleId'):adventure_modules.install(state,adventure_modules.builtin(body['moduleId']))
+            elif body.get('module') is not None:adventure_modules.install(state,body['module'])
+            if state.get('adventureModule'):premise=state['adventureModule']['premise']
             actors=[c['id'] for c in adventure.ready_characters(state)]
             result=ai_reply(state,premise,[],check_actors=actors,starting=True)
-            if result.get('checks'):raise ValueError('La apertura no puede resolver ni solicitar acciones de los personajes')
+            if result.get('checks') or result.get('investigation'):raise ValueError('La apertura no puede resolver ni solicitar acciones de los personajes')
             if result.get('proposals'):raise ValueError('La apertura requiere una situación dentro de la cobertura disponible')
+            if body.get('structured') and not state.get('adventureModule') and result.get('adventureModule') is None:
+                raise ValueError('El director no entregó la investigación estructurada solicitada; la campaña no se ha modificado')
+            if result.get('adventureModule') is not None:
+                if state.get('adventureModule'):raise ValueError('El director no puede sustituir una aventura aportada')
+                adventure_modules.install(state,result['adventureModule'])
             adventure.apply_memory(state,result.get('memory'),starting=True)
             state['messages'].append({'kind':'director','speaker':'Director · Claude Haiku','text':result['narration'],
                                       'time':time.time(),'adventureStart':True})
+        elif body['type']=='investigate':
+            queue_investigation(state,body,me)
+            if body.get('method') is not None:
+                apply_action(state,{'type':'check','request':state['pending'][-1]['check']['id'],'method':body['method']},me)
         elif body['type']=='continue_adventure' or body['type']=='talk' and body.get('director',True):
             if body['type']=='continue_adventure':
                 text=adventure.continuation_request(state,me);refs=[]
@@ -109,9 +135,14 @@ def execute_action(body,me):
                 text=body['text'];refs=search(text)
             actors=[c['id'] for c in state['characters'] if me['host'] or c['owner']==me['id']]
             result=ai_reply(state,text,refs,check_actors=actors)
-            if body['type']=='continue_adventure' and result.get('checks'):
+            if result.get('adventureModule') is not None:raise ValueError('La conversación no puede sustituir la aventura en curso')
+            if body['type']=='continue_adventure' and (result.get('checks') or result.get('investigation')):
                 raise ValueError('La continuación debe narrar el resultado confirmado, sin solicitar otra prueba')
-            if (state.get('adventure') and body.get('kind','action')!='ooc' and not result.get('checks')
+            if result.get('investigation'):
+                if result.get('checks'):raise ValueError('Una investigación utiliza su propia prueba, sin pruebas genéricas adicionales')
+                if body.get('kind')=='ooc':raise ValueError('Una intervención fuera de personaje no solicita investigaciones')
+                queue_investigation(state,result['investigation'],me)
+            if (state.get('adventure') and body.get('kind','action')!='ooc' and not result.get('checks') and not result.get('investigation')
                 and not any(p.get('check') for p in state['pending'])):
                 adventure.apply_memory(state,result.get('memory'))
             state['messages'].append({'kind':'director','speaker':'Director · Claude Haiku','text':result['narration'],'refs':[{'book':r['book'],'page':r['page']} for r in refs],'time':time.time(),'ooc':body.get('kind')=='ooc'})

@@ -10,13 +10,13 @@ El usuario solicita continuar con el siguiente punto sin terminar el trabajo al 
 
 ## En curso
 
-1. Codificación y agencia narrativa: reparación local de secuencias UTF-8 mal representadas solo en prosa del modelo; conservación de entradas de jugador e identificadores; presentación de respuestas históricas sin sobrescribir originales; contrato explícito de declaraciones en contexto. Probar y desplegar. El contrato de agencia es una mitigación y requiere evaluación semántica real.
+1. cf5c13c: codificación corregida en respuestas nuevas y presentación histórica; entradas de jugador y originales conservados. Comprobación HTTPS del historial real correcta y una intervención real de corrección de memoria guardada en revisión 3 sin cambios mecánicos. El modelo retiró el acercamiento a Lucio señalado por el jugador; aún conserva detalles heredados de la apertura, por lo que no se certifica agencia perfecta.
+2. Investigación estructurada: módulo validado privado, ejemplo propio, importación JSON, generación validada, Percepción con elegir 10/20, pistas y objetivos deterministas. Suite completa de 163 pruebas con emulador correcta y recorridos de navegador correctos. Preparando despliegue y comprobación real del bloque generado.
 
 ## Siguientes bloques
 
-2. Aventura estructurada con lugares, PNJ, pistas y objetivos condicionados a resultados del motor, para cerrar un conflicto de exploración sin que el anfitrión edite el diario.
-3. Importación de aventuras del usuario con estructura validada, conocimiento privado y progreso persistente; sin ejecutar instrucciones de documentos.
-4. Sesiones y biblioteca de personajes reutilizables con compatibilidad de reglas explícita.
+3. Sesiones y biblioteca de personajes reutilizables con compatibilidad de reglas explícita. Aprovechar credenciales de campaña existentes y evitar nuevos servicios; declarar límites entre perfiles/dispositivos y entre copias iniciales y progreso original.
+4. Ampliar aventuras aportadas a texto/documentos y varias escenas con rutas alternativas; preservar secretos y progreso sin ejecutar instrucciones de documentos.
 5. Modularización de sistemas, segundo bloque de reglas oficiales permisibles y presentación audiovisual coherente.
 
 Verificar cada bloque con pruebas del motor, permisos, duplicación, errores y recorrido de usuario. Mantener los originales reglamentarios como autoridad al tocar mecánicas. No confundir contratos con proveedor simulado con pruebas de IA real.

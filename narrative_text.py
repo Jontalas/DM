@@ -49,4 +49,13 @@ def normalize_response(result):
         for key in ('summary','location','goal','preparation'):
             if key in memory:memory[key]=repair_text(memory[key])
         if isinstance(memory.get('objectives'),list):memory['objectives']=[repair_text(v) for v in memory['objectives']]
+    module=output.get('adventureModule')
+    if isinstance(module,dict):
+        for key in ('title','premise','location','description','goal','preparation','conclusion'):
+            if key in module:module[key]=repair_text(module[key])
+        for collection,fields in [('opportunities',('label','discovery','failure')),('objectives',('text',))]:
+            for item in module.get(collection,[]) if isinstance(module.get(collection),list) else []:
+                if isinstance(item,dict):
+                    for key in fields:
+                        if key in item:item[key]=repair_text(item[key])
     return output

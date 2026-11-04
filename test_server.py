@@ -160,6 +160,63 @@ class IntegrationTests(unittest.TestCase):
         self.assertEqual(state['messages'][-2]['text'],'Digo literalmente Ã³')
         exported=self.request('/api/export',{},self.token)
         self.assertEqual(exported['state']['messages'][-1]['text'],broken)
+
+    def test_authored_adventure_solves_without_ai_per_search_and_survives_import(self):
+        from test_adventure import reply
+        from test_character_builder import choices
+        self.action('create_character',choices=choices());cid=self.state()['state']['characters'][0]['id']
+        with patch.object(server,'ai_reply',return_value=reply()) as provider:
+            self.action('start_adventure',premise='Una investigación',moduleId='la-carta-perdida')
+            first=self.action('investigate',character=cid,opportunity='rastro',method='take10')
+            self.assertTrue(self.request('/api/action',first,self.token)['duplicate'])
+            self.action('investigate',character=cid,opportunity='carta',method='take20')
+            self.assertEqual(provider.call_count,1)
+        state=self.state()['state'];self.assertTrue(state['moduleProgress']['completed']);self.assertEqual(state['objectives'],[])
+        self.assertEqual(state['moduleProgress']['searchActions'],21)
+        guest=self.request('/api/join',{'name':'Luis','invite':self.state()['invite']})['token']
+        shared=self.state(guest)['state'];self.assertNotIn('adventureModule',shared)
+        self.assertTrue(shared['adventureModuleView']['completed'])
+        exported=self.request('/api/export',{},self.token);self.action('import',campaign=exported)
+        self.assertEqual(self.state()['state']['moduleProgress'],state['moduleProgress'])
+        exported['state']['moduleProgress']['discoveries'][0]['text']='Otra pista'
+        with self.assertRaises(urllib.error.HTTPError) as error:self.action('import',campaign=exported)
+        error.exception.close();self.assertEqual(self.state()['state']['moduleProgress'],state['moduleProgress'])
+
+    def test_investigation_from_free_intent_uses_owned_actor_and_existing_module_dc(self):
+        from test_adventure import reply
+        from test_character_builder import choices
+        self.action('create_character',choices=choices());cid=self.state()['state']['characters'][0]['id']
+        with patch.object(server,'ai_reply',return_value=reply()):
+            self.action('start_adventure',premise='Una investigación',moduleId='la-carta-perdida')
+        proposal={'character':cid,'opportunity':'rastro'}
+        with patch.object(server,'ai_reply',return_value=reply(investigation=proposal)):
+            self.action('talk',text='Examino la zona del banco',kind='action',director=True)
+        pending=self.state()['state']['pending'][-1]
+        self.assertEqual(pending['investigation'],'rastro');self.assertEqual(pending['check']['dc'],10)
+        self.assertEqual(self.state()['state']['moduleProgress']['discoveries'],[])
+        self.action('check',request=pending['check']['id'],method='take10')
+        self.assertEqual(self.state()['state']['moduleProgress']['discoveries'][0]['id'],'rastro')
+
+    def test_generated_and_imported_modules_share_validation_before_state_changes(self):
+        import adventure_modules
+        from test_adventure import reply
+        from test_character_builder import choices
+        self.action('create_character',choices=choices());module=adventure_modules.builtin('la-carta-perdida')
+        before=self.state()
+        with patch.object(server,'ai_reply') as provider:
+            with self.assertRaises(urllib.error.HTTPError) as error:self.action('start_adventure',module={'format':'other'})
+            error.exception.close();provider.assert_not_called()
+        self.assertEqual(self.state()['state'],before['state'])
+        with patch.object(server,'ai_reply',return_value=reply()):
+            with self.assertRaises(urllib.error.HTTPError) as error:self.action('start_adventure',premise='Algo',structured=True)
+            error.exception.close()
+        self.assertEqual(self.state()['state'],before['state'])
+        with patch.object(server,'ai_reply',return_value=reply(adventureModule=module)):
+            self.action('start_adventure',premise='Generar una investigación')
+        self.assertEqual(self.state()['state']['adventureModule']['title'],module['title'])
+        with patch.object(server,'ai_reply',return_value=reply(adventureModule=module)):
+            with self.assertRaises(urllib.error.HTTPError) as error:self.action('talk',text='Hola',director=True)
+            error.exception.close()
     def test_confirmed_ai_action_replay_does_not_call_provider_again(self):
         with patch.object(server,'ai_reply',return_value={'narration':'Fixture; no es IA real','proposals':[]}) as provider:
             body=self.action('talk',text='Exploro',director=True)

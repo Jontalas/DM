@@ -15,7 +15,18 @@ def main():
     if os.environ.get('TEST_ADVENTURE_FIXTURE')=='1':
         from test_adventure import reply,memory
         def fixture_reply(state,text,refs,**options):
-            if options.get('starting'):return reply()
+            if state.get('adventureModule') and state['adventureModule']['title']!='Fixture libre':
+                module=state['adventureModule']
+                from adventure_modules import public_view
+                public=public_view(state)
+                narration=module['description'] if options.get('starting') else public['conclusion'] if public['completed'] else 'La investigación continúa.'
+                return reply(narration=narration,memory=memory(summary='Progreso de investigación conservado.',
+                    location=module['location'],goal=module['goal'],objectives=[v['text'] for v in public['objectives'] if not v['completed']],
+                    preparation='Continuidad de prueba, sin cambios a la aventura.'))
+            if options.get('starting'):
+                from adventure_modules import builtin
+                module=builtin('la-carta-perdida');module['title']='Fixture libre';module['location']='El molino'
+                return reply(adventureModule=module)
             if 'intento abrir' in text.casefold():
                 actor=options['check_actors'][0]
                 return reply(narration='La puerta se resiste; prueba de Fuerza pendiente.',

@@ -4,6 +4,8 @@ La dirección actual y las prioridades están en [PRODUCTO.md](PRODUCTO.md). Obj
 
 Primer recorrido de aventuras: tras crear un personaje con el asistente, «Iniciar aventura con IA» prepara la apertura y guarda una memoria pública y privada. El diario se actualiza con la conversación, y tras las tiradas puede continuarse con el resultado real del motor. Alcance, costes y límites en [AVENTURAS.md](AVENTURAS.md).
 
+El primer formato de [investigaciones estructuradas](INVESTIGACIONES.md) permite generar una escena breve, jugar el ejemplo «La carta perdida» o importar un JSON compatible. Percepción, elegir 10/20, hallazgos y objetivos se resuelven sin IA por cálculo. Su cobertura es una escena tranquila; no equivale a importar cualquier PDF o a dirigir automáticamente todo Pathfinder.
+
 El diario incluye «Preparación del maestro de IA»: su contenido se envía a Anthropic durante la narración, se oculta a invitados y se excluye de consultas de reglas. Los secretos antiguos y las notas privadas conservan su exclusión del proveedor. El anfitrión tiene acceso administrativo. La reserva del contenido en la narración depende del modelo; no se ha certificado mediante inferencia real.
 
 Aplicación cliente/servidor para Pathfinder **primera edición** y TREY, con **Cloud Firestore**, **Firebase Storage** y **Claude Haiku**. Esta entrega es una base funcional ampliable; **no completa todas las etapas solicitadas**. No contiene una aventura de respuestas prefijadas ni un director simulado.
