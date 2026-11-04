@@ -1,0 +1,19 @@
+{
+  "id": "cairn-1e",
+  "name": "Cairn",
+  "edition": "First Edition, System Reference Document v1.0",
+  "author": "Yochai Gal",
+  "status": "research-only",
+  "selectable": false,
+  "official_srd": "https://cairnrpg.com/first-edition/cairn-srd/",
+  "official_repository": "https://github.com/yochaigal/cairn",
+  "official_source": "https://raw.githubusercontent.com/yochaigal/cairn/main/first-edition/cairn-srd.md",
+  "license": "CC-BY-SA-4.0",
+  "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+  "checked_on": "2026-11-04",
+  "consulted_sections": ["License declaration", "Character Creation", "Saves"],
+  "implemented_mechanics": [],
+  "source_snapshot": {"bytes": 58263, "sha256": "62d09f6769971a6aa61a1d41fb498c2640a4809df2638ad664b8938795681c14"},
+  "html_snapshot": {"bytes": 219545, "sha256": "b2bad28c814de2b0f1af946ca0eefbf1958d8c0c3374e96251016f9570ea451c"},
+  "notes": "Candidate for a separate adapter. No classes, levels or Pathfinder modifiers are inferred. Source text is locally cached under .deps; runtime does not download or index it per action. Attribution and ShareAlike obligations for reused/adapted material must be retained; this manifest does not license the whole application."
+}

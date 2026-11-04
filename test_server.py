@@ -227,6 +227,15 @@ class IntegrationTests(unittest.TestCase):
         self.assertTrue(any(int(r['page'])==194 for r in results))
         self.assertIn('diagonal',next(r['text'] for r in results if int(r['page'])==194).lower())
 
+    def test_system_catalog_is_local_and_import_rejects_unimplemented_systems(self):
+        with patch.object(server,'repository',side_effect=AssertionError('Catalog must not read Firebase')):
+            catalog=self.request('/api/systems')
+        self.assertEqual([v['id'] for v in catalog['systems']],['pathfinder-1e'])
+        before=self.state();exported=self.request('/api/export',{},self.token)
+        exported['state']['ruleset']='cairn-1e'
+        with self.assertRaises(urllib.error.HTTPError) as error:self.action('import',campaign=exported)
+        error.exception.close();self.assertEqual(self.state()['state'],before['state'])
+
     def test_automatic_creation_is_validated_owned_persistent_and_replay_safe(self):
         from test_character_builder import choices
         guest=self.request('/api/join',{'name':'Luis','invite':self.state()['invite']})['token']

@@ -8,6 +8,7 @@ import copy
 import json
 from pathlib import Path
 import checks
+import rulesets
 
 MODULE_SCHEMA={'type':'object','properties':{
     'format':{'type':'string','enum':['cronicas-adventure-1']},
@@ -108,6 +109,7 @@ def builtin(identifier):
 
 
 def install(state,module):
+    rulesets.require(state.get('ruleset',rulesets.DEFAULT))
     module=validate_module(module)
     bonuses=[]
     for character in state['characters']:

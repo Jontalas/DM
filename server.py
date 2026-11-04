@@ -12,6 +12,7 @@ from firebase_store import BOOKS, FirestoreStore, Conflict, Unavailable
 from claude_dm import ai_reply, model_name
 import adventure
 import adventure_modules
+import rulesets
 from narrative_text import repair_text
 
 ROOT=Path(__file__).resolve().parent
@@ -42,7 +43,9 @@ def reader_assets():
 
 def search(query,book=None):return repository().search(query,book)
 def identity(token):return repository().identity(token)
-def load(cid):return repository().load(cid)
+def load(cid):
+    row,state=repository().load(cid);rulesets.identify(state)
+    return row,state
 
 
 def view(row,state,me):
@@ -97,6 +100,7 @@ def execute_action(body,me):
             data=body['campaign']
             if data.get('format')!='cronicas-1':raise ValueError('Formato incompatible')
             state=data['state']
+            rulesets.identify(state)
             for key in initial_state({}):
                 if key not in state:raise ValueError('Falta '+key)
             for character in state['characters']:character['owner']=me['id']
@@ -177,6 +181,8 @@ class Handler(BaseHTTPRequestHandler):
                 return
             if url.path=='/api/status':
                 self.reply({'aiConfigured':bool(os.environ.get('ANTHROPIC_API_KEY')),'provider':'Anthropic','model':model_name(),'release':os.environ.get('RENDER_GIT_COMMIT','local'),'directorContract':'generated-links-v4','books':repository().counts(),'storage':'Firebase · Cloud Firestore','hosting':'Render' if os.environ.get('RENDER') else 'local con Firebase remoto'});return
+            if url.path=='/api/systems':
+                self.reply({'systems':rulesets.catalog()});return
             if url.path=='/api/book-info':
                 self.auth()
                 try:self.reply(reader_assets().describe(query.get('book',[''])[0]))
@@ -226,7 +232,7 @@ class Handler(BaseHTTPRequestHandler):
             if not 0<size<=8_000_000:raise ValueError('Tamaño de petición inválido')
             body=json.loads(self.rfile.read(size));path=urlparse(self.path).path
             if path=='/api/create':
-                token=repository().create(str(body.get('title','Nueva crónica')),initial_state(body),str(body.get('player','Anfitrión')))
+                token=repository().create(str(body.get('title','Nueva crónica')),rulesets.new_campaign(body),str(body.get('player','Anfitrión')))
                 self.reply({'token':token});return
             if path=='/api/join':
                 self.reply({'token':repository().join(str(body['invite']),str(body['name']))});return
