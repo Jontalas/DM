@@ -14,6 +14,18 @@ def main():
     if os.environ.get('TEST_RULE_PACK_FIXTURE')=='1':
         import rulesets
         rulesets.SYSTEMS['rule-pack']={'id':'rule-pack','name':'Paquete de reglas (test only)','status':'experimental'}
+        import rule_pack_authoring as authoring
+        import test_rule_pack_authoring as authoring_fixture
+        os.environ['ANTHROPIC_API_KEY']='fixture-only-never-sent'
+        def fixture_prepare(prepared):
+            if prepared['request']['scope']=='TEST_UNSUPPORTED':
+                return authoring.validate_reply(prepared,{'status':'unsupported','packageJson':'','examples':[],
+                    'issues':[{'kind':'unsupported','message':'La operación de esta prueba no está disponible en el motor.',
+                        'sources':[prepared['sources'][0]['id']]}]})
+            report=authoring.validate_reply(prepared,authoring_fixture.reply(prepared))
+            report['usage']={'inputTokens':123,'outputTokens':456,'latencyMs':1}
+            return report
+        authoring.propose=fixture_prepare
     if os.environ.get('TEST_CAIRN_FIXTURE')=='1':
         import rulesets
         rulesets.SYSTEMS['cairn-1e']={'id':'cairn-1e','name':'Cairn 1e (test only)','status':'experimental'}

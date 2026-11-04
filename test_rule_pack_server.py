@@ -10,6 +10,8 @@ import test_render
 import rule_pack_campaign as campaign
 from rule_pack_runtime import RulePackError
 from test_rule_pack_runtime import document
+import rule_pack_authoring as authoring
+import test_rule_pack_authoring as authoring_fixture
 
 
 class RulePackServerTests(unittest.TestCase):
@@ -118,6 +120,42 @@ class RulePackServerTests(unittest.TestCase):
             with self.assertRaises(RulePackError):
                 campaign.execute_action(original,{'type':'run_pack_action','character':original['characters'][0]['id'],'action':'attempt'},me)
         self.assertEqual(original,before)
+
+    def test_preparation_is_private_deduplicated_and_requires_separate_installation(self):
+        raw=authoring_fixture.request();raw['document']['pages'][0]['text']+=' PRIVATE-SOURCE-FRAGMENT'
+        prepared=authoring.prepare_input(raw);report=authoring.validate_reply(prepared,authoring_fixture.reply(prepared))
+        guest=self.request('/api/join',{'name':'Luis','invite':self.state()['invite']})['token']
+        with patch.object(authoring,'propose',return_value=report) as provider:
+            self.rejected(lambda:self.action('prepare_rule_pack',guest,request=raw),403)
+            body=self.action('prepare_rule_pack',request=raw)
+            self.assertTrue(self.request('/api/action',body,self.token)['duplicate'])
+            self.rejected(lambda:self.action('prepare_rule_pack',request=raw))
+            self.assertEqual(provider.call_count,1)
+            self.assertNotIn('PRIVATE-SOURCE-FRAGMENT',str(self.state(guest)))
+            self.assertNotIn('authoring',self.state(guest)['state'])
+            state=self.state()['state'];self.assertIsNone(state['package'])
+            self.assertEqual(state['authoring']['report']['sourceVerification'],'unverified')
+            self.rejected(lambda:self.action('install_prepared_rule_pack',preparation='stale',policy='provided-rules'))
+            self.action('install_prepared_rule_pack',preparation=prepared['sha256'],policy='draft')
+            self.rejected(lambda:self.action('create_pack_sheet',name='Aria'))
+            self.action('install_prepared_rule_pack',preparation=prepared['sha256'],policy='provided-rules')
+            self.action('create_pack_sheet',name='Aria')
+            exported=self.request('/api/export',{},self.token)
+            self.action('import',campaign=exported)
+            self.assertEqual(provider.call_count,1)
+
+    def test_blocked_or_failed_preparation_never_installs_rules(self):
+        raw=authoring_fixture.request()
+        with patch.object(authoring,'propose',side_effect=RulePackError('Invalid model output')) as provider:
+            self.rejected(lambda:self.action('prepare_rule_pack',request=raw));self.assertEqual(provider.call_count,1)
+        prepared=authoring.prepare_input(raw)
+        blocked=authoring.validate_reply(prepared,{'status':'unsupported','packageJson':'','examples':[],
+            'issues':[{'kind':'unsupported','message':'La operación no está soportada.','sources':[prepared['sources'][0]['id']]}]})
+        with patch.object(authoring,'propose',return_value=blocked):self.action('prepare_rule_pack',request=raw)
+        self.assertIsNone(self.state()['state']['package'])
+        self.rejected(lambda:self.action('install_prepared_rule_pack',preparation=prepared['sha256'],policy='provided-rules'))
+        exported=self.request('/api/export',{},self.token)
+        with patch.object(authoring,'propose',side_effect=AssertionError('Recovery called model')):self.action('import',campaign=exported)
 
 
 class RulePackWaitressTests(RulePackServerTests):

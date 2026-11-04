@@ -4,7 +4,7 @@
 
 El usuario entrega reglas a la aplicación, que prepara e instala un paquete sin programar un adaptador por juego. El núcleo de partida interpreta esos datos; la IA ayuda a extraer fuentes y a dirigir ficción, no sustituye los cálculos. La incorporación de reglas debe llegar a ser un recorrido de la aplicación, con ambigüedades y límites visibles.
 
-Estado actual: existe un primer intérprete local en `rule_pack_runtime.py`, su integración transaccional en `rule_pack_campaign.py` y una interfaz genérica en `static/rule-pack-ui.js`. La integración permanece experimental, fuera del catálogo público; los recorridos de navegador habilitan el sistema únicamente en su servidor de pruebas. No hay aún importador de manuales. Los adaptadores existentes siguen funcionando y conservan las campañas. Este núcleo es un paso hacia la arquitectura acordada, no una declaración de soporte universal ni la entrega final del recorrido «subir manual y jugar».
+Estado actual: existe un primer intérprete local en `rule_pack_runtime.py`, su integración transaccional en `rule_pack_campaign.py`, interfaz genérica y preparación asistida de fragmentos de texto en `rule_pack_authoring.py`. La integración permanece experimental, fuera del catálogo público; los recorridos de navegador habilitan el sistema únicamente en su servidor de pruebas. La conversión se ha comprobado con respuestas simuladas, no con inferencia real. No hay aún lectura de PDF ni importación de manuales completos. Los adaptadores existentes siguen funcionando y conservan las campañas. Este núcleo es un paso hacia la arquitectura acordada, no una declaración de soporte universal ni la entrega final del recorrido «subir manual y jugar».
 
 ## Contrato de datos v1
 
@@ -55,9 +55,21 @@ La primera integración añade siete casos repetidos bajo HTTP y Waitress: inspe
 
 ## Trabajo necesario para cumplir el objetivo
 
+### Preparación asistida de fragmentos: primer recorrido
+
+El anfitrión aporta título, edición, atribución, ámbito de uso declarado, alcance y texto. El servidor admite hasta 32 páginas/fragmentos con numeración única y 24.000 caracteres de texto en total; la interfaz actual presenta un fragmento y lectura local de `.txt`/`.md` UTF-8. No se envía el resto de la campaña al proveedor. El ámbito de uso es una declaración del aportante, no una comprobación jurídica ni una licencia concedida por la aplicación.
+
+La preparación tiene huella SHA-256 del contenido y metadatos; cada fragmento tiene hash propio y referencia asignada por la aplicación. Una llamada a Haiku, con hasta 8.000 tokens de salida, propone datos o declara ambigüedades/operaciones no expresables. No se ejecutan instrucciones de los documentos como código. El motor rechaza referencias, identidad o atribución alteradas, operaciones desconocidas y ejemplos con resultados incorrectos o dados ausentes; no genera azar para completarlos. Superar esos controles solo demuestra consistencia estructural e interna, no correspondencia semántica con el manual.
+
+La preparación se guarda separada del paquete activo y solo el anfitrión recibe su texto original e informe. Los invitados siguen viendo las definiciones compartidas del paquete instalado, no los fragmentos privados. Se conserva la última preparación; reenviar la misma acción confirmada o intentar preparar el mismo contenido guardado no repite inferencia. Revisar el informe, recargar, instalar, importar una copia y ejecutar reglas no llama al preparador. Los errores no tienen reintentos automáticos, aunque una inferencia fallida puede haber consumido tokens; no se promete ejecución exactamente una vez del proveedor ante una caída anterior a la confirmación persistida.
+
+Solo un candidato sin cuestiones bloqueantes puede pasar a revisión e instalación explícitas; `ambiguous`/`unsupported` se conservan como informe no ejecutable. La instalación queda ligada al hash de la preparación para rechazar revisiones obsoletas. Con fichas existentes se bloquea preparar sustituciones hasta disponer de migraciones. Al importar una copia administrativa se comprueban de nuevo hashes y ejemplos, sin IA ni RNG. El original y el informe permanecen privados dentro de esa copia.
+
+Evidencia de este bloque: 37 pruebas de preparación, intérprete e integración HTTP/Waitress correctas con emulador oficial de Firestore (17,145 s). Playwright con proveedor simulado pasa texto local sin envíos al editar, propuesta única, informe conservado, instalación separada, acción del paquete, aislamiento del invitado, mecánica no disponible y móvil; captura revisada visualmente. El recorrido JSON anterior y biblioteca existente siguen pasando. No se han realizado inferencias reales ni despliegue de este bloque.
+
 1. Carga, inspección e instalación JSON integradas y probadas en servidor e interfaz comunes; pendiente habilitar el recorrido tras completar las dependencias de producto. No requiere un registro nuevo por identificador de paquete.
 2. Formularios, ficha inicial y acciones escalares generados desde el paquete con validación del servidor; pendientes creación guiada completa, colecciones/inventario, efectos amplios y solicitudes de tirada mediante capacidades generales.
-3. Añadir preparación asistida desde texto/PDF/documentos: extracción reutilizable, fragmentos y tablas pertinentes, propuesta de paquete, comparación con originales y pruebas. No repetir extracción ni inferencia por acción de partida.
+3. Preparación asistida de texto integrada y probada con proveedor simulado. Pendientes extracción PDF/documentos, procesamiento de manuales por bloques reutilizables, tablas y comparación con originales, más validación con proveedor real. No repetir extracción ni inferencia por acción de partida.
 4. Detectar operaciones no expresables, ambigüedades, ediciones incompatibles y permisos de uso. Resolver lo que pueda verificarse; solicitar una decisión solo cuando sea imprescindible. Ampliar primitivas comunes cuando falten, sin volver a adaptadores por juego.
 5. Migrar por bloques las reglas verificadas existentes al formato y probar el recorrido completo, conservando campañas, datos privados y límites reales.
 

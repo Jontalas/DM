@@ -70,7 +70,7 @@ def _description(pack):
 
 
 def initial_state(config):
-    return {'ruleset':ID,'package':None,'characters':[],'messages':[],
+    return {'ruleset':ID,'package':None,'authoring':None,'characters':[],'messages':[],
         'tone':str(config.get('tone',''))[:200],'limits':str(config.get('limits',''))[:2000],
         'goal':str(config.get('goal',''))[:2000]}
 
@@ -84,7 +84,26 @@ def execute_action(state,body,me):
     if state.get('ruleset')!=ID:raise RulePackError('Esta campaña no usa el motor de paquetes')
     if len(state['messages'])>=MAX_MESSAGES:raise RulePackError('El registro alcanza su límite; conserva una copia antes de ampliar o archivar datos')
     kind=action.get('type');result=copy.deepcopy(state)
-    if kind=='install_rule_pack':
+    if kind=='prepare_rule_pack':
+        if not me['host']:raise PermissionError('Solo el anfitrión prepara reglas desde documentos')
+        _keys(action,('type','request'))
+        if state['characters']:raise RulePackError('Prepara otra campaña para nuevas reglas; la migración de fichas todavía no está disponible')
+        from rule_pack_authoring import prepare_input,propose,MAX_RESPONSE
+        prepared=prepare_input(action['request'])
+        if state.get('authoring') and state['authoring']['sha256']==prepared['sha256']:raise RulePackError('Estos fragmentos y alcance ya tienen una preparación guardada; revísala sin repetir la llamada')
+        # Reserve bounded space before a potentially billable provider call.
+        result['authoring']={'request':prepared['request'],'sha256':prepared['sha256'],'report':'x'*(MAX_RESPONSE+12000)}
+        _size(result)
+        result['authoring']['report']=propose(prepared)
+        _system(result,'Preparación de reglas guardada; requiere revisión y no ha sustituido el paquete de la campaña.',me['id'])
+    elif kind=='install_prepared_rule_pack':
+        if not me['host']:raise PermissionError('Solo el anfitrión instala la preparación')
+        _keys(action,('type','preparation','policy'));record=state.get('authoring')
+        if not record or record['sha256']!=action['preparation']:raise RulePackError('La preparación ha cambiado; revísala de nuevo')
+        report=record['report']
+        if report['status']!='candidate':raise RulePackError('La preparación contiene cuestiones sin resolver y no se puede ejecutar')
+        return execute_action(state,{'type':'install_rule_pack','package':report['candidate'],'policy':action['policy']},me)
+    elif kind=='install_rule_pack':
         if not me['host']:raise PermissionError('Solo el anfitrión instala reglas para esta campaña')
         if set(action)-{'type','package','policy'} or not {'type','package'}<=set(action):raise RulePackError('Importación de paquete inválida')
         policy=action.get('policy','draft')
@@ -119,6 +138,7 @@ def execute_action(state,body,me):
 
 def public_view(state,me):
     result=copy.deepcopy(state)
+    if not me['host']:result.pop('authoring',None)
     if state.get('package'):
         pack=runtime(state,me['campaign'])
         result['packageView']=_description(pack)|{'policy':state['package']['policy']}
@@ -137,14 +157,23 @@ def _comparable_trace(trace):
 
 
 def validate_restored(state,campaign='import-validation'):
-    _keys(state,initial_state({}))
+    keys=set(initial_state({}))
+    if 'authoring' not in state:keys.remove('authoring') # Earlier experimental exports.
+    _keys(state,keys)
     if state['ruleset']!=ID:raise RulePackError('Formato de campaña de paquetes incompatible')
     for key,limit in [('tone',200),('limits',2000),('goal',2000)]:
         if not isinstance(state[key],str) or len(state[key])>limit:raise RulePackError('Texto de campaña fuera de límites')
     if not isinstance(state['characters'],list) or len(state['characters'])>100:raise RulePackError('Lista de fichas inválida')
     if not isinstance(state['messages'],list) or len(state['messages'])>MAX_MESSAGES:raise RulePackError('Registro de campaña fuera de límites')
+    if state.get('authoring') is not None:
+        from rule_pack_authoring import validate_record
+        validate_record(state['authoring'])
     if state['package'] is None:
-        if state['characters'] or state['messages']:raise RulePackError('Estado de fichas o acciones sin paquete')
+        if state['characters']:raise RulePackError('Estado de fichas sin paquete')
+        for event in state['messages']:
+            _keys(event,('kind','text','actor','time'))
+            if event['kind']!='system' or type(event['time']) not in (int,float) or not math.isfinite(event['time']):raise RulePackError('Registro sin paquete inválido')
+            _text(event['text'],2000);_text(event['actor'],100)
         _size(state);return
     pack=runtime(state,campaign);sheets={};ids=set()
     if state['characters'] and state['package']['policy']!='provided-rules':raise RulePackError('Un paquete en borrador no admite fichas activas')
