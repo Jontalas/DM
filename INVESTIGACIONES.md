@@ -18,7 +18,7 @@ Se comprobaron visualmente los originales de Reglas básicas de Pathfinder 1e, D
 
 El alcance `single-scene-neutral-perception` declara esas condiciones de uso. El motor bloquea combate, condiciones del personaje y otras pruebas o excepciones pendientes. Se registra una acción de búsqueda o veinte al elegir 20. La duración exacta y los efectos dependientes del tiempo no se calculan: no usar este bloque para una cuenta atrás. No se consume una acción de combate fuera de combate ni se introduce una equivalencia de segundos inventada.
 
-La conversación conserva decisiones libres y respuestas de PNJ. Las vías alternativas que excedan el grafo de investigaciones todavía pueden requerir adjudicación excepcional; no hay un simulador universal que valide cualquier plan. Una aventura de varias escenas, combate o conjuros no es compatible con este formato todavía. No se sustituye Pathfinder por una simplificación silenciosa.
+La conversación conserva decisiones libres y respuestas de PNJ. Las vías alternativas que excedan el grafo de investigaciones todavía pueden requerir adjudicación excepcional; no hay un simulador universal que valide cualquier plan. El formato de escena única no admite varias escenas; las rutas individuales descritas abajo enlazan módulos de ese mismo alcance. Combate, conjuros y viajes con riesgos siguen fuera de estos formatos. No se sustituye Pathfinder por una simplificación silenciosa.
 
 ## Formato e importación
 
@@ -39,6 +39,18 @@ La preparación y las pistas no descubiertas se almacenan privadamente en `adven
 La importación de campaña comprueba también la coherencia de las pistas, su orden de requisitos, los intentos y el estado de objetivos. Se conserva la reanudación. No se borra ni sustituye una aventura activa mediante una respuesta del modelo. La importación de un módulo se realiza al empezar; la importación de campañas completas conserva su advertencia previa de sustitución.
 
 ## Coste y pruebas
+
+### Rutas individuales entre escenas
+
+«Los senderos del archivo» es un ejemplo propio de cuatro lugares: recibidor, catálogo, estantes y mesa de lectura. El jugador puede seguir dos vías alternativas, regresar a los lugares anteriores y conservar sus hallazgos. Solo se ofrecen salidas cuyos requisitos ya ha confirmado el motor. Completar una investigación local no completa toda la ruta; la finalización se produce al resolver una escena terminal. Las decisiones de leer, tomar o entregar objetos siguen perteneciendo al jugador.
+
+Se admite importar `cronicas-route-1`: claves `format`, `title`, `start`, `scenes`. Cada escena tiene `id`, `module` (un `cronicas-adventure-1` válido) y `exits`; cada salida tiene `id`, `label`, `to`, `requires` (pistas de la escena de origen). Se permiten retornos y bifurcaciones, referencias válidas y finales alcanzables desde todas las escenas. Máximo ocho escenas, ocho salidas por escena, 192.000 bytes de documento y 1.000 visitas. La instalación comprueba también la alcanzabilidad de las pistas que desbloquean salidas. No se alteran las CD del autor.
+
+Primera cobertura: exactamente un personaje jugador; propietario o anfitrión eligen el destino. Combate, condiciones, inconsciencia y pruebas pendientes bloquean el cambio. No se permite trasladar un grupo decidiendo por sus otros jugadores. Cambiar de lugar registra una nueva escena numerada: TREY castellano v1.0, PDF y folio 12, texto contrastado directamente y página revisada visualmente (`.deps/reference-scenes-trey12.png`, privada). Revisitar también crea una nueva escena, sin reiniciar las pistas ni otorgar FH. No hay cálculo de trayecto, distancia, tiempo, peligros ni cambio de mapa táctico. Estas escenas tranquilas no certifican automatización completa de los sucesos de TREY.
+
+La ruta y el progreso de otros lugares son privados; al director solo se envían el módulo actual, sus resultados y las salidas públicas disponibles. Las consultas de reglas no reciben los módulos. Cada cambio de escena es una confirmación de estado sin IA ni tirada; no hay inferencia de preparación por lugar ni descargas de reglas. La apertura conserva la intervención explícita de IA existente. El ejemplo no se genera con IA. Exportar e importar conserva y valida módulos, historial, requisitos y progreso de lugares visitados.
+
+Pruebas propias en `test_adventure_routes.py`, HTTP/Waitress en `test_server.py` y recorrido en `test_routes_browser.cjs`: alternativas, bloqueos, regreso, recarga, final, aislamiento, permisos, numeración y duplicación. Los proveedores de estas pruebas son simulados. No se ha hecho una nueva prueba facturable ni una comparación interactiva directa en Roll20.
 
 Iniciar consume una intervención de IA y una confirmación. Interpretar una declaración libre usa la intervención narrativa ya solicitada. Las búsquedas directas y sus efectos no generan inferencias ni búsquedas remotas en manuales; cada búsqueda se guarda en una sola acción. Elegir 20 no hace veinte llamadas ni veinte escrituras. La narración de resultados se solicita explícitamente cuando es útil.
 

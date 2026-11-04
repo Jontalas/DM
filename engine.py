@@ -192,7 +192,11 @@ def apply_action(s,b,me):
             log(s,discovery+' Se registra una acción de movimiento de búsqueda fuera de combate; sin conversión automática a tiempo transcurrido.',
                 discovery={'opportunity':pending['investigation'],'success':result['success']},refs=[{'book':'reglas','page':101}])
             if s['moduleProgress']['completed']:
-                log(s,s['adventureModule']['conclusion'],adventureComplete=True)
+                if s.get('adventureRoute'):
+                    import adventure_routes
+                    log(s,s['adventureModule']['conclusion'],sceneInvestigationComplete=True,
+                        adventureComplete=adventure_routes.public_view(s)['completed'])
+                else:log(s,s['adventureModule']['conclusion'],adventureComplete=True)
     elif kind=='roll':
         n=int(b.get('n',1)); sides=int(b.get('sides',20)); mod=int(b.get('modifier',0))
         if not 1<=n<=30 or sides not in [2,3,4,6,8,10,12,20,100] or abs(mod)>1000: raise ValueError('Tirada inválida')

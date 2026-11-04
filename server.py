@@ -12,6 +12,7 @@ from firebase_store import BOOKS, FirestoreStore, Conflict, Unavailable
 from claude_dm import ai_reply, model_name
 import adventure
 import adventure_modules
+import adventure_routes
 import rulesets
 from narrative_text import repair_text
 
@@ -51,6 +52,7 @@ def load(cid):
 def view(row,state,me):
     state=json.loads(json.dumps(state))
     module_view=adventure_modules.public_view(state)
+    route_view=adventure_routes.public_view(state)
     # Repair historical model prose on the copy, preserving originals in storage/export.
     for message in state['messages']:
         if message.get('kind')=='director':message['text']=repair_text(message.get('text',''))
@@ -62,7 +64,10 @@ def view(row,state,me):
         state.pop('directorNotes',None)
         state.pop('directorMemory',None)
         state.pop('adventureModule',None)
+        state.pop('adventureRoute',None)
+        state.pop('routeProgress',None)
     if module_view:state['adventureModuleView']=module_view
+    if route_view:state['adventureRouteView']=route_view
     state['private']={k:v for k,v in state.get('private',{}).items() if k==me['id'] or me['host']}
     return {'id':row['id'],'title':row['title'],'version':row['version'],'state':state,'me':me,'players':repository().players(row['id']),'invite':row['invite'] if me['host'] else None}
 
@@ -105,14 +110,20 @@ def execute_action(body,me):
                 if key not in state:raise ValueError('Falta '+key)
             for character in state['characters']:character['owner']=me['id']
             adventure_modules.validate_restored(state)
+            adventure_routes.validate_restored(state)
             state['private']={};title=str(data['title'])[:120]
         elif body['type']=='start_adventure':
             premise=adventure.validate_start(state,body,me)
             if type(body.get('structured',False))!=bool:raise ValueError('Modo de aventura inválido')
             source=adventure.source_text(body)
             if body.get('moduleId') and body.get('module') is not None:raise ValueError('Elige una sola fuente de aventura')
-            if body.get('moduleId'):adventure_modules.install(state,adventure_modules.builtin(body['moduleId']))
-            elif body.get('module') is not None:adventure_modules.install(state,body['module'])
+            if body.get('moduleId'):
+                if body['moduleId']=='senderos-del-archivo':adventure_routes.install(state,adventure_routes.builtin())
+                else:adventure_modules.install(state,adventure_modules.builtin(body['moduleId']))
+            elif body.get('module') is not None:
+                module=body['module']
+                if isinstance(module,dict) and module.get('format')=='cronicas-route-1':adventure_routes.install(state,module)
+                else:adventure_modules.install(state,module)
             if state.get('adventureModule'):premise=state['adventureModule']['premise']
             actors=[c['id'] for c in adventure.ready_characters(state)]
             source_options={'source_text':source} if source is not None else {}
@@ -127,6 +138,8 @@ def execute_action(body,me):
             adventure.apply_memory(state,result.get('memory'),starting=True)
             state['messages'].append({'kind':'director','speaker':'Director · Claude Haiku','text':result['narration'],
                                       'time':time.time(),'adventureStart':True})
+        elif body['type']=='travel_scene':
+            adventure_routes.travel(state,body,me)
         elif body['type']=='investigate':
             queue_investigation(state,body,me)
             if body.get('method') is not None:

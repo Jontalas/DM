@@ -69,6 +69,32 @@ class IntegrationTests(unittest.TestCase):
                 self.action('start_adventure',sourceText='Un molino y una carta')
             error.exception.close()
         self.assertEqual(self.state(),before)
+
+    def test_solo_route_travel_is_atomic_private_and_preserved_on_import(self):
+        from test_adventure import reply
+        from test_character_builder import choices
+        self.action('create_character',choices=choices())
+        guest=self.request('/api/join',{'name':'Luis','invite':self.state()['invite']})['token']
+        with patch.object(server,'ai_reply',return_value=reply()) as provider:
+            self.action('start_adventure',moduleId='senderos-del-archivo')
+            before=self.state()
+            body=self.action('travel_scene',exit='catalogo')
+            self.assertTrue(self.request('/api/action',body,self.token)['duplicate'])
+            with self.assertRaises(urllib.error.HTTPError) as error:
+                self.action('travel_scene',guest,exit='volver')
+            error.exception.close()
+            with self.assertRaises(urllib.error.HTTPError) as error:
+                self.action('travel_scene',exit='lectura')
+            error.exception.close()
+            self.assertEqual(provider.call_count,1)
+        state=self.state();self.assertEqual(state['state']['scene'],before['state']['scene']+1)
+        self.assertEqual(state['state']['characters'],before['state']['characters'])
+        public=self.state(guest)['state']
+        self.assertNotIn('adventureRoute',public);self.assertNotIn('routeProgress',public)
+        self.assertEqual(public['adventureRouteView']['exits'],[{'id':'volver','label':'Volver al recibidor'}])
+        exported=self.request('/api/export',{},self.token)
+        self.action('import',campaign=exported)
+        self.assertEqual(self.state()['state']['routeProgress'],state['state']['routeProgress'])
     def test_deduplication_and_stale_write(self):
         body=self.action('roll',n=1,sides=20,modifier=2,physical=[14]);before=self.state()
         response=self.request('/api/action',body,self.token);self.assertTrue(response['duplicate']);self.assertEqual(before['version'],self.state()['version'])

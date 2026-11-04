@@ -7,6 +7,7 @@ import urllib.error
 from adventure import MEMORY_SCHEMA, validate_memory
 from narrative_text import normalize_response, repair_text
 import adventure_modules
+import adventure_routes
 from director_prompt import system_prompt
 
 DEFAULT_MODEL='claude-haiku-5-5'
@@ -53,11 +54,13 @@ def response_schema(state,rules=False,starting=False):
 
 def build_context(state,text,refs,rules=False,check_actors=None,starting=False,source_text=None):
     """Separate player-visible state, director knowledge and personal privacy."""
-    public={k:v for k,v in state.items() if k not in {'secrets','directorNotes','directorMemory','adventureModule','private','messages'}}
+    public={k:v for k,v in state.items() if k not in {'secrets','directorNotes','directorMemory','adventureModule','adventureRoute','routeProgress','private','messages'}}
     if state.get('adventureModule'):public['adventureModuleView']=adventure_modules.public_view(state)
+    if state.get('adventureRoute') and not rules:public['adventureRouteView']=adventure_routes.public_view(state)
     public['characters']=[{k:v for k,v in c.items() if k!='creation'} for c in state.get('characters',[])]
     history=[{'speaker':m['speaker'],'kind':m['kind'],'text':repair_text(m['text']) if m.get('kind')=='director' else m['text'],
-              **({'check':m['check']} if m.get('kind')=='rules' and m.get('check') else {})} for m in state['messages'][-30:]
+              **({'check':m['check']} if m.get('kind')=='rules' and m.get('check') else {}),
+              **({'routeTransition':m['routeTransition']} if m.get('kind')=='rules' and m.get('routeTransition') else {})} for m in state['messages'][-30:]
              if m.get('visibility','public')=='public' and m.get('kind')!='private']
     context={'state':public,'history':history,'sources':[{'book':r['book'],'pdf_page':r['page'],'text':r['text'][:6500]} for r in refs],
              'request':text,'rulesOnly':rules,'checkActors':check_actors or [],

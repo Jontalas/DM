@@ -1,0 +1,190 @@
+{
+  "format": "cronicas-route-1",
+  "title": "Los senderos del archivo",
+  "start": "entrada",
+  "scenes": [
+    {
+      "id": "entrada",
+      "module": {
+        "format": "cronicas-adventure-1",
+        "ruleset": "pathfinder-1e",
+        "scope": "single-scene-neutral-perception",
+        "title": "El recibidor",
+        "premise": "Investigar el paradero de un registro antiguo en un archivo tranquilo. El jugador elige por donde seguir.",
+        "location": "Recibidor del archivo",
+        "description": "La archivera ofrece consultar el catalogo o los estantes. Ambas salas son accesibles, tranquilas y estan iluminadas.",
+        "goal": "Localizar una referencia al registro",
+        "preparation": "El archivo esta abierto, tranquilo y bien iluminado. No hay peligros ni limites de tiempo. Solo las busquedas confirmadas revelan pistas.",
+        "conclusion": "El registro puede localizarse por su numero de catalogo o por la marca de su encuadernacion.",
+        "opportunities": [
+          {
+            "id": "referencia",
+            "label": "Examinar de cerca los documentos accesibles",
+            "dc": 10,
+            "discovery": "El registro puede localizarse por su numero de catalogo o por la marca de su encuadernacion.",
+            "failure": "No distingues la referencia; puedes volver a buscar.",
+            "requires": []
+          }
+        ],
+        "objectives": [
+          {
+            "id": "localizar",
+            "text": "Localizar una referencia al registro",
+            "requires": [
+              "referencia"
+            ]
+          }
+        ]
+      },
+      "exits": [
+        {
+          "id": "catalogo",
+          "label": "Ir a la sala del catalogo",
+          "to": "catalogo",
+          "requires": []
+        },
+        {
+          "id": "estantes",
+          "label": "Ir a los estantes",
+          "to": "estantes",
+          "requires": []
+        }
+      ]
+    },
+    {
+      "id": "catalogo",
+      "module": {
+        "format": "cronicas-adventure-1",
+        "ruleset": "pathfinder-1e",
+        "scope": "single-scene-neutral-perception",
+        "title": "El catalogo",
+        "premise": "Investigar el paradero de un registro antiguo en un archivo tranquilo. El jugador elige por donde seguir.",
+        "location": "Sala del catalogo",
+        "description": "Fichas ordenadas cubren el escritorio de consulta.",
+        "goal": "Localizar una referencia al registro",
+        "preparation": "El archivo esta abierto, tranquilo y bien iluminado. No hay peligros ni limites de tiempo. Solo las busquedas confirmadas revelan pistas.",
+        "conclusion": "Una ficha indica que el registro esta en la mesa de lectura.",
+        "opportunities": [
+          {
+            "id": "referencia",
+            "label": "Examinar de cerca los documentos accesibles",
+            "dc": 10,
+            "discovery": "Una ficha indica que el registro esta en la mesa de lectura.",
+            "failure": "No distingues la referencia; puedes volver a buscar.",
+            "requires": []
+          }
+        ],
+        "objectives": [
+          {
+            "id": "localizar",
+            "text": "Localizar una referencia al registro",
+            "requires": [
+              "referencia"
+            ]
+          }
+        ]
+      },
+      "exits": [
+        {
+          "id": "volver",
+          "label": "Volver al recibidor",
+          "to": "entrada",
+          "requires": []
+        },
+        {
+          "id": "lectura",
+          "label": "Seguir la referencia a la mesa de lectura",
+          "to": "lectura",
+          "requires": [
+            "referencia"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "estantes",
+      "module": {
+        "format": "cronicas-adventure-1",
+        "ruleset": "pathfinder-1e",
+        "scope": "single-scene-neutral-perception",
+        "title": "Los estantes",
+        "premise": "Investigar el paradero de un registro antiguo en un archivo tranquilo. El jugador elige por donde seguir.",
+        "location": "Estantes del archivo",
+        "description": "Los libros y sus etiquetas se pueden examinar sin dificultad de acceso.",
+        "goal": "Localizar una referencia al registro",
+        "preparation": "El archivo esta abierto, tranquilo y bien iluminado. No hay peligros ni limites de tiempo. Solo las busquedas confirmadas revelan pistas.",
+        "conclusion": "Una etiqueta de prestamo interno situa el registro en la mesa de lectura.",
+        "opportunities": [
+          {
+            "id": "referencia",
+            "label": "Examinar de cerca los documentos accesibles",
+            "dc": 10,
+            "discovery": "Una etiqueta de prestamo interno situa el registro en la mesa de lectura.",
+            "failure": "No distingues la referencia; puedes volver a buscar.",
+            "requires": []
+          }
+        ],
+        "objectives": [
+          {
+            "id": "localizar",
+            "text": "Localizar una referencia al registro",
+            "requires": [
+              "referencia"
+            ]
+          }
+        ]
+      },
+      "exits": [
+        {
+          "id": "volver",
+          "label": "Volver al recibidor",
+          "to": "entrada",
+          "requires": []
+        },
+        {
+          "id": "lectura",
+          "label": "Seguir la etiqueta a la mesa de lectura",
+          "to": "lectura",
+          "requires": [
+            "referencia"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "lectura",
+      "module": {
+        "format": "cronicas-adventure-1",
+        "ruleset": "pathfinder-1e",
+        "scope": "single-scene-neutral-perception",
+        "title": "El registro",
+        "premise": "Investigar el paradero de un registro antiguo en un archivo tranquilo. El jugador elige por donde seguir.",
+        "location": "Mesa de lectura",
+        "description": "Varios volumenes descansan sobre una mesa bien iluminada.",
+        "goal": "Localizar una referencia al registro",
+        "preparation": "El archivo esta abierto, tranquilo y bien iluminado. No hay peligros ni limites de tiempo. Solo las busquedas confirmadas revelan pistas.",
+        "conclusion": "El registro ha sido localizado. Leerlo, recogerlo o entregarlo siguen siendo decisiones del jugador.",
+        "opportunities": [
+          {
+            "id": "referencia",
+            "label": "Examinar de cerca los documentos accesibles",
+            "dc": 10,
+            "discovery": "El registro ha sido localizado. Leerlo, recogerlo o entregarlo siguen siendo decisiones del jugador.",
+            "failure": "No distingues la referencia; puedes volver a buscar.",
+            "requires": []
+          }
+        ],
+        "objectives": [
+          {
+            "id": "localizar",
+            "text": "Localizar una referencia al registro",
+            "requires": [
+              "referencia"
+            ]
+          }
+        ]
+      },
+      "exits": []
+    }
+  ]
+}

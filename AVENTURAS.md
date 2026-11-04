@@ -14,7 +14,7 @@ Recargar, reanudar y exportar/importar conservan memoria y preparación. Las cam
 
 La memoria admite únicamente resumen, lugar, objetivo, lista de objetivos y preparación privada. No puede cambiar fichas, PG, inventario, recursos, dados, escenas, tiempo reglamentario, turnos ni terreno. Tampoco puede trasladar un combate activo. La validación es estructural: no demuestra por sí sola la corrección semántica de lo narrado o resumido. El registro conserva las intervenciones originales para revisión.
 
-Esta entrega permite preparar y continuar ficción, pero todavía no cubre una aventura completa de Pathfinder sin excepciones humanas. Importación estructurada de aventuras, encuentros automáticos verificados, progresión y otros sistemas siguen pendientes. La preparación generada no equivale a un módulo completo de aventura con mapa y catálogo de encuentros.
+El inicio y la memoria permiten preparar y continuar ficción, pero todavía no cubren una aventura completa de Pathfinder sin excepciones humanas. INVESTIGACIONES.md describe las ampliaciones posteriores: importación estructurada de investigaciones, adaptación de fragmentos de texto y rutas individuales entre escenas tranquilas. Encuentros generales, progresión y otros sistemas siguen pendientes. La preparación generada no equivale a un módulo completo con mapa y catálogo de encuentros.
 
 Los secretos se excluyen de las respuestas de estado a invitados y de consultas reglamentarias. Las instrucciones al modelo le exigen no publicarlos indebidamente; esa instrucción no garantiza ausencia de filtraciones narrativas. Las notas privadas personales y los secretos antiguos del anfitrión siguen excluidos de la IA.
 

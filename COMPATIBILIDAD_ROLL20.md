@@ -27,6 +27,8 @@ Posteriormente se consultó la [documentación oficial completa de Pathfinder by
 
 ## Matriz de interacción
 
+Ampliación propia del 4 de noviembre de 2026: las rutas individuales de investigación enlazan lugares mediante salidas validadas, con elección del jugador y persistencia de pistas. No equivalen al gestor de páginas, separación del grupo, visibilidad, capas ni traslado de fichas de Roll20. No se ha observado directamente ese recorrido en Roll20; la evidencia de nuestra aplicación está en `test_routes_browser.cjs`, HTTP y pruebas del motor. Véase INVESTIGACIONES.md para límites de escenas y coste.
+
 Las filas probadas indican cobertura de **nuestra** implementación frente al comportamiento descrito; queda pendiente la comparación directa en Roll20.
 
 | ID | Referencia documentada | Implementación actual y diferencia | Prueba |
