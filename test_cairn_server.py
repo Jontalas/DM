@@ -7,7 +7,7 @@ import rulesets
 import server
 import test_server
 import test_render
-from systems import cairn_creator
+from systems import cairn_creator,cairn_adventure
 
 DESCRIPTOR={'id':'cairn-1e','name':'Cairn 1e (test only)','status':'experimental'}
 
@@ -72,6 +72,27 @@ class CairnServerTests(unittest.TestCase):
         self.assertEqual(character['owner'],result['me']['id']);self.assertEqual(character['abilities']['STR'],3)
         self.assertTrue(character['creation']['complete']);self.assertFalse(result['state']['creationDrafts'])
         self.assertEqual(character['creation']['draft']['core'],before['state']['creationDrafts'][result['me']['id']]['core'])
+
+    def test_cairn_scene_save_injury_rest_and_import_use_common_atomic_actions(self):
+        self.confirmed_character();character=self.state()['state']['characters'][0]
+        with patch.object(server,'ai_reply',side_effect=AssertionError('Scene mechanics called PF model')):
+            self.action('start_cairn_adventure',character=character['id'])
+            self.action('choose_route',route='pasarela')
+            request=self.state()['state']['adventureView']['pending']['id']
+            with patch.object(cairn_adventure.secrets,'randbelow',return_value=3) as rng:
+                body=self.action('resolve_save',request=request,physical=20)
+                self.assertEqual(rng.call_count,1)
+                self.assertTrue(self.request('/api/action',body,self.token)['duplicate']);self.assertEqual(rng.call_count,1)
+            hurt=self.state();self.assertEqual(hurt['state']['characters'][0]['abilities']['DEX'],0)
+            self.assertTrue(hurt['state']['characters'][0]['status']['paralyzed'])
+            exported=self.request('/api/export',{},self.token)
+            self.action('import',campaign=exported)
+            self.assertEqual(self.state()['state']['characters'][0]['abilities']['DEX'],0)
+            self.action('rest_and_recover');self.assertEqual(self.state()['state']['adventureView']['elapsedDays'],7)
+            with patch.object(cairn_adventure.secrets,'randbelow',side_effect=AssertionError('Safe path rolled')):
+                self.action('choose_route',route='sendero')
+        self.assertTrue(self.state()['state']['adventureView']['completed'])
+        self.assertNotIn('adventure',self.state()['state'])
 
     def test_export_import_validates_characters_and_reassigns_them_without_recalculation(self):
         self.confirmed_character();exported=self.request('/api/export',{},self.token)

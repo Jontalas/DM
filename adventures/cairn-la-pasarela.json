@@ -1,0 +1,12 @@
+{
+  "id": "la-pasarela",
+  "title": "Los papeles de la orilla",
+  "description": "Lúa, la archivera, te señala el escritorio del archivo al otro lado de un estanque. Hay un sendero seco que lo rodea y una pasarela baja de tablones húmedos que permite cruzar directamente. No hay prisa ni enemigos. Puedes preguntar, observar y proponer otros planes sin tirar por obtener información evidente.",
+  "preparation": "Escenario original de demostración, sin cuenta atrás. Lúa conoce ambos caminos y responde con claridad. Arda, sanadora, ofrece gratuitamente comida, agua, alojamiento seguro y una semana de cuidados junto al archivo si el personaje los pide. El motor confirma cruces, lesiones y recuperación; la prosa no los sustituye. No introducir combate ni peligros adicionales sin una resolución verificada.",
+  "goal": "Acceder al escritorio del archivo",
+  "routes": [
+    {"id":"sendero","label":"Rodear el estanque por el sendero seco","risk":"El sendero es accesible y no presenta un resultado incierto o arriesgado en esta situación.","save":null,"success":"Llegas al escritorio del archivo. Sobre la mesa está el registro que buscabas. Leerlo, recogerlo o entregarlo sigue siendo una decisión tuya."},
+    {"id":"pasarela","label":"Cruzar directamente por la pasarela húmeda","risk":"Puedes resbalar y lesionarte el tobillo: salvación de DEX y, si falla, 1d4 de pérdida de DEX. Es una consecuencia adjudicada para esta escena, no una tabla general de caídas.","save":"DEX","success":"Cruzas la pasarela y llegas al escritorio. El registro está a la vista; todavía no has decidido leerlo ni recogerlo."}
+  ],
+  "healing": "Arda puede atenderte aquí. Si eliges descansar una semana con sus cuidados, comida y agua, se recuperan las características perdidas y la protección permitida por tu carga. No tienes que administrar cada día ni gastar tus propias raciones en este refugio."
+}

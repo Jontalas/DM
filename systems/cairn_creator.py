@@ -143,14 +143,21 @@ def finalize(draft,choices,actor):
     return core
 
 
-def validate_created(character):
+def validate_created(character,allow_runtime=False):
     if not isinstance(character,dict) or not isinstance(character.get('creation'),dict):raise ValueError('Ficha de Cairn sin origen de creación')
     creation=character['creation'];identifier=character.get('id')
     if not isinstance(identifier,str) or not identifier or len(identifier)>200:raise ValueError('Identificador de personaje inválido')
     expected=finalize(creation.get('draft'),creation.get('choices'),character.get('owner'))
     expected['id']=identifier
-    if character!=expected:raise ValueError('La ficha no coincide con sus resultados y elecciones iniciales verificadas')
-    return copy.deepcopy(expected)
+    actual=copy.deepcopy(character)
+    if allow_runtime:
+        abilities=actual.get('abilities');hp=actual.get('hitProtection')
+        if (not isinstance(abilities,dict) or set(abilities)!=set(rules.ABILITIES)
+            or any(type(abilities[k])!=int or not 0<=abilities[k]<=expected['maxAbilities'][k] for k in rules.ABILITIES)
+            or type(hp)!=int or not 0<=hp<=expected['maxHitProtection']):raise ValueError('Características o protección actuales inválidas')
+        actual['abilities']=copy.deepcopy(expected['abilities']);actual['hitProtection']=expected['hitProtection']
+    if actual!=expected:raise ValueError('La ficha no coincide con sus resultados y elecciones iniciales verificadas')
+    return copy.deepcopy(character)
 
 
 def draft_action(state,body,actor,draw=None):

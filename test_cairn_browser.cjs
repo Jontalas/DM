@@ -73,6 +73,26 @@ const path=require('node:path'),assert=require('node:assert/strict');
   assert.equal(await page.locator('#modalContent > h2').textContent(),'Yslen Abernathy');
   assert.match(await page.locator('#campaignMeta').textContent(),/Cairn 1e/);
   await page.locator('#closeModal').click();
+  const beforeScene=actions.length;
+  await page.locator('#startCairnAdventure').click();
+  await page.locator('[data-cairn-route=pasarela]').waitFor();
+  await page.locator('[data-cairn-route=pasarela]').click();await page.locator('#cairnSave').waitFor();
+  assert.equal(await page.evaluate(()=>snapshot.state.characters[0].abilities.DEX),3);
+  await page.locator('#cairnSave [name=physical]').fill('20');
+  await page.evaluate(()=>refresh(true)); // A shared-state refresh must preserve a physical die being entered.
+  assert.equal(await page.locator('#cairnSave [name=physical]').inputValue(),'20');
+  await page.locator('#cairnSave button').click();
+  await page.waitForFunction(()=>snapshot.state.characters[0].abilities.DEX===2);
+  assert.equal(await page.evaluate(()=>snapshot.state.characters[0].hitProtection),1);
+  assert.equal(await page.evaluate(()=>snapshot.state.adventureView.completed),false);
+  await page.locator('#cairnRest').click();
+  await page.waitForFunction(()=>snapshot.state.adventureView.elapsedDays===7);
+  assert.equal(await page.evaluate(()=>snapshot.state.characters[0].abilities.DEX),3);
+  await page.locator('[data-cairn-route=sendero]').click();
+  await page.waitForFunction(()=>snapshot.state.adventureView.completed);
+  assert.deepEqual(actions.slice(beforeScene).map(a=>a.type),['start_cairn_adventure','choose_route','resolve_save','rest_and_recover','choose_route']);
+  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+  await page.screenshot({path:'.deps/cairn-scene-mobile.png',fullPage:true});
   // A slow local catalog must not reopen the workspace after the player exits.
   const slowContext=await browser.newContext();await slowContext.addInitScript(t=>localStorage.setItem('cronicas-token',t),token);
   const slowPage=await slowContext.newPage();slowPage.on('pageerror',error=>errors.push(error.message));
@@ -86,6 +106,6 @@ const path=require('node:path'),assert=require('node:assert/strict');
   assert.ok(await slowPage.locator('#app').isHidden());assert.ok(await slowPage.locator('#welcome').isVisible());
   await slowContext.close();
   assert.deepEqual(errors,[]);
-  console.log('OK: local Cairn review, original dice, confirmation with lost-response recovery and no duplicate character, classless sheet/library, mobile, system switching and slow-catalog exit. Experimental fixture only.');
+  console.log('OK: Cairn creation, lost-response recovery, classless library, native save/injury/week rest/safe completion, physical input preservation, mobile and system switching. Experimental fixture only.');
  }finally{if(browser)await browser.close();fixture.kill()}
 })().catch(error=>{console.error(error);process.exitCode=1});

@@ -28,6 +28,27 @@ window.CairnUI=(()=>{
   });
   $$('[data-recover-draft]').forEach(button=>button.onclick=run(()=>act('recover_imported_draft',{draft:button.dataset.recoverDraft})));
  }
+ function renderScene(){
+  const s=snapshot.state,view=s.adventureView,target=$('#cairnScene');if(!target)return;
+  const previousRequest=$('#cairnSave')?.dataset.request,previousPhysical=$('#cairnSave [name=physical]')?.value;
+  if(!view){
+   const c=s.characters[0];target.innerHTML=snapshot.me.host&&s.characters.length===1&&c.status?.canAct?'<div class="card"><h3>Los papeles de la orilla</h3><p>Escena original individual: información accesible, ruta segura o arriesgada, lesión y cuidados con reglas propias de Cairn.</p><button class="primary" id="startCairnAdventure">Comenzar esta escena</button></div>':'';
+   if($('#startCairnAdventure'))$('#startCairnAdventure').onclick=run(()=>act('start_cairn_adventure',{character:c.id}));
+   return;
+  }
+  const c=s.characters.find(c=>c.id===view.character),owned=c.owner===snapshot.me.id;
+  $('#campaignMeta').textContent='Cairn 1e · escena experimental';
+  $('#cairnHeading').textContent=view.title;$('#cairnIntro').textContent='Las decisiones son tuyas. El motor solicita y resuelve las tiradas necesarias y conserva sus consecuencias.';
+  const canRest=owned&&!view.pending&&c.abilities.STR>0&&(Object.keys(c.abilities).some(k=>c.abilities[k]<c.maxAbilities[k])||(c.hitProtection<c.maxHitProtection&&c.inventorySlots<10));
+  target.innerHTML=`<article class="card"><h3>${esc(view.goal)}</h3><p>${esc(view.description)}</p>${view.completed?'<p class="notice">Objetivo cumplido. Tú decides qué hacer después con el registro.</p>':view.pending?`<form id="cairnSave"><h4>Salvación de DEX pendiente</h4><p>d20 igual o menor que DEX ${c.abilities.DEX}; 1 siempre es éxito, 20 siempre es fallo. Fallar causa 1d4 de pérdida de DEX en esta escena.</p><label>Dado físico, opcional<input name="physical" type="number" min="1" max="20" step="1" placeholder="Vacío para tirar en el servidor" ${!owned?'disabled':''}></label><button class="primary" ${!owned?'disabled':''}>Resolver salvación</button></form>`:view.routes.map(route=>`<section><h4>${esc(route.label)}</h4><p>${esc(route.risk)}</p><button data-cairn-route="${esc(route.id)}" ${!owned||!c.status.canAct?'disabled':''}>${esc(route.label)}</button></section>`).join('')}<p>${esc(view.healing)}</p>${canRest?'<button id="cairnRest">Descansar una semana con Arda</button>':''}${c.status.paralyzed?'<p class="notice">DEX 0: no puedes actuar hasta recuperarte. Puedes elegir recibir los cuidados disponibles.</p>':''}<small>${view.elapsedDays} días transcurridos por descansos confirmados. Las reglas de viaje y tiempo detallado no están implementadas.</small></article><details open><summary>Últimas resoluciones</summary>${s.messages.slice(-50).map(m=>`<p>${esc(m.text)}</p>`).join('')}</details>`;
+  $$('[data-cairn-route]').forEach(button=>button.onclick=run(()=>act('choose_route',{route:button.dataset.cairnRoute})));
+  if($('#cairnSave')){
+   $('#cairnSave').dataset.request=view.pending.id;
+   if(previousRequest===view.pending.id)$('#cairnSave [name=physical]').value=previousPhysical||'';
+   $('#cairnSave').onsubmit=run(e=>{const value=e.target.elements.physical.value.trim();return act('resolve_save',{request:view.pending.id,...(value?{physical:Number(value)}:{})})});
+  }
+  if($('#cairnRest'))$('#cairnRest').onclick=run(()=>act('rest_and_recover'));
+ }
  async function render(){
   const data=await resources();if(snapshot.state.ruleset!=='cairn-1e'||$('#app').hidden)return;
   $('#welcome').hidden=true;$('#savedLibraryPanel').hidden=true;$('#app').hidden=false;$('#app > .workspace').hidden=true;
@@ -35,9 +56,9 @@ window.CairnUI=(()=>{
   let root=$('#systemWorkspace');if(!root){root=document.createElement('section');root.id='systemWorkspace';root.className='system-workspace';$('#app').append(root)}
   root.hidden=false;
   const draft=snapshot.state.creationDrafts?.[snapshot.me.id],key=snapshot.id+':'+snapshot.me.id+':'+JSON.stringify(draft||{characters:snapshot.state.characters,imported:snapshot.state.importedDrafts});
-  if(root.dataset.key===key){renderCharacters();renderArchive();return}root.dataset.key=key;
-  root.innerHTML=`<div class="eyebrow">CAIRN · PRIMERA EDICIÓN</div><h2>Un personaje para adentrarse en el bosque</h2><p>Elige tu identidad y el equipo que llevarás. El motor conserva tus dados y calcula la ficha.</p><p class="notice">Cairn está en preparación: puedes guardar personajes, pero las acciones y la aventura automatizada aún no están disponibles.</p><div id="cairnCharacters"></div><div id="cairnArchive"></div><div id="cairnCreator"></div><small>Cairn, de Yochai Gal · <a href="${esc(data.tables.source)}" target="_blank" rel="noreferrer">SRD original</a> · <a href="${esc(data.tables.licenseUrl)}" target="_blank" rel="noreferrer">CC BY-SA 4.0</a>. Catálogo adaptado a datos y cálculos propios; términos originales en inglés.</small>`;
-  renderCharacters();renderArchive();
+  if(root.dataset.key===key){renderCharacters();renderArchive();renderScene();return}root.dataset.key=key;
+  root.innerHTML=`<div class="eyebrow">CAIRN · PRIMERA EDICIÓN</div><h2 id="cairnHeading">Un personaje para adentrarse en el bosque</h2><p id="cairnIntro">Elige tu identidad y el equipo que llevarás. El motor conserva tus dados y calcula la ficha.</p><p class="notice">Cairn está en preparación: puedes guardar personajes y probar una escena con salvación, lesión y recuperación. La conversación con IA sigue en preparación.</p><div id="cairnScene"></div><div id="cairnCharacters"></div><div id="cairnArchive"></div><div id="cairnCreator"></div><small>Cairn, de Yochai Gal · <a href="${esc(data.tables.source)}" target="_blank" rel="noreferrer">SRD original</a> · <a href="${esc(data.tables.licenseUrl)}" target="_blank" rel="noreferrer">CC BY-SA 4.0</a>. Catálogo adaptado a datos y cálculos propios; términos originales en inglés.</small>`;
+  renderCharacters();renderArchive();renderScene();
   const target=$('#cairnCreator');
   if(!draft){
    target.innerHTML='<form id="cairnBegin" class="card"><h3>Preparar tus dados</h3><label>Tabla para inspirar el nombre<select name="nameTable"><option value="female-names">Nombres femeninos del SRD</option><option value="male-names">Nombres masculinos del SRD</option></select></label><p>Se tiran características, protección, edad, rasgos y equipo una sola vez. Después podrás revisar las opciones legales conservando los resultados.</p><button class="primary">Tirar y guardar el borrador</button></form>';

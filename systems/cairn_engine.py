@@ -5,11 +5,11 @@ import secrets
 import time
 import math
 from pathlib import Path
-from systems import cairn_1e as rules,cairn_creator as creator,cairn_inventory as inventory
+from systems import cairn_1e as rules,cairn_creator as creator,cairn_inventory as inventory,cairn_adventure as adventure
 
 
 def initial_state(config):
-    return {'ruleset':rules.ID,'characters':[],'creationDrafts':{},'importedDrafts':{},'messages':[],
+    return {'ruleset':rules.ID,'characters':[],'creationDrafts':{},'importedDrafts':{},'messages':[],'adventure':None,
         'tone':str(config.get('tone','Fantasía y misterio'))[:200],
         'limits':str(config.get('limits',''))[:2000],'goal':str(config.get('goal',''))[:2000]}
 
@@ -22,16 +22,21 @@ def resources():
 
 def public_view(state,me):
     result=copy.deepcopy(state)
+    result.pop('adventure',None)
     result['creationDrafts']={key:value for key,value in result.get('creationDrafts',{}).items() if key==me['id']}
     if not me['host']:result.pop('importedDrafts',None)
     for character in result['characters']:
+        character['status']=adventure.status(character)
         if character['owner']!=me['id']:character.pop('creation',None)
+    if state.get('adventure'):result['adventureView']=adventure.public_view(state)
     return result
 
 
 def execute_action(state,body,me):
     # The server owns id/version and checks their replay marker before dispatching.
     action={k:v for k,v in body.items() if k not in ('id','version')}
+    if action.get('type') in ('start_cairn_adventure','choose_route','resolve_save','rest_and_recover'):
+        return adventure.apply(state,action,me)
     if action.get('type')=='confirm_character':
         if set(action)!={'type','choices'}:raise ValueError('La confirmación solo admite elecciones del personaje')
         draft=state['creationDrafts'].get(me['id'])
@@ -56,13 +61,14 @@ def execute_action(state,body,me):
 
 
 def validate_restored(state):
-    if isinstance(state,dict):state.setdefault('importedDrafts',{})
+    if isinstance(state,dict):
+        state.setdefault('importedDrafts',{});state.setdefault('adventure',None)
     if not isinstance(state,dict) or set(state)!=set(initial_state({})) or state.get('ruleset')!=rules.ID:
         raise ValueError('Estado de Cairn incompleto o incompatible')
     if not isinstance(state['characters'],list) or len(state['characters'])>400:raise ValueError('Personajes de Cairn inválidos')
     ids=set()
     for character in state['characters']:
-        creator.validate_created(character)
+        creator.validate_created(character,allow_runtime=True)
         if character['id'] in ids:raise ValueError('Personaje duplicado en la copia')
         ids.add(character['id'])
     for key,limit in [('tone',200),('limits',2000),('goal',2000)]:
@@ -80,6 +86,7 @@ def validate_restored(state):
     for key,draft in state['importedDrafts'].items():
         if not isinstance(key,str) or not key or len(key)>200:raise ValueError('Referencia de borrador inválida')
         creator.validate(draft)
+    adventure.validate_restored(state)
 
 
 def import_campaign(incoming,me):
