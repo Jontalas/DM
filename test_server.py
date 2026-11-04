@@ -150,6 +150,16 @@ class IntegrationTests(unittest.TestCase):
             self.action('character',character={'name':'Aria'});self.action('talk',text='Busco a la posadera',director=True)
             self.assertEqual(self.state()['state']['messages'][-1]['kind'],'director')
         finally:server.ai_reply=original
+
+    def test_historical_director_encoding_preserves_originals_and_player_words(self):
+        broken='El salÃ³n huele a pan reciÃ©n horneado. —Sí.'
+        with patch.object(server,'ai_reply',return_value={'narration':broken,'proposals':[]}):
+            self.action('talk',text='Digo literalmente Ã³',kind='dialogue',director=True)
+        state=self.state()['state']
+        self.assertEqual(state['messages'][-1]['text'],'El salón huele a pan recién horneado. —Sí.')
+        self.assertEqual(state['messages'][-2]['text'],'Digo literalmente Ã³')
+        exported=self.request('/api/export',{},self.token)
+        self.assertEqual(exported['state']['messages'][-1]['text'],broken)
     def test_confirmed_ai_action_replay_does_not_call_provider_again(self):
         with patch.object(server,'ai_reply',return_value={'narration':'Fixture; no es IA real','proposals':[]}) as provider:
             body=self.action('talk',text='Exploro',director=True)

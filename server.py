@@ -11,6 +11,7 @@ from engine import apply_action, initial_state
 from firebase_store import BOOKS, FirestoreStore, Conflict, Unavailable
 from claude_dm import ai_reply, model_name
 import adventure
+from narrative_text import repair_text
 
 ROOT=Path(__file__).resolve().parent
 # Local paths are only for extracting/importing PDF assets, never for databases.
@@ -45,6 +46,11 @@ def load(cid):return repository().load(cid)
 
 def view(row,state,me):
     state=json.loads(json.dumps(state))
+    # Repair historical model prose on the copy, preserving originals in storage/export.
+    for message in state['messages']:
+        if message.get('kind')=='director':message['text']=repair_text(message.get('text',''))
+    if state.get('adventure'):state['adventure']['summary']=repair_text(state['adventure'].get('summary',''))
+    if state.get('directorMemory'):state['directorMemory']=repair_text(state['directorMemory'])
     state['messages']=[m for m in state['messages'] if m.get('visibility','public')=='public' or me['host'] or m.get('owner')==me['id']]
     if not me['host']:
         state.pop('secrets',None)

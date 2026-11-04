@@ -8,6 +8,8 @@ La arquitectura debe admitir varios sistemas por módulos con edición, fuentes 
 
 Realizar autónomamente análisis, desarrollo, pruebas, documentación y despliegue dentro de los accesos y autorizaciones existentes. Solicitar intervención solo por una dependencia imprescindible; agrupar solicitudes y continuar el trabajo independiente. No contratar servicios ni gastos recurrentes nuevos sin autorización. Proteger datos y verificar cada despliegue.
 
+Instrucción permanente del usuario: una entrega terminada no es motivo para detener el trabajo. Continuar con el siguiente punto pendiente sin pedir «continúa», mientras exista trabajo autorizado que no requiera intervención imprescindible del usuario. Registrar progreso, evidencia y siguientes tareas para conservar continuidad entre sesiones.
+
 Evaluar skills y métodos por beneficios comprobables y coste. Aplicar los disponibles cuando sean pertinentes; documentar dependencias y límites. La colaboración entre agentes se puede proponer cuando justifique su consumo, sin convertirla en requisito de trabajo.
 
 ## Referencia principal: mesa virtual al estilo de Roll20
