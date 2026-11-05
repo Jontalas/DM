@@ -1,0 +1,465 @@
+{
+  "format": "cronicas-rules-1",
+  "id": "original-target-sheets-example",
+  "version": "1.2.0",
+  "engineVersion": 1,
+  "name": "Exploradores con resultados confirmados",
+  "edition": "Ejemplo propio 3",
+  "license": {
+    "id": "CC0-1.0",
+    "attribution": "Reglas originales de prueba; no representan un juego comercial."
+  },
+  "sources": [
+    {
+      "id": "staged-source",
+      "title": "Creación original en dos etapas",
+      "edition": "1",
+      "locator": "Reglas propias CC0: prueba 2d6 contra aptitud objetivo +5, coste de energía propio 1 y pérdida de energía objetivo 1 al acertar. No son reglas de Pathfinder."
+    }
+  ],
+  "coverage": {
+    "implemented": [
+      "Creación de dos etapas con elección legal posterior a dados confirmados",
+      "Exploración original de ejemplo",
+      "Resultados relevantes registrados después de cada resolución, aunque coincidan con valores anteriores"
+    ],
+    "pending": [
+      "No representa Pathfinder ni un creador reglamentario completo"
+    ]
+  },
+  "requires": [
+    "scalar-fields",
+    "expressions",
+    "dice",
+    "actions",
+    "triggers",
+    "character-creation",
+    "staged-character-creation",
+    "action-results",
+    "creation-profiles",
+    "target-sheets"
+  ],
+  "creation": {
+    "steps": [
+      "aptitude",
+      "training"
+    ]
+  },
+  "fields": {
+    "role": {
+      "type": "text",
+      "label": "Oficio",
+      "initial": "pendiente",
+      "options": [
+        "pendiente",
+        "cronista",
+        "vigía"
+      ],
+      "sources": [
+        "staged-source"
+      ]
+    },
+    "talent": {
+      "type": "integer",
+      "label": "Aptitud",
+      "initial": 0,
+      "min": 0,
+      "max": 8,
+      "sources": [
+        "staged-source"
+      ]
+    },
+    "energy": {
+      "type": "integer",
+      "label": "Energía",
+      "initial": 3,
+      "min": 0,
+      "max": 3,
+      "sources": [
+        "staged-source"
+      ]
+    },
+    "success": {
+      "type": "boolean",
+      "label": "Éxito",
+      "initial": false,
+      "sources": [
+        "staged-source"
+      ]
+    },
+    "exhausted": {
+      "type": "boolean",
+      "label": "Agotamiento",
+      "initial": false,
+      "sources": [
+        "staged-source"
+      ]
+    }
+  },
+  "tables": {},
+  "actions": {
+    "aptitude": {
+      "label": "Descubrir tu aptitud",
+      "sources": [
+        "staged-source"
+      ],
+      "inputs": {},
+      "requires": [],
+      "rolls": [
+        {
+          "id": "aptitude",
+          "count": 1,
+          "sides": 6,
+          "keep": "all"
+        }
+      ],
+      "effects": [
+        {
+          "field": "talent",
+          "value": {
+            "ref": [
+              "rolls",
+              "aptitude",
+              "total"
+            ]
+          }
+        }
+      ],
+      "resultFields": [
+        "talent"
+      ]
+    },
+    "training": {
+      "label": "Elegir tu formación",
+      "sources": [
+        "staged-source"
+      ],
+      "inputs": {
+        "role": {
+          "type": "text",
+          "label": "Oficio",
+          "options": [
+            "cronista",
+            "vigía"
+          ]
+        },
+        "focus": {
+          "type": "integer",
+          "label": "Enfoque",
+          "min": 0,
+          "max": 2,
+          "default": 0
+        }
+      },
+      "requires": [
+        {
+          "op": "le",
+          "args": [
+            {
+              "ref": [
+                "inputs",
+                "focus"
+              ]
+            },
+            {
+              "ref": [
+                "fields",
+                "talent"
+              ]
+            }
+          ]
+        }
+      ],
+      "rolls": [],
+      "effects": [
+        {
+          "field": "role",
+          "value": {
+            "ref": [
+              "inputs",
+              "role"
+            ]
+          }
+        },
+        {
+          "field": "talent",
+          "value": {
+            "op": "add",
+            "args": [
+              {
+                "ref": [
+                  "fields",
+                  "talent"
+                ]
+              },
+              {
+                "ref": [
+                  "inputs",
+                  "focus"
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "resultFields": [
+        "role",
+        "talent"
+      ]
+    },
+    "explore": {
+      "label": "Explorar",
+      "sources": [
+        "staged-source"
+      ],
+      "inputs": {},
+      "requires": [
+        {
+          "op": "gt",
+          "args": [
+            {
+              "ref": [
+                "fields",
+                "energy"
+              ]
+            },
+            0
+          ]
+        }
+      ],
+      "rolls": [
+        {
+          "id": "pool",
+          "count": 2,
+          "sides": 6,
+          "keep": "all"
+        }
+      ],
+      "effects": [
+        {
+          "field": "energy",
+          "value": {
+            "op": "sub",
+            "args": [
+              {
+                "ref": [
+                  "fields",
+                  "energy"
+                ]
+              },
+              1
+            ]
+          }
+        },
+        {
+          "field": "success",
+          "value": {
+            "op": "ge",
+            "args": [
+              {
+                "ref": [
+                  "rolls",
+                  "pool",
+                  "total"
+                ]
+              },
+              7
+            ]
+          }
+        }
+      ],
+      "resultFields": [
+        "success"
+      ]
+    },
+    "prepare-support": {
+      "label": "Preparar apoyo",
+      "sources": [
+        "staged-source"
+      ],
+      "inputs": {},
+      "requires": [],
+      "rolls": [],
+      "effects": [
+        {
+          "field": "talent",
+          "value": 2
+        },
+        {
+          "field": "role",
+          "value": "cronista"
+        },
+        {
+          "field": "energy",
+          "value": 2
+        }
+      ]
+    },
+    "contest": {
+      "label": "Prueba entre fichas propia",
+      "sources": [
+        "staged-source"
+      ],
+      "target": true,
+      "inputs": {},
+      "requires": [
+        {
+          "op": "gt",
+          "args": [
+            {
+              "ref": [
+                "fields",
+                "energy"
+              ]
+            },
+            0
+          ]
+        },
+        {
+          "op": "gt",
+          "args": [
+            {
+              "ref": [
+                "target",
+                "energy"
+              ]
+            },
+            0
+          ]
+        }
+      ],
+      "rolls": [
+        {
+          "id": "pool",
+          "count": 2,
+          "sides": 6,
+          "keep": "all"
+        }
+      ],
+      "effects": [
+        {
+          "field": "energy",
+          "value": {
+            "op": "sub",
+            "args": [
+              {
+                "ref": [
+                  "fields",
+                  "energy"
+                ]
+              },
+              1
+            ]
+          }
+        },
+        {
+          "field": "success",
+          "value": {
+            "op": "ge",
+            "args": [
+              {
+                "ref": [
+                  "rolls",
+                  "pool",
+                  "total"
+                ]
+              },
+              {
+                "op": "add",
+                "args": [
+                  {
+                    "ref": [
+                      "target",
+                      "talent"
+                    ]
+                  },
+                  5
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "scope": "target",
+          "field": "energy",
+          "when": {
+            "op": "ge",
+            "args": [
+              {
+                "ref": [
+                  "rolls",
+                  "pool",
+                  "total"
+                ]
+              },
+              {
+                "op": "add",
+                "args": [
+                  {
+                    "ref": [
+                      "target",
+                      "talent"
+                    ]
+                  },
+                  5
+                ]
+              }
+            ]
+          },
+          "value": {
+            "op": "sub",
+            "args": [
+              {
+                "ref": [
+                  "target",
+                  "energy"
+                ]
+              },
+              1
+            ]
+          }
+        }
+      ],
+      "resultFields": [
+        "success"
+      ]
+    }
+  },
+  "triggers": {
+    "exhaustion": {
+      "label": "Agotamiento",
+      "sources": [
+        "staged-source"
+      ],
+      "when": {
+        "op": "eq",
+        "args": [
+          {
+            "ref": [
+              "fields",
+              "energy"
+            ]
+          },
+          0
+        ]
+      },
+      "effects": [
+        {
+          "field": "exhausted",
+          "value": true
+        }
+      ]
+    }
+  },
+  "creationProfiles": {
+    "support": {
+      "label": "Preparación de apoyo propia",
+      "sources": [
+        "staged-source"
+      ],
+      "steps": [
+        "prepare-support"
+      ]
+    }
+  }
+}

@@ -225,7 +225,7 @@ window.RulePackUI=(()=>{
    $('#packCreate').onsubmit=run(async e=>{await act('create_pack_sheet',{name:e.target.elements.name.value,...(creation?{inputs:formValues(e.target,creation)}:{})});drafts.delete(nameKey);drafts.delete(choiceKey);if($('#packCreate'))$('#packCreate').elements.name.value='';const pending=snapshot.state.characters.find(c=>c.owner===snapshot.me.id&&c.creationProgress?.complete===false);if(pending)openAction(pending.id,pending.creationProgress.next);});
   }
   $$('[data-pack-character]').forEach(b=>b.onclick=()=>openCharacter(b.dataset.packCharacter));
-  $$('[data-pack-action]').forEach(b=>{const c=s.characters.find(c=>c.id===b.dataset.packTarget);if(reservedCreation(doc).has(b.dataset.packAction)||c?.creationProgress?.complete===false)b.remove();else b.onclick=()=>openAction(b.dataset.packTarget,b.dataset.packAction);});
+  $$('[data-pack-action]').forEach(b=>{const c=s.characters.find(c=>c.id===b.dataset.packTarget);if(reservedCreation(doc).has(b.dataset.packAction)||doc.actions[b.dataset.packAction]?.target||c?.creationProgress?.complete===false)b.remove();else b.onclick=()=>openAction(b.dataset.packTarget,b.dataset.packAction);});
   for(const c of s.characters.filter(c=>c.creationProgress?.complete===false)){
    const card=$$('[data-pack-character]').find(button=>button.dataset.packCharacter===c.id).closest('article');
    card.insertAdjacentHTML('beforeend',`<p class="notice">Creación en curso · ${c.creationProgress.completed} de ${c.creationProgress.total} etapas confirmadas.</p>${c.owner===me.id?`<button class="primary" data-pack-creation="${esc(c.id)}">Continuar creación</button>`:''}`);

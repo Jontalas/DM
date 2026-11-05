@@ -11,7 +11,7 @@ import secrets
 from bisect import bisect_right
 
 FORMAT='cronicas-rules-1'
-CAPABILITIES={'scalar-fields','expressions','tables','dice','actions','triggers','character-creation','staged-character-creation','action-results','creation-profiles'}
+CAPABILITIES={'scalar-fields','expressions','tables','dice','actions','triggers','character-creation','staged-character-creation','action-results','creation-profiles','target-sheets'}
 LIMIT=10**12
 OPS={'add':(1,20),'sub':(2,2),'mul':(2,2),'floor_div':(2,2),'min':(1,20),'max':(1,20),
      'eq':(2,2),'ne':(2,2),'lt':(2,2),'le':(2,2),'gt':(2,2),'ge':(2,2),
@@ -133,7 +133,8 @@ class RulePack:
             if 'derive' in spec:self._expression(spec['derive'],{'fields':fields})
         self._order=self._derived_order()
         for action in data['actions'].values():
-            _keys(action,('label','sources','inputs','requires','rolls','effects'),('permission','resultFields'))
+            _keys(action,('label','sources','inputs','requires','rolls','effects'),('permission','resultFields','target'))
+            if 'target' in action and action['target'] is not True:_fail('Una acción con objetivo debe declararlo explícitamente')
             _text(action['label']);self._sources(action)
             if action.get('permission','owner') not in ('owner','host'):_fail('Permiso de acción no compatible')
             if not isinstance(action['inputs'],dict) or len(action['inputs'])>32:_fail('Entradas de acción fuera de límites')
@@ -141,6 +142,7 @@ class RulePack:
                 _id(key);_keys(spec,('type','label'),('min','max','options','maxLength','default'));self._definition(spec)
                 if 'default' in spec:self._value(spec,spec['default'])
             scopes={'fields':fields,'inputs':set(action['inputs'])}
+            if action.get('target'):scopes['target']=fields
             self._expressions(action['requires'],scopes,32)
             if not isinstance(action['rolls'],list) or len(action['rolls'])>32:_fail('Demasiadas tiradas en una acción')
             rolls=set()
@@ -188,7 +190,9 @@ class RulePack:
                 if len(set(steps))!=len(steps):_fail('El perfil no puede repetir etapas')
                 self.creation_profiles[identifier]=copy.deepcopy(profile)
         self.reserved_creation_actions=set(self.creation_steps)|{step for profile in self.creation_profiles.values() for step in profile['steps']}
+        if any(data['actions'][step].get('target') for step in self.reserved_creation_actions):_fail('La creación no admite objetivos externos')
         used={'scalar-fields','expressions','actions'}
+        if any(action.get('target') for action in data['actions'].values()):used.add('target-sheets')
         if self.creation is not None:used.add('character-creation')
         if self.creation_profiles:used.update({'creation-profiles','character-creation'})
         if any(len(profile['steps'])>1 for profile in self.creation_profiles.values()):used.add('staged-character-creation')
@@ -260,10 +264,13 @@ class RulePack:
         if not isinstance(effects,list) or len(effects)>128:_fail('Efectos fuera de límites')
         targets=set()
         for effect in effects:
-            _keys(effect,('field','value'),('when',));field=effect['field']
+            _keys(effect,('field','value'),('when','scope') if 'target' in scopes else ('when',));field=effect['field']
+            scope=effect.get('scope','self')
+            if scope not in ('self','target') or scope=='target' and 'target' not in scopes:_fail('Ámbito de efecto no disponible')
             if not isinstance(field,str) or field not in self._data['fields'] or 'derive' in self._data['fields'][field]:_fail('Destino de efecto inexistente o derivado')
-            if field in targets:_fail('Un lote de efectos no puede asignar dos veces el mismo campo')
-            targets.add(field);self._expression(effect['value'],scopes);self._expression(effect.get('when',True),scopes)
+            destination=(scope,field)
+            if destination in targets:_fail('Un lote de efectos no puede asignar dos veces el mismo campo')
+            targets.add(destination);self._expression(effect['value'],scopes);self._expression(effect.get('when',True),scopes)
 
     def _derived_order(self):
         derived={key:spec['derive'] for key,spec in self._data['fields'].items() if 'derive' in spec}
@@ -412,7 +419,7 @@ class RulePack:
         result={**stored,**updates};self._fields(result,budget)
         return result,{key:{'before':stored[key],'after':value} for key,value in updates.items() if stored[key]!=value or type(stored[key])!=type(value)}
 
-    def _prepare_action(self,sheet,action_id,inputs,actor,host=False,physical=None,creating=False):
+    def _prepare_action(self,sheet,action_id,inputs,actor,host=False,physical=None,creating=False,target=None):
         self._sheet(sheet)
         steps=self._creation_steps(sheet)
         if type(creating)!=bool:_fail('Modo de creación inválido')
@@ -422,6 +429,11 @@ class RulePack:
         elif sheet['revision']<len(steps):_fail('Completa la creación del personaje antes de jugar')
         if not isinstance(action_id,str) or action_id not in self._data['actions']:_fail('Acción no definida por este paquete')
         action=self._data['actions'][action_id]
+        if action.get('target'):
+            if target is None:_fail('Esta acción requiere una ficha objetivo validada; no está disponible en la ruta individual')
+            self._sheet(target)
+            if not self.ready(target):_fail('Completa la creación de la ficha objetivo')
+        elif target is not None:_fail('Esta acción no admite una ficha objetivo')
         if not isinstance(actor,str) or not actor or len(actor)>100 or (action.get('permission','owner')=='owner' and actor!=sheet['owner']) or (action.get('permission')=='host' and host is not True):
             raise PermissionError('No tienes permiso para esta acción de la ficha')
         if not isinstance(inputs,dict) or set(inputs)-set(action['inputs']):_fail('Entradas desconocidas de acción')
@@ -430,6 +442,7 @@ class RulePack:
             if key not in inputs and 'default' not in spec:_fail('Falta una decisión requerida por la acción: '+key)
             arguments[key]=self._value(spec,inputs.get(key,spec.get('default')))
         budget=[50000];fields=self._fields(sheet['fields'],budget);context={'fields':fields,'inputs':arguments,'rolls':{}}
+        if target is not None:context['target']=self._fields(target['fields'],budget)
         if not all(_boolean(self._eval(condition,context,budget)) for condition in action['requires']):_fail('La acción no cumple los requisitos de sus reglas')
         physical={} if physical is None else physical
         ids={r['id'] for r in action['rolls']}
@@ -452,7 +465,25 @@ class RulePack:
         return {'inputs':copy.deepcopy(arguments),'rolls':[{'id':roll['id'],'count':count,'sides':sides,'keep':keep} for roll,count,sides,keep in specs]}
 
     def execute(self,sheet,action_id,inputs,actor,host=False,physical=None,draw=None,creating=False):
-        _,budget,context,specs=self._prepare_action(sheet,action_id,inputs,actor,host=host,physical=physical,creating=creating)
+        budget,context,trace=self._begin(sheet,action_id,inputs,actor,host=host,physical=physical,draw=draw,creating=creating)
+        action=self._data['actions'][action_id]
+        return self._finish(sheet,action['effects'],context,budget,trace,action.get('resultFields'))
+
+    def preview_targeted(self,sheet,target,action_id,inputs,actor,host=False):
+        arguments,_,_,specs=self._prepare_action(sheet,action_id,inputs,actor,host=host,target=target)
+        return {'inputs':copy.deepcopy(arguments),'rolls':[{'id':roll['id'],'count':count,'sides':sides,'keep':keep} for roll,count,sides,keep in specs]}
+
+    def execute_targeted(self,sheet,target,action_id,inputs,actor,host=False,physical=None,draw=None):
+        """Pure two-sheet math. Caller validates identities, permissions and scene."""
+        budget,context,trace=self._begin(sheet,action_id,inputs,actor,host=host,physical=physical,draw=draw,target=target)
+        action=self._data['actions'][action_id]
+        result,trace=self._finish(sheet,[e for e in action['effects'] if e.get('scope','self')=='self'],context,budget,trace,action.get('resultFields'))
+        target_result,target_trace=self._finish(target,[e for e in action['effects'] if e.get('scope')=='target'],context,budget,{'changes':{},'triggers':[]})
+        trace['target']={'beforeRevision':target['revision'],'afterRevision':target_result['revision'],**target_trace}
+        return result,target_result,trace
+
+    def _begin(self,sheet,action_id,inputs,actor,host=False,physical=None,draw=None,creating=False,target=None):
+        _,budget,context,specs=self._prepare_action(sheet,action_id,inputs,actor,host=host,physical=physical,creating=creating,target=target)
         physical={} if physical is None else physical
         action=self._data['actions'][action_id]
         draw=draw or (lambda sides:secrets.randbelow(sides)+1)
@@ -466,7 +497,10 @@ class RulePack:
                 kept=values if roll['keep']=='all' else sorted(values,reverse=roll['keep']=='highest')[:keep]
                 record.update(values=values,kept=kept,total=sum(kept),origin='physical' if identifier in physical else 'server')
             context['rolls'][identifier]=record;trace['rolls'][identifier]=copy.deepcopy(record)
-        stored,changes=self._batch(sheet['fields'],action['effects'],context,budget);trace['changes']=changes
+        return budget,context,trace
+
+    def _finish(self,sheet,effects,context,budget,trace,result_fields=None):
+        stored,changes=self._batch(sheet['fields'],effects,context,budget);trace['changes']=changes
         visited=set();applications=0
         while True:
             signature=json.dumps(stored,sort_keys=True,ensure_ascii=False)
@@ -484,6 +518,6 @@ class RulePack:
             if not changed:break
         result=copy.deepcopy(sheet);result['fields']=stored;result['revision']+=1
         values=self._sheet(result)
-        if 'resultFields' in action:
-            trace['results']={field:copy.deepcopy(values[field]) for field in action['resultFields']}
+        if result_fields is not None:
+            trace['results']={field:copy.deepcopy(values[field]) for field in result_fields}
         return result,trace

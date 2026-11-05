@@ -10,13 +10,14 @@ const path=require('node:path'),assert=require('node:assert/strict');
   await context.addInitScript(t=>localStorage.setItem('cronicas-token',t),room.token);
   const page=await context.newPage(),actions=[],errors=[];
   page.on('pageerror',e=>errors.push(e.stack));page.on('request',r=>{if(r.url().endsWith('/api/action'))actions.push(r.postDataJSON())});
-  const profiles=process.env.TEST_CREATION_PROFILES==='1';
-  await page.goto(url);await page.locator('#packFile').setInputFiles(profiles?'test_fixtures/rule_packs/original-creation-profiles-example.json':'test_fixtures/rule_packs/original-staged-results-example.json');
+  const targeted=process.env.TEST_TARGET_SHEETS==='1',profiles=targeted||process.env.TEST_CREATION_PROFILES==='1';
+  await page.goto(url);await page.locator('#packFile').setInputFiles(targeted?'test_fixtures/rule_packs/original-target-sheets-example.json':profiles?'test_fixtures/rule_packs/original-creation-profiles-example.json':'test_fixtures/rule_packs/original-staged-results-example.json');
   await page.locator('#packInstall [name=use]').check();await page.locator('#packInstall button').click();
   await page.locator('#packCreate [name=name]').fill('Aria');await page.locator('#packCreate button').click();await page.locator('#packAction').waitFor();
   await page.locator('#packAction').getByRole('combobox',{name:/Oficio/}).selectOption('cronista');await page.locator('#packAction').getByLabel('Enfoque',{exact:true}).fill('0');
   await page.locator('#packAction button.primary').click();await page.waitForFunction(()=>snapshot.state.characters[0].creationProgress.complete);
   if(profiles)assert.equal(await page.locator('[data-pack-action=prepare-support]').count(),0);
+  if(targeted)assert.equal(await page.locator('[data-pack-action=contest]').count(),0);
   for(const energy of [2,1]){
    await page.locator('[data-pack-action=explore]').click();await page.locator('#packAction summary').click();
    await page.locator('#packAction [name=dice0]').fill('3, 4');await page.locator('#packAction button.primary').click();

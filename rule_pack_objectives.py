@@ -50,7 +50,7 @@ def check_spec(check,action,items,package):
     if not isinstance(field,str) or field not in package['fields']:raise RulePackError('Campo de evidencia no disponible')
     spec=package['fields'][field]
     if spec['type']!='boolean' or 'initial' not in spec:raise RulePackError('Este bloque de objetivos requiere un resultado booleano almacenado del paquete')
-    if not any(effect['field']==field and effect.get('when',True) is True for effect in package['actions'][action]['effects']):
+    if not any(effect['field']==field and effect.get('scope','self')=='self' and effect.get('when',True) is True for effect in package['actions'][action]['effects']):
         raise RulePackError('La acción debe calcular ese resultado booleano de forma incondicional')
     return copy.deepcopy(check)
 

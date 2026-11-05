@@ -32,7 +32,7 @@ def compile_plan(plan,pack,policy):
         if goal is None or not goal['known']:raise RulePackError('El descubrimiento necesita un objetivo conocido de esta preparación')
         check={key:definition[key] for key in ('objective','field')};supported=False
         for action,spec in package['actions'].items():
-            if action in pack.reserved_creation_actions or spec.get('permission','owner')!='owner':continue
+            if action in pack.reserved_creation_actions or spec.get('target') or spec.get('permission','owner')!='owner':continue
             try:objectives.check_spec(check,action,[goal|{'status':'open'}],package);supported=True;break
             except RulePackError:pass
         if not supported:raise RulePackError('Ninguna acción disponible calcula el resultado requerido por el descubrimiento')
