@@ -8,6 +8,7 @@ from rule_pack_authoring import canonical
 from rule_pack_runtime import RulePackError
 
 FORMAT='cronicas-adventure-plan-1'
+ACTORS_FORMAT='cronicas-adventure-plan-2'
 
 
 def compile_plan(plan,pack,policy):
@@ -15,7 +16,10 @@ def compile_plan(plan,pack,policy):
     try:size=len(canonical(plan).encode('utf-8'))
     except (TypeError,ValueError,RecursionError):raise RulePackError('Preparación de aventura no serializable') from None
     if size>60000:raise RulePackError('Preparación de aventura demasiado grande')
-    if not isinstance(plan,dict) or set(plan)!={'format','source','package','objectives','discoveries'} or plan['format']!=FORMAT:
+    keys={'format','source','package','objectives','discoveries'}
+    actor_plan=isinstance(plan,dict) and plan.get('format')==ACTORS_FORMAT
+    if actor_plan:keys.add('npcPreparation')
+    if not isinstance(plan,dict) or set(plan)!=keys or plan['format'] not in (FORMAT,ACTORS_FORMAT):
         raise RulePackError('Formato de preparación de aventura incompatible')
     if plan['package']!={'id':pack.id,'version':pack.version,'sha256':pack.digest}:
         raise RulePackError('La preparación requiere otra versión exacta del paquete de reglas')
@@ -36,6 +40,10 @@ def compile_plan(plan,pack,policy):
             try:objectives.check_spec(check,action,[goal|{'status':'open'}],package);supported=True;break
             except RulePackError:pass
         if not supported:raise RulePackError('Ninguna acción disponible calcula el resultado requerido por el descubrimiento')
+    result={'source':original,'objectives':goals,'catalog':catalog,
+        'sha256':hashlib.sha256(canonical(plan).encode('utf-8')).hexdigest()}
+    if actor_plan:
+        from adventure_actors import compile_preparation
+        result['npcPreparation']=compile_preparation(plan['npcPreparation'],pack,'provided-profile')
     # Deep copies prevent the caller from mutating imported preparation later.
-    return json.loads(canonical({'source':original,'objectives':goals,'catalog':catalog,
-        'sha256':hashlib.sha256(canonical(plan).encode('utf-8')).hexdigest()}))
+    return json.loads(canonical(result))

@@ -45,7 +45,7 @@ def main():
                     {'id':'archivo-camara','from':'place:archivo','to':'place:camara','known':False,'public':'','private':'Existe un pasadizo.'}]
                 changes['npcUpdates']=[{'id':'arda','name':'Arda <archivera>','known':True,'public':'Custodia el archivo junto al farol.','private':'PRIVATE-NPC: esconde una carta.'},
                     {'id':'sombra','name':'PRIVATE-NPC-NAME','known':False,'public':'','private':'Todavía no se ha presentado.'}]
-                if request['contract']==pack_director.PLAN_CONTRACT:changes.pop('objectiveUpdates')
+                if request['contract'] in (pack_director.PLAN_CONTRACT,pack_director.ACTORS_PLAN_CONTRACT):changes.pop('objectiveUpdates')
             if request['operation']=='talk' and request['kind']=='action':
                 if 'TEST_UNSUPPORTED' in request['declaration']['text']:changes['limitation']='Este paquete no define esa mecánica.'
                 elif request['allowedActions']:action=request['allowedActions'][0]

@@ -238,6 +238,26 @@ class RulePackServerTests(unittest.TestCase):
         exported=self.request('/api/export',{},self.token);self.action('import',campaign=exported)
         self.assertEqual(self.state()['state']['narrativeView']['discoveries'][0]['text'],quote)
 
+    def test_actor_plan_starts_and_resolves_without_individual_npc_setup(self):
+        from test_adventure_actor_plan import AdventureActorPlanTests
+        fixture=AdventureActorPlanTests();fixture.setUp()
+        self.action('import',campaign={'format':'cronicas-1','title':'Preparación propia de PNJ','state':fixture.state})
+        with patch.object(pack_director,'propose',return_value=narrative_reply()) as provider:
+            start=self.action('start_pack_adventure',character=fixture.cid,plan=fixture.plan,sourcePolicy='provided-adventure')
+            self.assertEqual(provider.call_count,1)
+            self.assertEqual(provider.call_args.args[0]['request']['contract'],pack_director.ACTORS_PLAN_CONTRACT)
+            self.assertTrue(self.request('/api/action',start,self.token)['duplicate'])
+            self.assertEqual(provider.call_count,1)
+        public=self.state()['state'];self.assertEqual(len(public['actorViews']),1);self.assertNotIn('actors',public)
+        with patch.object(pack_director,'propose',side_effect=AssertionError('Target preparation called AI')):
+            self.action('request_pack_target',character=fixture.cid,action='contest',target='a'*24,inputs={})
+            pending=self.state()['state']['narrativeView']['pending']
+            self.action('resolve_pack_request',request=pending['id'],physical={'pool':[3,4]})
+        exported=self.request('/api/export',{},self.token);campaign.validate_restored(exported['state'])
+        self.assertEqual(exported['state']['actors'][0]['sheet']['fields']['energy'],1)
+        self.action('import',campaign=exported)
+        self.assertEqual(self.request('/api/export',{},self.token)['state']['actors'],exported['state']['actors'])
+
     def test_abstract_target_request_and_resolution_survive_failed_atomic_commit(self):
         from test_target_context import AbstractTargetContextTests
         fixture=AbstractTargetContextTests();fixture.setUp()

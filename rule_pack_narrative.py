@@ -32,7 +32,7 @@ def _log(state,kind,actor,me,**values):
 
 def apply(state,action,me,pack,call=None,draw=None,source_loader=None):
     kind=action['type'];result=copy.deepcopy(state);memory=result.get('narrative')
-    prepared_plan=None;prepared_goals=None
+    prepared_plan=None;prepared_goals=None;prepared_npcs=None
     if state['package']['policy']!='provided-rules':raise RulePackError('Activa el paquete antes de jugar')
     if kind=='request_pack_target':
         from target_actions import request
@@ -67,6 +67,11 @@ def apply(state,action,me,pack,call=None,draw=None,source_loader=None):
                 raise RulePackError('La preparación estructurada debe conservar una única fuente original')
             from adventure_plan import compile_plan
             prepared_plan=compile_plan(action['plan'],pack,action.get('sourcePolicy'))
+            if 'npcPreparation' in prepared_plan:
+                import rule_pack_actors as actors
+                preparation=prepared_plan['npcPreparation'];prepared_npcs=preparation['npcs']
+                actors.validate_registry(preparation['actors'],pack,prepared_npcs,[c['id'] for c in state['characters']])
+                if state.get('actors'):raise RulePackError('La preparación inicial no puede sustituir actores existentes')
             result['adventureSource']=prepared_plan['source'];prepared_goals=[]
             for offset in range(0,len(prepared_plan['objectives']),2):
                 prepared_goals=objectives.merge(prepared_goals,prepared_plan['objectives'][offset:offset+2],len(result['messages']))
@@ -126,9 +131,12 @@ def apply(state,action,me,pack,call=None,draw=None,source_loader=None):
     if not pack.ready(actor['sheet']):raise RulePackError('Completa las etapas de creación de tu personaje antes de entrar en la aventura')
     # Reserve growth before a potentially billable call. No private source read.
     game={key:value for key,value in state.items() if key not in ('authoring','authoringWorkspace','adventureSource')}
+    if prepared_npcs is not None:
+        game['actors']=prepared_plan['npcPreparation']['actors']
+        game['preparedNpcs']=prepared_npcs
     if len(json.dumps(game,ensure_ascii=False).encode('utf-8'))>650000 or len(state['messages'])>4997:raise RulePackError('No hay espacio reservado para otra intervención; no se ha llamado a IA')
     if result.get('adventureSourceRef') is not None and result.get('adventureSource') is None and source_loader is not None:result=source_loader(result)
-    prepared=director.prepare(result,operation,actor,text,mode,pack,prepared_goals=prepared_goals)
+    prepared=director.prepare(result,operation,actor,text,mode,pack,prepared_goals=prepared_goals,prepared_npcs=prepared_npcs)
     reply=director.validate_reply(prepared,(call or director.propose)(prepared))
     proposal=reply['proposal'];pending=memory.get('pending') if memory else None
     if proposal['action']:
@@ -141,7 +149,7 @@ def apply(state,action,me,pack,call=None,draw=None,source_loader=None):
         **({'normalization':reply['normalization']} if 'normalization' in reply else {}))
     result['narrative']={'revision':(memory['revision'] if memory else 0)+1,'summary':reply['summary'],
         'preparation':reply['preparation'],'pending':pending,'continuation':None}
-    npcs=world.merge(memory.get('npcs',[]) if memory else [],reply.get('npcUpdates',[]))
+    npcs=world.merge(prepared_npcs if prepared_npcs is not None else memory.get('npcs',[]) if memory else [],reply.get('npcUpdates',[]))
     if npcs:result['narrative']['npcs']=npcs
     places=world.merge_places(memory.get('places',[]) if memory else [],reply.get('placeUpdates',[]))
     relationships=world.merge_relationships(memory.get('relationships',[]) if memory else [],reply.get('relationshipUpdates',[]),npcs,places)
@@ -151,6 +159,9 @@ def apply(state,action,me,pack,call=None,draw=None,source_loader=None):
     if goals:result['narrative']['objectives']=goals
     if memory and 'discoveries' in memory:result['narrative']['discoveries']=copy.deepcopy(memory['discoveries'])
     if prepared_plan is not None:
+        if prepared_npcs is not None:
+            result['actors']=copy.deepcopy(prepared_plan['npcPreparation']['actors'])
+            for prepared_actor in result['actors']:prepared_actor['introducedAt']=len(result['messages'])
         index=len(result['messages'])
         result['messages'].append({'kind':'system','text':'Preparación estructurada aportada: objetivos y consecuencias informativas cargados; no certifica reglas.','actor':me['id'],'time':time.time()})
         result['narrative']['discoveries']={'catalog':prepared_plan['catalog'],'sourceSha256':prepared_plan['source']['sha256'],

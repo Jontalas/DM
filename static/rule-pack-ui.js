@@ -76,14 +76,14 @@ window.RulePackUI=(()=>{
      };
      form.oninput=remember;form.onchange=remember;
      $('#packAdventureFile').accept='.txt,.md,.json,text/plain,text/markdown,application/json';
-     if(saved.plan)form.insertAdjacentHTML('afterbegin','<p class="notice" data-plan-note>Preparación estructurada cargada: incluye objetivos y descubrimientos. Si editas su fuente, vuelve a cargar el archivo antes de iniciar.</p>');
+     if(saved.plan)form.insertAdjacentHTML('afterbegin',`<p class="notice" data-plan-note>Preparación estructurada cargada: incluye objetivos y descubrimientos${saved.plan.format==='cronicas-adventure-plan-2'?' y PNJ preparados':''}. Si editas su fuente, vuelve a cargar el archivo antes de iniciar.</p>`);
      $('#packAdventureFile').onchange=run(async e=>{
       const file=e.target.files[0];if(!file)return;
       const structured=/\.json$/i.test(file.name);
       if(file.size>(structured?60000:48000)||! /\.(txt|md|json)$/i.test(file.name))throw Error('Usa texto .txt/.md de hasta 48.000 bytes o una preparación .json de hasta 60.000 bytes.');
       const loaded=new TextDecoder('utf-8',{fatal:true}).decode(await file.arrayBuffer());sameCampaign(key);
       const plan=structured?JSON.parse(loaded):null;
-      if(plan&&(plan.format!=='cronicas-adventure-plan-1'||typeof plan.source?.text!=='string'||typeof plan.source?.title!=='string'))throw Error('Este JSON no es una preparación de aventura compatible.');
+      if(plan&&(!['cronicas-adventure-plan-1','cronicas-adventure-plan-2'].includes(plan.format)||typeof plan.source?.text!=='string'||typeof plan.source?.title!=='string'))throw Error('Este JSON no es una preparación de aventura compatible.');
       if(structured&&!plan)throw Error('La preparación debe ser un objeto JSON.');
       const text=plan?plan.source.text:loaded;
       if(text.length>12000)throw Error('El texto supera los 12.000 caracteres.');
@@ -91,7 +91,7 @@ window.RulePackUI=(()=>{
       if(plan)form.elements.sourceTitle.value=plan.source.title;
       form.elements.sourceText.value=text;if(!form.elements.sourceTitle.value)form.elements.sourceTitle.value=file.name.replace(/\.[^.]+$/,'').slice(0,100);remember(text);
       form.querySelector('[data-plan-note]')?.remove();
-      if(plan)form.insertAdjacentHTML('afterbegin','<p class="notice" data-plan-note>Preparación estructurada cargada; el servidor comprobará su paquete, objetivos y citas antes de llamar al director.</p>');
+      if(plan)form.insertAdjacentHTML('afterbegin',`<p class="notice" data-plan-note>Preparación estructurada cargada${plan.format==='cronicas-adventure-plan-2'?' con PNJ preparados':''}; el servidor comprobará su paquete, objetivos y citas antes de llamar al director.</p>`);
      });
     }
     form.onsubmit=run(async e=>{

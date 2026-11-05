@@ -1,5 +1,7 @@
 # Resoluciones entre fichas: kernel y siguiente integración
 
+Despliegue confirmado: 7ea6e345a6b2a0385ba4c0bf3729066a9e1c0a87, Render 7586725803 success y salud/revisión exactas. Ensayo aislado real de mecánicas sin IA: dos fichas, duplicados, copia e invitado correctos; apertura simulada y continuación no invocada. El «pendiente de despliegue» inferior describe el cierre local anterior. Registro privado .deps/abstract-target-live-session.json; no repetir el guion.
+
 Capacidad `target-sheets` y recorrido local optativo `abstract-scene-targets`, pendiente de despliegue. No implementa combate espacial ni Pathfinder. El ejemplo propio CC0 usa dos recursos abstractos; sus números no se atribuyen a un manual.
 
 Validación del kernel: 458 pruebas completas con emulador correctas sin omisiones (176,761 s), incluidas cinco pruebas nuevas de dos fichas/condiciones/origen simultáneo/ciclos/aislamiento. Navegador normal con acción de objetivo oculta correcto; captura original antigua revalidada sin red ni inferencia. Desarrollo en feature; no desplegar como ataque utilizable hasta terminar la siguiente integración y su proyección privada/pública.

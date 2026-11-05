@@ -24,6 +24,7 @@ FACTS_CONTRACT='rule-pack-director-facts-2'
 DISCOVERY_CONTRACT='rule-pack-director-discoveries-3'
 PLAN_CONTRACT='rule-pack-director-plan-start-4'
 TARGET_CONTRACT='rule-pack-director-target-facts-5'
+ACTORS_PLAN_CONTRACT='rule-pack-director-plan-actors-start-6'
 DISCOVERY_GUIDANCE='Los descubrimientos confirmados son información ya revelada. En continue, discoveriesRevealed de verifiedResolution identifica los revelados por ESTA resolución; confirmedDiscoveries conserva los anteriores. No confundas preparación de la fuente con hechos ocurridos ni vuelvas a bloquear un descubrimiento confirmado tras otra tirada.'
 MAX_RESPONSE=50000
 PROMPT='''Diriges en español una aventura persistente sin maestro humano. Usa exclusivamente el catálogo del paquete aportado; su fidelidad al manual no está certificada. No importes reglas por conocer el nombre de un juego. Solo el motor tira dados y modifica fichas, recursos, condiciones y objetivos. Si falta una mecánica, indica limitation y deja proposal vacía; no inventes estadísticas, dificultades, efectos ni administración para el jugador. Puedes dirigir ficción sin efectos reglamentarios. Una tirada pendiente de una acción disponible no es una limitación de cobertura: propón esa acción con limitation="" y explica la tirada pendiente en proposal.reason. Nunca combines una propuesta con limitation no vacía.
@@ -46,7 +47,7 @@ def _text(value,limit,empty=False):
     return repair_text(value).strip()
 
 
-def prepare(state,operation,actor,text,kind,pack,prepared_goals=None):
+def prepare(state,operation,actor,text,kind,pack,prepared_goals=None,prepared_npcs=None):
     if not pack.ready(actor['sheet']):raise RulePackError('Completa las etapas de creación de tu personaje antes de iniciar o continuar la aventura')
     data=pack.document();memory=state.get('narrative') or {}
     available={key:spec for key,spec in data['actions'].items()
@@ -99,6 +100,10 @@ def prepare(state,operation,actor,text,kind,pack,prepared_goals=None):
         request['confirmedDiscoveries']=public_view(store['catalog'],store['receipts'])
         request['discoveryContract']=DISCOVERY_GUIDANCE
     if prepared_goals is not None:request['contract']=PLAN_CONTRACT
+    if prepared_npcs is not None:
+        request['contract']=ACTORS_PLAN_CONTRACT
+        request['directorKnowledge']['npcs']=world.validate(prepared_npcs)
+        request['providedActors']='Estos PNJ son preparación aportada. Conserva identidades y conocimiento inicial; los desconocidos son privados. Sus fichas y capacidades las gestiona el motor, no inventes estadísticas ni acciones del jugador. La preparación no acredita encuentros ni sucesos ya ocurridos.'
     if operation=='continue' and 'targetRef' in confirmed:
         from resolution_facts import build
         request['contract']=TARGET_CONTRACT
