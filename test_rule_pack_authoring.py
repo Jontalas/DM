@@ -33,6 +33,28 @@ def reply(prepared):
 class RulePackAuthoringTests(unittest.TestCase):
     def setUp(self):self.prepared=authoring.prepare_input(request())
 
+    def test_legacy_prompt_identity_wrapper_is_flattened_without_changing_rules(self):
+        original=reply(self.prepared);data=json.loads(original['packageJson'])
+        expected=copy.deepcopy(data);data['identity']={key:data.pop(key) for key in ('id','name','edition','version')}
+        original['packageJson']=json.dumps(data);before=copy.deepcopy(original)
+        report=authoring.validate_reply(self.prepared,original)
+        self.assertEqual(report['candidate'],expected);self.assertEqual(original,before)
+        self.assertIn('identity →',report['issues'][-1]['message'])
+        authoring.validate_record({'request':self.prepared['request'],'sha256':self.prepared['sha256'],
+            'sourceScheme':self.prepared['sourceScheme'],'report':report})
+        # The deterministic package interpreter remains strict; only the known
+        # provider representation is converted at the preparation boundary.
+        from rule_pack_runtime import RulePack
+        with self.assertRaises(RulePackError):RulePack(data)
+        for kind in ('mismatch','mixed','unknown','bad-rule'):
+            altered=copy.deepcopy(data)
+            if kind=='mismatch':altered['identity']['id']='another-game'
+            elif kind=='mixed':altered['id']=expected['id']
+            elif kind=='unknown':altered['unrequested']='unknown'
+            else:altered['actions']['attempt']['effects'][0]['value']={'op':'execute-code','args':[]}
+            invalid=copy.deepcopy(original);invalid['packageJson']=json.dumps(altered)
+            with self.subTest(kind=kind),self.assertRaises(RulePackError):authoring.validate_reply(self.prepared,invalid)
+
     def test_source_identity_and_hashes_are_stable_and_isolated(self):
         raw=request();prepared=authoring.prepare_input(raw);raw['document']['pages'][0]['text']='Changed'
         self.assertEqual(prepared,self.prepared)

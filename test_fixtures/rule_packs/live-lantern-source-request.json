@@ -1,0 +1,24 @@
+{
+  "document": {
+    "edition": "Ejemplo original 1",
+    "pages": [
+      {
+        "page": 1,
+        "text": "Reglas originales de prueba de la linterna, definición completa 1.0.1. No representan un juego comercial.\nLa ficha comienza con energía entera 3 (mínimo 0, máximo 3), total entero 0 (mínimo 0, máximo 12), éxito booleano falso y agotamiento booleano falso. Estos son todos los campos; no hay elecciones ni tiradas de creación.\nLa única acción jugable es intentar. Solo el propietario la ejecuta y requiere energía mayor que 0 antes de tirar. No necesita entradas. Tira dos dados de seis caras y suma ambos, sin descartar ninguno. Siempre gasta exactamente 1 de energía por intento legal, tanto con éxito como con fallo. En la misma resolución guarda el total y actualiza éxito a verdadero si la suma es al menos 7, o falso si es menor. El gasto y esos resultados se calculan desde la misma ficha previa y se confirman conjuntamente.\nInmediatamente después de esa resolución, si la energía final es 0, agotamiento pasa a verdadero automáticamente. Agotamiento es solo ese marcador; no tiene otro efecto. No existe recuperación en este ejemplo y la energía no puede quedar negativa porque no se permite intentar con 0. Éxito y fallo solo son el marcador indicado; no producen otras consecuencias mecánicas ni hechos de ficción. No existen otras reglas ni campos en este ejemplo."
+      }
+    ],
+    "title": "Reglas propias de la linterna"
+  },
+  "identity": {
+    "edition": "Ejemplo original 1",
+    "id": "lantern-example",
+    "name": "La linterna",
+    "version": "1.0.1"
+  },
+  "license": {
+    "attribution": "Ejemplo propio para probar la preparación.",
+    "id": "CC0-1.0"
+  },
+  "permission": "redistributable",
+  "scope": "Ficha fija, acción de intento y marcador de agotamiento; solo las definiciones explícitas de este ejemplo propio revisado."
+}

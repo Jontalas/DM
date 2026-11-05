@@ -4,7 +4,7 @@
 
 El usuario entrega reglas a la aplicación, que prepara e instala un paquete sin programar un adaptador por juego. El núcleo de partida interpreta esos datos; la IA ayuda a extraer fuentes y a dirigir ficción, no sustituye los cálculos. La incorporación de reglas debe llegar a ser un recorrido de la aplicación, con ambigüedades y límites visibles.
 
-Estado actual: existe un intérprete en `rule_pack_runtime.py`, su integración transaccional en `rule_pack_campaign.py`, interfaz genérica, preparación asistida y lectura local de páginas PDF. La integración permanece experimental, fuera del catálogo público. Se permite crear explícitamente un espacio `rule-pack` mediante API para verificación acotada; no se anuncia como sistema con aventura de IA. El selector público sigue ofreciendo solo Pathfinder parcial. La conversión se ha comprobado con respuestas simuladas; la primera inferencia real se está preparando mediante el despliegue existente. No hay aún conversión de manuales completos. Los adaptadores existentes siguen funcionando y conservan las campañas. Este núcleo es un paso hacia la arquitectura acordada, no una declaración de soporte universal ni la entrega final del recorrido «subir manual y jugar».
+Estado actual: existe un intérprete en `rule_pack_runtime.py`, su integración transaccional en `rule_pack_campaign.py`, interfaz genérica, preparación asistida y lectura local de páginas PDF. La integración permanece experimental, fuera del catálogo público. Se permite crear explícitamente un espacio `rule-pack` mediante API para verificación acotada; no se anuncia como sistema con aventura de IA. El selector público sigue ofreciendo solo Pathfinder parcial. Se han realizado dos conversiones reales de reglas propias: fuente incompleta devuelta como ambigua y fuente completada con candidato recuperable; véase la evidencia y corrección siguientes. No hay aún conversión de manuales completos. Los adaptadores existentes siguen funcionando y conservan las campañas. Este núcleo es un paso hacia la arquitectura acordada, no una declaración de soporte universal ni la entrega final del recorrido «subir manual y jugar».
 
 ## Contrato de datos v1
 
@@ -123,6 +123,16 @@ También se abrió el manual privado real de Pathfinder (93.828.277 bytes): PDF 
 5. Migrar por bloques las reglas verificadas existentes al formato y probar el recorrido completo, conservando campañas, datos privados y límites reales.
 
 No activar automáticamente un paquete por superar el análisis sintáctico: compilar, pasar ejemplos y corresponder a las fuentes son comprobaciones distintas. Tampoco ejecutar código generado arbitrario como atajo a la importación sin programación.
+
+## Evidencia real de conversión acotada y recuperación
+
+El 5 de noviembre se desplegó `1c17778` en el Render existente y se comprobaron revisión, salud, catálogo y Anthropic. Se efectuaron dos solicitudes distintas, en campañas técnicas nuevas y con reglas originales propias: la primera devolvió `ambiguous` al faltar efectos precisos; la segunda usó una fuente completada y produjo un candidato. No se enviaron manuales comerciales ni se modificaron partidas personales.
+
+El segundo candidato reveló un error del mensaje al proveedor: pedía `identity` anidado, aunque el intérprete exige `id/name/edition/version` en raíz. Se corrigió el mensaje y se añadió una adaptación de representación únicamente en la frontera del preparador: mueve esos cuatro valores solo si coinciden exactamente con la solicitud y no existen ya propiedades raíz mezcladas. No corrige expresiones ni decide reglas. Anota el ajuste y SHA-256 previo en las cuestiones visibles. El intérprete sigue rechazando directamente ese formato anidado, claves desconocidas y reglas inválidas. La respuesta original capturada se reproduce sin llamar al proveedor.
+
+El candidato normalizado y su fuente propia están en `test_fixtures/rule_packs/live-lantern-example.json` y `live-lantern-source-request.json`. Pasan los tres ejemplos del proveedor y comprobaciones independientes de 36 pares de d6 en tres niveles de recurso (108 resoluciones), sustitución del resultado en cada intento, coste tanto en éxito como en fallo, agotamiento y rechazo a energía cero. Esto verifica ese ejemplo acotado, no fidelidad de manuales futuros. Capturas crudas, tokens de acceso y sesiones permanecen privados en `.deps`. El consumo observado conjunto fue 6.085 tokens de entrada y 5.470 de salida; no se ha calculado el importe monetario. No repetir estas inferencias para documentarlas o depurarlas.
+
+La recuperación remota tras desplegar el ajuste, instalación explícita y ejecución del candidato están pendientes de comprobar en este punto; el estado final debe consultarse en TRABAJO.md.
 
 ## Creación de personajes definida por el paquete
 

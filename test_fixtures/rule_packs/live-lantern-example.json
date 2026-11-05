@@ -1,0 +1,175 @@
+{
+  "format": "cronicas-rules-1",
+  "engineVersion": 1,
+  "license": {
+    "id": "CC0-1.0",
+    "attribution": "Ejemplo propio para probar la preparación."
+  },
+  "sources": [
+    {
+      "id": "source-15787ad255736fe0a876-p1",
+      "title": "Reglas propias de la linterna",
+      "edition": "Ejemplo original 1",
+      "locator": "Página/fragmento aportado 1"
+    }
+  ],
+  "coverage": {
+    "implemented": [
+      "Ficha fija con energía, total, éxito y agotamiento",
+      "Acción intentar con dos dados de seis caras, gasto de 1 de energía y éxito si la suma es al menos 7",
+      "Marcador de agotamiento automático cuando la energía llega a 0"
+    ],
+    "pending": []
+  },
+  "requires": [
+    "actions",
+    "dice",
+    "expressions",
+    "scalar-fields",
+    "triggers"
+  ],
+  "fields": {
+    "energy": {
+      "type": "integer",
+      "label": "Energía",
+      "sources": [
+        "source-15787ad255736fe0a876-p1"
+      ],
+      "initial": 3,
+      "min": 0,
+      "max": 3
+    },
+    "total": {
+      "type": "integer",
+      "label": "Total",
+      "sources": [
+        "source-15787ad255736fe0a876-p1"
+      ],
+      "initial": 0,
+      "min": 0,
+      "max": 12
+    },
+    "success": {
+      "type": "boolean",
+      "label": "Éxito",
+      "sources": [
+        "source-15787ad255736fe0a876-p1"
+      ],
+      "initial": false
+    },
+    "exhausted": {
+      "type": "boolean",
+      "label": "Agotamiento",
+      "sources": [
+        "source-15787ad255736fe0a876-p1"
+      ],
+      "initial": false
+    }
+  },
+  "tables": {},
+  "actions": {
+    "intentar": {
+      "label": "Intentar",
+      "sources": [
+        "source-15787ad255736fe0a876-p1"
+      ],
+      "inputs": {},
+      "requires": [
+        {
+          "op": "gt",
+          "args": [
+            {
+              "ref": [
+                "fields",
+                "energy"
+              ]
+            },
+            0
+          ]
+        }
+      ],
+      "rolls": [
+        {
+          "id": "dice",
+          "count": 2,
+          "sides": 6,
+          "keep": "all"
+        }
+      ],
+      "effects": [
+        {
+          "field": "total",
+          "value": {
+            "ref": [
+              "rolls",
+              "dice",
+              "total"
+            ]
+          }
+        },
+        {
+          "field": "success",
+          "value": {
+            "op": "ge",
+            "args": [
+              {
+                "ref": [
+                  "rolls",
+                  "dice",
+                  "total"
+                ]
+              },
+              7
+            ]
+          }
+        },
+        {
+          "field": "energy",
+          "value": {
+            "op": "sub",
+            "args": [
+              {
+                "ref": [
+                  "fields",
+                  "energy"
+                ]
+              },
+              1
+            ]
+          }
+        }
+      ],
+      "permission": "owner"
+    }
+  },
+  "triggers": {
+    "agotamiento": {
+      "label": "Agotamiento",
+      "sources": [
+        "source-15787ad255736fe0a876-p1"
+      ],
+      "when": {
+        "op": "eq",
+        "args": [
+          {
+            "ref": [
+              "fields",
+              "energy"
+            ]
+          },
+          0
+        ]
+      },
+      "effects": [
+        {
+          "field": "exhausted",
+          "value": true
+        }
+      ]
+    }
+  },
+  "id": "lantern-example",
+  "name": "La linterna",
+  "edition": "Ejemplo original 1",
+  "version": "1.0.1"
+}
