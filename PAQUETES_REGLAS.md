@@ -122,3 +122,11 @@ También se abrió el manual privado real de Pathfinder (93.828.277 bytes): PDF 
 5. Migrar por bloques las reglas verificadas existentes al formato y probar el recorrido completo, conservando campañas, datos privados y límites reales.
 
 No activar automáticamente un paquete por superar el análisis sintáctico: compilar, pasar ejemplos y corresponder a las fuentes son comprobaciones distintas. Tampoco ejecutar código generado arbitrario como atajo a la importación sin programación.
+
+## Recuperación de preparación facturable
+
+La preparación genérica reserva un intento privado por campaña, actor y SHA de solicitud antes del transporte. Captura la respuesta cruda antes de analizarla. Un fallo al confirmar la campaña permite reutilizar esa respuesta, incluso con un cliente servidor nuevo y sin clave del proveedor. Si falla la captura persistente, una caché acotada a ocho respuestas por almacén permite recuperarla mientras viva ese proceso. Un resultado incierto sin captura no autoriza otra inferencia automática. Cambiar deliberadamente las fuentes o el alcance crea otra solicitud; no se garantiza deduplicación entre solicitudes diferentes.
+
+Confirmar estado y marcador de acción sustituye el intento en el mismo lote por un marcador mínimo `confirmed`, retirando texto y respuesta temporales. Conservar ese marcador impide que un envío simultáneo con estado antiguo reserve otra llamada después de la confirmación. Las respuestas inválidas y los resultados inciertos se conservan para diagnóstico; no se borran por antigüedad. `GET /api/rule-pack/preparation-attempt?requestSha256=…` permite únicamente al anfitrión consultar su intento pendiente de esa campaña, sin claves ni cabeceras. Una preparación confirmada ya no devuelve la captura temporal; el informe validado queda en el almacén privado de fuentes.
+
+Coste adicional por preparación nueva: una escritura de reserva, una actualización de captura y una escritura de marcador mínimo dentro del lote final. Los reintentos consultan/reutilizan la captura sin IA. Las acciones normales de juego no realizan estas operaciones. No modifica las llamadas del director Pathfinder ni del adaptador provisional de Cairn. Sin configuración válida no se crea una reserva nueva. No se ha desplegado esta funcionalidad.

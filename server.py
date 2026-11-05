@@ -136,7 +136,7 @@ def execute_action(body,me):
         if state['ruleset']=='rule-pack' and me['host'] and body['type'] in ('prepare_rule_pack','install_prepared_rule_pack'):
             workspace_readonly=body['type']=='install_prepared_rule_pack' and state.get('authoringWorkspaceRef') is not None
             state=attach_workspace(state,me)
-        title=None
+        title=None;preparation_key=None
         if body['type']=='import':
             if not me['host']:raise PermissionError('Solo el anfitrión importa')
             data=body['campaign']
@@ -154,7 +154,14 @@ def execute_action(body,me):
                 state['private']={}
             title=str(data['title'])[:120]
         elif selected is not None:
-            state=selected.execute_action(state,body,me)
+            if state['ruleset']=='rule-pack' and body['type']=='prepare_rule_pack':
+                import rule_preparation_attempt as attempts
+                def prepare_record(prepared):
+                    nonlocal preparation_key
+                    preparation_key=attempts.key(me['id'],prepared['sha256'])
+                    return attempts.run(store,cid,me['id'],prepared)
+                state=selected.execute_action(state,body,me,prepare_record=prepare_record)
+            else:state=selected.execute_action(state,body,me)
         elif body['type']=='start_adventure':
             premise=adventure.validate_start(state,body,me)
             if type(body.get('structured',False))!=bool:raise ValueError('Modo de aventura inválido')
@@ -221,7 +228,9 @@ def execute_action(body,me):
         else:apply_action(state,body,me)
         # Firestore CAS + marker are atomic. A conflict never reruns RNG or the provider.
         if workspace_readonly:state['authoringWorkspace']=None
-        duplicate=store.commit(cid,aid,me['id'],signature,row['version'],state,title)
+        options={'preparation_key':preparation_key} if preparation_key is not None else {}
+        duplicate=store.commit(cid,aid,me['id'],signature,row['version'],state,title,**options)
+        if preparation_key is not None:attempts.forget(store,cid,preparation_key)
         return {'duplicate':True} if duplicate else {'ok':True}
 
 
@@ -269,6 +278,15 @@ class Handler(BaseHTTPRequestHandler):
                 me=self.auth();row=repository().metadata(me['campaign'])
                 if query.get('version',[''])[0]==str(row['version']):self.reply({'unchanged':True});return
                 row,state=load(me['campaign']);self.reply(view(row,state,me,query.get('workspace',[''])[0]));return
+            if url.path=='/api/rule-pack/preparation-attempt':
+                me=self.auth()
+                if not me['host']:self.reply({'error':'Solo el anfitrión consulta intentos privados de preparación'},403);return
+                from rule_preparation_attempt import unpack
+                entry=repository().read_rule_preparation(me['campaign'],me['id'],query.get('requestSha256',[''])[0])
+                if entry is None:self.reply({'error':'No hay un intento pendiente para esa solicitud'},404);return
+                self.reply({'phase':entry['phase'],'requestedModel':entry.get('model'),'promptSha256':entry.get('promptSha256'),
+                    'sourceScheme':entry['sourceScheme'],'request':unpack(entry['inputData']),
+                    'response':unpack(entry['responseData']) if entry.get('responseData') else None});return
             if url.path=='/api/search':
                 self.auth();self.reply(search(query.get('q',[''])[0],query.get('book',[None])[0]));return
             if url.path.startswith('/books/'):

@@ -97,7 +97,7 @@ def preparation_record(state,digest=None):
     return copy.deepcopy(record) if record and (digest is None or digest==record['sha256']) else None
 
 
-def execute_action(state,body,me):
+def execute_action(state,body,me,prepare_record=None):
     action={key:value for key,value in body.items() if key not in ('id','version')}
     if state.get('ruleset')!=ID:raise RulePackError('Esta campaña no usa el motor de paquetes')
     if len(state['messages'])>=MAX_MESSAGES:raise RulePackError('El registro alcanza su límite; conserva una copia antes de ampliar o archivar datos')
@@ -115,7 +115,7 @@ def execute_action(state,body,me):
         # Reserve bounded space before a potentially billable provider call.
         result['authoring']=None;result['authoringWorkspace']=workspaces.reserve(workspace,prepared)
         _size(result)
-        record={'request':prepared['request'],'sha256':prepared['sha256'],'sourceScheme':prepared['sourceScheme'],'report':propose(prepared)}
+        record=prepare_record(prepared) if prepare_record is not None else {'request':prepared['request'],'sha256':prepared['sha256'],'sourceScheme':prepared['sourceScheme'],'report':propose(prepared)}
         result['authoringWorkspace']=workspaces.add(workspace,record)
         _system(result,'Preparación de reglas guardada; requiere revisión y no ha sustituido el paquete de la campaña.',me['id'])
     elif kind=='install_prepared_rule_pack':

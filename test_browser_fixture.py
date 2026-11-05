@@ -18,7 +18,7 @@ def main():
         import rule_pack_authoring as authoring
         import test_rule_pack_authoring as authoring_fixture
         os.environ['ANTHROPIC_API_KEY']='fixture-only-never-sent'
-        def fixture_prepare(prepared):
+        def fixture_prepare(prepared,response_observer=None):
             if prepared['request']['scope']=='TEST_UNSUPPORTED':
                 return authoring.validate_reply(prepared,{'status':'unsupported','packageJson':'','examples':[],
                     'issues':[{'kind':'unsupported','message':'La operación de esta prueba no está disponible en el motor.',

@@ -138,7 +138,18 @@ def validate_reply(prepared,result):
         'sha256':pack.digest,'sourceVerification':'unverified'}
 
 
-def propose(prepared):
+def parse_response(prepared,raw,latency_ms=0):
+    if not isinstance(raw,bytes) or len(raw)>MAX_RESPONSE:raise RulePackError('Respuesta de preparación demasiado grande o inválida')
+    output=json.loads(raw)
+    if output.get('stop_reason')!='end_turn':raise RulePackError('Respuesta de preparación incompleta')
+    result=validate_reply(prepared,read_document(''.join(b['text'] for b in output.get('content',[]) if b.get('type')=='text')))
+    usage=output.get('usage',{});counts=[usage.get('input_tokens',0),usage.get('output_tokens',0)]
+    if any(type(v)!=int or not 0<=v<=10000000 for v in [*counts,latency_ms]):raise RulePackError('Medición de preparación inválida')
+    result['usage']={'inputTokens':counts[0],'outputTokens':counts[1],'latencyMs':latency_ms}
+    return result
+
+
+def propose(prepared,response_observer=None):
     key=os.environ.get('ANTHROPIC_API_KEY')
     if not key:raise RulePackError('Claude Haiku sin configurar; no se ha preparado ni instalado ningún paquete')
     body={'model':model_name(),'max_tokens':8000,'system':PROMPT,
@@ -149,15 +160,9 @@ def propose(prepared):
     started=time.monotonic()
     try:
         with urllib.request.urlopen(request,timeout=120) as response:raw=response.read(MAX_RESPONSE+1)
-        if len(raw)>MAX_RESPONSE:raise RulePackError('Respuesta demasiado grande')
-        output=json.loads(raw)
-        if output.get('stop_reason')!='end_turn':raise RulePackError('Respuesta incompleta')
-        result=validate_reply(prepared,read_document(''.join(b['text'] for b in output.get('content',[]) if b.get('type')=='text')))
-        usage=output.get('usage',{})
-        counts=[usage.get('input_tokens',0),usage.get('output_tokens',0)]
-        if any(type(v)!=int or not 0<=v<=10000000 for v in counts):raise RulePackError('Medición inválida')
-        result['usage']={'inputTokens':counts[0],'outputTokens':counts[1],'latencyMs':round((time.monotonic()-started)*1000)}
-        return result
+        elapsed=round((time.monotonic()-started)*1000)
+        if response_observer is not None:response_observer(raw,elapsed)
+        return parse_response(prepared,raw,elapsed)
     except urllib.error.HTTPError as exc:
         code=exc.code;exc.close()
         raise RulePackError(f'Claude Haiku devolvió HTTP {code}. No se ha instalado ningún paquete ni se ha reintentado automáticamente') from None

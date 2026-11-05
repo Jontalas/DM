@@ -4,10 +4,11 @@ import unittest
 import urllib.error
 import urllib.request
 import secrets
+import os
 from unittest.mock import patch
 import rulesets
 import server
-from firebase_store import Unavailable
+from firebase_store import Conflict,Unavailable
 import test_server
 import test_render
 import rule_pack_campaign as campaign
@@ -25,6 +26,7 @@ class RulePackServerTests(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        cls.environment=patch.dict(os.environ,{'ANTHROPIC_API_KEY':'fixture-never-sent'});cls.environment.start()
         cls.registration=patch.dict(rulesets.SYSTEMS,{'rule-pack':{'id':'rule-pack','name':'Generic test','status':'experimental'}})
         cls.registration.start()
         test_server.IntegrationTests.setUpClass.__func__(cls)
@@ -32,7 +34,7 @@ class RulePackServerTests(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         try:test_server.IntegrationTests.tearDownClass.__func__(cls)
-        finally:cls.registration.stop()
+        finally:cls.registration.stop();cls.environment.stop()
 
     def setUp(self):
         self.token=self.request('/api/create',{'title':'Generic rules','player':'Ana','ruleset':'rule-pack'})['token']
@@ -157,10 +159,47 @@ class RulePackServerTests(unittest.TestCase):
             self.action('import',campaign=exported)
             self.assertEqual(provider.call_count,1)
 
+    def test_preparation_recovers_after_failed_commit_and_private_capture_is_removed(self):
+        raw=authoring_fixture.request();prepared=authoring.prepare_input(raw)
+        report=authoring.validate_reply(prepared,authoring_fixture.reply(prepared))
+        guest=self.request('/api/join',{'name':'Luis','invite':self.state()['invite']})['token']
+        body={'id':secrets.token_hex(12),'version':self.state()['version'],'type':'prepare_rule_pack','request':raw}
+        path='/api/rule-pack/preparation-attempt?requestSha256='+prepared['sha256']
+        with patch.object(authoring,'propose',return_value=report) as provider:
+            with patch.object(server.STORE,'commit',side_effect=Unavailable('Simulated persistence outage')):
+                self.rejected(lambda:self.request('/api/action',body,self.token),503)
+            saved=self.request(path,token=self.token)
+            self.assertEqual(saved['phase'],'captured');self.assertEqual(saved['request'],prepared['request'])
+            self.assertEqual(saved['response']['value'],report)
+            with patch.object(server.STORE,'read_rule_preparation',side_effect=AssertionError('Guest accessed private capture')):
+                with self.assertRaises(urllib.error.HTTPError) as error:self.request(path,token=guest)
+                self.assertEqual(error.exception.code,403);error.exception.close()
+            # Drop the process-local fallback: the persisted response must suffice.
+            import rule_preparation_attempt as attempts
+            me=server.STORE.identity(self.token)
+            attempts.forget(server.STORE,me['campaign'],attempts.key(me['id'],prepared['sha256']))
+            self.request('/api/action',body,self.token)
+            self.assertTrue(self.request('/api/action',body,self.token)['duplicate'])
+            self.assertEqual(provider.call_count,1)
+            # A delayed request with an old snapshot cannot reserve a second paid call.
+            with self.assertRaises(Conflict):
+                server.STORE.begin_rule_preparation(me['campaign'],attempts.key(me['id'],prepared['sha256']),me['id'],prepared)
+        with self.assertRaises(urllib.error.HTTPError) as error:self.request(path,token=self.token)
+        self.assertEqual(error.exception.code,404);error.exception.close()
+        self.assertEqual(campaign.preparation_record(self.state()['state'])['report'],report)
+
+    def test_uncertain_preparation_does_not_retry_with_a_new_action_id(self):
+        raw=authoring_fixture.request()
+        with patch.object(authoring,'propose',side_effect=RulePackError('Unknown provider outcome')) as provider:
+            self.rejected(lambda:self.action('prepare_rule_pack',request=raw))
+            self.rejected(lambda:self.action('prepare_rule_pack',request=raw),409)
+            self.assertEqual(provider.call_count,1)
+
     def test_blocked_or_failed_preparation_never_installs_rules(self):
         raw=authoring_fixture.request()
         with patch.object(authoring,'propose',side_effect=RulePackError('Invalid model output')) as provider:
             self.rejected(lambda:self.action('prepare_rule_pack',request=raw));self.assertEqual(provider.call_count,1)
+        raw['scope']='Una mecánica no soportada'
         prepared=authoring.prepare_input(raw)
         blocked=authoring.validate_reply(prepared,{'status':'unsupported','packageJson':'','examples':[],
             'issues':[{'kind':'unsupported','message':'La operación no está soportada.','sources':[prepared['sources'][0]['id']]}]})
@@ -217,7 +256,7 @@ class RulePackServerTests(unittest.TestCase):
 
     def test_preparation_workspace_retains_old_block_and_shares_text(self):
         first=authoring_fixture.request();second=copy.deepcopy(first);second['scope']='Otro bloque de reglas'
-        def propose(prepared):return authoring.validate_reply(prepared,authoring_fixture.reply(prepared))
+        def propose(prepared,response_observer=None):return authoring.validate_reply(prepared,authoring_fixture.reply(prepared))
         with patch.object(authoring,'propose',side_effect=propose) as provider:
             self.action('prepare_rule_pack',request=first);self.action('prepare_rule_pack',request=second)
             self.rejected(lambda:self.action('prepare_rule_pack',request=first))
@@ -296,6 +335,7 @@ class RulePackServerTests(unittest.TestCase):
 class RulePackWaitressTests(RulePackServerTests):
     @classmethod
     def setUpClass(cls):
+        cls.environment=patch.dict(os.environ,{'ANTHROPIC_API_KEY':'fixture-never-sent'});cls.environment.start()
         cls.registration=patch.dict(rulesets.SYSTEMS,{'rule-pack':{'id':'rule-pack','name':'Generic test','status':'experimental'}})
         cls.registration.start()
         test_render.ProductionServerTests.setUpClass.__func__(cls)
@@ -303,4 +343,4 @@ class RulePackWaitressTests(RulePackServerTests):
     @classmethod
     def tearDownClass(cls):
         try:test_render.ProductionServerTests.tearDownClass.__func__(cls)
-        finally:cls.registration.stop()
+        finally:cls.registration.stop();cls.environment.stop()

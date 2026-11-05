@@ -1,5 +1,7 @@
 # Reanudar el desarrollo
 
+Actualización actual: recuperación duradera de preparaciones en desarrollo, con reserva por campaña/actor/solicitud antes de inferir y captura privada de respuesta antes de validarla. Confirmación conserva un marcador mínimo para impedir nuevas llamadas desde solicitudes simultáneas antiguas. Leer el último apartado de TRABAJO.md; conversión real y recorrido genérico completo siguen pendientes. El objetivo permanece activo.
+
 **Desarrollo reanudado por el usuario el 4 de noviembre de 2026.** Este archivo conserva el punto de pausa como referencia histórica; el estado actual se registra en TRABAJO.md. Vuelve a aplicarse la autonomía permanente.
 
 Actualización del 5 de noviembre: el objetivo automático volvió a `active` tras el límite anterior. Composición de paquetes integrada en campaña/interfaz; suite completa de 293 pruebas con emulador oficial correcta, sin omisiones (93,602 s), navegador de composición y regresiones JSON/texto correctos. Siguiente bloque: identidad estable de fuentes y conservación/preparación de varios bloques de manual, manteniendo compatibilidad. La prueba de conversión real continúa pendiente; no se ha desplegado el sistema genérico. Leer siempre el último apartado de TRABAJO.md para superar las referencias históricas siguientes.

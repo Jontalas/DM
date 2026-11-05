@@ -192,7 +192,45 @@ class FirestoreStore:
         snap=self.campaign(cid).collection('actions').document(digest(aid)).get()
         return self._check_marker(snap.to_dict(),actor,fingerprint) if snap.exists else False
 
-    def commit(self,cid,aid,actor,fingerprint,version,state,title=None):
+    def begin_rule_preparation(self,cid,identifier,actor,prepared,allow_create=True):
+        from google.cloud import firestore
+        from google.api_core.exceptions import AlreadyExists
+        from rule_preparation_attempt import check_attempt,key,pack,unpack
+        from model_config import model_name
+        from rule_pack_authoring import PROMPT
+        if identifier!=key(actor,prepared['sha256']):raise ValueError('Identificador de intento inválido')
+        ref=self.campaign(cid).collection('rulePreparationAttempts').document(identifier)
+        data={'actor':actor,'requestSha256':prepared['sha256'],'sourceScheme':prepared['sourceScheme'],
+            'phase':'started','inputData':pack(prepared['request']),'createdAt':firestore.SERVER_TIMESTAMP}
+        if allow_create:
+            data.update({'model':model_name(),'promptSha256':hashlib.sha256(PROMPT.encode()).hexdigest()})
+            try:ref.create(data);return {**data,'fresh':True}
+            except AlreadyExists:pass
+        snapshot=ref.get()
+        if not snapshot.exists:return None
+        existing=snapshot.to_dict()
+        if existing.get('phase')=='confirmed':raise Conflict('Esta preparación ya fue confirmada; no se repetirá la inferencia')
+        check_attempt(existing,actor,prepared['sha256'])
+        from rule_pack_authoring import canonical
+        if canonical(unpack(existing['inputData']))!=canonical(prepared['request']):raise Conflict('La fuente original del intento no coincide')
+        return {**existing,'fresh':False}
+
+    def save_rule_preparation_response(self,cid,identifier,actor,request_sha,data):
+        from rule_preparation_attempt import key,unpack
+        if identifier!=key(actor,request_sha):raise ValueError('Identificador de intento inválido')
+        unpack(data)
+        self.campaign(cid).collection('rulePreparationAttempts').document(identifier).update({'responseData':data,'phase':'captured'})
+
+    def read_rule_preparation(self,cid,actor,request_sha):
+        from rule_preparation_attempt import key,check_attempt
+        if not isinstance(request_sha,str) or not re.fullmatch('[a-f0-9]{64}',request_sha):raise ValueError('Huella de preparación inválida')
+        snapshot=self.campaign(cid).collection('rulePreparationAttempts').document(key(actor,request_sha)).get(timeout=10,retry=None)
+        if not snapshot.exists:return None
+        data=snapshot.to_dict()
+        if data.get('phase')=='confirmed':return None
+        check_attempt(data,actor,request_sha);return data
+
+    def commit(self,cid,aid,actor,fingerprint,version,state,title=None,preparation_key=None):
         from google.cloud import firestore
         from google.api_core.exceptions import AlreadyExists, FailedPrecondition
         # Optimistic CAS avoids holding read locks while concurrent clients commit.
@@ -209,6 +247,9 @@ class FirestoreStore:
         batch=self.client.batch()
         batch.update(ref,update,option=firestore.LastUpdateOption(meta.update_time))
         batch.create(marker,{'actor':actor,'fingerprint':fingerprint,'version':version+1})
+        if preparation_key is not None:
+            batch.set(ref.collection('rulePreparationAttempts').document(preparation_key),
+                {'actor':actor,'phase':'confirmed'})
         try:batch.commit()
         except (AlreadyExists,FailedPrecondition):
             previous=marker.get()

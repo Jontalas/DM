@@ -9,7 +9,7 @@ from firebase_store import Conflict, FirestoreStore, digest, words
 class TestStore:
     __test__=False
     def __init__(self):
-        self.campaigns={};self.sessions={};self.members={};self.invites={};self.actions={};self.pages={};self.workspaces={};self.lock=threading.RLock()
+        self.campaigns={};self.sessions={};self.members={};self.invites={};self.actions={};self.pages={};self.workspaces={};self.preparations={};self.lock=threading.RLock()
     def health(self):pass
     def create(self,title,state,name):
         cid=secrets.token_hex(12);pid=secrets.token_hex(8);token=secrets.token_hex(32);invite=secrets.token_hex(24)
@@ -43,13 +43,46 @@ class TestStore:
         marker=self.actions.get((cid,aid))
         if marker and marker!=(actor,fingerprint):raise Conflict('Identificador reutilizado')
         return bool(marker)
-    def commit(self,cid,aid,actor,fingerprint,version,state,title=None):
+    def begin_rule_preparation(self,cid,identifier,actor,prepared,allow_create=True):
+        from rule_preparation_attempt import check_attempt,key,pack,unpack
+        from rule_pack_authoring import canonical
+        if identifier!=key(actor,prepared['sha256']):raise ValueError('Identificador de intento inválido')
+        with self.lock:
+            existing=self.preparations.get((cid,identifier))
+            if existing is None:
+                if not allow_create:return None
+                existing={'actor':actor,'requestSha256':prepared['sha256'],'sourceScheme':prepared['sourceScheme'],'phase':'started','inputData':pack(prepared['request'])}
+                import hashlib
+                from model_config import model_name
+                from rule_pack_authoring import PROMPT
+                existing.update({'model':model_name(),'promptSha256':hashlib.sha256(PROMPT.encode()).hexdigest()})
+                self.preparations[cid,identifier]=existing
+                return {**copy.deepcopy(existing),'fresh':True}
+            if existing.get('phase')=='confirmed':raise Conflict('Preparación ya confirmada')
+            check_attempt(existing,actor,prepared['sha256'])
+            if canonical(unpack(existing['inputData']))!=canonical(prepared['request']):raise Conflict('Otra fuente')
+            return {**copy.deepcopy(existing),'fresh':False}
+    def save_rule_preparation_response(self,cid,identifier,actor,request_sha,data):
+        from rule_preparation_attempt import key,unpack
+        if identifier!=key(actor,request_sha):raise ValueError('Identificador de intento inválido')
+        unpack(data)
+        with self.lock:self.preparations[cid,identifier].update({'responseData':data,'phase':'captured'})
+    def read_rule_preparation(self,cid,actor,request_sha):
+        from rule_preparation_attempt import key,check_attempt
+        import re
+        if not isinstance(request_sha,str) or not re.fullmatch('[a-f0-9]{64}',request_sha):raise ValueError('Huella de preparación inválida')
+        data=self.preparations.get((cid,key(actor,request_sha)))
+        if data is not None and data.get('phase')=='confirmed':return None
+        if data is not None:check_attempt(data,actor,request_sha)
+        return copy.deepcopy(data)
+    def commit(self,cid,aid,actor,fingerprint,version,state,title=None,preparation_key=None):
         with self.lock:
             if self.completed(cid,aid,actor,fingerprint):return True
             if self.campaigns[cid][0]['version']!=version:raise Conflict('Estado antiguo')
             meta=copy.deepcopy(self.campaigns[cid][0]);meta['version']+=1
             if title is not None:meta['title']=title
             self.campaigns[cid]=(meta,copy.deepcopy(self._light_state(cid,state)));self.actions[cid,aid]=(actor,fingerprint)
+            if preparation_key is not None:self.preparations[cid,preparation_key]={'actor':actor,'phase':'confirmed'}
             return False
     def index_book(self,book,pages):self.pages[book]=copy.deepcopy(pages)
     def counts(self):return {b:len(self.pages.get(b,[])) for b in ['reglas','bestiario','trey']}

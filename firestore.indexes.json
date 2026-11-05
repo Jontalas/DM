@@ -3,6 +3,8 @@
   "fieldOverrides": [
     {"collectionGroup": "snapshots", "fieldPath": "data", "indexes": []},
     {"collectionGroup": "pages", "fieldPath": "text", "indexes": []},
-    {"collectionGroup": "ruleWorkspaces", "fieldPath": "data", "indexes": []}
+    {"collectionGroup": "ruleWorkspaces", "fieldPath": "data", "indexes": []},
+    {"collectionGroup": "rulePreparationAttempts", "fieldPath": "inputData", "indexes": []},
+    {"collectionGroup": "rulePreparationAttempts", "fieldPath": "responseData", "indexes": []}
   ]
 }
