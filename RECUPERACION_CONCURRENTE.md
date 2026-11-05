@@ -1,5 +1,7 @@
 # Recuperación de tiradas con intervenciones intermedias
 
+Desplegado: 03c2b2b0013d295f3f8c9d34486194bde276839f, Render 7587669049 success, revisión/salud exactas. Ensayo aislado de producción sin IA: ámbito nuevo, dados de servidor [4,2], fallo correctamente conservado, duplicado/copia válidos, sin continuación narrativa. Fallos de commit/OOC/cliente nuevo probados en emulador, no inyectados en producción. Las referencias inferiores a «pendiente/no integrado» son la secuencia de construcción previa.
+
 ## Integración local posterior, 6 de noviembre
 
 Solicitudes nuevas llevan randomnessScope:pending-resolution-v2. Las antiguas siguen usando actionId/version, sin reinterpretar semillas ya reservadas. El servidor deriva clave/huella de solicitud, propietario, paquete, elecciones, fichas y registros de mundo; el estado completo vuelve a pasar su preflight antes de cualquier dado. ActionRandomness acepta explícitamente ese descriptor. Firestore confirma su clave en el mismo lote que estado y marcador HTTP; la versión/CAS general de la mesa permanece obligatoria.

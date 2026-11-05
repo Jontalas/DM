@@ -1,0 +1,31 @@
+{
+  "format": "cronicas-npc-catalog-1",
+  "templates": {
+    "pf1-goblin-warrior-1": {
+      "version": "1.0.0",
+      "ruleset": "pathfinder-1e",
+      "label": "Goblin combatiente 1 · espada corta",
+      "license": "OGL-1.0a",
+      "sources": [
+        {"book": "bestiario", "edition": "Devir PFR002, depósito B 5055-2014, erratas 2.0", "pdfPage": 167, "printedPage": 166, "section": "Goblin: estadísticas publicadas"},
+        {"book": "bestiario", "edition": "Devir PFR002, erratas 2.0", "pdfPage": 7, "printedPage": 6, "section": "Lectura del bloque: espacio y alcance estándar"},
+        {"book": "reglas", "edition": "Devir PFR001, erratas 1.4", "pdfPage": 143, "printedPage": 142, "section": "Tabla 6-4, espada corta Pequeña y crítico"},
+        {"book": "reglas", "edition": "Devir PFR001, erratas 1.4", "pdfPage": 185, "printedPage": 184, "section": "Impactos críticos"}
+      ],
+      "coverage": {
+        "implemented": ["Estadísticas publicadas de esta entrada", "Ataque básico con espada corta preparada", "Iniciativa y movimiento terrestre de una casilla"],
+        "pending": ["Arco corto y gestión de munición", "Visión en la oscuridad y diferencias de iluminación", "Cambio automático de arma", "Recompensas, tesoro y progresión"]
+      },
+      "profile": {"mode": "basic-melee", "size": "small", "spaceFeet": 5, "reachFeet": 5, "touchAc": 13, "challengeRating": "1/3", "xp": 135},
+      "character": {
+        "name": "Goblin", "race": "Goblin", "class": "Combatiente", "level": 1,
+        "abilities": [11, 15, 12, 10, 9, 6], "maxHp": 7, "hp": 7, "ac": 16,
+        "saves": [3, 2, -1], "speed": 6, "initiative": 6, "attack": 2, "damage": "1d4",
+        "meleeProfile": {"flatAc": 14, "criticalMin": 19, "multiplier": 2},
+        "skillTotals": [{"name": "Percepción", "total": -1}, {"name": "Montar", "total": 10}, {"name": "Nadar", "total": 4}, {"name": "Sigilo", "total": 10}],
+        "feats": "Iniciativa mejorada", "equipment": "Armadura de cuero; escudo ligero de madera; espada corta; arco corto; 20 flechas.",
+        "notes": "Goblin Pequeño, combatiente 1. PG publicados con bonificador de clase predilecta incluido. Idioma goblin. Preparación parcial para espada corta empuñada y entorno con iluminación suficiente; arco y visión en la oscuridad aún no automatizados."
+      }
+    }
+  }
+}

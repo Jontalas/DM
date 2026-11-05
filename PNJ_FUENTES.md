@@ -1,5 +1,13 @@
 # Creación de PNJ: contraste previo de fuentes
 
+## Entrada concreta contrastada, 6 de noviembre
+
+Primer preparador aislado posterior: npc_catalog.py y catalogs/npc-catalog.json, sin API ni encuentro habilitado. Datos y fuentes comprobados, cobertura parcial, licencias/avisos incluidos en licenses/NPC-CONTENT.md. Cuatro pruebas específicas y veinticinco con creador/combate correctas, incluido crítico real sin estadísticas manuales. Estado detallado en CATALOGO_PNJ.md.
+
+Bestiario original aportado: Devir, PFR002, depósito legal B 5055-2014. Créditos PDF 3 revisados visualmente: erratas 2.0, equivalentes a tercera reimpresión inglesa. Goblin en PDF 167, folio impreso 166, revisado visualmente. PG **7 (1d10+2)** e indicación explícita de +1 por clase predilecta: no sustituir por PG máximos del creador de PJ ni por una media recordada sin ese bonificador. CA normal16/toque13/desprevenido14; espada corta +2 y 1d4, amenaza19–20; iniciativa+6 y velocidad30pies. Es un combatiente 1 Pequeño, no un guerrero humano. Su arco corto y visión en la oscuridad requieren considerar cobertura real antes de anunciar una criatura completamente automatizada.
+
+Créditos y licencia PDF 328/folio327 revisados visualmente: mecánica designada Open Game Content en PDF3; licencia 1.0a y aviso de copyright completo en PDF328. Antes de incorporar datos públicos, acompañarlos de licencia/avisos y delimitar contenido abierto; no copiar ilustraciones, ficción descriptiva, marcas o identidad de producto como assets propios. Capturas y extracción solo privadas en .deps. Esto es contraste de la fuente aportada, no aprobación de un catálogo ya implementado.
+
 Consulta local del original aportado, 5 de noviembre de 2026. No se redistribuyen el PDF ni sus imágenes. Fuente: Pathfinder 1e, Reglas básicas en castellano, Devir, PFR001, depósito legal 2013; créditos PDF 3 indican incorporación de erratas 1.4 equivalente a la sexta reimpresión inglesa. No se confunde este dato con una edición posterior.
 
 | Localizador | Comprobación | Implicación para el desarrollo |
