@@ -32,6 +32,17 @@ def main():
             report['usage']={'inputTokens':123,'outputTokens':456,'latencyMs':1}
             return report
         authoring.propose=fixture_prepare
+        import rule_pack_director as pack_director
+        from test_rule_pack_narrative import reply as pack_reply
+        def fixture_pack_director(prepared,response_observer=None):
+            request=prepared['request'];action='';changes={}
+            if request['operation']=='talk' and request['kind']=='action':
+                if 'TEST_UNSUPPORTED' in request['declaration']['text']:changes['limitation']='Este paquete no define esa mecánica.'
+                elif request['allowedActions']:action=request['allowedActions'][0]
+            if request['operation']=='continue':changes['narration']='El resultado confirmado revela una marca junto al farol. Arda espera tu decisión.'
+            answer=pack_reply(action,**changes);answer['usage']={'inputTokens':100,'outputTokens':200,'latencyMs':1}
+            return pack_director.validate_reply(prepared,answer)
+        pack_director.propose=fixture_pack_director
     if os.environ.get('TEST_CAIRN_FIXTURE')=='1':
         import rulesets
         rulesets.SYSTEMS['cairn-1e']={'id':'cairn-1e','name':'Cairn 1e (test only)','status':'experimental'}

@@ -336,7 +336,7 @@ class RulePack:
         result={**stored,**updates};self._fields(result,budget)
         return result,{key:{'before':stored[key],'after':value} for key,value in updates.items() if stored[key]!=value or type(stored[key])!=type(value)}
 
-    def execute(self,sheet,action_id,inputs,actor,host=False,physical=None,draw=None,creating=False):
+    def _prepare_action(self,sheet,action_id,inputs,actor,host=False,physical=None,creating=False):
         self._sheet(sheet)
         if type(creating)!=bool or creating!=(action_id==self.creation) or creating and sheet['revision']!=0:_fail('La acción de creación solo se resuelve al crear una ficha nueva')
         if self.creation is not None and not creating and sheet['revision']==0:_fail('Completa la creación del personaje antes de jugar')
@@ -365,6 +365,16 @@ class RulePack:
                 values=physical[roll['id']]
                 if not isinstance(values,list) or len(values)!=count or any(type(v)!=int or not 1<=v<=sides for v in values):_fail('Resultados físicos inválidos; no se ha tirado en el servidor')
             specs.append((roll,count,sides,keep))
+        return arguments,budget,context,specs
+
+    def preview(self,sheet,action_id,inputs,actor,host=False):
+        arguments,_,_,specs=self._prepare_action(sheet,action_id,inputs,actor,host=host)
+        return {'inputs':copy.deepcopy(arguments),'rolls':[{'id':roll['id'],'count':count,'sides':sides,'keep':keep} for roll,count,sides,keep in specs]}
+
+    def execute(self,sheet,action_id,inputs,actor,host=False,physical=None,draw=None,creating=False):
+        _,budget,context,specs=self._prepare_action(sheet,action_id,inputs,actor,host=host,physical=physical,creating=creating)
+        physical={} if physical is None else physical
+        action=self._data['actions'][action_id]
         draw=draw or (lambda sides:secrets.randbelow(sides)+1)
         trace={'action':action_id,'sources':copy.deepcopy(action['sources']),'rolls':{},'changes':{},'triggers':[]}
         for roll,count,sides,keep in specs:

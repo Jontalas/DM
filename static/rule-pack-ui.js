@@ -4,6 +4,60 @@ window.RulePackUI=(()=>{
  const scope=()=>snapshot.id+':'+snapshot.me.id;
  const shown=value=>typeof value==='boolean'?(value?'Sí':'No'):String(value??'');
  const list=items=>items.map(item=>`<li>${esc(item)}</li>`).join('');
+ function historyEntry(m,doc){
+  if(m.kind==='system')return `<p>${esc(m.text)}</p>`;
+  if(m.kind==='pack-talk'||m.kind==='pack-director')return `<article class="pack-story-message"><h4>${esc(m.speaker)}${m.mode==='ooc'?' · Fuera de personaje':''}</h4><p>${esc(m.text)}</p>${m.limitation?`<p class="notice">Límite del motor: ${esc(m.limitation)}</p>`:''}</article>`;
+  return `<article><h4>${esc(m.speaker)} · ${esc(doc.actions[m.action]?.label||m.action)}</h4>${Object.entries(m.trace.rolls).filter(([,r])=>r.rolled).map(([id,r])=>`<p>${esc(id)}: ${esc(r.values.join(', '))} → ${r.total} · ${r.origin==='physical'?'dados físicos':'servidor'}</p>`).join('')}${Object.entries(m.trace.changes).map(([id,v])=>`<p>${esc(doc.fields[id]?.label||id)}: ${esc(shown(v.before))} → ${esc(shown(v.after))}</p>`).join('')}${m.trace.triggers.map(t=>`<p>Consecuencia automática: ${esc(doc.triggers[t.id]?.label||t.id)}</p>`).join('')}</article>`;
+ }
+ function followStory(key){if(!$('#app').hidden&&scope()===key)($('#packStoryResolve')||$('#packStoryContinue')||$('#packStoryTalk'))?.scrollIntoView({block:'nearest'});}
+ function renderAdventure(root,doc){
+  if(snapshot.state.package?.policy!=='provided-rules')return;
+  const key=scope(),state=snapshot.state,me=snapshot.me,memory=state.narrativeView,own=state.characters.filter(c=>c.owner===me.id);
+  const history=root.querySelector('.pack-history');history.querySelector('h3').textContent=memory?'Aventura y resoluciones':'Registro de resoluciones';
+  const controls=document.createElement('div');controls.id='packAdventure';history.append(controls);
+  if(!memory){
+   controls.innerHTML=me.host&&own.length?`<h3>Jugar esta aventura</h3><p>El director abre una situación a partir del objetivo de la campaña. Solo se resuelven las mecánicas disponibles en el paquete.</p><form id="packStoryStart"><label>Tu personaje<select name="character">${own.map(c=>`<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('')}</select></label><button class="primary">Iniciar aventura con IA</button></form>`:'<p>Crea tu personaje para entrar en la aventura. El anfitrión inicia la escena compartida.</p>';
+   if($('#packStoryStart'))$('#packStoryStart').onsubmit=run(async e=>{sameCampaign(key);await act('start_pack_adventure',{character:e.target.elements.character.value});followStory(key);});
+   return;
+  }
+  $$('[data-pack-action]').forEach(b=>b.remove());
+  const pending=memory.pending,continuation=memory.continuation;
+  controls.innerHTML=`<details><summary>Recordar lo ocurrido</summary><p>${esc(memory.summary)}</p></details>${pending?`<section class="pack-request"><h3>${esc(doc.actions[pending.action].label)}</h3><p>${esc(state.characters.find(c=>c.id===pending.character)?.name)} · ${esc(pending.reason)}</p><div id="packRequestBody"></div></section>`:''}${continuation?'<p>La ficha y los dados ya están guardados. Falta narrar ese resultado.</p><button id="packStoryContinue" class="primary">Continuar relato con IA</button>':''}${own.length?`<form id="packStoryTalk"><h3>Tu intervención</h3><label>Personaje<select name="character">${own.map(c=>`<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('')}</select></label><label>Intervención<select name="mode"><option value="action">Declarar acción</option><option value="dialogue">Hablar en personaje</option><option value="ooc">Fuera de personaje · sin IA</option></select></label><label>¿Qué haces o dices?<textarea name="text" maxlength="4000" rows="3" required></textarea></label><button class="primary">Enviar intervención</button></form>`:'<p>Necesitas un personaje propio para intervenir.</p>'}`;
+  if(pending){
+   const actor=state.characters.find(c=>c.id===pending.character),action=doc.actions[pending.action],body=$('#packRequestBody');
+   if(actor.owner!==me.id)body.innerHTML='<p>La decisión y los dados corresponden a su jugador.</p>';
+   else{
+    const draftKey=key+':request:'+pending.id,saved=drafts.get(draftKey)||{inputs:pending.inputs,physical:{}};
+    body.innerHTML=`<form id="packStoryResolve">${Object.entries(action.inputs).map(([id,spec],i)=>`<label>${esc(spec.label)}${input(spec,i,saved.inputs[id])}</label>`).join('')}${action.rolls.length?`<details><summary>Usar dados físicos, opcional</summary>${action.rolls.map((r,i)=>`<label>${esc(r.id)}<input name="dice${i}" value="${esc(saved.physical[r.id]||'')}" placeholder="3, 4" inputmode="numeric"></label>`).join('')}</details>`:''}<p>El motor comprobará la acción y aplicará sus consecuencias.</p><button class="primary">${action.rolls.length?'Tirar y resolver':'Resolver acción'}</button><button type="button" id="packStoryCancel">Retirar acción</button></form>`;
+    body.insertAdjacentHTML('afterbegin',`<p>Previsión con las opciones solicitadas: ${pending.rolls.length?pending.rolls.map(r=>`${r.count}d${r.sides}${r.keep!==r.count?` · conservar ${r.keep}`:''}${action.rolls.find(spec=>spec.id===r.id)?.when!==undefined?' (si corresponde)':''}`).map(esc).join(', '):'sin dados'}. ${Object.keys(action.inputs).length?'Las decisiones que cambies pueden modificar los dados; el motor los comprobará.':''}</p>`);
+    const form=$('#packStoryResolve');
+    function remember(){drafts.set(draftKey,{inputs:formValues(form,action),physical:Object.fromEntries(action.rolls.map((r,i)=>[r.id,form.elements['dice'+i].value]))});}
+    form.oninput=remember;form.onchange=remember;
+    form.onsubmit=run(async()=>{
+     sameCampaign(key);remember();const physical=Object.fromEntries(action.rolls.flatMap((r,i)=>{
+      const raw=form.elements['dice'+i].value.trim();if(!raw)return [];
+      if(!/^\d+(\s*,\s*\d+)*$/.test(raw))throw Error('Escribe dados enteros separados por comas.');return [[r.id,raw.split(',').map(Number)]];
+     }));
+     await act('resolve_pack_request',{request:pending.id,inputs:formValues(form,action),...(Object.keys(physical).length?{physical}:{})});
+     drafts.delete(draftKey);sameCampaign(key);followStory(key);
+     if(snapshot.state.narrativeView?.continuation?.character===actor.id)await act('continue_pack_adventure');
+     followStory(key);
+    });
+    $('#packStoryCancel').onclick=run(async()=>{sameCampaign(key);await act('cancel_pack_request',{request:pending.id});drafts.delete(draftKey);followStory(key);});
+   }
+  }
+  if($('#packStoryContinue')){
+   const actor=state.characters.find(c=>c.id===continuation.character);
+   $('#packStoryContinue').disabled=actor?.owner!==me.id;
+   $('#packStoryContinue').onclick=run(async()=>{sameCampaign(key);await act('continue_pack_adventure');followStory(key);});
+  }
+  if($('#packStoryTalk')){
+   const form=$('#packStoryTalk'),draftKey=key+':story-message',saved=drafts.get(draftKey);
+   if(saved){if(own.some(c=>c.id===saved.character))form.elements.character.value=saved.character;form.elements.mode.value=saved.mode;form.elements.text.value=saved.text;}
+   form.oninput=()=>drafts.set(draftKey,{character:form.elements.character.value,mode:form.elements.mode.value,text:form.elements.text.value});form.onchange=form.oninput;
+   form.onsubmit=run(async()=>{sameCampaign(key);await act('talk_pack_adventure',{character:form.elements.character.value,mode:form.elements.mode.value,text:form.elements.text.value});drafts.delete(draftKey);if($('#packStoryTalk'))$('#packStoryTalk').elements.text.value='';followStory(key);});
+  }
+ }
  function description(view){
   return `<h3>${esc(view.name)}</h3><p>${esc(view.edition)} · versión ${esc(view.version)}</p><p class="notice">Estructura válida. Correspondencia con el manual sin verificar.</p><h4>Incluido según el paquete</h4><ul>${list(view.coverage.implemented)}</ul><h4>Pendiente según el paquete</h4><ul>${list(view.coverage.pending)}</ul><details><summary>Fuentes y atribución</summary>${view.sources.map(s=>`<p><strong>${esc(s.title)}</strong><br>${esc(s.edition)} · ${esc(s.locator)}</p>`).join('')}<p>${esc(view.license.id)} · ${esc(view.license.attribution)}</p><small>La referencia declarada no acredita por sí sola que la interpretación sea correcta.</small></details>`;
  }
@@ -69,7 +123,7 @@ window.RulePackUI=(()=>{
   $('#inviteBtn').hidden=!me.host;$('#exportBtn').disabled=!me.host;
   let root=$('#rulePackWorkspace');if(!root){root=document.createElement('section');root.id='rulePackWorkspace';root.className='system-workspace';$('#app').append(root)}root.hidden=false;
   const active=s.package?.policy==='provided-rules',doc=s.package?.document;
-  root.innerHTML=`<div class="eyebrow">REGLAS DE LA CAMPAÑA · EXPERIMENTAL</div><h2>${s.packageView?esc(s.packageView.name):'Preparar el reglamento'}</h2><p class="notice">Importación de paquetes JSON. Preparación asistida de fragmentos en pruebas. La conversión completa de manuales y la aventura con director de IA siguen pendientes.</p><div class="pack-columns"><section><div class="card">${s.packageView?description(s.packageView):'<p>El anfitrión debe cargar un paquete antes de crear fichas. No se aplicarán reglas de otro juego.</p>'}${s.packageView?`<p>${active?'En uso como definiciones aportadas.':'Borrador: ejecución desactivada.'}</p>`:''}${me.host&&!s.characters.length?'<label>Cargar paquete de reglas<input id="packFile" type="file" accept=".json,application/json"></label>':''}${me.host&&s.package&&!active?'<button id="packActivate">Revisar y usar este borrador</button>':''}</div><div id="packCharacters">${s.characters.map(c=>`<article class="card"><h3>${esc(c.name)}</h3><p>${esc(snapshot.players.find(p=>p.id===c.owner)?.name||'Jugador anterior')}</p><button data-pack-character="${esc(c.id)}">Abrir ficha</button><div class="toolbar">${Object.entries(doc.actions).filter(([id,a])=>a.permission==='host'?me.host:c.owner===me.id).map(([id,a])=>`<button data-pack-action="${esc(id)}" data-pack-target="${esc(c.id)}">${esc(a.label)}</button>`).join('')}</div></article>`).join('')}</div>${active?'<form id="packCreate" class="card"><h3>Crear una ficha</h3><p>Se asignan los valores iniciales del paquete. La creación guiada completa depende de reglas todavía pendientes.</p><label>Nombre<input name="name" maxlength="80" required></label><button class="primary">Crear ficha</button></form>':''}${me.host?'<div class="card"><h3>Conservar la campaña</h3><button id="packExport">Guardar copia</button><label>Recuperar copia<input id="packImport" type="file" accept=".json,application/json"></label></div>':''}</section><section class="card pack-history"><h3>Registro de resoluciones</h3>${s.messages.slice(-100).map(m=>m.kind==='system'?`<p>${esc(m.text)}</p>`:`<article><h4>${esc(m.speaker)} · ${esc(doc.actions[m.action]?.label||m.action)}</h4>${Object.entries(m.trace.rolls).filter(([,r])=>r.rolled).map(([id,r])=>`<p>${esc(id)}: ${esc(r.values.join(', '))} → ${r.total} · ${r.origin==='physical'?'dados físicos':'servidor'}</p>`).join('')}${Object.entries(m.trace.changes).map(([id,v])=>`<p>${esc(doc.fields[id]?.label||id)}: ${esc(shown(v.before))} → ${esc(shown(v.after))}</p>`).join('')}${m.trace.triggers.map(t=>`<p>Consecuencia automática: ${esc(doc.triggers[t.id]?.label||t.id)}</p>`).join('')}</article>`).join('')||'<p>Las tiradas y consecuencias aparecerán aquí.</p>'}</section></div>`;
+  root.innerHTML=`<div class="eyebrow">REGLAS DE LA CAMPAÑA · EXPERIMENTAL</div><h2>${s.packageView?esc(s.packageView.name):'Preparar el reglamento'}</h2><p class="notice">Importación de paquetes JSON. Preparación asistida de fragmentos en pruebas. Director de aventura experimental conectado al paquete. La conversión completa de manuales sigue pendiente.</p><div class="pack-columns"><section><div class="card">${s.packageView?description(s.packageView):'<p>El anfitrión debe cargar un paquete antes de crear fichas. No se aplicarán reglas de otro juego.</p>'}${s.packageView?`<p>${active?'En uso como definiciones aportadas.':'Borrador: ejecución desactivada.'}</p>`:''}${me.host&&!s.characters.length?'<label>Cargar paquete de reglas<input id="packFile" type="file" accept=".json,application/json"></label>':''}${me.host&&s.package&&!active?'<button id="packActivate">Revisar y usar este borrador</button>':''}</div><div id="packCharacters">${s.characters.map(c=>`<article class="card"><h3>${esc(c.name)}</h3><p>${esc(snapshot.players.find(p=>p.id===c.owner)?.name||'Jugador anterior')}</p><button data-pack-character="${esc(c.id)}">Abrir ficha</button><div class="toolbar">${Object.entries(doc.actions).filter(([id,a])=>a.permission==='host'?me.host:c.owner===me.id).map(([id,a])=>`<button data-pack-action="${esc(id)}" data-pack-target="${esc(c.id)}">${esc(a.label)}</button>`).join('')}</div></article>`).join('')}</div>${active?'<form id="packCreate" class="card"><h3>Crear una ficha</h3><p>Se asignan los valores iniciales del paquete. La creación guiada completa depende de reglas todavía pendientes.</p><label>Nombre<input name="name" maxlength="80" required></label><button class="primary">Crear ficha</button></form>':''}${me.host?'<div class="card"><h3>Conservar la campaña</h3><button id="packExport">Guardar copia</button><label>Recuperar copia<input id="packImport" type="file" accept=".json,application/json"></label></div>':''}</section><section class="card pack-history"><h3>Registro de resoluciones</h3>${s.messages.slice(-100).map(m=>historyEntry(m,doc)).join('')||'<p>Las tiradas y consecuencias aparecerán aquí.</p>'}</section></div>`;
   if($('#packFile'))$('#packFile').onchange=run(e=>readPackage(e.target.files[0]));
   if($('#packActivate'))$('#packActivate').onclick=()=>review(s.package.document,s.packageView);
   if($('#packCreate')){
@@ -96,6 +150,7 @@ window.RulePackUI=(()=>{
   });
   RulePackAuthoringUI.render(root);
   RulePackComposeUI.render(root);
+  renderAdventure(root,doc);
  }
  return {render,openCharacter,review};
 })();

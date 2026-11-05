@@ -203,7 +203,7 @@ class FirestoreStore:
         data={'actor':actor,'requestSha256':prepared['sha256'],'sourceScheme':prepared['sourceScheme'],
             'phase':'started','inputData':pack(prepared['request']),'createdAt':firestore.SERVER_TIMESTAMP}
         if allow_create:
-            data.update({'model':model_name(),'promptSha256':hashlib.sha256(PROMPT.encode()).hexdigest()})
+            data.update({'model':model_name(),'promptSha256':prepared.get('promptSha256',hashlib.sha256(PROMPT.encode()).hexdigest())})
             try:ref.create(data);return {**data,'fresh':True}
             except AlreadyExists:pass
         snapshot=ref.get()

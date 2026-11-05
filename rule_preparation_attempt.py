@@ -40,7 +40,7 @@ def unpack(data):
 
 def check_attempt(attempt,actor,request_sha):
     if attempt.get('actor')!=actor or attempt.get('requestSha256')!=request_sha:raise Conflict('El intento pertenece a otra identidad o solicitud')
-    if attempt.get('sourceScheme') not in (authoring.SOURCE_SCHEME,authoring.LEGACY_SOURCE_SCHEME):raise RulePackError('Esquema de fuentes del intento desconocido')
+    if attempt.get('sourceScheme') not in (authoring.SOURCE_SCHEME,authoring.LEGACY_SOURCE_SCHEME,'director-v1'):raise RulePackError('Esquema de fuentes del intento desconocido')
 
 
 def _remember(store,cid,identifier,payload):
@@ -75,7 +75,9 @@ def _restore(prepared,payload,scheme):
     authoring.validate_record(record);return record
 
 
-def run(store,cid,actor,prepared):
+def run(store,cid,actor,prepared,converter=None,restore=None):
+    converter=authoring.propose if converter is None else converter
+    restore=_restore if restore is None else restore
     identifier=key(actor,prepared['sha256'])
     from model_config import model_name
     configured=bool(os.environ.get('ANTHROPIC_API_KEY'))
@@ -87,7 +89,7 @@ def run(store,cid,actor,prepared):
     data=attempt.get('responseData') or _recall(store,cid,identifier)
     if data is not None:
         if not attempt.get('responseData'):store.save_rule_preparation_response(cid,identifier,actor,prepared['sha256'],data)
-        return _restore(prepared,unpack(data),attempt['sourceScheme'])
+        return restore(prepared,unpack(data),attempt['sourceScheme'])
     if not attempt.get('fresh'):
         raise Conflict('Existe un intento en curso o de resultado incierto sin respuesta recuperable. No se hará otra llamada de IA automáticamente')
     captured=[]
@@ -96,12 +98,11 @@ def run(store,cid,actor,prepared):
         data=_remember(store,cid,identifier,payload)
         try:store.save_rule_preparation_response(cid,identifier,actor,prepared['sha256'],data)
         except Exception as error:raise Unavailable('La respuesta se conserva en memoria, pero no se pudo guardar; reintenta el mismo envío sin volver a generar') from error
-    report=authoring.propose(prepared,response_observer=observe)
-    if captured:return _restore(prepared,captured[0],attempt['sourceScheme'])
+    report=converter(prepared,response_observer=observe)
+    if captured:return restore(prepared,captured[0],attempt['sourceScheme'])
     # Deterministic/injected converters may return a validated report directly.
-    record={'request':prepared['request'],'sha256':prepared['sha256'],'sourceScheme':attempt['sourceScheme'],'report':report}
-    authoring.validate_record(record)
     payload={'kind':'report','value':report,'latencyMs':report.get('usage',{}).get('latencyMs',0)}
+    record=restore(prepared,payload,attempt['sourceScheme'])
     data=_remember(store,cid,identifier,payload)
     store.save_rule_preparation_response(cid,identifier,actor,prepared['sha256'],data)
     return record

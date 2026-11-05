@@ -1,6 +1,9 @@
 .pack-columns{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px;align-items:start}
 .pack-columns>*{min-width:0}.pack-columns .card{margin-top:0;overflow-wrap:anywhere}
 .pack-history article{border-top:1px solid var(--line);padding:12px 0}
+.pack-story-message p{white-space:pre-wrap}
+.pack-request{border-block:1px solid var(--line);margin:18px 0;padding:12px 0}
+#packStoryTalk{border-top:1px solid var(--line);margin-top:20px;padding-top:12px}
 .pack-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:16px}
 .pack-fields dd{margin:6px 0;font-size:1.3rem;color:var(--gold)}
 .pack-source{white-space:pre-wrap;overflow-wrap:anywhere;font:inherit;max-height:350px;overflow:auto}

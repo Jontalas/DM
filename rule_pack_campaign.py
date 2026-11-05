@@ -76,7 +76,7 @@ def _description(pack):
 
 
 def initial_state(config):
-    return {'ruleset':ID,'package':None,'authoring':None,'authoringWorkspace':None,'authoringWorkspaceRef':None,'characters':[],'messages':[],
+    return {'ruleset':ID,'package':None,'authoring':None,'authoringWorkspace':None,'authoringWorkspaceRef':None,'narrative':None,'characters':[],'messages':[],
         'tone':str(config.get('tone',''))[:200],'limits':str(config.get('limits',''))[:2000],
         'goal':str(config.get('goal',''))[:2000]}
 
@@ -97,11 +97,15 @@ def preparation_record(state,digest=None):
     return copy.deepcopy(record) if record and (digest is None or digest==record['sha256']) else None
 
 
-def execute_action(state,body,me,prepare_record=None):
+def execute_action(state,body,me,prepare_record=None,narrative_call=None):
     action={key:value for key,value in body.items() if key not in ('id','version')}
     if state.get('ruleset')!=ID:raise RulePackError('Esta campaña no usa el motor de paquetes')
     if len(state['messages'])>=MAX_MESSAGES:raise RulePackError('El registro alcanza su límite; conserva una copia antes de ampliar o archivar datos')
     kind=action.get('type');result=copy.deepcopy(state)
+    import rule_pack_narrative as narrative
+    if kind in narrative.ACTIONS:
+        result=narrative.apply(state,action,me,runtime(state,me['campaign']),call=narrative_call)
+        _size(result);return result
     if kind=='prepare_rule_pack':
         if not me['host']:raise PermissionError('Solo el anfitrión prepara reglas desde documentos')
         _keys(action,('type','request'))
@@ -156,12 +160,14 @@ def execute_action(state,body,me,prepare_record=None):
         pack=runtime(state,me['campaign'])
         if state['package']['policy']!='provided-rules':raise RulePackError('El paquete está en borrador; el anfitrión debe elegir expresamente usar sus definiciones aportadas')
         if len(state['characters'])>=100:raise RulePackError('Esta campaña admite hasta cien fichas')
+        if state.get('narrative') is not None and len(state['characters'])>=8:raise RulePackError('El director experimental admite como máximo ocho fichas')
         name=_text(action['name'],80)
         sheet,trace=pack.create_character(me['id'],action.get('inputs',{}),physical=action.get('physical'))
         character={'id':secrets.token_hex(12),'name':name,'owner':me['id'],'sheet':sheet}
         if trace is not None:character['creation']={'inputs':copy.deepcopy(action.get('inputs',{})),'trace':trace}
         result['characters'].append(character);_system(result,'Ficha creada con valores iniciales del paquete: '+name,me['id'])
     elif kind=='run_pack_action':
+        if state.get('narrative') is not None:raise RulePackError('Declara la acción en la aventura para conectarla con la ficción y el estado')
         if set(action)-{'type','character','action','inputs','physical'} or not {'type','character','action'}<=set(action):raise RulePackError('Acción de paquete inválida')
         pack=runtime(state,me['campaign'])
         if state['package']['policy']!='provided-rules':raise RulePackError('El paquete todavía está en borrador')
@@ -179,6 +185,9 @@ def execute_action(state,body,me,prepare_record=None):
 
 def public_view(state,me):
     result=copy.deepcopy(state)
+    if 'narrative' in result:
+        import rule_pack_narrative as narrative
+        result['narrativeView']=narrative.public_view(result.pop('narrative'))
     if not me['host']:result.pop('authoring',None);result.pop('authoringWorkspace',None);result.pop('authoringWorkspaceRef',None)
     if state.get('package'):
         pack=runtime(state,me['campaign'])
@@ -199,7 +208,7 @@ def _comparable_trace(trace):
 
 def validate_restored(state,campaign='import-validation'):
     keys=set(initial_state({}))
-    for optional in ('authoring','authoringWorkspace','authoringWorkspaceRef'):
+    for optional in ('authoring','authoringWorkspace','authoringWorkspaceRef','narrative'):
         if optional not in state:keys.remove(optional) # Earlier experimental exports.
     _keys(state,keys)
     if state['ruleset']!=ID:raise RulePackError('Formato de campaña de paquetes incompatible')
@@ -217,6 +226,7 @@ def validate_restored(state,campaign='import-validation'):
         from rule_pack_authoring import validate_record
         validate_record(state['authoring'])
     if state['package'] is None:
+        if state.get('narrative') is not None:raise RulePackError('Aventura sin paquete de reglas')
         if state['characters']:raise RulePackError('Estado de fichas sin paquete')
         for event in state['messages']:
             _keys(event,('kind','text','actor','time'))
@@ -247,6 +257,9 @@ def validate_restored(state,campaign='import-validation'):
         _text(event.get('actor'),100)
         if event.get('kind')=='system':
             _keys(event,('kind','text','actor','time'));_text(event['text'],2000);continue
+        if event.get('kind') in ('pack-talk','pack-director'):
+            import rule_pack_narrative as narrative
+            narrative.validate_event(event,ids);continue
         _keys(event,('kind','character','actor','speaker','host','time','action','inputs','trace'))
         if event['kind']!='pack-action' or not isinstance(event['character'],str) or event['character'] not in sheets or type(event['host'])!=bool:raise RulePackError('Acción registrada inválida')
         _text(event['speaker'],120)
@@ -262,6 +275,8 @@ def validate_restored(state,campaign='import-validation'):
         sheets[event['character']]=restored
     for character in state['characters']:
         if _canonical(character['sheet'])!=_canonical(sheets[character['id']]):raise RulePackError('Los valores actuales no coinciden con las acciones registradas')
+    import rule_pack_narrative as narrative
+    narrative.validate(state,pack)
     _size(state)
 
 

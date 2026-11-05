@@ -16,6 +16,8 @@ from rule_pack_runtime import RulePackError
 from test_rule_pack_runtime import document
 import rule_pack_authoring as authoring
 import test_rule_pack_authoring as authoring_fixture
+import rule_pack_director as pack_director
+from test_rule_pack_narrative import reply as narrative_reply
 from test_rule_pack_composition import blocks as composition_blocks
 
 
@@ -109,6 +111,54 @@ class RulePackServerTests(unittest.TestCase):
         recovered=self.state(other)['state']['characters'][0]
         self.assertEqual(recovered['sheet']['fields'],character['sheet']['fields'])
         self.assertEqual(recovered['creation'],character['creation'])
+
+    def test_generic_director_requests_engine_dice_and_continues_from_confirmed_state(self):
+        self.action('install_rule_pack',package=document('live-lantern-example'),policy='provided-rules')
+        self.action('create_pack_sheet',name='Aria');character=self.state()['state']['characters'][0]['id']
+        guest=self.request('/api/join',{'name':'Luis','invite':self.state()['invite']})['token']
+        with patch.object(pack_director,'propose',return_value=narrative_reply()) as provider:
+            self.rejected(lambda:self.action('start_pack_adventure',guest,character=character),403)
+            body=self.action('start_pack_adventure',character=character)
+            self.assertTrue(self.request('/api/action',body,self.token)['duplicate']);self.assertEqual(provider.call_count,1)
+            self.assertNotIn('PRIVATE-DIRECTOR',str(self.state(guest)))
+            self.assertNotIn('narrative',self.state()['state'])
+            self.action('talk_pack_adventure',character=character,text='Pausa fuera de personaje.',mode='ooc')
+            self.assertEqual(provider.call_count,1)
+            self.rejected(lambda:self.action('talk_pack_adventure',guest,character=character,text='Actúo por Aria.',mode='action'),403)
+            provider.return_value=narrative_reply('intentar')
+            with patch('rule_pack_runtime.secrets.randbelow',side_effect=AssertionError('Narration rolled')):
+                self.action('talk_pack_adventure',character=character,text='Investigo el farol.',mode='action')
+            request=self.state()['state']['narrativeView']['pending']
+            self.assertEqual(self.state()['state']['characters'][0]['sheet']['fields']['energy'],3)
+            self.rejected(lambda:self.action('resolve_pack_request',guest,request=request['id']),403)
+            self.rejected(lambda:self.action('resolve_pack_request',request=request['id'],physical={'dice':[7,1]}))
+            with patch('rule_pack_runtime.secrets.randbelow',return_value=3) as rng:
+                body=self.action('resolve_pack_request',request=request['id'])
+                self.assertTrue(self.request('/api/action',body,self.token)['duplicate']);self.assertEqual(rng.call_count,2)
+            self.assertEqual(provider.call_count,2)
+            provider.return_value=narrative_reply(narration='Tras el resultado confirmado se distingue una marca.')
+            body=self.action('continue_pack_adventure')
+            self.assertTrue(self.request('/api/action',body,self.token)['duplicate']);self.assertEqual(provider.call_count,3)
+            observed=provider.call_args.args[0]['request']['confirmedResult']
+            self.assertEqual(observed['trace']['rolls']['dice']['values'],[4,4])
+            self.assertEqual(observed['trace']['changes']['energy']['after'],2)
+            self.rejected(lambda:self.action('continue_pack_adventure'))
+            self.assertEqual(provider.call_count,3)
+        exported=self.request('/api/export',{},self.token)
+        with patch('rule_pack_runtime.secrets.randbelow',side_effect=AssertionError('Copy rolled')):
+            self.action('import',campaign=exported)
+        self.assertEqual(self.state()['state']['characters'][0]['sheet']['fields']['energy'],2)
+
+    def test_director_response_survives_failed_confirmation_without_another_call(self):
+        self.action('install_rule_pack',package=document('live-lantern-example'),policy='provided-rules')
+        self.action('create_pack_sheet',name='Aria');character=self.state()['state']['characters'][0]['id']
+        body={'id':secrets.token_hex(12),'version':self.state()['version'],'type':'start_pack_adventure','character':character}
+        with patch.object(pack_director,'propose',return_value=narrative_reply()) as provider:
+            with patch.object(server.STORE,'commit',side_effect=Unavailable('Simulated outage after narration')):
+                self.rejected(lambda:self.request('/api/action',body,self.token),503)
+            self.request('/api/action',body,self.token)
+            self.assertTrue(self.request('/api/action',body,self.token)['duplicate']);self.assertEqual(provider.call_count,1)
+        self.assertEqual(self.state()['state']['narrativeView']['revision'],1)
 
     def test_ownership_and_package_replacement_reject_before_randomness(self):
         cid=self.install()

@@ -55,7 +55,7 @@ class TestStore:
                 import hashlib
                 from model_config import model_name
                 from rule_pack_authoring import PROMPT
-                existing.update({'model':model_name(),'promptSha256':hashlib.sha256(PROMPT.encode()).hexdigest()})
+                existing.update({'model':model_name(),'promptSha256':prepared.get('promptSha256',hashlib.sha256(PROMPT.encode()).hexdigest())})
                 self.preparations[cid,identifier]=existing
                 return {**copy.deepcopy(existing),'fresh':True}
             if existing.get('phase')=='confirmed':raise Conflict('Preparación ya confirmada')

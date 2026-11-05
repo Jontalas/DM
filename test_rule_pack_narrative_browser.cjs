@@ -1,0 +1,75 @@
+const {chromium}=require('./.deps/browser-tests/node_modules/playwright');
+const {spawn}=require('node:child_process'),{createInterface}=require('node:readline');
+const path=require('node:path'),assert=require('node:assert/strict');
+(async()=>{
+ const fixture=spawn(path.resolve('.venv/Scripts/python.exe'),['test_browser_fixture.py'],{env:{...process.env,TEST_RULE_PACK_FIXTURE:'1'},stdio:['ignore','pipe','inherit']});let browser;
+ try{
+  const url=await new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(Error('Fixture timeout')),15000);createInterface({input:fixture.stdout}).once('line',line=>{clearTimeout(timer);resolve(line)});fixture.once('exit',()=>reject(Error('Fixture exited')))});
+  browser=await chromium.launch({headless:true,executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe'});
+  const context=await browser.newContext(),room=await (await context.request.post(url+'/api/create',{data:{player:'Ana',title:'El farol perdido',ruleset:'rule-pack',goal:'Investigar un farol perdido'}})).json();
+  await context.addInitScript(t=>{if(!localStorage.getItem('cronicas-token'))localStorage.setItem('cronicas-token',t)},room.token);
+  const page=await context.newPage(),actions=[],errors=[];
+  page.on('pageerror',e=>errors.push(e.stack));page.on('request',r=>{if(r.url().endsWith('/api/action'))actions.push(r.postDataJSON())});
+  await page.goto(url);await page.locator('#packFile').setInputFiles('test_fixtures/rule_packs/live-lantern-example.json');
+  await page.locator('#packInstall [name=use]').check();await page.locator('#packInstall button').click();
+  await page.locator('#packCreate [name=name]').fill('Aria');await page.locator('#packCreate button').click();
+  await page.locator('#packStoryStart button').click();await page.locator('#packStoryTalk').waitFor();
+  assert.equal(await page.evaluate(()=>snapshot.state.narrativeView.revision),1);
+  assert.equal(await page.evaluate(()=>snapshot.state.characters[0].sheet.fields.energy),3);
+  assert.ok(!(await page.evaluate(()=>JSON.stringify(snapshot))).includes('PRIVATE-DIRECTOR'));
+  assert.equal(await page.locator('[data-pack-action]').count(),0);
+  const count=actions.length;
+  await page.locator('#packStoryTalk [name=text]').fill('Investigo el farol.');await page.evaluate(()=>refresh(true));
+  assert.equal(await page.locator('#packStoryTalk [name=text]').inputValue(),'Investigo el farol.');assert.equal(actions.length,count);
+  await page.locator('#packStoryTalk button').click();await page.locator('#packStoryResolve').waitFor();
+  assert.equal(await page.evaluate(()=>snapshot.state.characters[0].sheet.fields.energy),3);
+  assert.match(await page.locator('.pack-story-message').last().textContent(),/Arda/);
+  await page.locator('#packStoryResolve summary').click();await page.locator('#packStoryResolve [name=dice0]').fill('3, 4');
+  const beforeDice=actions.length;await page.evaluate(()=>refresh(true));
+  assert.equal(await page.locator('#packStoryResolve [name=dice0]').inputValue(),'3, 4');assert.equal(actions.length,beforeDice);
+  let lost=false;
+  await page.route('**/api/action',async route=>{
+   if(!lost&&route.request().postDataJSON()?.type==='resolve_pack_request'){lost=true;await route.fetch();await route.abort('connectionfailed')}
+   else await route.continue();
+  });
+  await page.locator('#packStoryResolve button.primary').click();
+  await page.waitForFunction(()=>snapshot.state.characters[0].sheet.fields.energy===2&&localStorage.getItem('cronicas-pending'));
+  const pending=await page.evaluate(()=>JSON.parse(localStorage.getItem('cronicas-pending')));
+  await page.reload();await page.waitForFunction(()=>snapshot?.state.narrativeView.continuation&&!localStorage.getItem('cronicas-pending'));
+  assert.equal(actions.at(-1).id,pending.body.id);
+  assert.equal(actions.filter(a=>a.type==='continue_pack_adventure').length,0);
+  assert.deepEqual(await page.evaluate(()=>snapshot.state.messages.find(m=>m.kind==='pack-action').trace.rolls.dice.values),[3,4]);
+  await page.unroute('**/api/action');await page.locator('#packStoryContinue').click();
+  await page.waitForFunction(()=>snapshot.state.narrativeView.revision===3);
+  assert.match(await page.locator('.pack-story-message').last().textContent(),/resultado confirmado/);
+  assert.equal(await page.evaluate(()=>snapshot.state.characters[0].sheet.fields.total),7);
+  const directorEvents=await page.evaluate(()=>snapshot.state.messages.filter(m=>m.kind==='pack-director').length);
+  await page.locator('#packStoryTalk [name=mode]').selectOption('ooc');await page.locator('#packStoryTalk [name=text]').fill('Una pausa fuera de personaje.');
+  await page.locator('#packStoryTalk button').click();await page.waitForFunction(()=>snapshot.state.messages.at(-1).mode==='ooc');
+  assert.equal(await page.evaluate(()=>snapshot.state.messages.filter(m=>m.kind==='pack-director').length),directorEvents);
+  await page.locator('#packStoryTalk [name=mode]').selectOption('action');await page.locator('#packStoryTalk [name=text]').fill('TEST_UNSUPPORTED: lanzo un conjuro.');
+  await page.locator('#packStoryTalk button').click();await page.waitForFunction(()=>snapshot.state.narrativeView.revision===4);
+  assert.equal(await page.locator('#packStoryResolve').count(),0);assert.match(await page.locator('.pack-story-message').last().textContent(),/Límite del motor/);
+  assert.equal(await page.evaluate(()=>snapshot.state.characters[0].sheet.fields.energy),2);
+  // Normal confirmation chains resolution and the one necessary narration.
+  await page.locator('#packStoryTalk [name=text]').fill('Investigo de nuevo el farol.');await page.locator('#packStoryTalk button').click();
+  await page.locator('#packStoryResolve').waitFor();await page.locator('#packStoryResolve button.primary').click();
+  await page.waitForFunction(()=>snapshot.state.characters[0].sheet.fields.energy===1&&snapshot.state.narrativeView.revision===6);
+  assert.equal(actions.filter(a=>a.type==='continue_pack_adventure').length,2);
+  await page.locator('#toast').waitFor({state:'hidden'});
+  await page.setViewportSize({width:390,height:1000});await page.locator('#packStoryTalk').scrollIntoViewIfNeeded();
+  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await page.screenshot({path:'.deps/rule-pack-narrative-mobile.png',fullPage:true});
+  const invite=await page.evaluate(()=>snapshot.invite),guest=await (await context.request.post(url+'/api/join',{data:{name:'Luis',invite}})).json();
+  const guestContext=await browser.newContext();await guestContext.addInitScript(t=>localStorage.setItem('cronicas-token',t),guest.token);
+  const guestPage=await guestContext.newPage();guestPage.on('pageerror',e=>errors.push(e.stack));await guestPage.goto(url);await guestPage.locator('#packCreate').waitFor();
+  assert.ok(!(await guestPage.evaluate(()=>JSON.stringify(snapshot))).includes('PRIVATE-DIRECTOR'));
+  assert.equal(await guestPage.locator('#packStoryTalk').count(),0);
+  await guestPage.locator('#packCreate [name=name]').fill('Ivo');await guestPage.locator('#packCreate button').click();await guestPage.locator('#packStoryTalk').waitFor();
+  await guestPage.locator('#packStoryTalk [name=mode]').selectOption('dialogue');await guestPage.locator('#packStoryTalk [name=text]').fill('Arda, ¿viste el farol?');
+  await guestPage.locator('#packStoryTalk button').click();await guestPage.waitForFunction(()=>snapshot.state.narrativeView.revision===7);
+  assert.equal(await guestPage.evaluate(()=>snapshot.state.characters[0].sheet.fields.energy),1);
+  assert.equal(await guestPage.evaluate(()=>snapshot.state.narrativeView.pending),null);
+  await guestContext.close();assert.deepEqual(errors,[]);
+  console.log('Generic adventure browser passed: start, declaration, legal request, local edits, physical dice, lost response recovery, confirmed narration, normal automatic continuation, OOC, limitation, privacy, second player and mobile. Provider simulated.');
+ }finally{if(browser)await browser.close();fixture.kill()}
+})().catch(error=>{console.error(error);process.exitCode=1});
