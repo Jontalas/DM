@@ -1,8 +1,20 @@
 # Reanudar el desarrollo
 
-## PAUSA VIGENTE SOLICITADA POR EL USUARIO — 5 de noviembre de 2026
+## Estado vigente: desarrollo reanudado — 5 de noviembre de 2026
 
-**Este apartado es el punto de continuidad actual y prevalece sobre todos los avances históricos que aparecen debajo. El usuario ha pedido parar por ahora; el objetivo debe quedar `paused`. No continuar desarrollo ni inferencias hasta que lo reanude.** La aplicación no está terminada y esta pausa no es un bloqueo técnico ni una entrega final.
+**El usuario ha reanudado expresamente. Este apartado prevalece sobre la pausa histórica inferior; desarrollo activo.**
+
+Corrección de truncado comprobada: **361 pruebas completas con emulador, sin omisiones (75,400 s)** y reproducción de captura original. Desplegada en Render en `872fc6ce645131e98144445cc2ad59223c1c9ed9`, despliegue `7570980807` exitoso; revisión exacta y salud HTTPS correctas.
+
+Continuación real recuperada con `.deps/recover_rule_director_live.py`: captura remota idéntica, versión original y misma acción, **cero inferencias nuevas**. Revisión narrativa 3, sin solicitudes/continuaciones pendientes, ficha intacta energía 2/total 7/éxito verdadero/agotamiento falso. Preparación privada anterior conservada, aviso y procedencia de recuperación parcial presentes. Copia técnica importada, propietario y duplicado comprobados. Sesión privada `.deps/rule-director-live-session.json` ahora **verified**: NO repetir inferencias ni recuperación. Total de las tres llamadas originales: 9.099 entrada/4.327 salida; tercera incluye 1.322 tokens de razonamiento. Configuración futura sin thinking aún no probada mediante nueva inferencia real.
+
+Navegador real correcto: relatos/declaración/ficha, consultas y borrador sin acciones, privacidad, invitado y móvil. Captura `.deps/rule-director-live-production-mobile.png` revisada visualmente. Para Node usar `NODE_EXTRA_CA_CERTS` con `.deps/windows-ca.pem`; no desactivar TLS.
+
+Siguiente bloque verificado: semillas privadas duraderas por campaña/actor/id/huella/versión para conservar dados si falla persistencia antes de confirmar. Integrado en servidor/repositorio, creador, acción y resolución narrativa; archivos nuevos `action_randomness.py` y `test_action_randomness.py`. **369 pruebas completas con emulador, sin omisiones (72,110 s)**, incluidos fallos de creación/resolución y recuperación con nuevo cliente Firestore. Navegador narrativo simulado correcto. Despliegue de este bloque en curso. Dados físicos y acciones sin dados no crean reservas. Después continuar mundo persistente/PNJ/objetivos y PRODUCTO.md. No hay bloqueo imprescindible del usuario.
+
+## PAUSA HISTÓRICA SUPERADA POR LA REANUDACIÓN ANTERIOR — 5 de noviembre de 2026
+
+**Referencia histórica: pausa solicitada y posteriormente revocada por reanudación expresa; consultar el apartado superior vigente.** La aplicación no está terminada.
 
 ### Forma de trabajar que debe mantenerse al reanudar
 

@@ -1,5 +1,17 @@
 # Continuidad del desarrollo autónomo
 
+## Reanudación expresa y recuperación real terminada — 5 de noviembre de 2026
+
+El usuario reanuda desde REANUDAR.md; queda superada la pausa inferior. Base limpia `872fc6c`, remoto y producción anterior comprobados. Skill regression-testing aplicada: **361 pruebas completas con emulador correctas sin omisiones (75,400 s)** y reproducción local de la captura. Avance rápido de main a `872fc6ce645131e98144445cc2ad59223c1c9ed9`; Render `7570980807` success y HTTPS con revisión exacta/salud correctas.
+
+Guion privado nuevo `.deps/recover_rule_director_live.py` exige tres intentos previos, captura remota idéntica, versión original y recuperación local válida antes de reenviar la misma acción. **Cero inferencias nuevas**. Comprobados revisión narrativa 3, pendientes vacíos, ficha 2/7/true/false, relato/resumen idénticos a los campos completos, aviso/procedencia, preparación anterior conservada, duplicado y copia con propietario reasignado. Sesión e informe privados ahora verified; no repetir guiones. Consumo original: 2.214/1.278, 3.051/1.249 y 3.834/1.800; total 9.099 entrada/4.327 salida, sin estimar importe. Configuración futura de thinking aún no comprobada con nueva inferencia real.
+
+Navegador real completo correcto: relatos, ficha, borrador/consulta sin acciones, memoria privada filtrada, invitado y móvil; captura revisada visualmente. Skill debug aplicada al fallo de confianza TLS del cliente Node: solucionado con NODE_EXTRA_CA_CERTS y CA local existente, sin desactivar verificación. Ninguna partida personal modificada ni servicio nuevo.
+
+Siguiente bloque integrado localmente: reserva de semilla privada antes de RNG, flujo reproducible HMAC-SHA256 sin sesgo, ligada a identidad/solicitud/versión, barrera de confirmación atómica. Cobertura: creador, acción genérica y resolución narrativa; dados físicos no reservan. Pruebas de fallo antes de confirmación, cliente Firestore nuevo, vínculo, reserva indisponible, duplicado y rechazo de sesgo. Primeras 52 pruebas del servidor y dos unitarias correctas; suite completa ampliada en curso. No desplegado aún este bloque; continuar validación y despliegue antes de mundo persistente/PNJ/objetivos.
+
+**Validación final del bloque de dados (5 de noviembre): 369 pruebas completas con emulador, sin omisiones (72,110 s)**. Incluye creación y resolución narrativa interrumpidas antes de confirmar, mismo estado mecánico al reintentar, acción con nuevo cliente Firestore, barrera de confirmación, reserva fallida sin RNG, identidad/huella/versión y muestreo por rechazo. Navegador narrativo simulado también correcto. Despliegue autorizado en curso; no se han realizado inferencias nuevas.
+
 **REANUDADO por petición del usuario, 4 de noviembre de 2026.** Se ha leído REANUDAR.md y vuelve a aplicarse la autonomía autorizada.
 
 El usuario solicita continuar con el siguiente punto sin terminar el trabajo al cerrar una entrega. Solo solicitar intervención por dependencias imprescindibles. Objetivo de producto en PRODUCTO.md; no marcarlo completo por cerrar una entrega parcial.

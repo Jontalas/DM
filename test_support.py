@@ -75,7 +75,14 @@ class TestStore:
         if data is not None and data.get('phase')=='confirmed':return None
         if data is not None:check_attempt(data,actor,request_sha)
         return copy.deepcopy(data)
-    def commit(self,cid,aid,actor,fingerprint,version,state,title=None,preparation_key=None):
+    def action_random_seed(self,cid,aid,actor,fingerprint,version):
+        with self.lock:
+            if not hasattr(self,'randomness'):self.randomness={}
+            existing=self.randomness.setdefault((cid,aid),{'actor':actor,'fingerprint':fingerprint,'version':version,'seed':secrets.token_bytes(32)})
+            if existing.get('phase')=='confirmed' or any(existing.get(k)!=v for k,v in [('actor',actor),('fingerprint',fingerprint),('version',version)]):
+                raise Conflict('Reserva de dados incompatible o confirmada')
+            return existing['seed']
+    def commit(self,cid,aid,actor,fingerprint,version,state,title=None,preparation_key=None,randomness=False):
         with self.lock:
             if self.completed(cid,aid,actor,fingerprint):return True
             if self.campaigns[cid][0]['version']!=version:raise Conflict('Estado antiguo')
@@ -83,6 +90,7 @@ class TestStore:
             if title is not None:meta['title']=title
             self.campaigns[cid]=(meta,copy.deepcopy(self._light_state(cid,state)));self.actions[cid,aid]=(actor,fingerprint)
             if preparation_key is not None:self.preparations[cid,preparation_key]={'actor':actor,'phase':'confirmed'}
+            if randomness:self.randomness[cid,aid]={'phase':'confirmed'}
             return False
     def index_book(self,book,pages):self.pages[book]=copy.deepcopy(pages)
     def counts(self):return {b:len(self.pages.get(b,[])) for b in ['reglas','bestiario','trey']}

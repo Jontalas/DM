@@ -230,7 +230,21 @@ class FirestoreStore:
         if data.get('phase')=='confirmed':return None
         check_attempt(data,actor,request_sha);return data
 
-    def commit(self,cid,aid,actor,fingerprint,version,state,title=None,preparation_key=None):
+    def action_random_seed(self,cid,aid,actor,fingerprint,version):
+        from google.api_core.exceptions import AlreadyExists
+        ref=self.campaign(cid).collection('ruleActionRandomness').document(digest(aid))
+        data={'actor':actor,'fingerprint':fingerprint,'version':version,'seed':secrets.token_bytes(32)}
+        try:ref.create(data);return data['seed']
+        except AlreadyExists:pass
+        existing=ref.get().to_dict()
+        if existing is None or existing.get('phase')=='confirmed':raise Conflict('Esta tirada ya fue confirmada; no se generarán dados de nuevo')
+        if any(existing.get(key)!=data[key] for key in ('actor','fingerprint','version')):
+            raise Conflict('El identificador de tirada pertenece a otra acción')
+        seed=existing.get('seed')
+        if not isinstance(seed,bytes) or len(seed)!=32:raise Unavailable('La reserva de dados no está íntegra')
+        return seed
+
+    def commit(self,cid,aid,actor,fingerprint,version,state,title=None,preparation_key=None,randomness=False):
         from google.cloud import firestore
         from google.api_core.exceptions import AlreadyExists, FailedPrecondition
         # Optimistic CAS avoids holding read locks while concurrent clients commit.
@@ -247,6 +261,8 @@ class FirestoreStore:
         batch=self.client.batch()
         batch.update(ref,update,option=firestore.LastUpdateOption(meta.update_time))
         batch.create(marker,{'actor':actor,'fingerprint':fingerprint,'version':version+1})
+        if randomness:
+            batch.set(ref.collection('ruleActionRandomness').document(digest(aid)),{'phase':'confirmed'})
         if preparation_key is not None:
             batch.set(ref.collection('rulePreparationAttempts').document(preparation_key),
                 {'actor':actor,'phase':'confirmed'})

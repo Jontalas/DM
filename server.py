@@ -136,7 +136,7 @@ def execute_action(body,me):
         if state['ruleset']=='rule-pack' and me['host'] and body['type'] in ('prepare_rule_pack','install_prepared_rule_pack'):
             workspace_readonly=body['type']=='install_prepared_rule_pack' and state.get('authoringWorkspaceRef') is not None
             state=attach_workspace(state,me)
-        title=None;preparation_key=None
+        title=None;preparation_key=None;randomness=None
         if body['type']=='import':
             if not me['host']:raise PermissionError('Solo el anfitrión importa')
             data=body['campaign']
@@ -169,6 +169,10 @@ def execute_action(body,me):
                     preparation_key=attempts.key(me['id'],prepared['sha256'])
                     return attempts.run(store,cid,me['id'],prepared,converter=director.propose,restore=director.restore)
                 state=selected.execute_action(state,body,me,narrative_call=narrative_call)
+            elif state['ruleset']=='rule-pack' and body['type'] in ('create_pack_sheet','run_pack_action','resolve_pack_request'):
+                from action_randomness import ActionRandomness
+                randomness=ActionRandomness(store,cid,aid,me['id'],signature,row['version'])
+                state=selected.execute_action(state,body,me,draw=randomness)
             else:state=selected.execute_action(state,body,me)
         elif body['type']=='start_adventure':
             premise=adventure.validate_start(state,body,me)
@@ -237,6 +241,7 @@ def execute_action(body,me):
         # Firestore CAS + marker are atomic. A conflict never reruns RNG or the provider.
         if workspace_readonly:state['authoringWorkspace']=None
         options={'preparation_key':preparation_key} if preparation_key is not None else {}
+        if randomness is not None and randomness.seed is not None:options['randomness']=True
         duplicate=store.commit(cid,aid,me['id'],signature,row['version'],state,title,**options)
         if preparation_key is not None:attempts.forget(store,cid,preparation_key)
         return {'duplicate':True} if duplicate else {'ok':True}

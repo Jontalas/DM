@@ -26,7 +26,7 @@ def _log(state,kind,actor,me,**values):
         'speaker':me['name'] if kind=='pack-talk' else 'Director de aventura','time':time.time(),**values})
 
 
-def apply(state,action,me,pack,call=None):
+def apply(state,action,me,pack,call=None,draw=None):
     kind=action['type'];result=copy.deepcopy(state);memory=result.get('narrative')
     if state['package']['policy']!='provided-rules':raise RulePackError('Activa el paquete antes de jugar')
     if kind=='start_pack_adventure':
@@ -49,7 +49,7 @@ def apply(state,action,me,pack,call=None):
             preview=pack.preview(actor['sheet'],pending['action'],pending['inputs'],me['id'])
             if director.canonical(pending['rolls'])!=director.canonical(preview['rolls']):raise RulePackError('Los dados previstos no coinciden con la ficha y las reglas')
             inputs=action.get('inputs',pending['inputs'])
-            sheet,trace=pack.execute(actor['sheet'],pending['action'],inputs,me['id'],physical=action.get('physical'))
+            sheet,trace=pack.execute(actor['sheet'],pending['action'],inputs,me['id'],physical=action.get('physical'),draw=draw)
             actor['sheet']=sheet
             result['messages'].append({'kind':'pack-action','character':actor['id'],'actor':me['id'],'speaker':me['name'],
                 'host':bool(me['host']),'time':time.time(),'action':pending['action'],'inputs':copy.deepcopy(inputs),'trace':trace})

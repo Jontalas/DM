@@ -97,14 +97,14 @@ def preparation_record(state,digest=None):
     return copy.deepcopy(record) if record and (digest is None or digest==record['sha256']) else None
 
 
-def execute_action(state,body,me,prepare_record=None,narrative_call=None):
+def execute_action(state,body,me,prepare_record=None,narrative_call=None,draw=None):
     action={key:value for key,value in body.items() if key not in ('id','version')}
     if state.get('ruleset')!=ID:raise RulePackError('Esta campaña no usa el motor de paquetes')
     if len(state['messages'])>=MAX_MESSAGES:raise RulePackError('El registro alcanza su límite; conserva una copia antes de ampliar o archivar datos')
     kind=action.get('type');result=copy.deepcopy(state)
     import rule_pack_narrative as narrative
     if kind in narrative.ACTIONS:
-        result=narrative.apply(state,action,me,runtime(state,me['campaign']),call=narrative_call)
+        result=narrative.apply(state,action,me,runtime(state,me['campaign']),call=narrative_call,draw=draw)
         _size(result);return result
     if kind=='prepare_rule_pack':
         if not me['host']:raise PermissionError('Solo el anfitrión prepara reglas desde documentos')
@@ -162,7 +162,7 @@ def execute_action(state,body,me,prepare_record=None,narrative_call=None):
         if len(state['characters'])>=100:raise RulePackError('Esta campaña admite hasta cien fichas')
         if state.get('narrative') is not None and len(state['characters'])>=8:raise RulePackError('El director experimental admite como máximo ocho fichas')
         name=_text(action['name'],80)
-        sheet,trace=pack.create_character(me['id'],action.get('inputs',{}),physical=action.get('physical'))
+        sheet,trace=pack.create_character(me['id'],action.get('inputs',{}),physical=action.get('physical'),draw=draw)
         character={'id':secrets.token_hex(12),'name':name,'owner':me['id'],'sheet':sheet}
         if trace is not None:character['creation']={'inputs':copy.deepcopy(action.get('inputs',{})),'trace':trace}
         result['characters'].append(character);_system(result,'Ficha creada con valores iniciales del paquete: '+name,me['id'])
@@ -174,7 +174,7 @@ def execute_action(state,body,me,prepare_record=None,narrative_call=None):
         character=next((c for c in result['characters'] if c['id']==action['character']),None)
         if character is None:raise RulePackError('Ficha no disponible en esta campaña')
         sheet,trace=pack.execute(character['sheet'],action['action'],action.get('inputs',{}),me['id'],
-            host=bool(me['host']),physical=action.get('physical'))
+            host=bool(me['host']),physical=action.get('physical'),draw=draw)
         character['sheet']=sheet
         result['messages'].append({'kind':'pack-action','character':character['id'],'actor':me['id'],
             'speaker':me['name'],'host':bool(me['host']),'time':time.time(),'action':action['action'],

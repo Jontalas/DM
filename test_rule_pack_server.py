@@ -81,7 +81,7 @@ class RulePackServerTests(unittest.TestCase):
 
     def test_new_package_id_runs_atomic_actions_and_deduplicates_dice(self):
         cid=self.install(id='new-game-without-code')
-        with patch('rule_pack_runtime.secrets.randbelow',return_value=3) as rng:
+        with patch('action_randomness.hmac.digest',return_value=(3).to_bytes(32,'big')) as rng:
             body=self.action('run_pack_action',character=cid,action='attempt')
             self.assertEqual(rng.call_count,2)
             self.assertTrue(self.request('/api/action',body,self.token)['duplicate'])
@@ -92,9 +92,76 @@ class RulePackServerTests(unittest.TestCase):
         self.assertEqual(state['messages'][-1]['trace']['triggers'][0]['id'],'exhaustion')
         self.rejected(lambda:self.action('run_pack_action',character=cid,action='attempt'))
 
+    def test_generated_dice_survive_failed_commit_without_process_cache(self):
+        cid=self.install();before=self.state();me=before['me']
+        body={'id':secrets.token_hex(12),'version':before['version'],'type':'run_pack_action','character':cid,'action':'attempt'}
+        captured=[]
+        def fail(*args,**kwargs):
+            captured.append(copy.deepcopy(args[5]));raise Unavailable('Failed before commit')
+        with patch.object(server.STORE,'commit',side_effect=fail):
+            with self.assertRaises(urllib.error.HTTPError) as error:self.request('/api/action',body,self.token)
+            self.assertEqual(error.exception.code,503);error.exception.close()
+        self.assertEqual(self.state(),before)
+        # No RNG object or stream survives between HTTP requests. Reconnect the
+        # Firestore client too, proving the seed is durable rather than cached.
+        old=server.STORE
+        from firebase_store import FirestoreStore
+        if isinstance(old,FirestoreStore):
+            server.STORE=FirestoreStore.from_environment();server.STORE.prefix=old.prefix
+        try:
+            self.request('/api/action',body,self.token)
+            result=self.state()['state']
+            self.assertEqual(result['characters'][0]['sheet'],captured[0]['characters'][0]['sheet'])
+            self.assertEqual(result['messages'][-1]['trace'],captured[0]['messages'][-1]['trace'])
+            self.assertTrue(self.request('/api/action',body,self.token)['duplicate'])
+            with self.assertRaises(Conflict):
+                server.STORE.action_random_seed(me['campaign'],body['id'],me['id'],server.fingerprint(body),body['version'])
+        finally:server.STORE=old
+
+    def test_random_seed_binding_failure_and_physical_dice_cost(self):
+        cid=self.install();store=server.STORE;me=self.state()['me']
+        with patch.object(store,'action_random_seed',side_effect=Unavailable('Cannot reserve')):
+            before=self.state()
+            with patch('action_randomness.hmac.digest',side_effect=AssertionError('Rolled without durable seed')):
+                with self.assertRaises(urllib.error.HTTPError) as error:self.action('run_pack_action',character=cid,action='attempt')
+                self.assertEqual(error.exception.code,503);error.exception.close()
+            self.assertEqual(self.state(),before)
+            self.action('run_pack_action',character=cid,action='attempt',physical={'pool':[3,4]})
+        seed=store.action_random_seed(me['campaign'],'reserved',me['id'],'request-a',1)
+        self.assertEqual(seed,store.action_random_seed(me['campaign'],'reserved',me['id'],'request-a',1))
+        for actor,signature,version in [('other','request-a',1),(me['id'],'request-b',1),(me['id'],'request-a',2)]:
+            with self.assertRaises(Conflict):store.action_random_seed(me['campaign'],'reserved',actor,signature,version)
+
+    def test_creation_and_narrative_dice_recover_before_confirmation(self):
+        def recover(body):
+            before=self.state();staged=[]
+            def fail(*args,**kwargs):
+                staged.append(copy.deepcopy(args[5]));raise Unavailable('Interrupted persistence')
+            with patch.object(server.STORE,'commit',side_effect=fail):
+                with self.assertRaises(urllib.error.HTTPError) as error:self.request('/api/action',body,self.token)
+                self.assertEqual(error.exception.code,503);error.exception.close()
+            self.assertEqual(self.state(),before)
+            self.request('/api/action',body,self.token)
+            after=self.state()['state']
+            self.assertEqual(after['characters'][0]['sheet'],staged[0]['characters'][0]['sheet'])
+            return after,staged[0]
+        self.action('install_rule_pack',package=document('original-creation-example'),policy='provided-rules')
+        recover({'id':secrets.token_hex(12),'version':self.state()['version'],'type':'create_pack_sheet','name':'Aria','inputs':{'role':'cronista','focus':2}})
+        self.token=self.request('/api/create',{'title':'Narrative recovery','player':'Ana','ruleset':'rule-pack'})['token']
+        self.action('install_rule_pack',package=document('live-lantern-example'),policy='provided-rules')
+        self.action('create_pack_sheet',name='Aria');cid=self.state()['state']['characters'][0]['id']
+        with patch.object(pack_director,'propose',return_value=narrative_reply()) as provider:
+            self.action('start_pack_adventure',character=cid)
+            provider.return_value=narrative_reply('intentar')
+            self.action('talk_pack_adventure',character=cid,text='Intento investigar.',mode='action')
+        pending=self.state()['state']['narrativeView']['pending']
+        after,staged=recover({'id':secrets.token_hex(12),'version':self.state()['version'],'type':'resolve_pack_request','request':pending['id']})
+        self.assertEqual(after['messages'][-1]['trace'],staged['messages'][-1]['trace'])
+        self.assertEqual(after['narrativeView']['continuation'],{'character':cid,'message':len(after['messages'])-1})
+
     def test_data_defined_creation_validates_choices_deduplicates_dice_and_recovers(self):
         self.action('install_rule_pack',package=document('original-creation-example'),policy='provided-rules')
-        with patch('rule_pack_runtime.secrets.randbelow',return_value=3) as rng:
+        with patch('action_randomness.hmac.digest',return_value=(3).to_bytes(32,'big')) as rng:
             self.rejected(lambda:self.action('create_pack_sheet',name='Aria',inputs={'role':'vigía','focus':2}))
             self.assertEqual(rng.call_count,0)
             body=self.action('create_pack_sheet',name='Aria',inputs={'role':'cronista','focus':2})
@@ -106,7 +173,7 @@ class RulePackServerTests(unittest.TestCase):
             self.assertEqual(rng.call_count,1)
         exported=self.request('/api/export',{},self.token)
         other=self.request('/api/create',{'title':'Creation recovery','player':'Eva','ruleset':'rule-pack'})['token']
-        with patch('rule_pack_runtime.secrets.randbelow',side_effect=AssertionError('Import generated another character')):
+        with patch('action_randomness.hmac.digest',side_effect=AssertionError('Import generated another character')):
             self.action('import',other,campaign=exported)
         recovered=self.state(other)['state']['characters'][0]
         self.assertEqual(recovered['sheet']['fields'],character['sheet']['fields'])
@@ -126,13 +193,13 @@ class RulePackServerTests(unittest.TestCase):
             self.assertEqual(provider.call_count,1)
             self.rejected(lambda:self.action('talk_pack_adventure',guest,character=character,text='Actúo por Aria.',mode='action'),403)
             provider.return_value=narrative_reply('intentar')
-            with patch('rule_pack_runtime.secrets.randbelow',side_effect=AssertionError('Narration rolled')):
+            with patch('action_randomness.hmac.digest',side_effect=AssertionError('Narration rolled')):
                 self.action('talk_pack_adventure',character=character,text='Investigo el farol.',mode='action')
             request=self.state()['state']['narrativeView']['pending']
             self.assertEqual(self.state()['state']['characters'][0]['sheet']['fields']['energy'],3)
             self.rejected(lambda:self.action('resolve_pack_request',guest,request=request['id']),403)
             self.rejected(lambda:self.action('resolve_pack_request',request=request['id'],physical={'dice':[7,1]}))
-            with patch('rule_pack_runtime.secrets.randbelow',return_value=3) as rng:
+            with patch('action_randomness.hmac.digest',return_value=(3).to_bytes(32,'big')) as rng:
                 body=self.action('resolve_pack_request',request=request['id'])
                 self.assertTrue(self.request('/api/action',body,self.token)['duplicate']);self.assertEqual(rng.call_count,2)
             self.assertEqual(provider.call_count,2)
@@ -145,7 +212,7 @@ class RulePackServerTests(unittest.TestCase):
             self.rejected(lambda:self.action('continue_pack_adventure'))
             self.assertEqual(provider.call_count,3)
         exported=self.request('/api/export',{},self.token)
-        with patch('rule_pack_runtime.secrets.randbelow',side_effect=AssertionError('Copy rolled')):
+        with patch('action_randomness.hmac.digest',side_effect=AssertionError('Copy rolled')):
             self.action('import',campaign=exported)
         self.assertEqual(self.state()['state']['characters'][0]['sheet']['fields']['energy'],2)
 
@@ -163,7 +230,7 @@ class RulePackServerTests(unittest.TestCase):
     def test_ownership_and_package_replacement_reject_before_randomness(self):
         cid=self.install()
         guest=self.request('/api/join',{'name':'Luis','invite':self.state()['invite']})['token']
-        with patch('rule_pack_runtime.secrets.randbelow',side_effect=AssertionError('Rejected operation rolled')):
+        with patch('action_randomness.hmac.digest',side_effect=AssertionError('Rejected operation rolled')):
             self.rejected(lambda:self.action('run_pack_action',guest,character=cid,action='attempt'),403)
             self.rejected(lambda:self.action('install_rule_pack',package=document('cairn-saves'),policy='provided-rules'))
             self.rejected(lambda:self.action('run_pack_action',character=cid,action='attempt',physical={'pool':[7,1]}))
@@ -173,7 +240,7 @@ class RulePackServerTests(unittest.TestCase):
         self.action('run_pack_action',character=cid,action='attempt',physical={'pool':[3,4]})
         exported=self.request('/api/export',{},self.token)
         other=self.request('/api/create',{'title':'Recovery','player':'Eva','ruleset':'rule-pack'})['token']
-        with patch('rule_pack_runtime.secrets.randbelow',side_effect=AssertionError('Recovery rolled')):
+        with patch('action_randomness.hmac.digest',side_effect=AssertionError('Recovery rolled')):
             self.action('import',other,campaign=exported)
             recovered=self.state(other)
             self.assertEqual(recovered['state']['characters'][0]['owner'],recovered['me']['id'])
@@ -200,7 +267,7 @@ class RulePackServerTests(unittest.TestCase):
         original=campaign.execute_action(original,{'type':'install_rule_pack','package':document('original-pool-example'),'policy':'provided-rules'},me)
         original=campaign.execute_action(original,{'type':'create_pack_sheet','name':'Aria'},me)
         before=copy.deepcopy(original)
-        with patch.object(campaign,'MAX_MESSAGES',2),patch('rule_pack_runtime.secrets.randbelow',side_effect=AssertionError('Full history rolled')):
+        with patch.object(campaign,'MAX_MESSAGES',2),patch('action_randomness.hmac.digest',side_effect=AssertionError('Full history rolled')):
             with self.assertRaises(RulePackError):
                 campaign.execute_action(original,{'type':'run_pack_action','character':original['characters'][0]['id'],'action':'attempt'},me)
         self.assertEqual(original,before)
@@ -287,7 +354,7 @@ class RulePackServerTests(unittest.TestCase):
             preview=self.request('/api/rule-pack/compose',{'packages':[base,additional],'version':'1.1.0'})
         parameters={'additional':[additional],'versionTarget':'1.1.0','baseSha256':self.state()['state']['package']['sha256'],
             'expectedSha256':preview['provenance']['packageSha256'],'policy':'draft'}
-        with patch.object(authoring,'propose',side_effect=AssertionError('Composition called AI')),patch('rule_pack_runtime.secrets.randbelow',side_effect=AssertionError('Composition rolled')):
+        with patch.object(authoring,'propose',side_effect=AssertionError('Composition called AI')),patch('action_randomness.hmac.digest',side_effect=AssertionError('Composition rolled')):
             self.rejected(lambda:self.action('compose_rule_pack',guest,**parameters),403)
             self.rejected(lambda:self.action('compose_rule_pack',**(parameters|{'baseSha256':'stale'})))
             self.rejected(lambda:self.action('compose_rule_pack',**(parameters|{'expectedSha256':'stale'})))

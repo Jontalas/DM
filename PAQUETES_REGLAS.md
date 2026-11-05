@@ -1,5 +1,13 @@
 # Motor común y paquetes de reglas importables
 
+## Evidencia vigente del 5 de noviembre: director y recuperación
+
+Director genérico desplegado y ensayo real terminado en `872fc6c`. Tres inferencias originales, 9.099 tokens de entrada y 4.327 de salida. La tercera se truncó: únicamente se recuperaron los campos públicos JSON completos de una continuación, con aviso y procedencia `completed-public-continuation-v1`; se conservó preparación anterior. No se inventaron valores cortados ni se produjo otra inferencia. Se verificaron ficha, revisión narrativa 3, copia/propietario, deduplicación, privacidad, navegador real, invitado y móvil. La prueba no acredita campañas largas ni semántica perfecta. Catálogo público: solo Pathfinder parcial; `rule-pack` continúa experimental mediante creación explícita.
+
+Protección de dados en desarrollo: el servidor reserva una semilla privada por campaña/id/actor/huella/versión justo antes del primer dado generado. HMAC-SHA256 con contador y rechazo de sesgo reproduce el flujo al reenviar la misma acción, incluso con otro cliente Firestore y después de fallar el guardado del estado. No se expone la semilla en estado, eventos ni copias. Confirmar reemplaza la semilla por una barrera mínima en el mismo lote atómico que estado y marcador de acción. Una llamada concurrente antigua no puede crear otra semilla tras confirmar. No cubre nuevas solicitudes con otro id ni cambios de versión: siguen sujetos a revisión/conflicto.
+
+Coste adicional: una escritura de reserva por acción que use dados del servidor y una escritura de barrera dentro del lote final; reintentar consulta la reserva existente. Dados físicos, validaciones rechazadas antes de RNG y acciones sin tiradas no crean este recurso. Ninguna llamada a IA. Las semillas pendientes y barreras no se borran automáticamente; una limpieza futura debe auditar acciones/versiones y concurrencia antes de retirarlas. Las exclusiones de índices anteriores continúan pendientes de aplicación administrativa. Los apartados históricos inferiores describen hitos, no sustituyen esta evidencia vigente.
+
 ## Objetivo y estado real
 
 El usuario entrega reglas a la aplicación, que prepara e instala un paquete sin programar un adaptador por juego. El núcleo de partida interpreta esos datos; la IA ayuda a extraer fuentes y a dirigir ficción, no sustituye los cálculos. La incorporación de reglas debe llegar a ser un recorrido de la aplicación, con ambigüedades y límites visibles.
