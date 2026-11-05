@@ -312,6 +312,30 @@ class RulePackServerTests(unittest.TestCase):
             self.assertTrue(self.request('/api/action',body,self.token)['duplicate']);self.assertEqual(provider.call_count,1)
         self.assertEqual(self.state()['state']['narrativeView']['revision'],1)
 
+    def test_undeclared_movement_is_captured_and_rejected_again_without_another_call(self):
+        import io,json
+        import rule_preparation_attempt as attempts
+        cid=self.install()
+        with patch.object(pack_director,'propose',return_value=narrative_reply()):self.action('start_pack_adventure',character=cid)
+        before=self.state();body={'id':secrets.token_hex(12),'version':before['version'],'type':'talk_pack_adventure',
+            'character':cid,'mode':'action','text':'Declaro intentar para investigar la marca.'}
+        answer=narrative_reply('attempt',narration='Aria se acerca al mostrador. Arda espera los dados.')
+        raw=json.dumps({'stop_reason':'end_turn','content':[{'type':'text','text':json.dumps(answer)}],'usage':{'input_tokens':100,'output_tokens':100}}).encode()
+        original=pack_director.propose;prepared=[]
+        def transport(request,response_observer=None):
+            prepared.append(request)
+            with patch.object(pack_director.urllib.request,'urlopen',return_value=io.BytesIO(raw)):
+                return original(request,response_observer=response_observer)
+        with patch.object(pack_director,'propose',side_effect=transport) as provider:
+            for n in range(2):
+                with self.assertRaises(urllib.error.HTTPError) as error:self.request('/api/action',body,self.token)
+                self.assertEqual(error.exception.code,400)
+                self.assertIn('antes de resolverla',error.exception.read().decode());error.exception.close()
+                self.assertEqual(self.state(),before);self.assertEqual(provider.call_count,1)
+                diagnostic=self.request('/api/rule-pack/preparation-attempt?requestSha256='+prepared[0]['sha256'],token=self.token)
+                self.assertEqual(diagnostic['phase'],'captured')
+                attempts.forget(server.STORE,before['me']['campaign'],attempts.key(before['me']['id'],prepared[0]['sha256']))
+
     def test_ownership_and_package_replacement_reject_before_randomness(self):
         cid=self.install()
         guest=self.request('/api/join',{'name':'Luis','invite':self.state()['invite']})['token']

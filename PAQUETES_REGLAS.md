@@ -1,5 +1,15 @@
 # Motor común y paquetes de reglas importables
 
+## Ensayo real integrado y límite de agencia encontrado
+
+Fuente privada desplegada en `e2616a8`, Render `7572081576` success y revisión/salud HTTPS correctas. Un nuevo ensayo acotado ejecutó exactamente tres inferencias: inició un PNJ, lugar, relación y objetivo; solicitó Intentar vinculado; el motor confirmó [3,4]/objetivo/ficha y la continuación llegó completa, sin truncado ni recuperación. Original/copia/permisos y navegador real/móvil comprobados. Uso observado: 17.445 tokens de entrada y 1.642 de salida (684/493/465); thinking desactivado/esfuerzo bajo aceptados por el proveedor. No se calcula importe ni se afirma ahorro comparable frente a sesiones con otro contexto.
+
+La revisión del relato detectó una vulneración concreta de agencia: la segunda respuesta presentó que Aria se acercaba al mostrador sin declararlo y volvió a pedir declarar una acción ya declarada. **El recorrido narrativo no se acepta como terminado**, aunque la integración mecánica sí pasó. Sesión privada `verified-with-narrative-issues`, `narrativeAcceptance=false`; no se repite el ensayo ni se hace una cuarta llamada para sustituir evidencia desfavorable. Historial y fuente técnica originales conservados.
+
+Corrección local: instrucciones positivas de narrar mundo/PNJ/solicitud y atribuir intención como declaración; detector `narrative_agency.py` de patrones españoles explícitos al comienzo de frases en relato/resumen/preparación de talk/action. Rechaza esas afirmaciones antes de confirmar, preserva la captura y explica el motivo también al restaurarla; un reenvío no genera otra respuesta. No cubre todas las paráfrasis, idiomas, implicaciones ni ambigüedades y puede requerir reformular descripciones que parezcan acciones ejecutadas. Las preguntas explícitas siguen permitidas. No se presenta como certificación semántica ni como sustituto de la revisión de agencia del recorrido completo.
+
+Verificación: **401 pruebas completas con emulador, sin omisiones (84,150 s)**; después **76 afectadas correctas con emulador (41,864 s)** al preservar el error específico y añadir regresión de transporte real simulado/captura/reenvío sin otra llamada. Navegador afectado simulado correcto. Nueva inferencia real sobre esta corrección pendiente; no se repetirá automáticamente el ensayo anterior. No se alcanza por este bloque ninguno de los hitos excepcionales de prueba personal.
+
 ## Fuente privada de aventura breve
 
 Importación opcional al iniciar la aventura genérica: título, texto UTF-8 de hasta 12.000 caracteres (máximo 50.000 bytes serializados) y declaración de permiso de uso. Puede pegarse texto o leerse localmente un archivo .txt/.md; seleccionar/editar no llama a IA ni escribe. La fuente describe ficción y preparación, no instala reglas ni certifica una aventura/manual completo. No hay PDF/OCR en este bloque. No obliga a seguir una ruta ni convierte posibilidades o secretos del documento en hechos ocurridos.
