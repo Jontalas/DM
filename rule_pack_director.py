@@ -42,9 +42,10 @@ def _text(value,limit,empty=False):
 
 
 def prepare(state,operation,actor,text,kind,pack):
+    if not pack.ready(actor['sheet']):raise RulePackError('Completa las etapas de creación de tu personaje antes de iniciar o continuar la aventura')
     data=pack.document();memory=state.get('narrative') or {}
     available={key:spec for key,spec in data['actions'].items()
-        if key!=pack.creation and spec.get('permission','owner')=='owner'}
+        if key not in pack.creation_steps and spec.get('permission','owner')=='owner'}
     allowed=list(available) if operation=='talk' and kind=='action' and not memory.get('pending') else []
     history=[]
     for event in state['messages'][-16:]:
@@ -56,7 +57,7 @@ def prepare(state,operation,actor,text,kind,pack):
     request={'contract':CONTRACT,'operation':operation,'kind':kind,'turn':memory.get('revision',0),
         'campaign':{key:state[key] for key in ('tone','limits','goal')},
         'character':{'id':actor['id'],'name':actor['name'],'sheet':pack.view(actor['sheet'])},
-        'party':[{'id':c['id'],'name':c['name']} for c in state['characters']],
+        'party':[{'id':c['id'],'name':c['name']} for c in state['characters'] if pack.ready(c['sheet'])],
         'declaration':{'text':text,'character':actor['id']} if operation=='talk' else None,
         'rules':{'id':pack.id,'version':pack.version,'sha256':pack.digest,'name':data['name'],'edition':data['edition'],
             'coverage':data['coverage'],'fieldLabels':{key:spec['label'] for key,spec in data['fields'].items()},'actions':available},

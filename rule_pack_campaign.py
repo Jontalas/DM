@@ -167,8 +167,22 @@ def execute_action(state,body,me,prepare_record=None,narrative_call=None,draw=No
         name=_text(action['name'],80)
         sheet,trace=pack.create_character(me['id'],action.get('inputs',{}),physical=action.get('physical'),draw=draw)
         character={'id':secrets.token_hex(12),'name':name,'owner':me['id'],'sheet':sheet}
-        if trace is not None:character['creation']={'inputs':copy.deepcopy(action.get('inputs',{})),'trace':trace}
-        result['characters'].append(character);_system(result,'Ficha creada con valores iniciales del paquete: '+name,me['id'])
+        if trace is not None:
+            entry={'inputs':copy.deepcopy(action.get('inputs',{})),'trace':trace}
+            character['creation']={'steps':[entry]} if len(pack.creation_steps)>1 else entry
+        result['characters'].append(character)
+        _system(result,('Ficha creada: ' if pack.ready(sheet) else 'Creación iniciada; completa las etapas pendientes: ')+name,me['id'])
+    elif kind=='advance_pack_creation':
+        if set(action)-{'type','character','step','inputs','physical'} or not {'type','character','step'}<=set(action):raise RulePackError('Etapa de creación inválida')
+        pack=runtime(state,me['campaign'])
+        if state['package']['policy']!='provided-rules':raise RulePackError('El paquete todavía está en borrador')
+        character=next((c for c in result['characters'] if c['id']==action['character']),None)
+        if character is None:raise RulePackError('Ficha de creación no disponible')
+        if character['owner']!=me['id']:raise PermissionError('Solo el propietario elige las etapas de su personaje')
+        if len(pack.creation_steps)<2:raise RulePackError('Este creador no tiene etapas pendientes')
+        sheet,trace=pack.advance_character(character['sheet'],action['step'],action.get('inputs',{}),me['id'],physical=action.get('physical'),draw=draw)
+        character['sheet']=sheet;character['creation']['steps'].append({'inputs':copy.deepcopy(action.get('inputs',{})),'trace':trace})
+        _system(result,'Etapa confirmada para '+character['name']+': '+pack.document()['actions'][action['step']]['label']+('. Personaje listo para jugar.' if pack.ready(sheet) else '.'),me['id'])
     elif kind=='run_pack_action':
         if state.get('narrative') is not None:raise RulePackError('Declara la acción en la aventura para conectarla con la ficción y el estado')
         if set(action)-{'type','character','action','inputs','physical'} or not {'type','character','action'}<=set(action):raise RulePackError('Acción de paquete inválida')
@@ -201,6 +215,8 @@ def public_view(state,me):
         pack=runtime(state,me['campaign'])
         result['packageView']=_description(pack)|{'policy':state['package']['policy']}
         for character in result['characters']:
+            if pack.creation is not None:character['creationProgress']=pack.creation_progress(character['sheet'])
+            if not pack.ready(character['sheet']):character['creationInputs']=pack.creation_inputs(character['sheet'])
             character['view']=pack.view(character['sheet'])
     return result
 
@@ -254,13 +270,19 @@ def validate_restored(state,campaign='import-validation'):
         if not isinstance(character['sheet'],dict) or character['owner']!=character['sheet'].get('owner'):raise RulePackError('La ficha pertenece a otro propietario')
         pack.view(character['sheet'])
         if pack.creation is not None:
-            creation=character['creation'];_keys(creation,('inputs','trace'))
-            trace=creation['trace'];_keys(trace,('action','sources','rolls','changes','triggers'))
-            if not isinstance(trace['rolls'],dict) or any(not isinstance(v,dict) for v in trace['rolls'].values()):raise RulePackError('Dados de creación inválidos')
-            physical={key:value.get('values') for key,value in trace['rolls'].items() if value.get('rolled')}
-            sheet,expected=pack.create_character(character['owner'],creation['inputs'],physical=physical,
-                draw=lambda sides:(_ for _ in ()).throw(RulePackError('Faltan dados de creación; no se ha vuelto a tirar')))
-            if _comparable_trace(trace)!=_comparable_trace(expected):raise RulePackError('La creación no coincide con las reglas y dados guardados')
+            creation=character['creation']
+            if len(pack.creation_steps)>1:
+                _keys(creation,('steps',));entries=creation['steps']
+                if not isinstance(entries,list) or not 1<=len(entries)<=len(pack.creation_steps):raise RulePackError('Progreso de creación fuera de límites')
+            else:entries=[creation]
+            sheet=pack.new_sheet(character['owner'])
+            for index,entry in enumerate(entries):
+                _keys(entry,('inputs','trace'));trace=entry['trace'];_keys(trace,('action','sources','rolls','changes','triggers'))
+                if not isinstance(trace['rolls'],dict) or any(not isinstance(v,dict) for v in trace['rolls'].values()):raise RulePackError('Dados de creación inválidos')
+                physical={key:value.get('values') for key,value in trace['rolls'].items() if value.get('rolled')}
+                sheet,expected=pack.advance_character(sheet,pack.creation_steps[index],entry['inputs'],character['owner'],physical=physical,
+                    draw=lambda sides:(_ for _ in ()).throw(RulePackError('Faltan dados de creación; no se ha vuelto a tirar')))
+                if _comparable_trace(trace)!=_comparable_trace(expected):raise RulePackError('La creación no coincide con sus etapas, reglas y dados guardados')
             sheets[identifier]=sheet
         else:sheets[identifier]=pack.new_sheet(character['owner'])
     for event in state['messages']:

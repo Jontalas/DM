@@ -4,6 +4,7 @@ window.RulePackUI=(()=>{
  const scope=()=>snapshot.id+':'+snapshot.me.id;
  const shown=value=>typeof value==='boolean'?(value?'Sí':'No'):String(value??'');
  const list=items=>items.map(item=>`<li>${esc(item)}</li>`).join('');
+ const creationSteps=doc=>doc?.creation?.steps||(doc?.creation?.action?[doc.creation.action]:[]);
  function historyEntry(m,doc){
   if(m.kind==='system')return `<p>${esc(m.text)}</p>`;
   if(m.kind==='pack-talk'||m.kind==='pack-director')return `<article class="pack-story-message"><h4>${esc(m.speaker)}${m.mode==='ooc'?' · Fuera de personaje':''}</h4><p>${esc(m.text)}</p>${m.limitation?`<p class="notice">Límite del motor: ${esc(m.limitation)}</p>`:''}</article>`;
@@ -12,7 +13,7 @@ window.RulePackUI=(()=>{
  function followStory(key){if(!$('#app').hidden&&scope()===key)($('#packStoryResolve')||$('#packStoryContinue')||$('#packStoryTalk'))?.scrollIntoView({block:'nearest'});}
  function renderAdventure(root,doc){
   if(snapshot.state.package?.policy!=='provided-rules')return;
-  const key=scope(),state=snapshot.state,me=snapshot.me,memory=state.narrativeView,own=state.characters.filter(c=>c.owner===me.id);
+  const key=scope(),state=snapshot.state,me=snapshot.me,memory=state.narrativeView,own=state.characters.filter(c=>c.owner===me.id&&c.creationProgress?.complete!==false);
   const history=root.querySelector('.pack-history');history.querySelector('h3').textContent=memory?'Aventura y resoluciones':'Registro de resoluciones';
   const controls=document.createElement('div');controls.id='packAdventure';history.append(controls);
   if(!memory){
@@ -127,11 +128,15 @@ window.RulePackUI=(()=>{
   }));
  }
  function openAction(characterId,actionId){
-  const key=scope(),c=snapshot.state.characters.find(v=>v.id===characterId),doc=snapshot.state.package.document,action=doc.actions[actionId];
+  const key=scope(),c=snapshot.state.characters.find(v=>v.id===characterId),doc=snapshot.state.package.document;
+  const creating=c?.creationProgress?.complete===false&&c.creationProgress.next===actionId;
+  const action=creating?{...doc.actions[actionId],inputs:c.creationInputs||doc.actions[actionId].inputs}:doc.actions[actionId];
   if(!c||!action)return;
   const draftKey=key+':'+c.id+':'+actionId,saved=drafts.get(draftKey)||{inputs:{},physical:{}};
   modal(`<div class="eyebrow">ACCIÓN · ${esc(c.name)}</div><h2>${esc(action.label)}</h2><p>El servidor comprueba requisitos y calcula las consecuencias definidas por el paquete.</p><form id="packAction">${Object.entries(action.inputs).map(([id,spec],i)=>`<label>${esc(spec.label)}${input(spec,i,saved.inputs[id]??spec.default)}</label>`).join('')}${action.rolls.length?`<details><summary>Usar dados físicos, opcional</summary><p>Deja cada campo vacío para tirar en el servidor. Si lo rellenas, escribe todos sus dados separados por comas.</p>${action.rolls.map((r,i)=>`<label>${esc(r.id)}<input name="dice${i}" value="${esc(saved.physical[r.id]||'')}" placeholder="Por ejemplo: 3, 4" inputmode="numeric"></label>`).join('')}</details>`:''}<button class="primary">Resolver ${esc(action.label)}</button></form>`);
   const form=$('#packAction');
+  if(creating){$('#modalContent .eyebrow').textContent='CREAR PERSONAJE · '+c.name;$('#modalContent > p').textContent='Las opciones se comprueban con tus resultados anteriores.';form.querySelector('button.primary').textContent='Confirmar etapa';}
+  if(creating)form.insertAdjacentHTML('beforebegin',`<p class="notice">Etapa ${c.creationProgress.completed+1} de ${c.creationProgress.total}. Los resultados anteriores ya están guardados; esta decisión no vuelve a tirarlos.</p><dl class="pack-fields">${Object.entries(doc.fields).map(([id,spec])=>`<div><dt>${esc(spec.label)}</dt><dd>${esc(shown(c.view.fields[id]))}</dd></div>`).join('')}</dl>`);
   function remember(){drafts.set(draftKey,{inputs:formValues(form,action),physical:Object.fromEntries(action.rolls.map((r,i)=>[r.id,form.elements['dice'+i].value]))});}
   form.oninput=remember;form.onchange=remember;
   form.onsubmit=run(async()=>{
@@ -141,15 +146,16 @@ window.RulePackUI=(()=>{
     if(!/^\d+(\s*,\s*\d+)*$/.test(raw))throw Error('Escribe dados enteros separados por comas.');
     return [[r.id,raw.split(',').map(Number)]];
    }));
-   await act('run_pack_action',{character:c.id,action:actionId,inputs:formValues(form,action),...(Object.keys(physical).length?{physical}:{})});
+   await act(creating?'advance_pack_creation':'run_pack_action',{character:c.id,...(creating?{step:actionId}:{action:actionId}),inputs:formValues(form,action),...(Object.keys(physical).length?{physical}:{})});
    drafts.delete(draftKey);$('#modal').close();
+   if(creating){const current=snapshot.state.characters.find(v=>v.id===c.id);if(current?.creationProgress?.complete===false)openAction(c.id,current.creationProgress.next);}
   });
  }
  function openCharacter(id){
   const c=snapshot.state.characters.find(v=>v.id===id);if(!c)return;
   const doc=snapshot.state.package.document;
   modal(`<div class="eyebrow">FICHA · ${esc(doc.name)}</div><h2>${esc(c.name)}</h2><dl class="pack-fields">${Object.entries(doc.fields).map(([key,spec])=>`<div><dt>${esc(spec.label)}</dt><dd>${esc(shown(c.view.fields[key]))}</dd></div>`).join('')}</dl><small>Valores calculados por el motor. Los cambios se realizan mediante acciones del paquete.</small>`);
-  if(c.creation)$('#modalContent').insertAdjacentHTML('beforeend',`<details><summary>Origen de la ficha: elecciones y dados</summary>${Object.entries(c.creation.inputs).map(([id,value])=>`<p>${esc(doc.actions[doc.creation.action].inputs[id]?.label||id)}: ${esc(shown(value))}</p>`).join('')}${Object.entries(c.creation.trace.rolls).filter(([,r])=>r.rolled).map(([id,r])=>`<p>${esc(id)}: ${esc(r.values.join(', '))} → ${r.total} · ${r.origin==='physical'?'dados físicos':'servidor'}</p>`).join('')}</details>`);
+  if(c.creation)$('#modalContent').insertAdjacentHTML('beforeend',`<details><summary>Origen de la ficha: elecciones y dados</summary>${(c.creation.steps||[c.creation]).map(entry=>`<h4>${esc(doc.actions[entry.trace.action].label)}</h4>${Object.entries(entry.inputs).map(([id,value])=>`<p>${esc(doc.actions[entry.trace.action].inputs[id]?.label||id)}: ${esc(shown(value))}</p>`).join('')}${Object.entries(entry.trace.rolls).filter(([,r])=>r.rolled).map(([id,r])=>`<p>${esc(id)}: ${esc(r.values.join(', '))} → ${r.total} · ${r.origin==='physical'?'dados físicos':'servidor'}</p>`).join('')}`).join('')}</details>`);
  }
  function render(){
   const s=snapshot.state,me=snapshot.me;
@@ -164,20 +170,26 @@ window.RulePackUI=(()=>{
   if($('#packActivate'))$('#packActivate').onclick=()=>review(s.package.document,s.packageView);
   if($('#packCreate')){
    const nameKey=scope()+':new-name';$('#packCreate').elements.name.value=drafts.get(nameKey)||'';
-   const creation=doc.creation?doc.actions[doc.creation.action]:null,choiceKey=scope()+':creation-choices';
+   const creation=creationSteps(doc).length?doc.actions[creationSteps(doc)[0]]:null,choiceKey=scope()+':creation-choices';
    if(creation){
     const saved=drafts.get(choiceKey)||{};
     $('#packCreate h3').textContent='Crear tu personaje';
     $('#packCreate p').textContent=creation.rolls.length?'Elige las opciones de tu personaje. Al confirmar, se tiran los dados y se calcula la ficha según este paquete.':'Elige las opciones de tu personaje. El motor comprobará los requisitos y calculará la ficha.';
     $('#packCreate button').insertAdjacentHTML('beforebegin',`<fieldset><legend>${esc(creation.label)}</legend>${Object.entries(creation.inputs).map(([id,spec],i)=>`<label>${esc(spec.label)}${input(spec,i,saved[id]??spec.default)}</label>`).join('')}</fieldset>`);
     $('#packCreate button').textContent=creation.rolls.length?'Crear personaje y tirar':'Crear personaje';
+    if(creationSteps(doc).length>1){$('#packCreate p').textContent='Confirma la primera etapa. Después elegirás las siguientes opciones con sus resultados ya guardados.';$('#packCreate button').textContent=creation.rolls.length?'Comenzar creación y tirar':'Comenzar creación';}
    }
    $('#packCreate').oninput=e=>{drafts.set(nameKey,e.currentTarget.elements.name.value);if(creation)drafts.set(choiceKey,formValues(e.currentTarget,creation));};
    $('#packCreate').onchange=$('#packCreate').oninput;
-   $('#packCreate').onsubmit=run(async e=>{await act('create_pack_sheet',{name:e.target.elements.name.value,...(creation?{inputs:formValues(e.target,creation)}:{})});drafts.delete(nameKey);drafts.delete(choiceKey);if($('#packCreate'))$('#packCreate').elements.name.value='';});
+   $('#packCreate').onsubmit=run(async e=>{await act('create_pack_sheet',{name:e.target.elements.name.value,...(creation?{inputs:formValues(e.target,creation)}:{})});drafts.delete(nameKey);drafts.delete(choiceKey);if($('#packCreate'))$('#packCreate').elements.name.value='';const pending=snapshot.state.characters.find(c=>c.owner===snapshot.me.id&&c.creationProgress?.complete===false);if(pending)openAction(pending.id,pending.creationProgress.next);});
   }
   $$('[data-pack-character]').forEach(b=>b.onclick=()=>openCharacter(b.dataset.packCharacter));
-  $$('[data-pack-action]').forEach(b=>{if(b.dataset.packAction===doc?.creation?.action)b.remove();else b.onclick=()=>openAction(b.dataset.packTarget,b.dataset.packAction);});
+  $$('[data-pack-action]').forEach(b=>{const c=s.characters.find(c=>c.id===b.dataset.packTarget);if(creationSteps(doc).includes(b.dataset.packAction)||c?.creationProgress?.complete===false)b.remove();else b.onclick=()=>openAction(b.dataset.packTarget,b.dataset.packAction);});
+  for(const c of s.characters.filter(c=>c.creationProgress?.complete===false)){
+   const card=$$('[data-pack-character]').find(button=>button.dataset.packCharacter===c.id).closest('article');
+   card.insertAdjacentHTML('beforeend',`<p class="notice">Creación en curso · ${c.creationProgress.completed} de ${c.creationProgress.total} etapas confirmadas.</p>${c.owner===me.id?`<button class="primary" data-pack-creation="${esc(c.id)}">Continuar creación</button>`:''}`);
+  }
+  $$('[data-pack-creation]').forEach(b=>b.onclick=()=>{const c=s.characters.find(c=>c.id===b.dataset.packCreation);openAction(c.id,c.creationProgress.next);});
   if($('#packExport'))$('#packExport').onclick=()=>$('#exportBtn').onclick();
   if($('#packImport'))$('#packImport').onchange=run(async e=>{
    const file=e.target.files[0];if(!file)return;if(file.size>8000000)throw Error('La copia supera el tamaño admitido.');

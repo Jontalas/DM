@@ -25,7 +25,7 @@ Expresión: literal escalar; {ref:[fields,id]}, {ref:[inputs,id]}, {ref:[rolls,i
 Incluye ejemplos deterministas con nombre, steps:[{action,inputs,physical:{id:[dados]}}] y expected:{campo:valor}. Se empieza con una ficha nueva en cada ejemplo, sin modificar valores iniciales por fuera. En la respuesta, stepsJson es el texto JSON de la lista steps y expectedJson el texto JSON del objeto expected. Aporta todos los dados necesarios; los ejemplos no pueden usar azar. Prueba éxito/fallo y límites relevantes que permitan las fuentes. Estos ejemplos comprueban coherencia del paquete, no validan por sí solos el manual. No copies párrafos del libro en comentarios o etiquetas. Respuesta JSON ajustada al esquema.'''
 
 PROMPT+='''
-Capacidad character-creation: raíz opcional creation:{action:id}. Esa acción existente, con permiso owner, define las decisiones, requisitos, tiradas y efectos de creación en una sola resolución; no se puede ejecutar durante la partida. El formulario se genera desde sus inputs. Los valores initial son el estado previo a esa resolución y deben estar justificados por las fuentes, nunca estadísticas jugables inventadas. Si hacen falta etapas interactivas dependientes de resultados anteriores que una resolución no expresa, devuelve unsupported. Para un paquete con creation, cada ejemplo comienza con esa acción y sus decisiones/dados explícitos; después solo acciones de partida. No vuelvas a generar atributos para ejecutar una acción normal.'''
+Capacidad character-creation: raíz opcional creation:{action:id} para una resolución. Con staged-character-creation también puedes usar creation:{steps:[id1,id2,...]}: entre una y doce acciones owner distintas y ordenadas, con decisiones posteriores a resultados confirmados. Los formularios se generan desde los inputs de cada acción. Cada etapa aplica sus requisitos, dados, efectos y desencadenantes; no puede repetirse, adelantarse ni ejecutarse durante el juego. Los valores initial son el estado previo y deben estar justificados por las fuentes, nunca estadísticas inventadas. Los ejemplos comienzan por TODAS las etapas de creación en orden, con decisiones y dados explícitos, y terminan con personaje completo antes de las acciones de partida. Grafos de creación, retrocesos para repetir dados y etapas variables no están soportados; indica la limitación. No vuelvas a generar atributos para una acción normal.'''
 
 SCHEMA={'type':'object','properties':{
  'status':{'type':'string','enum':['candidate','ambiguous','unsupported']},
@@ -143,10 +143,11 @@ def validate_reply(prepared,result):
         sheet=pack.new_sheet('authoring-example')
         for index,step in enumerate(steps):
             _keys(step,('action','inputs','physical'))
-            creating=pack.creation is not None and index==0
-            if creating and step['action']!=pack.creation:raise RulePackError('El ejemplo debe comenzar con la creación del personaje')
+            creating=index<len(pack.creation_steps)
+            if creating and step['action']!=pack.creation_steps[index]:raise RulePackError('El ejemplo debe confirmar las etapas de creación en su orden')
             sheet,_=pack.execute(sheet,step['action'],step['inputs'],'authoring-example',host=True,physical=step['physical'],
                 draw=lambda sides:(_ for _ in ()).throw(RulePackError('Faltan dados explícitos en un ejemplo; no se ha tirado')),creating=creating)
+        if not pack.ready(sheet):raise RulePackError('El ejemplo debe terminar con la creación completa del personaje')
         fields=pack.view(sheet)['fields']
         if any(canonical(fields[key])!=canonical(value) for key,value in expected.items()):raise RulePackError('El paquete no cumple sus propios ejemplos')
         checks.append({'name':example['name'],'steps':copy.deepcopy(steps),'expected':copy.deepcopy(expected),'status':'passed'})

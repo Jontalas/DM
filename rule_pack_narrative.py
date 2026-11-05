@@ -79,6 +79,7 @@ def apply(state,action,me,pack,call=None,draw=None,source_loader=None):
             if continuation is None:raise RulePackError('No hay un resultado nuevo pendiente de narración')
             actor=_actor(result,continuation['character'],me);operation='continue';text='';mode='action'
         else:raise RulePackError('Operación narrativa desconocida')
+    if not pack.ready(actor['sheet']):raise RulePackError('Completa las etapas de creación de tu personaje antes de entrar en la aventura')
     # Reserve growth before a potentially billable call. No private source read.
     game={key:value for key,value in state.items() if key not in ('authoring','authoringWorkspace','adventureSource')}
     if len(json.dumps(game,ensure_ascii=False).encode('utf-8'))>650000 or len(state['messages'])>4997:raise RulePackError('No hay espacio reservado para otra intervención; no se ha llamado a IA')

@@ -264,6 +264,53 @@ class RulePackServerTests(unittest.TestCase):
         self.assertEqual(recovered['sheet']['fields'],character['sheet']['fields'])
         self.assertEqual(recovered['creation'],character['creation'])
 
+    def test_staged_creation_resumes_partial_copy_and_rejects_ownership_order_and_reroll(self):
+        self.action('install_rule_pack',package=document('original-staged-creation-example'),policy='provided-rules')
+        self.action('create_pack_sheet',name='Aria',physical={'aptitude':[1]})
+        before=self.state();character=before['state']['characters'][0]
+        self.assertFalse(character['creationProgress']['complete']);self.assertEqual(character['creationInputs']['focus']['max'],1)
+        with patch.object(pack_director,'propose',side_effect=AssertionError('Partial character called director')):
+            self.rejected(lambda:self.action('start_pack_adventure',character=character['id']))
+        guest=self.request('/api/join',{'name':'Luis','invite':before['invite']})['token']
+        self.rejected(lambda:self.action('advance_pack_creation',guest,character=character['id'],step='training',inputs={'role':'cronista','focus':1}),403)
+        self.rejected(lambda:self.action('run_pack_action',character=character['id'],action='explore'))
+        self.rejected(lambda:self.action('advance_pack_creation',character=character['id'],step='aptitude',physical={'aptitude':[6]}))
+        self.rejected(lambda:self.action('advance_pack_creation',character=character['id'],step='training',inputs={'role':'cronista','focus':2}))
+        exported=self.request('/api/export',{},self.token)
+        other=self.request('/api/create',{'player':'Eva','title':'Staged copy','ruleset':'rule-pack'})['token']
+        with patch('action_randomness.hmac.digest',side_effect=AssertionError('Restoring or training rolled')):
+            self.action('import',other,campaign=exported)
+            state=self.state(other);body={'id':secrets.token_hex(12),'version':state['version'],'type':'advance_pack_creation',
+                'character':character['id'],'step':'training','inputs':{'role':'cronista','focus':1}}
+            with patch.object(server.STORE,'commit',side_effect=Unavailable('Failed before stage commit')):
+                with self.assertRaises(urllib.error.HTTPError) as error:self.request('/api/action',body,other)
+                self.assertEqual(error.exception.code,503);error.exception.close()
+            self.assertEqual(self.state(other),state)
+            self.request('/api/action',body,other);self.assertTrue(self.request('/api/action',body,other)['duplicate'])
+        final=self.state(other)['state']['characters'][0]
+        self.assertTrue(final['creationProgress']['complete']);self.assertEqual(final['sheet']['fields']['talent'],2)
+        self.assertEqual(len(final['creation']['steps']),2)
+        self.rejected(lambda:self.action('advance_pack_creation',other,character=character['id'],step='training',inputs={'role':'cronista','focus':0}))
+
+    def test_later_creation_step_server_dice_survive_failure_before_commit(self):
+        data=document('original-staged-creation-example')
+        data['sources'][0]['locator']+=' En esta variante original, la formación tira además 1d4 y lo suma a aptitud; máximo final 12.'
+        data['fields']['talent']['max']=12
+        data['actions']['training']['rolls']=[{'id':'bonus','count':1,'sides':4,'keep':'all'}]
+        data['actions']['training']['effects'][1]['value']['args'].append({'ref':['rolls','bonus','total']})
+        self.action('install_rule_pack',package=data,policy='provided-rules');self.action('create_pack_sheet',name='Aria',physical={'aptitude':[1]})
+        before=self.state();cid=before['state']['characters'][0]['id'];staged=[]
+        body={'id':secrets.token_hex(12),'version':before['version'],'type':'advance_pack_creation','character':cid,'step':'training','inputs':{'role':'cronista','focus':1}}
+        def fail(*args,**kwargs):staged.append(copy.deepcopy(args[5]));raise Unavailable('Stage commit failed')
+        with patch.object(server.STORE,'commit',side_effect=fail):
+            with self.assertRaises(urllib.error.HTTPError) as error:self.request('/api/action',body,self.token)
+            self.assertEqual(error.exception.code,503);error.exception.close()
+        self.assertEqual(self.state(),before)
+        self.request('/api/action',body,self.token);self.assertTrue(self.request('/api/action',body,self.token)['duplicate'])
+        after=self.state()['state']['characters'][0]
+        self.assertEqual(after['creation'],staged[0]['characters'][0]['creation'])
+        self.assertEqual(after['sheet'],staged[0]['characters'][0]['sheet'])
+
     def test_generic_director_requests_engine_dice_and_continues_from_confirmed_state(self):
         self.action('install_rule_pack',package=document('live-lantern-example'),policy='provided-rules')
         self.action('create_pack_sheet',name='Aria');character=self.state()['state']['characters'][0]['id']

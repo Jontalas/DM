@@ -1,5 +1,15 @@
 # Continuidad del desarrollo autónomo
 
+## Creación por etapas con elecciones dependientes — 5 de noviembre de 2026
+
+Prompt consolidado confirmado en producción `fce9ad40234dea2e43f641283911fdad9174f8c3`, Render `7572367539` success, revisión y salud HTTPS correctas. Ninguna inferencia posterior a las tres del ensayo con incidencia narrativa.
+
+Nueva capacidad aditiva `staged-character-creation`: `creation.steps` de 1–12 acciones owner únicas. Revisión/orden controlan progreso; no se saltan ni repiten pasos y no se juegan acciones ni se invoca director con personajes incompletos. Requisitos, cálculos, dados y triggers usan motor actual, sin fórmulas por juego. `creation.action` y trazas antiguas se conservan. Avance por API valida propietario/paso/versión; semillas de dados cubren etapas posteriores con fallo antes del commit. Copias parciales y finales reejecutan trazas sin RNG, reasignan propietario y rechazan datos adulterados. Preparador exige todas las etapas en ejemplos; composición conserva compatibilidad exacta.
+
+UI generada abre la etapa siguiente tras confirmar, muestra resultados previos/progreso, reanuda tras recarga, deriva límites numéricos simples contra campos existentes, oculta juego en personajes parciales y permite consultar origen por etapas. No hay IA por elección ni consulta. Ejemplo original CC0 trazado en JSON; no se atribuye a Pathfinder. No soporta ramas, retrocesos o creación completa de manuales por este hecho.
+
+**412 pruebas completas con emulador, sin omisiones (87,968 s)**. Después **35 afectadas correctas (0,102 s)** al añadir rechazo anterior a leer fuente para personajes incompletos. Afectadas previas 94 con emulador correctas (45,541 s). Navegador nuevo correcto: dato aleatorio confirmado antes de elegir, límite de enfoque derivado, recarga sin repetir dado, consulta local sin acciones, confirmación perdida y reenvío con mismo id, personaje jugable tras última etapa y móvil revisado. Se afinó el selector del test para etiquetas de select sin depender del orden de claves JSON. Navegador de aventura existente también correcto. Despliegue/verificación de campaña técnica sin IA pendientes; continuar después sin esperar intervención ni activar hito personal.
+
 ## Agencia desplegada y prompt consolidado — 5 de noviembre de 2026
 
 `e3a357822136c084275b564c1563c4f80760d5cb` desplegado, Render `7572278011` success, revisión exacta y salud HTTPS comprobadas. Detector acotado y motivo de rechazo ya activos. No se altera el historial del ensayo técnico con incidencia ni se hace otra inferencia para sustituirlo.

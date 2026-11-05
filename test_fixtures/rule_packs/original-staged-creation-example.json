@@ -1,0 +1,30 @@
+{
+  "format":"cronicas-rules-1","id":"original-staged-creation-example","version":"1.0.0","engineVersion":1,
+  "name":"Exploradores por etapas","edition":"Ejemplo propio 1",
+  "license":{"id":"CC0-1.0","attribution":"Reglas originales de prueba; no representan un juego comercial."},
+  "sources":[{"id":"staged-source","title":"Creación original en dos etapas","edition":"1","locator":"Estado previo: oficio pendiente, aptitud 0, energía 3 y marcadores falsos. Primera etapa: tirar 1d6 para aptitud. Segunda, tras ver el dado: elegir cronista o vigía y un enfoque entero de 0 a 2 que no supere la aptitud obtenida; sumar enfoque a aptitud. Después explorar cuesta 1 energía y 2d6 tiene éxito con suma de 7 o más. Energía cero activa agotamiento. Los desencadenantes se comprueban después de cada etapa y acción."}],
+  "coverage":{"implemented":["Creación de dos etapas con elección legal posterior a dados confirmados","Exploración original de ejemplo"],"pending":["No representa Pathfinder ni un creador reglamentario completo"]},
+  "requires":["scalar-fields","expressions","dice","actions","triggers","character-creation","staged-character-creation"],
+  "creation":{"steps":["aptitude","training"]},
+  "fields":{
+    "role":{"type":"text","label":"Oficio","initial":"pendiente","options":["pendiente","cronista","vigía"],"sources":["staged-source"]},
+    "talent":{"type":"integer","label":"Aptitud","initial":0,"min":0,"max":8,"sources":["staged-source"]},
+    "energy":{"type":"integer","label":"Energía","initial":3,"min":0,"max":3,"sources":["staged-source"]},
+    "success":{"type":"boolean","label":"Éxito","initial":false,"sources":["staged-source"]},
+    "exhausted":{"type":"boolean","label":"Agotamiento","initial":false,"sources":["staged-source"]}
+  },
+  "tables":{},
+  "actions":{
+    "aptitude":{"label":"Descubrir tu aptitud","sources":["staged-source"],"inputs":{},"requires":[],
+      "rolls":[{"id":"aptitude","count":1,"sides":6,"keep":"all"}],
+      "effects":[{"field":"talent","value":{"ref":["rolls","aptitude","total"]}}]},
+    "training":{"label":"Elegir tu formación","sources":["staged-source"],
+      "inputs":{"role":{"type":"text","label":"Oficio","options":["cronista","vigía"]},"focus":{"type":"integer","label":"Enfoque","min":0,"max":2,"default":0}},
+      "requires":[{"op":"le","args":[{"ref":["inputs","focus"]},{"ref":["fields","talent"]}]}],"rolls":[],
+      "effects":[{"field":"role","value":{"ref":["inputs","role"]}},{"field":"talent","value":{"op":"add","args":[{"ref":["fields","talent"]},{"ref":["inputs","focus"]}]}}]},
+    "explore":{"label":"Explorar","sources":["staged-source"],"inputs":{},"requires":[{"op":"gt","args":[{"ref":["fields","energy"]},0]}],
+      "rolls":[{"id":"pool","count":2,"sides":6,"keep":"all"}],
+      "effects":[{"field":"energy","value":{"op":"sub","args":[{"ref":["fields","energy"]},1]}},{"field":"success","value":{"op":"ge","args":[{"ref":["rolls","pool","total"]},7]}}]}
+  },
+  "triggers":{"exhaustion":{"label":"Agotamiento","sources":["staged-source"],"when":{"op":"eq","args":[{"ref":["fields","energy"]},0]},"effects":[{"field":"exhausted","value":true}]}}
+}
