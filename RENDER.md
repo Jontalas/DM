@@ -1,5 +1,7 @@
 # Desplegar en Render con Firebase y Claude Haiku
 
+Estado comprobado el 5 de noviembre de 2026: servicio existente `https://dm-cronicas.onrender.com`, revisión `7215c0a`, salud correcta, Firebase y Anthropic configurados. Conversión real acotada de reglas propias y recuperación sin repetir inferencia verificadas; catálogo público solo Pathfinder parcial. El espacio genérico sigue experimental y no ofrece todavía aventura dirigida por IA. Evidencia y pendientes actuales en TRABAJO.md; las instrucciones siguientes sirven para preparar o reproducir el alojamiento.
+
 La arquitectura actual es **Render + Cloud Firestore + Firebase Storage + Claude Haiku**. Render no almacena bases de datos ni necesita un disco persistente para esta versión.
 
 ## Preparación en Firebase y Anthropic
@@ -52,4 +54,4 @@ Se mantiene una sola instancia para conservar el orden local de generación. Fir
 
 La sincronización actual consulta el servidor cada 2,5 segundos y produce lecturas a Firebase, aunque una versión sin cambios evita descargar otra vez la instantánea. Configura seguimiento del consumo en tus cuentas. La arquitectura no elimina las limitaciones de reglas descritas en [README.md](README.md).
 
-El código y el emulador están probados localmente. No se ha creado ni validado un despliegue real en tu cuenta de Render/Firebase/Anthropic durante esta sesión.
+Se han probado código y emulador localmente, y el servicio existente por HTTPS. Esto no certifica cobertura completa de reglas ni una campaña autónoma completa; consultar TRABAJO.md para la evidencia de cada recorrido. No se han contratado servicios adicionales.
