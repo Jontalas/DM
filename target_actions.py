@@ -54,7 +54,7 @@ def resolve(state,action,me,pack,draw=None):
     result['messages'].append({'kind':'pack-action','character':pending['character'],'actor':me['id'],'speaker':me['name'],'host':bool(me['host']),
         'time':time.time(),'action':pending['action'],'inputs':copy.deepcopy(inputs),'trace':public,'targetRef':{'id':binding['target'],'npc':binding['npc']}})
     shared=next(actor for actor in state['actors'] if actor['id']==binding['target'])['publicFields']
-    result.setdefault('targetResolutions',[]).append({'message':position,'binding':copy.deepcopy(binding),'inputs':copy.deepcopy(inputs),'trace':trace,'sharedFields':copy.deepcopy(shared)})
+    result.setdefault('targetResolutions',[]).append({'message':position,'binding':copy.deepcopy(binding),'inputs':copy.deepcopy(inputs),'trace':trace,'sharedFields':copy.deepcopy(shared),'continuationScope':'public'})
     if len(canonical(result['targetResolutions']).encode('utf-8'))>target_journal.MAX_BYTES:raise RulePackError('La evidencia privada supera su límite; no se ha aplicado la acción')
     next(c for c in result['characters'] if c['id']==pending['character'])['sheet']=player
     next(a for a in result['actors'] if a['id']==binding['target'])['sheet']=other

@@ -25,6 +25,7 @@ DISCOVERY_CONTRACT='rule-pack-director-discoveries-3'
 PLAN_CONTRACT='rule-pack-director-plan-start-4'
 TARGET_CONTRACT='rule-pack-director-target-facts-5'
 ACTORS_PLAN_CONTRACT='rule-pack-director-plan-actors-start-6'
+PUBLIC_TARGET_CONTRACT='rule-pack-director-target-public-facts-7'
 DISCOVERY_GUIDANCE='Los descubrimientos confirmados son información ya revelada. En continue, discoveriesRevealed de verifiedResolution identifica los revelados por ESTA resolución; confirmedDiscoveries conserva los anteriores. No confundas preparación de la fuente con hechos ocurridos ni vuelvas a bloquear un descubrimiento confirmado tras otra tirada.'
 MAX_RESPONSE=50000
 PROMPT='''Diriges en español una aventura persistente sin maestro humano. Usa exclusivamente el catálogo del paquete aportado; su fidelidad al manual no está certificada. No importes reglas por conocer el nombre de un juego. Solo el motor tira dados y modifica fichas, recursos, condiciones y objetivos. Si falta una mecánica, indica limitation y deja proposal vacía; no inventes estadísticas, dificultades, efectos ni administración para el jugador. Puedes dirigir ficción sin efectos reglamentarios. Una tirada pendiente de una acción disponible no es una limitación de cobertura: propón esa acción con limitation="" y explica la tirada pendiente en proposal.reason. Nunca combines una propuesta con limitation no vacía.
@@ -63,6 +64,8 @@ def prepare(state,operation,actor,text,kind,pack,prepared_goals=None,prepared_np
             history.append(entry)
     continuation=memory.get('continuation')
     confirmed=copy.deepcopy(state['messages'][continuation['message']]) if operation=='continue' else None
+    from target_journal import public_continuation
+    public_target=operation=='continue' and public_continuation(state)
     request={'contract':CONTRACT,'operation':operation,'kind':kind,'turn':memory.get('revision',0),
         'campaign':{key:state[key] for key in ('tone','limits','goal')},
         'character':{'id':actor['id'],'name':actor['name'],'sheet':pack.view(actor['sheet'])},
@@ -81,10 +84,10 @@ def prepare(state,operation,actor,text,kind,pack,prepared_goals=None,prepared_np
         request['providedPreparation']='Los objetivos aportados son preparación estable; conserva sus identidades, títulos y detalles. No son decisiones del jugador ni hechos ya ocurridos.'
     if memory.get('places'):request['directorKnowledge']['places']=world.validate_places(memory['places'])
     if memory.get('relationships'):request['directorKnowledge']['relationships']=world.validate_relationships(memory['relationships'],memory.get('npcs',[]),memory.get('places',[]))
-    if state.get('adventureSource') is not None:
+    if state.get('adventureSource') is not None and not public_target:
         from adventure_source import fragments
         request['directorKnowledge']['adventureSource']=fragments(state['adventureSource'],text+' '+memory.get('summary',''),opening=operation=='start')
-    elif state.get('adventureSourceRef') is not None:raise RulePackError('Falta recuperar la fuente privada de esta aventura; no se ha llamado a IA')
+    elif state.get('adventureSourceRef') is not None and not public_target:raise RulePackError('Falta recuperar la fuente privada de esta aventura; no se ha llamado a IA')
     if 'action-results' in data['requires']:
         request['contract']=FACTS_CONTRACT
         if operation=='continue':
@@ -112,6 +115,13 @@ def prepare(state,operation,actor,text,kind,pack,prepared_goals=None,prepared_np
         request['rules']['actions']={};request['history']=[]
         if 'summary' in request:request['priorSummary']=request.pop('summary')
         request['targetContract']='La identidad, contexto compartido y campos publicados de verifiedResolution.target son los únicos hechos públicos confirmados sobre esa ficha. sharedPerception=false no revela dónde está el PNJ ni la causa de perder contacto. No inventes valores privados, heridas, derrota, movimientos o decisiones que esos hechos no acrediten.'
+        if public_target:
+            request['contract']=PUBLIC_TARGET_CONTRACT
+            request['directorKnowledge']={'npcs':[item|{'known':True,'private':''} for item in world.public_view(memory.get('npcs',[]))],
+                'places':[item|{'known':True,'private':''} for item in world.public_view(memory.get('places',[]))],
+                'objectives':[item|{'known':True,'private':''} for item in objectives.public_view(memory.get('objectives',[]))]}
+            request.pop('priorSummary',None)
+            request['targetContract']+=' Narra exclusivamente esta acción seleccionada y sus hechos confirmados. No la conviertas en otra investigación por la cercanía de un objetivo. No recibes fuente, notas privadas ni resumen anterior: no reconstruyas secretos, intenciones o detalles ausentes. Esta continuación no crea ni actualiza registros; el servidor conserva las notas privadas anteriores.'
     raw=canonical(request).encode('utf-8')
     if len(raw)>65000:raise RulePackError('El contexto de esta aventura supera el límite del director; no se ha llamado a IA')
     return {'request':request,'sha256':hashlib.sha256(raw).hexdigest(),'sourceScheme':'director-v1',
@@ -153,11 +163,15 @@ def schema(prepared):
         result['properties']['objectiveCheck']['properties']['objective']['enum']=['',*objective_ids]
         result['required'].append('objectiveCheck')
     else:result['properties'].pop('objectiveCheck')
+    if request['contract']==PUBLIC_TARGET_CONTRACT:
+        for key in ('npcUpdates','placeUpdates','relationshipUpdates','objectiveUpdates','objectiveCheck'):result['properties'].pop(key,None)
     return result
 
 
 def validate_reply(prepared,reply):
     if not isinstance(reply,dict) or set(reply)-{'usage','recovery','normalization','npcUpdates','objectiveUpdates','objectiveCheck','placeUpdates','relationshipUpdates'}!={'narration','limitation','summary','preparation','proposal'}:raise RulePackError('Respuesta del director incompleta o con operaciones no permitidas')
+    if prepared['request']['contract']==PUBLIC_TARGET_CONTRACT and any(reply.get(key) for key in ('npcUpdates','placeUpdates','relationshipUpdates','objectiveUpdates','objectiveCheck')):
+        raise RulePackError('Esta continuación pública no modifica registros de la aventura')
     result={key:_text(reply[key],limit,empty) for key,limit,empty in
         [('narration',10000,False),('limitation',1000,True),('summary',4000,False),('preparation',6000,False)]}
     validate_pending_reply(prepared['request'],result)

@@ -258,6 +258,16 @@ class RulePackServerTests(unittest.TestCase):
         self.action('import',campaign=exported)
         self.assertEqual(self.request('/api/export',{},self.token)['state']['actors'],exported['state']['actors'])
 
+        with patch.object(server.STORE,'load_adventure_source',side_effect=AssertionError('Public result fetched source')) as source_read:
+            with patch.object(pack_director,'propose',return_value=narrative_reply()) as continuation:
+                self.action('continue_pack_adventure')
+                request=continuation.call_args.args[0]['request']
+                self.assertEqual(request['contract'],pack_director.PUBLIC_TARGET_CONTRACT)
+                self.assertNotIn('adventureSource',request['directorKnowledge'])
+                self.assertNotIn('preparation',request['directorKnowledge'])
+                self.assertEqual(continuation.call_count,1)
+            source_read.assert_not_called()
+
     def test_abstract_target_request_and_resolution_survive_failed_atomic_commit(self):
         from test_target_context import AbstractTargetContextTests
         fixture=AbstractTargetContextTests();fixture.setUp()

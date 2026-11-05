@@ -14,6 +14,12 @@ MAX_RECORDS=128
 MAX_BYTES=256000
 
 
+def public_continuation(state):
+    continuation=(state.get('narrative') or {}).get('continuation')
+    return continuation is not None and any(record.get('message')==continuation['message']
+        and record.get('continuationScope')=='public' for record in state.get('targetResolutions',[]))
+
+
 def _no_draw(sides):raise RulePackError('Faltan dados confirmados; no se ha vuelto a tirar')
 
 
@@ -45,7 +51,8 @@ def replay(state,pack,initial_players):
         raise RulePackError('Registro privado de resoluciones fuera de límites')
     private={};last=-1
     for record in records:
-        if not isinstance(record,dict) or not {'message','binding','inputs','trace'}<=set(record) or set(record)-{'message','binding','inputs','trace','sharedFields'}:raise RulePackError('Evidencia privada incompleta')
+        if not isinstance(record,dict) or not {'message','binding','inputs','trace'}<=set(record) or set(record)-{'message','binding','inputs','trace','sharedFields','continuationScope'}:raise RulePackError('Evidencia privada incompleta')
+        if 'continuationScope' in record and record['continuationScope']!='public':raise RulePackError('Ámbito de continuación inválido')
         if 'sharedFields' in record:
             fields=record['sharedFields']
             if not isinstance(fields,list) or len(fields)>16 or any(not isinstance(field,str) or field not in document['fields'] for field in fields) or len(set(fields))!=len(fields):

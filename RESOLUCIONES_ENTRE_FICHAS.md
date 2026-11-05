@@ -1,5 +1,15 @@
 # Resoluciones entre fichas: kernel y siguiente integración
 
+## Corrección tras evaluación real del contrato 5
+
+El ensayo acotado con apertura de PNJ preparados y continuación real terminó con mecánicas correctas pero **aceptación narrativa negativa**: reveló la carta privada de Arda y relacionó la prueba abstracta con investigar la marca. Dos llamadas agotadas (11.354 tokens entrada/868 salida); evidencia original conservada, sin reintentos para buscar una aceptación.
+
+La causa inmediata verificable es que el contrato 5 todavía enviaba notas privadas, fuente y resumen anterior a una continuación cuya tarea era explicar únicamente hechos públicos confirmados. Una instrucción textual no garantizó su separación. La corrección local asigna `continuationScope:public` a las nuevas resoluciones y utiliza `rule-pack-director-target-public-facts-7`: proyección de registros conocidos con private vacío, evidencia canónica, sin fuente/preparación/resumen anterior y sin actualizaciones de registros. Conserva la preparación real del director para las siguientes intervenciones, y evita leer la fuente remota solo para narrar ese resultado. No intenta certificar por código toda la semántica narrativa.
+
+Las resoluciones antiguas conservan contrato 5 y sus capturas; no se reescribe el ensayo fallido. Comparación local sobre el mismo resultado original: 4.189→3.718 bytes y carta ausente en el contexto nuevo, cero inferencias. Pruebas específicas de datos excluidos, fuente no recuperada, notas no sobrescritas, schema/validación sin cambios de registros y compatibilidad anteriores correctas; suite completa en curso. No afirmar aceptación narrativa real del contrato 7.
+
+Validación final: **499 pruebas completas con emulador correctas sin omisiones (209,526 s)**; dos pruebas HTTP/Waitress posteriores confirman continuación sin recuperar fuente, una única llamada simulada y contrato 7. Navegador plan-2 correcto. No se han efectuado más inferencias reales.
+
 Despliegue confirmado: 7ea6e345a6b2a0385ba4c0bf3729066a9e1c0a87, Render 7586725803 success y salud/revisión exactas. Ensayo aislado real de mecánicas sin IA: dos fichas, duplicados, copia e invitado correctos; apertura simulada y continuación no invocada. El «pendiente de despliegue» inferior describe el cierre local anterior. Registro privado .deps/abstract-target-live-session.json; no repetir el guion.
 
 Capacidad `target-sheets` y recorrido local optativo `abstract-scene-targets`, pendiente de despliegue. No implementa combate espacial ni Pathfinder. El ejemplo propio CC0 usa dos recursos abstractos; sus números no se atribuyen a un manual.

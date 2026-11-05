@@ -1,0 +1,15 @@
+# Objetivos vinculados a un PNJ concreto: siguiente contrato
+
+Estado: compilador/selector aislado `objective_targets.py` con cinco pruebas; todavía sin conexión a planes, solicitudes o cierre de objetivos. Los formatos plan-1 y plan-2 y las acciones dirigidas actuales no cierran objetivos por un éxito sobre un PNJ. Mantener esa negativa hasta conectar y probar el contrato completo.
+
+La preparación aportada debe declarar, de forma privada e inmutable, objetivo, acción, resultado booleano propio, identidad del PNJ y decisiones de entrada exactas. La identidad procede del registro de ficción enlazado con el actor preparado; conocer su nombre no acredita presencia, percepción ni legalidad. La asociación semántica sigue siendo preparación aportada, nunca certificación de un manual.
+
+El compilador debe comprobar objetivo existente, perfil/PNJ preparado, acción jugable con contexto dirigido soportado y escritura incondicional del booleano. Normalizar las decisiones con el mismo validador de entradas del runtime, sin tirar ni evaluar como legal una situación futura. Rechazar rutas ambiguas para la misma acción, PNJ y elecciones; no añadir un menú administrativo por tirada. Reservar una versión nueva de preparación y conservar los contextos y capturas anteriores.
+
+Al solicitar explícitamente una acción, el motor deriva el vínculo aplicable desde esa preparación, antes de los dados. No permite que el modelo o cliente sustituyan el PNJ, el campo o el objetivo. Confirmar de nuevo contexto, identidades, revisiones y elecciones. Reutilizar la evidencia existente de resultado/huella de decisiones, junto con la referencia pública de PNJ y la evidencia privada de ambas fichas; no duplicar fichas o trazas.
+
+Un éxito sobre otro PNJ no completa el objetivo. Editar decisiones al resolver conserva el vínculo original y solo permite cierre cuando coincidan las elecciones preparadas y confirmadas. Un fallo conserva el objetivo abierto. Una confirmación válida aplica ambas fichas, objetivo, revelaciones, registro y barrera en el mismo commit. Ningún paso requiere una llamada adicional de IA.
+
+Recuperación y copia deben verificar también esta correspondencia en acciones individuales: un booleano verdadero de otra acción no puede usarse para completar un objetivo reservado a una resolución dirigida. Comprobar cronología de preparación, objetivo y actores, fuentes y citas exactas, prohibición de retirar un vínculo obligatorio, adulteraciones y privacidad de rutas sobre PNJ todavía desconocidos. El director solo recibe hechos públicos confirmados y los objetivos disponibles para las acciones que realmente puede proponer.
+
+Pruebas de aceptación pendientes: PNJ correcto/equivocado, mismo booleano en acción individual, fallo, cambio de entradas, solicitud adulterada, objetivo ya cerrado, descubrimiento atómico, interrupción antes del commit, reintento con cliente nuevo, copia, invitado y navegador sin operaciones remotas por consultar. Contrastar originales antes de introducir reglas específicas Pathfinder; este contrato únicamente vincula evidencias del motor.

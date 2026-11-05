@@ -445,11 +445,7 @@ class RulePack:
         elif target is not None:_fail('Esta acción no admite una ficha objetivo')
         if not isinstance(actor,str) or not actor or len(actor)>100 or (action.get('permission','owner')=='owner' and actor!=sheet['owner']) or (action.get('permission')=='host' and host is not True):
             raise PermissionError('No tienes permiso para esta acción de la ficha')
-        if not isinstance(inputs,dict) or set(inputs)-set(action['inputs']):_fail('Entradas desconocidas de acción')
-        arguments={}
-        for key,spec in action['inputs'].items():
-            if key not in inputs and 'default' not in spec:_fail('Falta una decisión requerida por la acción: '+key)
-            arguments[key]=self._value(spec,inputs.get(key,spec.get('default')))
+        arguments=self.action_inputs(action_id,inputs)
         budget=[50000];fields=self._fields(sheet['fields'],budget);context={'fields':fields,'inputs':arguments,'rolls':{}}
         if target is not None:context['target']=self._fields(target['fields'],budget)
         if 'targetContext' in action and not self.shared_target_context(action['targetContext'],fields,context['target']):
@@ -470,6 +466,17 @@ class RulePack:
                 if not isinstance(values,list) or len(values)!=count or any(type(v)!=int or not 1<=v<=sides for v in values):_fail('Resultados físicos inválidos; no se ha tirado en el servidor')
             specs.append((roll,count,sides,keep))
         return arguments,budget,context,specs
+
+    def action_inputs(self,action_id,inputs):
+        """Normalize choices only; this does not certify an action's legality."""
+        if not isinstance(action_id,str) or action_id not in self._data['actions']:_fail('Acción no definida por este paquete')
+        action=self._data['actions'][action_id]
+        if not isinstance(inputs,dict) or set(inputs)-set(action['inputs']):_fail('Entradas desconocidas de acción')
+        arguments={}
+        for key,spec in action['inputs'].items():
+            if key not in inputs and 'default' not in spec:_fail('Falta una decisión requerida por la acción: '+key)
+            arguments[key]=self._value(spec,inputs.get(key,spec.get('default')))
+        return arguments
 
     @staticmethod
     def shared_target_context(spec,fields,target_fields):

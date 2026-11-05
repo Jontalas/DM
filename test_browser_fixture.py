@@ -55,7 +55,7 @@ def main():
                     goal=next((g for g in request['directorKnowledge'].get('objectives',[]) if g['known'] and g['status']=='open'),None)
                     if goal:changes['objectiveCheck']={'objective':goal['id'],'field':'success'}
             if request['operation']=='continue':changes['narration']='El resultado confirmado revela una marca junto al farol. Arda espera tu decisión.'
-            if request['contract']==pack_director.TARGET_CONTRACT:changes['narration']='La resolución confirmada mantiene los datos compartidos de la otra ficha. La siguiente decisión es tuya.'
+            if request['contract'] in (pack_director.TARGET_CONTRACT,pack_director.PUBLIC_TARGET_CONTRACT):changes['narration']='La resolución confirmada mantiene los datos compartidos de la otra ficha. La siguiente decisión es tuya.'
             answer=pack_reply(action,**changes);answer['usage']={'inputTokens':100,'outputTokens':200,'latencyMs':1}
             return pack_director.validate_reply(prepared,answer)
         pack_director.propose=fixture_pack_director

@@ -135,7 +135,8 @@ def apply(state,action,me,pack,call=None,draw=None,source_loader=None):
         game['actors']=prepared_plan['npcPreparation']['actors']
         game['preparedNpcs']=prepared_npcs
     if len(json.dumps(game,ensure_ascii=False).encode('utf-8'))>650000 or len(state['messages'])>4997:raise RulePackError('No hay espacio reservado para otra intervención; no se ha llamado a IA')
-    if result.get('adventureSourceRef') is not None and result.get('adventureSource') is None and source_loader is not None:result=source_loader(result)
+    from target_journal import public_continuation
+    if result.get('adventureSourceRef') is not None and result.get('adventureSource') is None and source_loader is not None and not (operation=='continue' and public_continuation(result)):result=source_loader(result)
     prepared=director.prepare(result,operation,actor,text,mode,pack,prepared_goals=prepared_goals,prepared_npcs=prepared_npcs)
     reply=director.validate_reply(prepared,(call or director.propose)(prepared))
     proposal=reply['proposal'];pending=memory.get('pending') if memory else None
@@ -149,6 +150,8 @@ def apply(state,action,me,pack,call=None,draw=None,source_loader=None):
         **({'normalization':reply['normalization']} if 'normalization' in reply else {}))
     result['narrative']={'revision':(memory['revision'] if memory else 0)+1,'summary':reply['summary'],
         'preparation':reply['preparation'],'pending':pending,'continuation':None}
+    if prepared['request']['contract']==director.PUBLIC_TARGET_CONTRACT:
+        result['narrative']['preparation']=memory['preparation']
     npcs=world.merge(prepared_npcs if prepared_npcs is not None else memory.get('npcs',[]) if memory else [],reply.get('npcUpdates',[]))
     if npcs:result['narrative']['npcs']=npcs
     places=world.merge_places(memory.get('places',[]) if memory else [],reply.get('placeUpdates',[]))

@@ -1,5 +1,7 @@
 # Preparación de aventura importable
 
+Estado más reciente: plan-2 desplegado en bee0f7f3232d871ebcd9b11be5e84b3f31f54c6c, Render 7586944990 success, salud/revisión exactas. Ensayo real de apertura y continuación: preparación/perfiles/resolución correctos, aceptación narrativa negativa por secreto revelado y confusión de acción. Se conservan las dos llamadas originales sin repetirlas. Corrección posterior del contexto público de continuación en RESOLUCIONES_ENTRE_FICHAS.md y REANUDAR.md; no presentar la evidencia mecánica como aceptación del director.
+
 ## PNJ preparados en el mismo archivo (formato 2, validación local)
 
 Validación integrada: 489 pruebas completas con emulador correctas sin omisiones (210,018 s), HTTP/Waitress de inicio/resolución/copia, navegador plan-2 y regresión plan-1 correctos. Pendiente despliegue y evaluación narrativa real de este bloque.
