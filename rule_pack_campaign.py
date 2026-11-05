@@ -44,10 +44,13 @@ def _compiled(campaign,document):
 def runtime(state,campaign):
     record=state.get('package')
     if not isinstance(record,dict):raise RulePackError('Importa primero un paquete de reglas')
-    _keys(record,('document','sha256','policy'))
+    _keys(record,('document','sha256','policy','composition') if 'composition' in record else ('document','sha256','policy'))
     pack=_compiled(campaign,_canonical(record['document']))
     if pack.digest!=record['sha256']:raise RulePackError('El contenido del paquete no coincide con su huella guardada')
     if record['policy'] not in ('draft','provided-rules'):raise RulePackError('No existe verificación de fuentes para la política declarada')
+    if 'composition' in record:
+        from rule_pack_composition import validate_provenance
+        validate_provenance(record['composition'],pack)
     return pack
 
 
@@ -103,6 +106,20 @@ def execute_action(state,body,me):
         report=record['report']
         if report['status']!='candidate':raise RulePackError('La preparación contiene cuestiones sin resolver y no se puede ejecutar')
         return execute_action(state,{'type':'install_rule_pack','package':report['candidate'],'policy':action['policy']},me)
+    elif kind=='compose_rule_pack':
+        if not me['host']:raise PermissionError('Solo el anfitrión combina reglas')
+        _keys(action,('type','additional','versionTarget','baseSha256','expectedSha256','policy'))
+        if state['characters']:raise RulePackError('Hay fichas vinculadas; la composición no migra partidas existentes')
+        base=runtime(state,me['campaign'])
+        if action['baseSha256']!=base.digest:raise RulePackError('El paquete de partida ha cambiado; revisa de nuevo la composición')
+        if not isinstance(action['additional'],list) or not 1<=len(action['additional'])<=31:raise RulePackError('Selecciona entre uno y treinta y un bloques adicionales')
+        if action['policy'] not in ('draft','provided-rules'):raise RulePackError('Política de uso de la composición inválida')
+        from rule_pack_composition import compose
+        combined=compose([base.document(),*action['additional']],action['versionTarget'])
+        digest=combined['provenance']['packageSha256']
+        if digest!=action['expectedSha256']:raise RulePackError('La combinación difiere de la revisión; no se ha instalado')
+        result['package']={'document':combined['document'],'sha256':digest,'policy':action['policy'],'composition':combined['provenance']}
+        _system(result,'Reglas combinadas en versión '+action['versionTarget']+'. Fuentes sin verificar; no se han migrado fichas.',me['id'])
     elif kind=='install_rule_pack':
         if not me['host']:raise PermissionError('Solo el anfitrión instala reglas para esta campaña')
         if set(action)-{'type','package','policy'} or not {'type','package'}<=set(action):raise RulePackError('Importación de paquete inválida')
@@ -112,6 +129,8 @@ def execute_action(state,body,me):
         if previous and previous['sha256']==pack.digest and previous['policy']==policy:raise RulePackError('Ese contenido y política ya están instalados; no se ha vuelto a guardar')
         if state['characters']:raise RulePackError('Hay fichas vinculadas al paquete; usa una campaña nueva hasta disponer de una migración verificada')
         result['package']={'document':pack.document(),'sha256':pack.digest,'policy':policy}
+        if previous and previous['sha256']==pack.digest and 'composition' in previous:
+            result['package']['composition']=copy.deepcopy(previous['composition'])
         _system(result,'Paquete importado: '+pack.document()['name']+' '+pack.version+'. Fidelidad al manual sin verificar.',me['id'])
     elif kind=='create_pack_sheet':
         _keys(action,('type','name'));pack=runtime(state,me['campaign'])

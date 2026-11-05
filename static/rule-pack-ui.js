@@ -85,6 +85,7 @@ window.RulePackUI=(()=>{
    await act('import',{campaign:JSON.parse(await file.text())});
   });
   RulePackAuthoringUI.render(root);
+  RulePackComposeUI.render(root);
  }
  return {render,openCharacter,review};
 })();

@@ -13,6 +13,7 @@ from rule_pack_runtime import RulePackError
 from test_rule_pack_runtime import document
 import rule_pack_authoring as authoring
 import test_rule_pack_authoring as authoring_fixture
+from test_rule_pack_composition import blocks as composition_blocks
 
 
 class RulePackServerTests(unittest.TestCase):
@@ -54,7 +55,8 @@ class RulePackServerTests(unittest.TestCase):
         self.assertEqual(result['actions'],1)
 
     def test_pdf_library_modules_are_local_versioned_and_cacheable(self):
-        for asset,mime in [('build/pdf.min.mjs','text/javascript'),('wasm/jbig2.wasm','application/wasm')]:
+        # Reproduce the Windows large-response regression without retrying failures.
+        for asset,mime in [('build/pdf.min.mjs','text/javascript'),('wasm/jbig2.wasm','application/wasm')]*3:
             with urllib.request.urlopen(self.url+'/vendor/pdfjs-6.5.438/'+asset) as response:
                 self.assertEqual(response.headers.get_content_type(),mime)
                 self.assertIn('immutable',response.headers['Cache-Control']);self.assertGreater(len(response.read()),1000)
@@ -164,6 +166,40 @@ class RulePackServerTests(unittest.TestCase):
         self.rejected(lambda:self.action('install_prepared_rule_pack',preparation=prepared['sha256'],policy='provided-rules'))
         exported=self.request('/api/export',{},self.token)
         with patch.object(authoring,'propose',side_effect=AssertionError('Recovery called model')):self.action('import',campaign=exported)
+
+    def test_composition_preview_is_stateless_and_install_is_atomic_and_owned(self):
+        base,additional=composition_blocks()
+        self.action('install_rule_pack',package=base)
+        guest=self.request('/api/join',{'name':'Luis','invite':self.state()['invite']})['token']
+        with patch.object(server,'repository',side_effect=AssertionError('Preview accessed storage')):
+            preview=self.request('/api/rule-pack/compose',{'packages':[base,additional],'version':'1.1.0'})
+        parameters={'additional':[additional],'versionTarget':'1.1.0','baseSha256':self.state()['state']['package']['sha256'],
+            'expectedSha256':preview['provenance']['packageSha256'],'policy':'draft'}
+        with patch.object(authoring,'propose',side_effect=AssertionError('Composition called AI')),patch('rule_pack_runtime.secrets.randbelow',side_effect=AssertionError('Composition rolled')):
+            self.rejected(lambda:self.action('compose_rule_pack',guest,**parameters),403)
+            self.rejected(lambda:self.action('compose_rule_pack',**(parameters|{'baseSha256':'stale'})))
+            self.rejected(lambda:self.action('compose_rule_pack',**(parameters|{'expectedSha256':'stale'})))
+            body=self.action('compose_rule_pack',**parameters)
+            self.assertTrue(self.request('/api/action',body,self.token)['duplicate'])
+            self.action('install_rule_pack',package=self.state()['state']['package']['document'],policy='provided-rules')
+            self.assertEqual(self.state()['state']['package']['composition'],preview['provenance'])
+            self.action('create_pack_sheet',name='Aria');cid=self.state()['state']['characters'][0]['id']
+            self.action('run_pack_action',character=cid,action='use_reserve')
+            self.action('run_pack_action',character=cid,action='attempt',physical={'pool':[3,4]})
+            self.assertEqual(self.state()['state']['characters'][0]['sheet']['fields']['reserve'],1)
+            exported=self.request('/api/export',{},self.token);self.action('import',campaign=exported)
+            self.assertEqual(self.state()['state']['package']['composition'],preview['provenance'])
+            altered=copy.deepcopy(exported);altered['state']['package']['composition']['inputs'][0]['sha256']='bad'
+            self.rejected(lambda:self.action('import',campaign=altered))
+            self.rejected(lambda:self.action('compose_rule_pack',**parameters))
+
+    def test_composition_conflicts_do_not_replace_campaign_rules(self):
+        base,additional=composition_blocks();self.action('install_rule_pack',package=base)
+        additional['fields']['energy']['initial']=2
+        before=self.state()
+        with self.assertRaises(urllib.error.HTTPError) as error:
+            self.request('/api/rule-pack/compose',{'packages':[base,additional],'version':'1.1.0'})
+        self.assertEqual(error.exception.code,400);error.exception.close();self.assertEqual(self.state(),before)
 
 
 class RulePackWaitressTests(RulePackServerTests):

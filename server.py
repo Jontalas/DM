@@ -258,7 +258,9 @@ class Handler(BaseHTTPRequestHandler):
             path=ROOT/'static'/('index.html' if url.path=='/' else url.path.lstrip('/'))
             if not path.resolve().is_relative_to((ROOT/'static').resolve()) or not path.is_file():self.reply({'error':'No encontrado'},404);return
             types={'.html':'text/html; charset=utf-8','.css':'text/css','.js':'text/javascript; charset=utf-8','.mjs':'text/javascript; charset=utf-8','.wasm':'application/wasm'}
-            raw=path.read_bytes();self.send_response(200);self.send_header('Content-Type',types.get(path.suffix,'application/octet-stream'));self.send_header('Content-Length',str(len(raw)));self.send_header('Cache-Control',static_cache_control(path));self.end_headers();self.wfile.write(raw)
+            size=path.stat().st_size;self.send_response(200);self.send_header('Content-Type',types.get(path.suffix,'application/octet-stream'));self.send_header('Content-Length',str(size));self.send_header('Cache-Control',static_cache_control(path));self.end_headers()
+            with path.open('rb') as stream:
+                while chunk:=stream.read(65536):self.wfile.write(chunk)
         except PermissionError as exc:self.reply({'error':str(exc)},401)
         except (ValueError,OSError) as exc:self.reply({'error':str(exc)},400)
         except Exception:self.reply({'error':'Firebase no está disponible; no se ha utilizado almacenamiento local'},503)
@@ -279,6 +281,10 @@ class Handler(BaseHTTPRequestHandler):
                 if not isinstance(body,dict) or set(body)!={'package'}:raise ValueError('Inspección de paquete inválida')
                 from rule_pack_campaign import inspect_document
                 self.reply(inspect_document(body['package']));return
+            if path=='/api/rule-pack/compose':
+                if not isinstance(body,dict) or set(body)!={'packages','version'}:raise ValueError('Revisión de composición inválida')
+                from rule_pack_composition import compose
+                self.reply(compose(body['packages'],body['version']));return
             me=self.auth()
             if path in {'/api/action','/api/import'}:
                 if path=='/api/import':body={**body,'type':'import'}

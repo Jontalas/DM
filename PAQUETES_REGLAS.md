@@ -55,9 +55,15 @@ La primera integración añade siete casos repetidos bajo HTTP y Waitress: inspe
 
 ## Trabajo necesario para cumplir el objetivo
 
-### Composición determinista: núcleo todavía sin interfaz
+### Composición determinista e integración
 
-`rule_pack_composition.py` combina paquetes completos del mismo juego, edición y atribución con una versión posterior. Fusiona fuentes idénticas por identificador y referencias adicionales para definiciones iguales; rechaza conflictos sin elegir por orden ni sobrescribir. No elimina cobertura pendiente por inferir que otro bloque la haya resuelto. Recompila el resultado y conserva las huellas de entrada en una procedencia separada. No instala ni migra estado. Quince pruebas de composición e intérprete correctas, usando solo reglas originales de ejemplo. Faltan integración de preparación/interfaz y bloques parcialmente definidos; este núcleo no equivale a importar un manual completo por capítulos.
+`rule_pack_composition.py` combina paquetes completos del mismo juego, edición y atribución con una versión posterior. Fusiona fuentes idénticas por identificador y referencias adicionales para definiciones iguales; rechaza conflictos sin elegir por orden ni sobrescribir. No elimina cobertura pendiente por inferir que otro bloque la haya resuelto. Recompila el resultado y conserva las huellas de entrada en una procedencia separada. El núcleo no instala ni migra estado.
+
+La interfaz permite añadir paquetes a una campaña todavía sin fichas, revisar la combinación sin guardar y elegir borrador o uso explícito. El guardado común vuelve a componer, verifica las huellas base/resultado y conserva la procedencia. Los permisos, versiones y marcadores transaccionales impiden instalaciones ajenas/obsoletas y duplicación tras respuesta perdida. Activar el mismo borrador no elimina su procedencia. La copia importada comprueba formato y enlace de la procedencia, pero no autentica por sí sola las entradas históricas de un archivo externo.
+
+Veintinueve pruebas de composición e integración HTTP/Waitress correctas con emulador (33,815 s), más Playwright de conflictos, revisión sin escritura, recuperación, activación, ambas acciones y móvil. Solo reglas propias de ejemplo. Faltan generación/acumulación de bloques parciales desde fuentes y composición con referencias externas sin resolver; este recorrido no equivale a importar un manual completo por capítulos.
+
+Suite completa de la rama tras integrar composición y transferencia local por bloques: **293 pruebas correctas con emulador oficial, sin omisiones (93,602 s)**. No se han ejecutado inferencias reales ni desplegado esta integración.
 
 ### Preparación asistida de fragmentos: primer recorrido
 

@@ -15,7 +15,7 @@ def _canonical(value):
 
 def compose(documents,version):
     if not isinstance(documents,list) or not 2<=len(documents)<=32:raise RulePackError('Combina entre dos y treinta y dos bloques de reglas')
-    if not isinstance(version,str) or not re.fullmatch(r'[0-9]+\.[0-9]+\.[0-9]+',version):raise RulePackError('Indica una nueva versión mayor.menor.revisión')
+    if not isinstance(version,str) or len(version)>40 or not re.fullmatch(r'[0-9]+\.[0-9]+\.[0-9]+',version):raise RulePackError('Indica una nueva versión mayor.menor.revisión')
     packs=[RulePack(raw) for raw in documents]
     if len({pack.digest for pack in packs})!=len(packs):raise RulePackError('Hay bloques de contenido repetido; no se ha creado otra versión')
     target=tuple(map(int,version.split('.')))
@@ -55,3 +55,19 @@ def compose(documents,version):
         'packageSha256':compiled.digest,'version':version,
         'inputs':[{'id':pack.id,'version':pack.version,'sha256':pack.digest} for pack in packs]},
         'sourceVerification':'unverified','stateMigration':'not-performed'}
+
+
+def validate_provenance(provenance,pack):
+    """Validate a receipt's shape/binding, not authenticity of external history."""
+    if not isinstance(provenance,dict) or set(provenance)!={'format','packageSha256','version','inputs'}:raise RulePackError('Procedencia de composición inválida')
+    if provenance['format']!='cronicas-rule-composition-1' or provenance['packageSha256']!=pack.digest or provenance['version']!=pack.version:raise RulePackError('La composición no corresponde al paquete guardado')
+    entries=provenance['inputs']
+    if not isinstance(entries,list) or not 2<=len(entries)<=32:raise RulePackError('Lista de bloques de origen inválida')
+    digests=[];target=tuple(map(int,pack.version.split('.')))
+    for entry in entries:
+        if not isinstance(entry,dict) or set(entry)!={'id','version','sha256'}:raise RulePackError('Bloque de origen inválido')
+        if entry['id']!=pack.id or not isinstance(entry['version'],str) or len(entry['version'])>40 or not re.fullmatch(r'[0-9]+\.[0-9]+\.[0-9]+',entry['version']):raise RulePackError('Identidad o versión de bloque incompatible')
+        if tuple(map(int,entry['version'].split('.')))>=target:raise RulePackError('La versión compuesta no es posterior a sus bloques')
+        if not isinstance(entry['sha256'],str) or not re.fullmatch('[a-f0-9]{64}',entry['sha256']):raise RulePackError('Huella de bloque inválida')
+        digests.append(entry['sha256'])
+    if len(set(digests))!=len(digests) or digests!=sorted(digests):raise RulePackError('Bloques repetidos o procedencia sin orden canónico')
