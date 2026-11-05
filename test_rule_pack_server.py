@@ -202,6 +202,38 @@ class RulePackServerTests(unittest.TestCase):
         self.action('import',campaign=exported)
         self.assertEqual(self.state()['state']['narrativeView']['objectives'],after['state']['narrativeView']['objectives'])
 
+    def test_discoveries_commit_with_dice_preserve_privacy_and_copy_without_extra_inference(self):
+        from test_rule_pack_objectives import goal
+        self.action('install_rule_pack',package=document('original-narrative-results-example'),policy='provided-rules')
+        self.action('create_pack_sheet',name='Aria');cid=self.state()['state']['characters'][0]['id']
+        guest=self.request('/api/join',{'name':'Luis','invite':self.state()['invite']})['token']
+        text='Fuente propia CC0. La señal conduce al archivo. PRIVATE-DISCOVERY: otra carta.'
+        quote='La señal conduce al archivo.';start=text.index(quote)
+        definitions=[{'id':'archivo','objective':'farol','field':'success','start':start,'end':start+len(quote),'text':quote}]
+        with patch.object(pack_director,'propose',return_value=narrative_reply(objectiveUpdates=[goal()])) as provider:
+            self.action('start_pack_adventure',character=cid,sourceTitle='Fuente propia',sourceText=text,sourcePolicy='provided-adventure')
+            self.rejected(lambda:self.action('prepare_pack_discoveries',guest,definitions=definitions,policy='provided-adventure'),403)
+            body=self.action('prepare_pack_discoveries',definitions=definitions,policy='provided-adventure')
+            self.assertTrue(self.request('/api/action',body,self.token)['duplicate']);self.assertEqual(provider.call_count,1)
+            for token in [self.token,guest]:
+                self.assertEqual(self.state(token)['state']['narrativeView']['discoveries'],[])
+                self.assertNotIn(quote,str(self.state(token)))
+            provider.return_value=narrative_reply('intentar',objectiveCheck={'objective':'farol','field':'success'})
+            self.action('talk_pack_adventure',character=cid,mode='action',text='Examino la marca.')
+            pending=self.state()['state']['narrativeView']['pending']
+            with patch.object(server.STORE,'load_adventure_source',side_effect=AssertionError('Dice/view fetched source')):
+                body=self.action('resolve_pack_request',request=pending['id'],physical={'dice':[3,4]})
+                self.assertTrue(self.request('/api/action',body,self.token)['duplicate'])
+                for token in [self.token,guest]:
+                    view=self.state(token)['state'];self.assertEqual(view['narrativeView']['discoveries'][0]['text'],quote)
+                    self.assertNotIn('PRIVATE-DISCOVERY',str(view))
+            provider.return_value=narrative_reply(narration='La señal apunta al archivo.')
+            self.action('continue_pack_adventure');request=provider.call_args.args[0]['request']
+            self.assertEqual(provider.call_count,3);self.assertEqual(request['contract'],pack_director.DISCOVERY_CONTRACT)
+            self.assertEqual(request['verifiedResolution']['discoveriesRevealed'],request['confirmedDiscoveries'])
+        exported=self.request('/api/export',{},self.token);self.action('import',campaign=exported)
+        self.assertEqual(self.state()['state']['narrativeView']['discoveries'][0]['text'],quote)
+
     def test_adventure_source_is_private_separate_and_not_loaded_for_view_or_dice(self):
         self.action('install_rule_pack',package=document('live-lantern-example'),policy='provided-rules')
         self.action('create_pack_sheet',name='Aria');cid=self.state()['state']['characters'][0]['id']

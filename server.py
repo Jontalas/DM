@@ -169,6 +169,8 @@ def execute_action(body,me):
                     preparation_key=attempts.key(me['id'],prepared['sha256'])
                     return attempts.run(store,cid,me['id'],prepared)
                 state=selected.execute_action(state,body,me,prepare_record=prepare_record)
+            elif state['ruleset']=='rule-pack' and body['type']=='prepare_pack_discoveries':
+                state=selected.execute_action(state,body,me,source_loader=lambda current:attach_adventure_source(current,me))
             elif state['ruleset']=='rule-pack' and body['type'] in ('start_pack_adventure','talk_pack_adventure','continue_pack_adventure'):
                 import rule_preparation_attempt as attempts
                 import rule_pack_director as director

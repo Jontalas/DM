@@ -1,5 +1,11 @@
 # Motor común y paquetes de reglas importables
 
+## Descubrimientos de aventura vinculados a resultados
+
+Integración local en validación: `prepare_pack_discoveries` fija una vez citas exactas de la fuente privada, ligadas a objetivos conocidos abiertos y campos booleanos almacenados. Preparación técnica con permiso `provided-adventure`; no hay todavía asistente ni extracción automática de consecuencias. La asociación semántica es preparación aportada, no certificación reglamentaria. Requiere `action-results`; no concede recursos ni altera otras fichas.
+
+Cada definición contiene `id`, `objective`, `field`, `start`, `end`, `text` (posiciones de caracteres Unicode en el original exacto). El motor fija los vínculos antes de tirar y confirma revelaciones junto con la misma resolución y sus pruebas. La proyección pública/diario omite citas no reveladas; copiar verifica fuente, cronología y evidencia sin inferencia. El contrato `rule-pack-director-discoveries-3` se activa solo en esas campañas y expone hechos confirmados; no cambia huellas de campañas anteriores. Detalles y límites en CONSECUENCIAS_ESTRUCTURADAS.md.
+
 ## Salidas relevantes y contexto canónico optativo
 
 Refinamiento final previo al despliegue: la proyección nueva se llama `verifiedResolution`, separada del contrato legacy `confirmedResult` y serializada después del contexto previo. **87 pruebas afectadas con emulador correctas (49,176 s)** tras ese cambio y rechazo explícito de trazas malformadas; suite completa base 424 correcta. Medición local final con reloj de fixture fijo: 3.754→2.701 bytes, 28,1 %, sin inferencias ni tokens reales medidos. No se añade eco redundante de estos hechos a la salida del modelo ni una llamada para calcularlos.

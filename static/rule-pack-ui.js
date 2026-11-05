@@ -30,21 +30,26 @@ window.RulePackUI=(()=>{
     const form=$('#packStoryStart'),sourceKey=key+':adventure-source',saved=drafts.get(sourceKey)||{};
     if(!state.adventureSourceView){
      form.querySelector('button').insertAdjacentHTML('beforebegin',`<details><summary>Usar una aventura aportada, opcional</summary><p>Texto de una aventura breve, hasta 12.000 caracteres. La fuente no añade reglas al paquete.</p><label>Título de la aventura<input name="sourceTitle" maxlength="100" value="${esc(saved.title||'')}"></label><label>Texto privado de preparación<textarea name="sourceText" maxlength="12000" rows="5">${esc(saved.text||'')}</textarea></label><label>Leer un archivo de texto local<input id="packAdventureFile" type="file" accept=".txt,.md,text/plain,text/markdown"></label><label class="check"><input name="sourceUse" type="checkbox" ${saved.use?'checked':''}> Puedo utilizar esta aventura como preparación de esta partida</label></details>`);
-     const remember=()=>drafts.set(sourceKey,{title:form.elements.sourceTitle.value,text:form.elements.sourceText.value,use:form.elements.sourceUse.checked});
+     const remember=original=>{
+      const previous=drafts.get(sourceKey)||{},displayed=form.elements.sourceText.value;
+      const text=typeof original==='string'?original:previous.text?.replace(/\r\n?/g,'\n')===displayed?previous.text:displayed;
+      drafts.set(sourceKey,{title:form.elements.sourceTitle.value,text,use:form.elements.sourceUse.checked});
+     };
      form.oninput=remember;form.onchange=remember;
      $('#packAdventureFile').onchange=run(async e=>{
       const file=e.target.files[0];if(!file)return;
       if(file.size>48000||! /\.(txt|md)$/i.test(file.name))throw Error('Usa un archivo .txt o .md de hasta 48.000 bytes.');
       const text=new TextDecoder('utf-8',{fatal:true}).decode(await file.arrayBuffer());sameCampaign(key);
       if(text.length>12000)throw Error('El texto supera los 12.000 caracteres.');
-      form.elements.sourceText.value=text;if(!form.elements.sourceTitle.value)form.elements.sourceTitle.value=file.name.replace(/\.[^.]+$/,'').slice(0,100);remember();
+      form.elements.sourceText.value=text;if(!form.elements.sourceTitle.value)form.elements.sourceTitle.value=file.name.replace(/\.[^.]+$/,'').slice(0,100);remember(text);
      });
     }
     form.onsubmit=run(async e=>{
      sameCampaign(key);const fields=e.target.elements,data={character:fields.character.value};
      if(fields.sourceText?.value.trim()){
       if(!fields.sourceUse.checked||!fields.sourceTitle.value.trim())throw Error('Indica el título y confirma que puedes utilizar la aventura aportada.');
-      Object.assign(data,{sourceTitle:fields.sourceTitle.value,sourceText:fields.sourceText.value,sourcePolicy:'provided-adventure'});
+      const original=drafts.get(sourceKey)?.text;
+      Object.assign(data,{sourceTitle:fields.sourceTitle.value,sourceText:typeof original==='string'&&original.replace(/\r\n?/g,'\n')===fields.sourceText.value?original:fields.sourceText.value,sourcePolicy:'provided-adventure'});
      }
      await act('start_pack_adventure',data);drafts.delete(sourceKey);followStory(key);
     });
@@ -61,6 +66,11 @@ window.RulePackUI=(()=>{
   const goalKey=key+':objectives',goals=memory.objectives||[];
   $('#packKnownNpcs').insertAdjacentHTML('afterend',`<details id="packObjectives" ${drafts.get(goalKey)?'open':''}><summary>Objetivos de la aventura${goals.length?` · ${goals.filter(g=>g.status==='completed').length}/${goals.length}`:''}</summary><p>Son oportunidades de la aventura; tú decides cómo actuar.</p>${goals.length?goals.map(goal=>`<article data-pack-objective="${esc(goal.id)}"><h4>${esc(goal.title)} · ${goal.status==='completed'?'Completado':'Abierto'}</h4><p>${esc(goal.detail)}</p>${goal.evidence?`<details><summary>Ver resultado que lo completó</summary><p>${esc(doc.actions[state.messages[goal.evidence.message]?.action]?.label||'Acción confirmada')} · ${esc(doc.fields[goal.evidence.field]?.label||goal.evidence.field)}: Sí. Revisión de ficha ${goal.evidence.sheetRevision}.</p></details>`:''}</article>`).join(''):'<p>Aún no hay objetivos anotados.</p>'}</details>`);
   $('#packObjectives').ontoggle=e=>{if(e.target.isConnected&&e.target.id==='packObjectives')drafts.set(goalKey,e.target.open);};
+  if(memory.discoveries){
+   const discoveryKey=key+':discoveries';
+   $('#packObjectives').insertAdjacentHTML('afterend',`<details id="packDiscoveries" ${drafts.get(discoveryKey)?'open':''}><summary>Descubrimientos confirmados · ${memory.discoveries.length}</summary>${memory.discoveries.length?memory.discoveries.map(item=>`<article data-pack-discovery="${esc(item.id)}"><p>${esc(item.text)}</p><p>Consecuencia informativa de la preparación aportada, revelada por esta resolución.</p></article>`).join(''):'<p>Aún no se ha confirmado ningún descubrimiento de esta preparación.</p>'}</details>`);
+   $('#packDiscoveries').ontoggle=e=>{if(e.target.isConnected)drafts.set(discoveryKey,e.target.open);};
+  }
   const worldKey=key+':world-notes',places=memory.places||[],links=memory.relationships||[];
   $('#packObjectives').insertAdjacentHTML('afterend',`<details id="packWorld" ${drafts.get(worldKey)?'open':''}><summary>Lugares y vínculos</summary>${places.length?`<h4>Lugares recordados</h4>${places.map(place=>`<article data-pack-place="${esc(place.id)}"><h4>${esc(place.name)}</h4><p>${esc(place.public||'Sin más notas conocidas por el grupo.')}</p></article>`).join('')}`:''}${links.length?`<h4>Vínculos conocidos</h4><ul>${links.map(link=>`<li>${esc(link.fromName)} · ${esc(link.toName)}${link.public?`: ${esc(link.public)}`:''}</li>`).join('')}</ul>`:''}${!places.length&&!links.length?'<p>Aún no hay lugares ni vínculos anotados.</p>':''}</details>`);
   $('#packWorld').ontoggle=e=>{if(e.target.isConnected)drafts.set(worldKey,e.target.open);};

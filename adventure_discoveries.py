@@ -1,4 +1,4 @@
-"""Pure preparation of source-backed discoveries; not yet enabled in campaigns.
+"""Preparation and evidence of explicitly source-backed adventure discoveries.
 
 This describes information, never mechanical rewards or source verification.
 Only an exact, explicitly provided source excerpt can become a discovery.
@@ -29,7 +29,9 @@ def prepare(source,definitions,policy):
     for item in definitions:
         if not isinstance(item,dict) or set(item)!={'id','objective','field','start','end','text'}:
             raise RulePackError('Definición de descubrimiento incompleta o no admitida')
-        for key in ('id','objective','field'):_identifier(item[key])
+        for key in ('id','objective'):_identifier(item[key])
+        if not isinstance(item['field'],str) or not re.fullmatch('[a-z][a-z0-9_-]{0,63}',item['field']):
+            raise RulePackError('Campo de descubrimiento inválido')
         if item['id'] in seen:raise RulePackError('Descubrimiento repetido')
         seen.add(item['id'])
         start,end=item['start'],item['end']
@@ -49,6 +51,36 @@ def validate(catalog,source):
     rebuilt=prepare(source,catalog['definitions'],catalog['policy'])
     if catalog!=rebuilt:raise RulePackError('Los descubrimientos no coinciden con la fuente aportada')
     return copy.deepcopy(rebuilt)
+
+
+def validate_shape(catalog):
+    """Validate stored metadata without rereading the private original on play."""
+    if not isinstance(catalog,dict) or set(catalog)!={'format','policy','sourceSha256','definitions'}:
+        raise RulePackError('Catálogo de descubrimientos inválido')
+    if catalog['format']!=FORMAT or catalog['policy']!='provided-adventure' or not isinstance(catalog['sourceSha256'],str) or not re.fullmatch('[a-f0-9]{64}',catalog['sourceSha256']):
+        raise RulePackError('Procedencia de descubrimientos inválida')
+    # Reconstruct a bounded verification surface; overlaps must agree exactly.
+    surface=[' ']*12000;occupied={}
+    definitions=catalog['definitions']
+    if not isinstance(definitions,list) or not 1<=len(definitions)<=MAX_DISCOVERIES:
+        raise RulePackError('Catálogo de descubrimientos fuera de límites')
+    for item in definitions:
+        if not isinstance(item,dict) or not {'start','end','text'}<=set(item):raise RulePackError('Referencia de descubrimiento incompleta')
+        start,end,text=item['start'],item['end'],item['text']
+        if type(start)!=int or type(end)!=int or not 0<=start<end<=12000 or not isinstance(text,str) or len(text)!=end-start:
+            raise RulePackError('Referencia de descubrimiento inválida')
+        for offset,char in enumerate(text,start):
+            if offset in occupied and occupied[offset]!=char:raise RulePackError('Citas de descubrimientos incompatibles')
+            occupied[offset]=char;surface[offset]=char
+    prepare(''.join(surface),definitions,catalog['policy'])
+    return copy.deepcopy(catalog)
+
+
+def bindings(catalog,check,request):
+    if check is None:return []
+    if not isinstance(check,dict) or set(check)!={'objective','field'}:raise RulePackError('Vínculo de objetivo inválido')
+    return [bind(catalog,item['id'],check,request) for item in catalog['definitions']
+        if all(item[key]==check[key] for key in ('objective','field'))]
 
 
 def bind(catalog,identifier,check,request):

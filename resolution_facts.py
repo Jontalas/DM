@@ -29,4 +29,7 @@ def build(state,memory,pack):
             'completedByThisResult':bool(proof and proof['met'] and proof['objective']==goal['id'])}
             for goal in memory.get('objectives',[]) if goal['known']]}
     if proof is not None:result['objectiveResolution']=copy.deepcopy(proof)
+    if 'discoveries' in memory:
+        from adventure_discoveries import public_view
+        result['discoveriesRevealed']=public_view(memory['discoveries']['catalog'],event.get('discoveryReveals',[]))
     return result

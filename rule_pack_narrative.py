@@ -5,11 +5,12 @@ import secrets
 import time
 import rule_pack_world as world
 import rule_pack_objectives as objectives
+import adventure_discoveries as discoveries
 from rule_pack_runtime import RulePackError,read_document
 import rule_pack_director as director
 
 CALLS={'start_pack_adventure','talk_pack_adventure','continue_pack_adventure'}
-ACTIONS=CALLS|{'resolve_pack_request','cancel_pack_request'}
+ACTIONS=CALLS|{'resolve_pack_request','cancel_pack_request','prepare_pack_discoveries'}
 
 
 def _keys(value,required,optional=()):
@@ -31,6 +32,26 @@ def _log(state,kind,actor,me,**values):
 def apply(state,action,me,pack,call=None,draw=None,source_loader=None):
     kind=action['type'];result=copy.deepcopy(state);memory=result.get('narrative')
     if state['package']['policy']!='provided-rules':raise RulePackError('Activa el paquete antes de jugar')
+    if kind=='prepare_pack_discoveries':
+        _keys(action,('type','definitions','policy'))
+        if not me['host']:raise PermissionError('Solo el anfitrión prepara consecuencias de la aventura')
+        if memory is None or memory['pending'] is not None or memory['continuation'] is not None:
+            raise RulePackError('Prepara descubrimientos entre intervenciones resueltas')
+        if 'action-results' not in pack.document()['requires']:raise RulePackError('Los descubrimientos requieren resultados explícitos de acción')
+        if 'discoveries' in memory:raise RulePackError('El catálogo de descubrimientos es inmutable')
+        if result.get('adventureSource') is None and source_loader is not None:result=source_loader(result);memory=result['narrative']
+        source=result.get('adventureSource')
+        if source is None:raise RulePackError('Los descubrimientos necesitan la fuente original aportada')
+        catalog=discoveries.prepare(source['text'],action['definitions'],action['policy'])
+        for definition in catalog['definitions']:
+            goal=next((g for g in memory.get('objectives',[]) if g['id']==definition['objective']),None)
+            field=pack.document()['fields'].get(definition['field'])
+            if goal is None or not goal['known'] or goal['status']!='open' or field is None or field['type']!='boolean' or 'initial' not in field:
+                raise RulePackError('El descubrimiento necesita un objetivo abierto conocido y resultado booleano almacenado')
+        index=len(result['messages'])
+        result['messages'].append({'kind':'system','text':'Consecuencias informativas preparadas desde la fuente aportada; no certifican reglas ni conceden recompensas.','actor':me['id'],'time':time.time()})
+        memory['discoveries']={'catalog':catalog,'sourceSha256':source['sha256'],'installedAt':index,'receipts':[]}
+        return result
     if kind=='start_pack_adventure':
         _keys(action,('type','character'),('sourceTitle','sourceText','sourcePolicy'))
         if not me['host']:raise PermissionError('Solo el anfitrión inicia la aventura compartida')
@@ -57,6 +78,8 @@ def apply(state,action,me,pack,call=None,draw=None,source_loader=None):
             if director.canonical(pending['rolls'])!=director.canonical(preview['rolls']):raise RulePackError('Los dados previstos no coinciden con la ficha y las reglas')
             inputs=action.get('inputs',pending['inputs'])
             if 'objectiveCheck' in pending:objectives.check_spec(pending['objectiveCheck'],pending['action'],memory.get('objectives',[]),pack.document())
+            expected=discoveries.bindings(memory['discoveries']['catalog'],pending.get('objectiveCheck'),pending['id']) if 'discoveries' in memory else []
+            if pending.get('discoveryBindings',[])!=expected:raise RulePackError('La solicitud perdió su vínculo de descubrimiento')
             sheet,trace=pack.execute(actor['sheet'],pending['action'],inputs,me['id'],physical=action.get('physical'),draw=draw)
             actor['sheet']=sheet
             result['messages'].append({'kind':'pack-action','character':actor['id'],'actor':me['id'],'speaker':me['name'],
@@ -64,6 +87,11 @@ def apply(state,action,me,pack,call=None,draw=None,source_loader=None):
             goals,proof=objectives.resolve(memory.get('objectives',[]),pending,result['messages'][-1],sheet,len(result['messages'])-1,pack.document())
             if goals:memory['objectives']=goals
             if proof is not None:result['messages'][-1]['objectiveResolution']=proof
+            if 'discoveries' in memory:
+                store=memory['discoveries']
+                receipts=[receipt for binding in expected if (receipt:=discoveries.resolve(store['catalog'],binding,proof,len(result['messages'])-1)) is not None]
+                if receipts:
+                    store['receipts'].extend(receipts);result['messages'][-1]['discoveryReveals']=receipts
             memory['pending']=None;memory['continuation']={'character':actor['id'],'message':len(result['messages'])-1};return result
         if kind=='talk_pack_adventure':
             _keys(action,('type','character','text','mode'))
@@ -105,8 +133,12 @@ def apply(state,action,me,pack,call=None,draw=None,source_loader=None):
     if relationships:result['narrative']['relationships']=relationships
     goals=objectives.merge(memory.get('objectives',[]) if memory else [],reply.get('objectiveUpdates',[]),len(result['messages'])-1)
     if goals:result['narrative']['objectives']=goals
+    if memory and 'discoveries' in memory:result['narrative']['discoveries']=copy.deepcopy(memory['discoveries'])
     if 'objectiveCheck' in reply:
         pending['objectiveCheck']=objectives.check_spec(reply['objectiveCheck'],pending['action'],goals,pack.document())
+        if 'discoveries' in result['narrative']:
+            bindings=discoveries.bindings(result['narrative']['discoveries']['catalog'],pending['objectiveCheck'],pending['id'])
+            if bindings:pending['discoveryBindings']=bindings
     return result
 
 
@@ -121,6 +153,8 @@ def public_view(memory):
     if known_relationships:result['relationships']=known_relationships
     known_goals=objectives.public_view(memory.get('objectives',[]))
     if known_goals:result['objectives']=known_goals
+    if 'discoveries' in memory:
+        store=memory['discoveries'];result['discoveries']=discoveries.public_view(store['catalog'],store['receipts'])
     return result
 
 
@@ -130,10 +164,11 @@ def validate(state,pack):
         if any(event.get('kind') in ('pack-talk','pack-director') for event in state['messages']):raise RulePackError('El registro narrativo requiere su memoria de aventura')
         return
     if not state['characters']:raise RulePackError('Aventura sin personajes')
-    _keys(memory,('revision','summary','preparation','pending','continuation'),('npcs','objectives','places','relationships'))
+    _keys(memory,('revision','summary','preparation','pending','continuation'),('npcs','objectives','places','relationships','discoveries'))
     world.validate_places(memory.get('places',[]))
     world.validate_relationships(memory.get('relationships',[]),memory.get('npcs',[]),memory.get('places',[]))
     objectives.validate(memory.get('objectives',[]),state,pack)
+    validate_discoveries(state,memory,pack)
     world.validate(memory.get('npcs',[]))
     if {npc['id'] for npc in memory.get('npcs',[])}&{actor['id'] for actor in state['characters']}:raise RulePackError('Un personaje jugador no puede convertirse en PNJ')
     if type(memory['revision'])!=int or not 1<=memory['revision']<=1000000:raise RulePackError('Revisión narrativa inválida')
@@ -142,7 +177,9 @@ def validate(state,pack):
     pending=memory['pending'];continuation=memory['continuation']
     if pending is not None and continuation is not None:raise RulePackError('No puede haber solicitud y resultado pendientes a la vez')
     if pending is not None:
-        _keys(pending,('id','character','action','inputs','rolls','reason','packageSha256','sheetRevision'),('objectiveCheck',))
+        _keys(pending,('id','character','action','inputs','rolls','reason','packageSha256','sheetRevision'),('objectiveCheck','discoveryBindings'))
+        expected=discoveries.bindings(memory['discoveries']['catalog'],pending.get('objectiveCheck'),pending['id']) if 'discoveries' in memory else []
+        if pending.get('discoveryBindings',[])!=expected:raise RulePackError('Vínculos de descubrimiento de la solicitud incompatibles')
         if 'objectiveCheck' in pending:objectives.check_spec(pending['objectiveCheck'],pending['action'],memory.get('objectives',[]),pack.document())
         if not isinstance(pending['id'],str) or not 1<=len(pending['id'])<=100 or not isinstance(pending['reason'],str) or not 1<=len(pending['reason'])<=600:raise RulePackError('Solicitud narrativa inválida')
         actor=next((c for c in state['characters'] if c['id']==pending['character']),None)
@@ -173,3 +210,39 @@ def validate_event(event,characters):
     if 'normalization' in event:
         world.validate_normalization(event['normalization'])
         if 'recovery' in event:raise RulePackError('Procedencias de respuesta incompatibles')
+
+
+def validate_discoveries(state,memory,pack):
+    store=memory.get('discoveries');messages=state['messages']
+    if store is None:
+        if any('discoveryReveals' in event for event in messages):raise RulePackError('Revelaciones sin catálogo de aventura')
+        return
+    _keys(store,('catalog','sourceSha256','installedAt','receipts'))
+    if 'action-results' not in pack.document()['requires']:raise RulePackError('Descubrimientos sin resultados explícitos de acción')
+    catalog=discoveries.validate_shape(store['catalog'])
+    source=state.get('adventureSource');reference=state.get('adventureSourceRef')
+    origin=source or reference
+    if origin is None or store['sourceSha256']!=origin['sha256']:raise RulePackError('Descubrimientos ligados a otra fuente original')
+    if source is not None:discoveries.validate(catalog,source['text'])
+    index=store['installedAt']
+    if type(index)!=int or not 0<=index<len(messages) or messages[index].get('kind')!='system':raise RulePackError('Descubrimientos sin preparación registrada')
+    goals={goal['id']:goal for goal in memory.get('objectives',[])}
+    for item in catalog['definitions']:
+        goal=goals.get(item['objective'])
+        field=pack.document()['fields'].get(item['field'])
+        if field is None or field['type']!='boolean' or 'initial' not in field:raise RulePackError('Resultado de descubrimiento inválido')
+        if goal is None or not goal['known'] or goal['introducedAt']>=index or goal['evidence'] and goal['evidence']['message']<=index:
+            raise RulePackError('El descubrimiento necesita un objetivo conocido abierto al prepararlo')
+    expected=[]
+    for position,event in enumerate(messages):
+        proof=event.get('objectiveResolution');receipts=[]
+        if position>index and proof is not None:
+            check={key:proof[key] for key in ('objective','field')}
+            for binding in discoveries.bindings(catalog,check,proof['request']):
+                receipt=discoveries.resolve(catalog,binding,proof,position)
+                if receipt is not None:receipts.append(receipt)
+        if event.get('discoveryReveals',[])!=receipts or 'discoveryReveals' in event and not receipts:
+            raise RulePackError('Revelación no respaldada por esa resolución confirmada')
+        expected.extend(receipts)
+    if store['receipts']!=expected:raise RulePackError('El diario de descubrimientos difiere del registro confirmado')
+    discoveries.public_view(catalog,store['receipts'])

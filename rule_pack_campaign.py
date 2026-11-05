@@ -295,7 +295,7 @@ def validate_restored(state,campaign='import-validation'):
             import rule_pack_narrative as narrative
             narrative.validate_event(event,ids);continue
         event_keys=('kind','character','actor','speaker','host','time','action','inputs','trace')
-        _keys(event,(*event_keys,'objectiveResolution') if 'objectiveResolution' in event else event_keys)
+        _keys(event,(*event_keys,*[key for key in ('objectiveResolution','discoveryReveals') if key in event]))
         if event['kind']!='pack-action' or not isinstance(event['character'],str) or event['character'] not in sheets or type(event['host'])!=bool:raise RulePackError('Acción registrada inválida')
         _text(event['speaker'],120)
         trace=event['trace']

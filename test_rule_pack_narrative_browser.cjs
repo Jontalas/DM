@@ -10,24 +10,35 @@ const path=require('node:path'),assert=require('node:assert/strict');
   await context.addInitScript(t=>{if(!localStorage.getItem('cronicas-token'))localStorage.setItem('cronicas-token',t)},room.token);
   const page=await context.newPage(),actions=[],errors=[];
   page.on('pageerror',e=>errors.push(e.stack));page.on('request',r=>{if(r.url().endsWith('/api/action'))actions.push(r.postDataJSON())});
-  const resultContract=process.env.TEST_ACTION_RESULT_CONTRACT==='1';
+  const discoveryContract=process.env.TEST_DISCOVERIES==='1',resultContract=discoveryContract||process.env.TEST_ACTION_RESULT_CONTRACT==='1';
   await page.goto(url);await page.locator('#packFile').setInputFiles(resultContract?'test_fixtures/rule_packs/original-narrative-results-example.json':'test_fixtures/rule_packs/live-lantern-example.json');
   await page.locator('#packInstall [name=use]').check();await page.locator('#packInstall button').click();
   await page.locator('#packCreate [name=name]').fill('Aria');await page.locator('#packCreate button').click();
   await page.locator('#packStoryStart summary').click();
   await page.locator('#packStoryStart [name=sourceTitle]').fill('El farol — aventura propia');
-  await page.locator('#packAdventureFile').setInputFiles({name:'aventura-propia.txt',mimeType:'text/plain',buffer:Buffer.from('Arda custodia el archivo junto al farol. PRIVATE-ADVENTURE-SOURCE: una carta secreta espera bajo el suelo.','utf8')});
+  const originalSource='Arda custodia el archivo junto al farol.\r\nPRIVATE-ADVENTURE-SOURCE: una carta secreta espera bajo el suelo.\r\n';
+  await page.locator('#packAdventureFile').setInputFiles({name:'aventura-propia.txt',mimeType:'text/plain',buffer:Buffer.from(originalSource,'utf8')});
   await page.waitForFunction(()=>document.querySelector('#packStoryStart [name=sourceText]').value.includes('PRIVATE-ADVENTURE-SOURCE'));
   await page.locator('#packStoryStart [name=sourceUse]').check();
   const beforeSource=actions.length;await page.evaluate(()=>refresh(true));
   assert.match(await page.locator('#packStoryStart [name=sourceText]').inputValue(),/PRIVATE-ADVENTURE-SOURCE/);assert.equal(actions.length,beforeSource);
   await page.locator('#packStoryStart button').click();await page.locator('#packStoryTalk').waitFor();
+  const sourceExport=await (await context.request.post(url+'/api/export',{headers:{Authorization:'Bearer '+room.token},data:{}})).json();
+  assert.equal(sourceExport.state.adventureSource.text,originalSource);
   assert.match(await page.locator('.pack-source-note').textContent(),/El farol/);
   assert.ok(!(await page.evaluate(()=>JSON.stringify(snapshot))).includes('PRIVATE-ADVENTURE-SOURCE'));
   assert.equal(await page.evaluate(()=>snapshot.state.narrativeView.revision),1);
   assert.equal(await page.evaluate(()=>snapshot.state.characters[0].sheet.fields.energy),3);
   assert.ok(!(await page.evaluate(()=>JSON.stringify(snapshot))).includes('PRIVATE-DIRECTOR'));
   assert.equal(await page.locator('[data-pack-action]').count(),0);
+  if(discoveryContract){
+   const source=originalSource,text='una carta secreta espera bajo el suelo.',start=source.indexOf(text);
+   const current=await page.evaluate(()=>snapshot);
+   const configured=await context.request.post(url+'/api/action',{headers:{Authorization:'Bearer '+room.token},data:{id:'prepare-discovery-browser',version:current.version,type:'prepare_pack_discoveries',policy:'provided-adventure',definitions:[{id:'carta',objective:'marca',field:'success',start,end:start+text.length,text}]}});
+   assert.equal(configured.status(),200);await page.evaluate(()=>refresh(true));
+   await page.locator('#packDiscoveries > summary').click();assert.equal(await page.locator('[data-pack-discovery]').count(),0);
+   assert.ok(!(await page.evaluate(()=>JSON.stringify(snapshot))).includes(text));
+  }
   const count=actions.length;
   await page.locator('#packKnownNpcs > summary').click();
   assert.match(await page.locator('#packKnownNpcs').textContent(),/Arda <archivera>/);
@@ -67,6 +78,12 @@ const path=require('node:path'),assert=require('node:assert/strict');
   assert.equal(actions.filter(a=>a.type==='continue_pack_adventure').length,0);
   assert.deepEqual(await page.evaluate(()=>snapshot.state.messages.find(m=>m.kind==='pack-action').trace.rolls.dice.values),[3,4]);
   assert.equal(await page.evaluate(()=>snapshot.state.narrativeView.objectives[0].status),'completed');
+  if(discoveryContract){
+   await page.locator('#packDiscoveries > summary').click();
+   assert.match(await page.locator('[data-pack-discovery=carta]').textContent(),/carta secreta espera bajo el suelo/);
+   const beforeDiscovery=actions.length;await page.evaluate(()=>refresh(true));
+   assert.equal(await page.locator('#packDiscoveries').getAttribute('open'),'');assert.equal(actions.length,beforeDiscovery);
+  }
   if(resultContract){
    assert.match(await page.locator('.pack-confirmed-results').textContent(),/Éxito: Sí/);
    assert.match(await page.locator('.pack-confirmed-results').textContent(),/Objetivo completado: Investigar la marca/);
@@ -110,6 +127,10 @@ const path=require('node:path'),assert=require('node:assert/strict');
   assert.ok(!(await guestPage.evaluate(()=>JSON.stringify(snapshot))).includes('PRIVATE-ADVENTURE-SOURCE'));
   assert.equal(await guestPage.locator('.pack-source-note').count(),0);
   assert.equal(await guestPage.evaluate(()=>snapshot.state.narrativeView.objectives[0].status),'completed');
+  if(discoveryContract){
+   await guestPage.locator('#packDiscoveries > summary').click();
+   assert.match(await guestPage.locator('[data-pack-discovery=carta]').textContent(),/carta secreta espera bajo el suelo/);
+  }
   await guestPage.locator('#packKnownNpcs > summary').click();
   assert.match(await guestPage.locator('#packKnownNpcs').textContent(),/Custodia el archivo/);
   assert.equal(await guestPage.locator('#packStoryTalk').count(),0);
