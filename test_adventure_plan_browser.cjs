@@ -1,0 +1,43 @@
+const {chromium}=require('./.deps/browser-tests/node_modules/playwright');
+const {spawn}=require('node:child_process'),{createInterface}=require('node:readline');
+const path=require('node:path'),assert=require('node:assert/strict'),fs=require('node:fs');
+(async()=>{
+ const fixture=spawn(path.resolve('.venv/Scripts/python.exe'),['test_browser_fixture.py'],{env:{...process.env,TEST_RULE_PACK_FIXTURE:'1'},stdio:['ignore','pipe','inherit']});let browser;
+ try{
+  const url=await new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(Error('Fixture timeout')),15000);createInterface({input:fixture.stdout}).once('line',line=>{clearTimeout(timer);resolve(line)});fixture.once('exit',()=>reject(Error('Fixture exited')))});
+  browser=await chromium.launch({headless:true,executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe'});
+  const context=await browser.newContext(),room=await (await context.request.post(url+'/api/create',{data:{player:'Ana',title:'Preparación importada',ruleset:'rule-pack'}})).json();
+  await context.addInitScript(t=>localStorage.setItem('cronicas-token',t),room.token);
+  const page=await context.newPage(),actions=[],errors=[];
+  page.on('pageerror',e=>errors.push(e.stack));page.on('request',r=>{if(r.url().endsWith('/api/action'))actions.push(r.postDataJSON())});
+  await page.goto(url);await page.locator('#packFile').setInputFiles('test_fixtures/rule_packs/original-narrative-results-example.json');
+  await page.locator('#packInstall [name=use]').check();await page.locator('#packInstall button').click();
+  await page.locator('#packCreate [name=name]').fill('Aria');await page.locator('#packCreate button').click();
+  await page.locator('#packStoryStart summary').click();
+  await page.locator('#packAdventureFile').setInputFiles('test_fixtures/original-adventure-plan.json');
+  await page.locator('[data-plan-note]').waitFor();await page.locator('#packStoryStart [name=sourceUse]').check();
+  const before=actions.length;await page.evaluate(()=>refresh(true));assert.equal(actions.length,before);
+  assert.match(await page.locator('[data-plan-note]').textContent(),/estructurada/);
+  await page.locator('#packStoryStart summary').click();
+  const sourceField=page.locator('#packStoryStart [name=sourceText]'),loadedSource=await sourceField.inputValue();
+  await sourceField.fill(loadedSource+'\nCambio local');await page.locator('#packStoryStart button').click();
+  await page.getByText(/La fuente editada difiere/).waitFor();assert.equal(actions.length,before);
+  await sourceField.fill(loadedSource);
+  await page.locator('#packStoryStart button').click();await page.locator('#packStoryTalk').waitFor();
+  assert.equal(actions.filter(a=>a.type==='prepare_pack_discoveries').length,0);
+  const start=actions.find(a=>a.type==='start_pack_adventure');assert.equal(start.plan.format,'cronicas-adventure-plan-1');
+  assert.equal(await page.locator('[data-pack-objective=farol]').count(),1);assert.equal(await page.locator('[data-pack-discovery]').count(),0);
+  assert.ok(!(await page.evaluate(()=>JSON.stringify(snapshot))).includes('La marca señala el archivo.'));
+  const exported=await (await context.request.post(url+'/api/export',{headers:{Authorization:'Bearer '+room.token},data:{}})).json();
+  const original=JSON.parse(fs.readFileSync('test_fixtures/original-adventure-plan.json','utf8'));
+  assert.equal(exported.state.adventureSource.text,original.source.text);
+  await page.locator('#packStoryTalk [name=text]').fill('Examino la marca.');await page.locator('#packStoryTalk button').click();await page.locator('#packStoryResolve').waitFor();
+  await page.locator('#packStoryResolve summary').click();await page.locator('#packStoryResolve [name=dice0]').fill('3, 4');await page.locator('#packStoryResolve button.primary').click();
+  await page.waitForFunction(()=>snapshot.state.narrativeView.revision===3);
+  await page.locator('#packDiscoveries > summary').click();assert.match(await page.locator('[data-pack-discovery=archivo]').textContent(),/La marca señala el archivo/);
+  assert.equal(actions.filter(a=>a.type==='continue_pack_adventure').length,1);
+  await page.setViewportSize({width:390,height:1000});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+  await page.locator('#packDiscoveries').scrollIntoViewIfNeeded();await page.screenshot({path:'.deps/adventure-plan-mobile.png',fullPage:false});
+  assert.deepEqual(errors,[]);console.log('Adventure plan browser passed: one file, local retained draft, exact CRLF source, objectives/discoveries ready at start, no technical configuration, physical resolution and one continuation. Provider simulated.');
+ }finally{if(browser)await browser.close();fixture.kill()}
+})().catch(e=>{console.error(e);process.exitCode=1});

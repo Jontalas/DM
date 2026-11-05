@@ -238,6 +238,25 @@ class RulePackServerTests(unittest.TestCase):
         exported=self.request('/api/export',{},self.token);self.action('import',campaign=exported)
         self.assertEqual(self.state()['state']['narrativeView']['discoveries'][0]['text'],quote)
 
+    def test_imported_adventure_plan_start_recovers_captured_response_without_reconfiguration(self):
+        from test_adventure_plan import plan_document
+        self.action('install_rule_pack',package=document('original-narrative-results-example'),policy='provided-rules')
+        self.action('create_pack_sheet',name='Aria');current=self.state();cid=current['state']['characters'][0]['id']
+        plan=plan_document();body={'id':secrets.token_hex(12),'version':current['version'],'type':'start_pack_adventure','character':cid,'plan':plan,'sourcePolicy':'provided-adventure'}
+        with patch.object(pack_director,'propose',return_value=narrative_reply()) as provider:
+            with patch.object(server.STORE,'commit',side_effect=Unavailable('Interrupted after prepared opening')):
+                self.rejected(lambda:self.request('/api/action',body,self.token),503)
+            self.assertEqual(self.state(),current);self.assertEqual(provider.call_count,1)
+            self.request('/api/action',body,self.token);self.assertEqual(provider.call_count,1)
+            self.assertTrue(self.request('/api/action',body,self.token)['duplicate'])
+        view=self.state()['state']['narrativeView']
+        self.assertEqual(view['objectives'][0]['id'],'farol');self.assertEqual(view['discoveries'],[])
+        exported=self.request('/api/export',{},self.token)
+        self.assertEqual(exported['state']['adventureSource']['text'],plan['source']['text'])
+        self.assertEqual(exported['state']['narrative']['discoveries']['catalog']['definitions'],plan['discoveries'])
+        self.action('import',campaign=exported)
+        self.assertEqual(self.state()['state']['narrativeView'],view)
+
     def test_adventure_source_is_private_separate_and_not_loaded_for_view_or_dice(self):
         self.action('install_rule_pack',package=document('live-lantern-example'),policy='provided-rules')
         self.action('create_pack_sheet',name='Aria');cid=self.state()['state']['characters'][0]['id']

@@ -1,6 +1,7 @@
 """Persistent fiction, bounded mechanical requests and confirmed continuations."""
 import copy
 import json
+import re
 import secrets
 import time
 import rule_pack_world as world
@@ -31,6 +32,7 @@ def _log(state,kind,actor,me,**values):
 
 def apply(state,action,me,pack,call=None,draw=None,source_loader=None):
     kind=action['type'];result=copy.deepcopy(state);memory=result.get('narrative')
+    prepared_plan=None;prepared_goals=None
     if state['package']['policy']!='provided-rules':raise RulePackError('Activa el paquete antes de jugar')
     if kind=='prepare_pack_discoveries':
         _keys(action,('type','definitions','policy'))
@@ -53,11 +55,19 @@ def apply(state,action,me,pack,call=None,draw=None,source_loader=None):
         memory['discoveries']={'catalog':catalog,'sourceSha256':source['sha256'],'installedAt':index,'receipts':[]}
         return result
     if kind=='start_pack_adventure':
-        _keys(action,('type','character'),('sourceTitle','sourceText','sourcePolicy'))
+        _keys(action,('type','character'),('sourceTitle','sourceText','sourcePolicy','plan'))
         if not me['host']:raise PermissionError('Solo el anfitrión inicia la aventura compartida')
         if memory is not None:raise RulePackError('La aventura ya está iniciada')
         if len(state['characters'])>8:raise RulePackError('Este director admite como máximo ocho fichas; grupos grandes aún no verificados')
-        if any(key in action for key in ('sourceTitle','sourceText','sourcePolicy')):
+        if 'plan' in action:
+            if any(key in action for key in ('sourceTitle','sourceText')) or result.get('adventureSource') is not None or result.get('adventureSourceRef') is not None:
+                raise RulePackError('La preparación estructurada debe conservar una única fuente original')
+            from adventure_plan import compile_plan
+            prepared_plan=compile_plan(action['plan'],pack,action.get('sourcePolicy'))
+            result['adventureSource']=prepared_plan['source'];prepared_goals=[]
+            for offset in range(0,len(prepared_plan['objectives']),2):
+                prepared_goals=objectives.merge(prepared_goals,prepared_plan['objectives'][offset:offset+2],len(result['messages']))
+        elif any(key in action for key in ('sourceTitle','sourceText','sourcePolicy')):
             if not all(key in action for key in ('sourceTitle','sourceText','sourcePolicy')):raise RulePackError('Faltan título, texto o permiso de la aventura aportada')
             if state.get('adventureSource') is not None or state.get('adventureSourceRef') is not None:raise RulePackError('Esta campaña ya conserva su fuente original de aventura')
             import adventure_source
@@ -112,7 +122,7 @@ def apply(state,action,me,pack,call=None,draw=None,source_loader=None):
     game={key:value for key,value in state.items() if key not in ('authoring','authoringWorkspace','adventureSource')}
     if len(json.dumps(game,ensure_ascii=False).encode('utf-8'))>650000 or len(state['messages'])>4997:raise RulePackError('No hay espacio reservado para otra intervención; no se ha llamado a IA')
     if result.get('adventureSourceRef') is not None and result.get('adventureSource') is None and source_loader is not None:result=source_loader(result)
-    prepared=director.prepare(result,operation,actor,text,mode,pack)
+    prepared=director.prepare(result,operation,actor,text,mode,pack,prepared_goals=prepared_goals)
     reply=director.validate_reply(prepared,(call or director.propose)(prepared))
     proposal=reply['proposal'];pending=memory.get('pending') if memory else None
     if proposal['action']:
@@ -131,9 +141,14 @@ def apply(state,action,me,pack,call=None,draw=None,source_loader=None):
     relationships=world.merge_relationships(memory.get('relationships',[]) if memory else [],reply.get('relationshipUpdates',[]),npcs,places)
     if places:result['narrative']['places']=places
     if relationships:result['narrative']['relationships']=relationships
-    goals=objectives.merge(memory.get('objectives',[]) if memory else [],reply.get('objectiveUpdates',[]),len(result['messages'])-1)
+    goals=objectives.merge(prepared_goals if prepared_goals is not None else memory.get('objectives',[]) if memory else [],reply.get('objectiveUpdates',[]),len(result['messages'])-1)
     if goals:result['narrative']['objectives']=goals
     if memory and 'discoveries' in memory:result['narrative']['discoveries']=copy.deepcopy(memory['discoveries'])
+    if prepared_plan is not None:
+        index=len(result['messages'])
+        result['messages'].append({'kind':'system','text':'Preparación estructurada aportada: objetivos y consecuencias informativas cargados; no certifica reglas.','actor':me['id'],'time':time.time()})
+        result['narrative']['discoveries']={'catalog':prepared_plan['catalog'],'sourceSha256':prepared_plan['source']['sha256'],
+            'installedAt':index,'receipts':[],'planSha256':prepared_plan['sha256']}
     if 'objectiveCheck' in reply:
         pending['objectiveCheck']=objectives.check_spec(reply['objectiveCheck'],pending['action'],goals,pack.document())
         if 'discoveries' in result['narrative']:
@@ -217,7 +232,9 @@ def validate_discoveries(state,memory,pack):
     if store is None:
         if any('discoveryReveals' in event for event in messages):raise RulePackError('Revelaciones sin catálogo de aventura')
         return
-    _keys(store,('catalog','sourceSha256','installedAt','receipts'))
+    _keys(store,('catalog','sourceSha256','installedAt','receipts'),('planSha256',))
+    if 'planSha256' in store and (not isinstance(store['planSha256'],str) or not re.fullmatch('[a-f0-9]{64}',store['planSha256'])):
+        raise RulePackError('Identidad de preparación aportada inválida')
     if 'action-results' not in pack.document()['requires']:raise RulePackError('Descubrimientos sin resultados explícitos de acción')
     catalog=discoveries.validate_shape(store['catalog'])
     source=state.get('adventureSource');reference=state.get('adventureSourceRef')

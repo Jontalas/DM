@@ -22,6 +22,7 @@ from rule_pack_authoring import canonical
 CONTRACT='rule-pack-director-1'
 FACTS_CONTRACT='rule-pack-director-facts-2'
 DISCOVERY_CONTRACT='rule-pack-director-discoveries-3'
+PLAN_CONTRACT='rule-pack-director-plan-start-4'
 DISCOVERY_GUIDANCE='Los descubrimientos confirmados son información ya revelada. En continue, discoveriesRevealed de verifiedResolution identifica los revelados por ESTA resolución; confirmedDiscoveries conserva los anteriores. No confundas preparación de la fuente con hechos ocurridos ni vuelvas a bloquear un descubrimiento confirmado tras otra tirada.'
 MAX_RESPONSE=50000
 PROMPT='''Diriges en español una aventura persistente sin maestro humano. Usa exclusivamente el catálogo del paquete aportado; su fidelidad al manual no está certificada. No importes reglas por conocer el nombre de un juego. Solo el motor tira dados y modifica fichas, recursos, condiciones y objetivos. Si falta una mecánica, indica limitation y deja proposal vacía; no inventes estadísticas, dificultades, efectos ni administración para el jugador. Puedes dirigir ficción sin efectos reglamentarios. Una tirada pendiente de una acción disponible no es una limitación de cobertura: propón esa acción con limitation="" y explica la tirada pendiente en proposal.reason. Nunca combines una propuesta con limitation no vacía.
@@ -44,7 +45,7 @@ def _text(value,limit,empty=False):
     return repair_text(value).strip()
 
 
-def prepare(state,operation,actor,text,kind,pack):
+def prepare(state,operation,actor,text,kind,pack,prepared_goals=None):
     if not pack.ready(actor['sheet']):raise RulePackError('Completa las etapas de creación de tu personaje antes de iniciar o continuar la aventura')
     data=pack.document();memory=state.get('narrative') or {}
     available={key:spec for key,spec in data['actions'].items()
@@ -69,6 +70,10 @@ def prepare(state,operation,actor,text,kind,pack):
     # Preserve legacy request hashes for pending paid captures without a registry.
     if memory.get('npcs'):request['directorKnowledge']['npcs']=world.validate(memory['npcs'])
     if memory.get('objectives'):request['directorKnowledge']['objectives']=copy.deepcopy(memory['objectives'])
+    if prepared_goals is not None:
+        request['contract']=PLAN_CONTRACT
+        request['directorKnowledge']['objectives']=copy.deepcopy(prepared_goals)
+        request['providedPreparation']='Los objetivos aportados son preparación estable; conserva sus identidades, títulos y detalles. No son decisiones del jugador ni hechos ya ocurridos.'
     if memory.get('places'):request['directorKnowledge']['places']=world.validate_places(memory['places'])
     if memory.get('relationships'):request['directorKnowledge']['relationships']=world.validate_relationships(memory['relationships'],memory.get('npcs',[]),memory.get('places',[]))
     if state.get('adventureSource') is not None:
@@ -89,6 +94,7 @@ def prepare(state,operation,actor,text,kind,pack):
         store=memory['discoveries'];request['contract']=DISCOVERY_CONTRACT
         request['confirmedDiscoveries']=public_view(store['catalog'],store['receipts'])
         request['discoveryContract']=DISCOVERY_GUIDANCE
+    if prepared_goals is not None:request['contract']=PLAN_CONTRACT
     raw=canonical(request).encode('utf-8')
     if len(raw)>65000:raise RulePackError('El contexto de esta aventura supera el límite del director; no se ha llamado a IA')
     return {'request':request,'sha256':hashlib.sha256(raw).hexdigest(),'sourceScheme':'director-v1',

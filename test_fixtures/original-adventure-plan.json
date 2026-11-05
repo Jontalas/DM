@@ -1,0 +1,31 @@
+{
+  "format": "cronicas-adventure-plan-1",
+  "source": {
+    "title": "El farol — ejemplo propio",
+    "text": "Preparación propia CC0.\r\nLa marca señala el archivo.\r\nOtro secreto."
+  },
+  "package": {
+    "id": "original-narrative-results-example",
+    "version": "1.1.0",
+    "sha256": "fe6b69c144e9fc52349b8cc848d5d452329322867f50419fd092ae093a00f18e"
+  },
+  "objectives": [
+    {
+      "id": "farol",
+      "title": "Descifrar la marca del farol",
+      "detail": "Investigar la marca que ha señalado Arda.",
+      "known": true,
+      "private": "PRIVATE-GOAL: la marca apunta al archivo."
+    }
+  ],
+  "discoveries": [
+    {
+      "id": "archivo",
+      "objective": "farol",
+      "field": "success",
+      "start": 25,
+      "end": 52,
+      "text": "La marca señala el archivo."
+    }
+  ]
+}

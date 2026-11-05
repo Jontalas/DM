@@ -33,15 +33,26 @@ window.RulePackUI=(()=>{
      const remember=original=>{
       const previous=drafts.get(sourceKey)||{},displayed=form.elements.sourceText.value;
       const text=typeof original==='string'?original:previous.text?.replace(/\r\n?/g,'\n')===displayed?previous.text:displayed;
-      drafts.set(sourceKey,{title:form.elements.sourceTitle.value,text,use:form.elements.sourceUse.checked});
+      drafts.set(sourceKey,{...previous,title:form.elements.sourceTitle.value,text,use:form.elements.sourceUse.checked});
      };
      form.oninput=remember;form.onchange=remember;
+     $('#packAdventureFile').accept='.txt,.md,.json,text/plain,text/markdown,application/json';
+     if(saved.plan)form.insertAdjacentHTML('afterbegin','<p class="notice" data-plan-note>Preparación estructurada cargada: incluye objetivos y descubrimientos. Si editas su fuente, vuelve a cargar el archivo antes de iniciar.</p>');
      $('#packAdventureFile').onchange=run(async e=>{
       const file=e.target.files[0];if(!file)return;
-      if(file.size>48000||! /\.(txt|md)$/i.test(file.name))throw Error('Usa un archivo .txt o .md de hasta 48.000 bytes.');
-      const text=new TextDecoder('utf-8',{fatal:true}).decode(await file.arrayBuffer());sameCampaign(key);
+      const structured=/\.json$/i.test(file.name);
+      if(file.size>(structured?60000:48000)||! /\.(txt|md|json)$/i.test(file.name))throw Error('Usa texto .txt/.md de hasta 48.000 bytes o una preparación .json de hasta 60.000 bytes.');
+      const loaded=new TextDecoder('utf-8',{fatal:true}).decode(await file.arrayBuffer());sameCampaign(key);
+      const plan=structured?JSON.parse(loaded):null;
+      if(plan&&(plan.format!=='cronicas-adventure-plan-1'||typeof plan.source?.text!=='string'||typeof plan.source?.title!=='string'))throw Error('Este JSON no es una preparación de aventura compatible.');
+      if(structured&&!plan)throw Error('La preparación debe ser un objeto JSON.');
+      const text=plan?plan.source.text:loaded;
       if(text.length>12000)throw Error('El texto supera los 12.000 caracteres.');
+      drafts.set(sourceKey,{...(drafts.get(sourceKey)||{}),plan});
+      if(plan)form.elements.sourceTitle.value=plan.source.title;
       form.elements.sourceText.value=text;if(!form.elements.sourceTitle.value)form.elements.sourceTitle.value=file.name.replace(/\.[^.]+$/,'').slice(0,100);remember(text);
+      form.querySelector('[data-plan-note]')?.remove();
+      if(plan)form.insertAdjacentHTML('afterbegin','<p class="notice" data-plan-note>Preparación estructurada cargada; el servidor comprobará su paquete, objetivos y citas antes de llamar al director.</p>');
      });
     }
     form.onsubmit=run(async e=>{
@@ -49,7 +60,11 @@ window.RulePackUI=(()=>{
      if(fields.sourceText?.value.trim()){
       if(!fields.sourceUse.checked||!fields.sourceTitle.value.trim())throw Error('Indica el título y confirma que puedes utilizar la aventura aportada.');
       const original=drafts.get(sourceKey)?.text;
-      Object.assign(data,{sourceTitle:fields.sourceTitle.value,sourceText:typeof original==='string'&&original.replace(/\r\n?/g,'\n')===fields.sourceText.value?original:fields.sourceText.value,sourcePolicy:'provided-adventure'});
+      const plan=drafts.get(sourceKey)?.plan;
+      if(plan){
+       if(fields.sourceTitle.value!==plan.source.title||fields.sourceText.value!==plan.source.text.replace(/\r\n?/g,'\n'))throw Error('La fuente editada difiere de la preparación; vuelve a cargar el archivo o usa un archivo de texto sin preparación.');
+       Object.assign(data,{plan,sourcePolicy:'provided-adventure'});
+      }else Object.assign(data,{sourceTitle:fields.sourceTitle.value,sourceText:typeof original==='string'&&original.replace(/\r\n?/g,'\n')===fields.sourceText.value?original:fields.sourceText.value,sourcePolicy:'provided-adventure'});
      }
      await act('start_pack_adventure',data);drafts.delete(sourceKey);followStory(key);
     });

@@ -45,11 +45,15 @@ def main():
                     {'id':'archivo-camara','from':'place:archivo','to':'place:camara','known':False,'public':'','private':'Existe un pasadizo.'}]
                 changes['npcUpdates']=[{'id':'arda','name':'Arda <archivera>','known':True,'public':'Custodia el archivo junto al farol.','private':'PRIVATE-NPC: esconde una carta.'},
                     {'id':'sombra','name':'PRIVATE-NPC-NAME','known':False,'public':'','private':'Todavía no se ha presentado.'}]
+                if request['contract']==pack_director.PLAN_CONTRACT:changes.pop('objectiveUpdates')
             if request['operation']=='talk' and request['kind']=='action':
                 if 'TEST_UNSUPPORTED' in request['declaration']['text']:changes['limitation']='Este paquete no define esa mecánica.'
                 elif request['allowedActions']:action=request['allowedActions'][0]
                 if action and any(g['id']=='marca' and g['status']=='open' for g in request['directorKnowledge'].get('objectives',[])):
                     changes['objectiveCheck']={'objective':'marca','field':'success'}
+                elif action:
+                    goal=next((g for g in request['directorKnowledge'].get('objectives',[]) if g['known'] and g['status']=='open'),None)
+                    if goal:changes['objectiveCheck']={'objective':goal['id'],'field':'success'}
             if request['operation']=='continue':changes['narration']='El resultado confirmado revela una marca junto al farol. Arda espera tu decisión.'
             answer=pack_reply(action,**changes);answer['usage']={'inputTokens':100,'outputTokens':200,'latencyMs':1}
             return pack_director.validate_reply(prepared,answer)
