@@ -67,9 +67,13 @@ class ObjectiveTests(unittest.TestCase):
     def test_invalid_bindings_and_direct_model_completion_are_rejected_before_rng(self):
         pack=campaign.runtime(self.state,self.me['campaign'])
         opened=director.prepare(self.state,'talk',self.state['characters'][0],'Investigo','action',pack)
-        self.assertEqual(director.schema(opened)['properties']['objectiveCheck']['properties']['field']['enum'],['success'])
+        self.assertEqual(director.schema(opened)['properties']['objectiveCheck']['properties']['field']['enum'],['','success'])
+        self.assertIn('objectiveCheck',director.schema(opened)['required'])
         dialogue=director.prepare(self.state,'talk',self.state['characters'][0],'Hola','dialogue',pack)
         self.assertNotIn('objectiveCheck',director.schema(dialogue)['properties'])
+        unbound=self.apply(self.state,'talk_pack_adventure',fixture.reply('intentar',objectiveCheck={'objective':'','field':''}),character=self.character,text='Investigo otra cosa.',mode='action')
+        self.assertNotIn('objectiveCheck',unbound['narrative']['pending'])
+        self.assertEqual(unbound['narrative']['objectives'][0]['status'],'open')
         for check in [{'objective':'oculto','field':'success'},{'objective':'missing','field':'success'},
                       {'objective':'farol','field':'total'},{'objective':'farol','field':'exhausted'},
                       {'objective':'farol','field':'success','met':True}]:

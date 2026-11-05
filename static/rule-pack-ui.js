@@ -61,6 +61,8 @@ window.RulePackUI=(()=>{
    if(pending.objectiveCheck){
     const goal=goals.find(g=>g.id===pending.objectiveCheck.objective);
     body.insertAdjacentHTML('beforebegin',`<p class="notice">Objetivo vinculado: ${esc(goal?.title||pending.objectiveCheck.objective)}. Se completará si esta acción calcula ${esc(doc.fields[pending.objectiveCheck.field]?.label||pending.objectiveCheck.field)}: Sí con las opciones solicitadas. Si cambias esas opciones, el objetivo seguirá abierto.</p>`);
+   }else if(goals.some(goal=>goal.status==='open')){
+    body.insertAdjacentHTML('beforebegin','<p class="notice">Esta acción no está vinculada a un objetivo del diario. Resolverla no cerrará los objetivos abiertos.</p>');
    }
    if(actor.owner!==me.id)body.innerHTML='<p>La decisión y los dados corresponden a su jugador.</p>';
    else{

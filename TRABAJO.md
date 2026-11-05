@@ -1,5 +1,15 @@
 # Continuidad del desarrollo autónomo
 
+## Declaración natural correcta con vínculo omitido — 5 de noviembre de 2026
+
+`a94b6c65352e713df5265e494ea8ef6e07544389` desplegado, Render `7572870270` success; recuperador de inicio exige mismos bytes/version/acción y confirma la captura existente con cuatro ids normalizados sin IA nueva. Inicio/aviso/procedencia/ficha/original y duplicado comprobados; captura remota retirada tras confirmar y copia local privada conservada.
+
+Se ejecuta solo la segunda llamada del presupuesto original con frase natural «Examino la marca del farol que Arda ha señalado». El director propone legalmente `explore`, dos d6 y motivo atribuido como declaración; texto revisado sin el movimiento indebido anterior. Sin embargo omite objectiveCheck: contrato opcional lo permitía. Solicitud confirmada sin vínculo, objetivo abierto; script para la aceptación se detiene antes de dados. Sesión `.deps/staged-adventure-live-session.json` failed-remaining-run, contador 2; primera 4.025/662, segunda 5.921/379. No hay captura de fallo de segunda IA porque la API la confirmó; el fallo es de aceptación del recorrido, no del transporte. No usar diagnóstico viejo del inicio como captura pendiente actual.
+
+Corrección: schema exige evaluación explícita de objectiveCheck cuando existe opción mecánica/objetivos: ids/campo válidos o ambos vacíos para no vincular. Backend admite vacío sin inferir intención y conserva compatibilidad con respuestas viejas. Prompt pide vincular cuando la relación es clara y no cerrar por prosa un confirmedResult sin prueba de objetivo. UI avisa antes de resolver una acción sin vínculo si hay objetivos abiertos. **417 pruebas completas con emulador correctas, sin omisiones (83,557 s)** y navegador afectado correcto. Nueva llamada con este esquema aún no realizada.
+
+Pendiente respaldo/despliegue; guion privado `.deps/finish_unbound_staged_scene.py` preparado para resolver la solicitud que realmente existe, mantener objetivo abierto y utilizar únicamente la tercera inferencia original para narrar, sin cuarta ni vínculo retroactivo. Revisión narrativa explícita y documentación de limitación después; no declarar éxito de automatización ni hito personal. Continuar trabajo independiente sin intervención del usuario.
+
 ## Nuevo ensayo con creación y defecto de ids recuperable — 5 de noviembre de 2026
 
 Creador por etapas desplegado en `3bc066f6dfbb063d17239aee49664e77581d41d3`, Render `7572644501` success, salud/revisión correctas. API real sin IA verifica copia parcial/dado 1, propietario, límite de enfoque 1, rechazo de 2, etapa final, duplicado y explorar. Navegador real de etapa pendiente y copia completa correcto, invitado sin control, móvil revisado. Sesión privada `.deps/staged-creation-live-session.json` verified; no repetir.

@@ -1,5 +1,13 @@
 # Motor común y paquetes de reglas importables
 
+## Evaluación explícita del vínculo a objetivos
+
+Normalización de ids desplegada en `a94b6c6`, Render `7572870270` success; inicio del segundo ensayo recuperado con bytes/acción/versión originales y CERO inferencias nuevas. Después se hizo la segunda llamada prevista con «Examino la marca del farol que Arda ha señalado»: solicitó Explorar correctamente y mantuvo la agencia en el relato revisado, pero omitió objectiveCheck, permitido por el contrato anterior. La solicitud quedó confirmada y **sin vínculo**; no se añade retroactivamente ni se cierra el objetivo por una tirada de una solicitud no vinculada. El recorrido de automatización de objetivos todavía no está aceptado.
+
+Esquema futuro: cuando hay campos booleanos y objetivos admitidos exige una evaluación explícita `objectiveCheck`, con dos opciones: par objetivo/campo válido o ambos vacíos si no corresponde. El servidor trata el par vacío como acción sin vínculo; mezclas o referencias inválidas se rechazan. Compatibilidad de capturas/respuestas anteriores sin el campo conservada. El prompt exige vincular una intención claramente relacionada y prohíbe cerrar por narración un resultado sin objectiveResolution. La UI advierte antes de tirar cuando hay objetivos abiertos y la solicitud no tiene vínculo, para que la decisión sea visible. No adivina la intención ni vincula todas las acciones a un objetivo solo por estar abierto.
+
+**417 pruebas completas con emulador, sin omisiones (83,557 s)** y navegador afectado simulado correctos. No se ha ejecutado todavía otra inferencia con la evaluación obligatoria. En la segunda sesión técnica quedan UNA llamada de las tres originales y una solicitud mecánica sin resolver; se finalizará honestamente manteniendo el objetivo abierto, sin gastar una cuarta llamada ni presentar el caso como éxito completo.
+
 ## Identificadores de registros y recuperación del inicio
 
 Ensayo nuevo posterior al creador, separado del anterior: máximo tres llamadas previstas y solo UNA ejecutada en este punto. La respuesta inicial terminó con end_turn, 4.025 tokens entrada/662 salida y thinking_tokens=0, pero usó id tipados dentro de los registros (`npc:arda`, `place:archivo`, `rel:arda-archivo`, `obj:marca`). El contrato requería id simples y prefijos solo en extremos de relaciones; el servidor rechazó y conservó captura antes de confirmar. No se hizo otra inferencia para sustituirla.
