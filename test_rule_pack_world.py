@@ -14,6 +14,14 @@ def npc(identifier='arda',**changes):
     return {'id':identifier,'name':'Arda','known':True,'public':'Archivera junto al farol.','private':'PRIVATE-NPC: oculta una carta.',**changes}
 
 
+def place(identifier='archivo',**changes):
+    return npc(identifier,**{'name':'Archivo','public':'Un edificio junto a la plaza.','private':'PRIVATE-PLACE: una cámara sellada.',**changes})
+
+
+def relationship(identifier='arda-archivo',**changes):
+    return {'id':identifier,'from':'npc:arda','to':'place:archivo','known':True,'public':'Arda custodia este archivo.','private':'PRIVATE-LINK: otra entrada.',**changes}
+
+
 class WorldTests(unittest.TestCase):
     def test_merge_preserves_other_npcs_and_never_exposes_secrets(self):
         original=[npc(),npc('sombra',known=False,public='',name='Nombre secreto')];before=copy.deepcopy(original)
@@ -29,6 +37,17 @@ class WorldTests(unittest.TestCase):
         full=[npc('npc-'+str(i)) for i in range(16)]
         with self.assertRaises(RulePackError):world.merge(full,[npc('extra')])
         self.assertEqual(len(world.merge(full,[npc('npc-1')])),16)
+
+    def test_places_and_relationships_are_bounded_referential_and_private(self):
+        people=[npc()];places=[place(),place('oculto',name='PRIVATE-NAME',known=False,public='')]
+        links=[relationship(),relationship('secreto',to='place:oculto',known=False,public='')]
+        public=world.public_relationships(links,people,places)
+        self.assertEqual(len(public),1);self.assertEqual(public[0]['toName'],'Archivo')
+        self.assertNotIn('PRIVATE',str(public))
+        for bad in [relationship(to='place:missing'),relationship(to='npc:arda'),relationship(to='place:oculto'),relationship(to='character:player'),relationship(known=False)]:
+            with self.assertRaises(RulePackError):world.validate_relationships([bad],people,places)
+        with self.assertRaises(RulePackError):world.merge_relationships(links,[relationship(to='place:oculto',known=False,public='')],people,places)
+        with self.assertRaises(RulePackError):world.merge_places([place('place-'+str(i)) for i in range(8)],[place('extra')])
 
 
 class WorldNarrativeTests(unittest.TestCase):
@@ -85,3 +104,22 @@ class WorldNarrativeTests(unittest.TestCase):
         self.assertEqual(after['narrative']['npcs'],state['narrative']['npcs'])
         self.assertEqual(after['characters'],state['characters'])
         self.assertIsNone(after['narrative']['continuation'])
+
+    def test_places_relationships_context_copy_and_no_automatic_travel(self):
+        started=campaign.execute_action(self.state,{'type':'start_pack_adventure','character':self.character},self.me,
+            narrative_call=Mock(return_value=reply(npcUpdates=[npc()],placeUpdates=[place(),place('oculto',name='PRIVATE-PLACE-NAME',known=False,public='')],
+                relationshipUpdates=[relationship(),relationship('secreto',to='place:oculto',known=False,public='')])))
+        self.assertEqual(started['characters'],self.state['characters']);self.assertEqual(started['goal'],self.state['goal'])
+        view=campaign.public_view(started,self.me);self.assertEqual(len(view['narrativeView']['places']),1)
+        self.assertEqual(len(view['narrativeView']['relationships']),1);self.assertNotIn('PRIVATE',str(view))
+        prepared=director.prepare(started,'talk',started['characters'][0],'Hola','dialogue',campaign.runtime(started,self.me['campaign']))
+        self.assertEqual(len(prepared['request']['directorKnowledge']['places']),2)
+        self.assertEqual(len(prepared['request']['directorKnowledge']['relationships']),2)
+        continued=campaign.execute_action(started,{'type':'talk_pack_adventure','character':self.character,'text':'Hola','mode':'dialogue'},self.me,narrative_call=Mock(return_value=reply()))
+        for key in ('places','relationships'):self.assertEqual(continued['narrative'][key],started['narrative'][key])
+        copied=campaign.import_campaign(continued,self.me|{'id':'new-owner'});campaign.validate_restored(copied)
+        bad=copy.deepcopy(copied);bad['narrative']['relationships'][0]['to']='place:missing'
+        with self.assertRaises(RulePackError):campaign.validate_restored(bad)
+        with self.assertRaises(RulePackError):
+            campaign.execute_action(self.state,{'type':'start_pack_adventure','character':self.character},self.me,
+                narrative_call=Mock(return_value=reply(placeUpdates=[place(location='move-player')])) )

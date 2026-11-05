@@ -39,6 +39,10 @@ def main():
             if request['operation']=='start':
                 changes['objectiveUpdates']=[{'id':'marca','title':'Investigar la marca del farol','detail':'Comprobar la marca que ha señalado Arda.','known':True,'private':'PRIVATE-OBJECTIVE: la marca procede del archivo.'},
                     {'id':'secreto','title':'PRIVATE-OBJECTIVE-TITLE','detail':'Una oportunidad todavía desconocida.','known':False,'private':'No revelar.'}]
+                changes['placeUpdates']=[{'id':'archivo','name':'Archivo <antiguo>','known':True,'public':'Un edificio de piedra junto a la plaza.','private':'PRIVATE-WORLD: tiene una cámara sellada.'},
+                    {'id':'camara','name':'PRIVATE-WORLD-NAME','known':False,'public':'','private':'Todavía no descubierta.'}]
+                changes['relationshipUpdates']=[{'id':'arda-archivo','from':'npc:arda','to':'place:archivo','known':True,'public':'Arda custodia este archivo.','private':'PRIVATE-WORLD: conoce otra entrada.'},
+                    {'id':'archivo-camara','from':'place:archivo','to':'place:camara','known':False,'public':'','private':'Existe un pasadizo.'}]
                 changes['npcUpdates']=[{'id':'arda','name':'Arda <archivera>','known':True,'public':'Custodia el archivo junto al farol.','private':'PRIVATE-NPC: esconde una carta.'},
                     {'id':'sombra','name':'PRIVATE-NPC-NAME','known':False,'public':'','private':'Todavía no se ha presentado.'}]
             if request['operation']=='talk' and request['kind']=='action':

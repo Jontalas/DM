@@ -65,6 +65,11 @@ class ObjectiveTests(unittest.TestCase):
         self.assertEqual(len(prepared['request']['directorKnowledge']['objectives']),2)
 
     def test_invalid_bindings_and_direct_model_completion_are_rejected_before_rng(self):
+        pack=campaign.runtime(self.state,self.me['campaign'])
+        opened=director.prepare(self.state,'talk',self.state['characters'][0],'Investigo','action',pack)
+        self.assertEqual(director.schema(opened)['properties']['objectiveCheck']['properties']['field']['enum'],['success'])
+        dialogue=director.prepare(self.state,'talk',self.state['characters'][0],'Hola','dialogue',pack)
+        self.assertNotIn('objectiveCheck',director.schema(dialogue)['properties'])
         for check in [{'objective':'oculto','field':'success'},{'objective':'missing','field':'success'},
                       {'objective':'farol','field':'total'},{'objective':'farol','field':'exhausted'},
                       {'objective':'farol','field':'success','met':True}]:

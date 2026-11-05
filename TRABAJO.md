@@ -1,6 +1,16 @@
 # Continuidad del desarrollo autónomo
 
+## Lugares y relaciones, continuidad sin viajes ficticios — 5 de noviembre de 2026
+
+Implementados ocho lugares y dieciséis relaciones, con notas públicas/privadas y referencias `npc:id`/`place:id`. El servidor valida extremos, existencia, límites y visibilidad; los vínculos públicos requieren ambos extremos conocidos. No permite cambiar extremos de un id existente ni volver a ocultar conocimiento previo. Contexto, persistencia, copia, recuperación y diario integrados con las proyecciones de PNJ/objetivos. No mueve jugadores ni aplica reglas de viaje/tiempo/acceso por escribir ficción. Sin IA adicional por dato y sin documentos Firestore nuevos. Registros omitidos se conservan y contextos antiguos vacíos mantienen huellas.
+
+Se restringió el esquema de objectiveCheck a booleanos que las acciones disponibles calculen incondicionalmente; se omite en diálogo/inicio/continuación sin acciones. Reduce propuestas inválidas y recuperaciones facturables sin introducir fórmulas de juegos.
+
+**389 pruebas completas con emulador oficial correctas, sin omisiones (78,970 s)**. Navegador simulado afectado correcto: lugares y vínculos locales, marcado escapado, secretos ausentes, anfitrión/invitado, objetivos, copia/recuperación y móvil. Unitarias de integridad de grafo, límites y no traslado de personajes. Reproducción de captura real anterior correcta. No hay nueva inferencia real ni campaña larga verificada. Despliegue pendiente; continuar después con fuente privada de aventura y recuperación pertinente sin mover textos a cada instantánea mecánica.
+
 ## Objetivos con evidencia y autonomía ratificada — 5 de noviembre de 2026
+
+**Desplegado y verificado:** `4a5a33a6c6106ed79cbaae7fb0d7a9aee8aa33a8`, Render `7571691276` success y salud/revisión exacta HTTPS. Ensayo `.deps/verify_objectives_production.py` terminado, sesión privada verified: importación de ficción simulada local en campaña técnica nueva, resolución real de producción [3,4], objetivo completado y ficha confirmados conjuntamente antes de narrar, duplicado, exportación validada e invitado sin secretos. Cero inferencias nuevas. Navegador real `.deps/verify_objectives_production_browser.cjs` correcto con consulta local de evidencia, permisos y móvil; captura revisada. Se conserva continuación pendiente en esa prueba; no ejecutarla para gastar otra inferencia. Reproducción de la captura antigua del director sigue correcta. Siguiente bloque independiente: lugares/relaciones en memoria del mundo; no simular movimiento, viaje o reglas que el paquete no implemente.
 
 Verificación final: **387 pruebas completas con emulador oficial, sin omisiones (78,488 s)**. Navegador simulado ampliado correcto y captura móvil revisada: objetivo abierto, vínculo antes de dados, éxito confirmado/cierre antes de continuar relato, respuesta perdida y mismo id, consulta local de evidencia, privacidad e invitado. Falta desplegar y verificar determinismo en campaña técnica de producción; se puede importar preparación narrativa simulada sin gastar otra inferencia. No presentar ese ensayo como generación real de objetivos ni como hito personal del usuario.
 

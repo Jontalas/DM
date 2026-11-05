@@ -91,6 +91,10 @@ def apply(state,action,me,pack,call=None,draw=None):
         'preparation':reply['preparation'],'pending':pending,'continuation':None}
     npcs=world.merge(memory.get('npcs',[]) if memory else [],reply.get('npcUpdates',[]))
     if npcs:result['narrative']['npcs']=npcs
+    places=world.merge_places(memory.get('places',[]) if memory else [],reply.get('placeUpdates',[]))
+    relationships=world.merge_relationships(memory.get('relationships',[]) if memory else [],reply.get('relationshipUpdates',[]),npcs,places)
+    if places:result['narrative']['places']=places
+    if relationships:result['narrative']['relationships']=relationships
     goals=objectives.merge(memory.get('objectives',[]) if memory else [],reply.get('objectiveUpdates',[]),len(result['messages'])-1)
     if goals:result['narrative']['objectives']=goals
     if 'objectiveCheck' in reply:
@@ -103,6 +107,10 @@ def public_view(memory):
     result={key:copy.deepcopy(memory[key]) for key in ('revision','summary','pending','continuation')}
     known=world.public_view(memory.get('npcs',[]))
     if known:result['npcs']=known
+    known_places=world.public_view(memory.get('places',[]))
+    known_relationships=world.public_relationships(memory.get('relationships',[]),memory.get('npcs',[]),memory.get('places',[]))
+    if known_places:result['places']=known_places
+    if known_relationships:result['relationships']=known_relationships
     known_goals=objectives.public_view(memory.get('objectives',[]))
     if known_goals:result['objectives']=known_goals
     return result
@@ -114,7 +122,9 @@ def validate(state,pack):
         if any(event.get('kind') in ('pack-talk','pack-director') for event in state['messages']):raise RulePackError('El registro narrativo requiere su memoria de aventura')
         return
     if not state['characters']:raise RulePackError('Aventura sin personajes')
-    _keys(memory,('revision','summary','preparation','pending','continuation'),('npcs','objectives'))
+    _keys(memory,('revision','summary','preparation','pending','continuation'),('npcs','objectives','places','relationships'))
+    world.validate_places(memory.get('places',[]))
+    world.validate_relationships(memory.get('relationships',[]),memory.get('npcs',[]),memory.get('places',[]))
     objectives.validate(memory.get('objectives',[]),state,pack)
     world.validate(memory.get('npcs',[]))
     if {npc['id'] for npc in memory.get('npcs',[])}&{actor['id'] for actor in state['characters']}:raise RulePackError('Un personaje jugador no puede convertirse en PNJ')

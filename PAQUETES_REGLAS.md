@@ -1,6 +1,16 @@
 # Motor común y paquetes de reglas importables
 
+## Lugares y relaciones del mundo
+
+Memoria acotada de ocho lugares y dieciséis relaciones, con identidad estable y notas públicas/privadas, además de los PNJ. Las relaciones usan extremos tipados `npc:id` o `place:id`, deben referir registros existentes o creados en esa respuesta y no pueden cambiar de extremos retrospectivamente. Una relación pública solo enlaza extremos conocidos; el estado oculta registros y nombres desconocidos, también al anfitrión. Al importar se validan referencias, límites, campos y visibilidad. Las actualizaciones omitidas conservan los datos previos.
+
+`placeUpdates` y `relationshipUpdates` son opcionales en la llamada narrativa habitual. El contexto solo añade esos registros cuando existen, preservando huellas de capturas antiguas. El diario consulta lugares/vínculos ya cargados sin IA ni escrituras. Este registro **no traslada personajes, avanza tiempo, concede acceso ni implementa reglas de viaje o movimiento**. Una nota ficticia no sustituye mecánicas del paquete ni certifica semánticamente una narración. No es un mapa ni una campaña larga verificada.
+
+No hay documentos Firestore adicionales por lugares/relaciones: se guardan junto con narración/estado y se conserva el límite de contexto de 65.000 bytes. Registros máximos pueden requerir acotar o archivar contexto antes de sostener campañas largas; no se presenta esa capacidad como resuelta. El esquema de objectiveCheck ahora omite vínculos cuando no hay acciones admitidas y enumera solo booleanos calculados incondicionalmente, evitando pedir al proveedor campos que el servidor rechazaría. **389 pruebas completas con emulador, sin omisiones (78,970 s)** y navegador simulado afectado correctos; reproducción de captura real anterior también correcta. No hay inferencia real nueva de estos registros ni hito personal del usuario alcanzado.
+
 ## Objetivos de aventura vinculados a resultados
+
+Desplegados en `4a5a33a`, Render `7571691276` success, revisión y salud HTTPS correctas. Motor de producción verificado en campaña técnica con ficción simulada importada, sin inferencia: objetivo cerrado conjuntamente con resolución [3,4], ficha, duplicado, copia e invitado. Navegador real y móvil también correctos; consulta sin acciones. Esto comprueba integración/determinismo en producción, no generación real de objetivos ni aventura autónoma completa. La continuación de esa prueba no se ejecutó.
 
 Bloque común, sin fórmulas por juego: hasta doce oportunidades con id estable, título/detalle, visibilidad de grupo y notas privadas. El director propone como máximo dos descripciones por respuesta mediante `objectiveUpdates`; no puede escribir `status`, `evidence`, recompensas ni estadísticas. La definición pública se conserva para que no cambie retrospectivamente lo que significaba completar un objetivo. Las propuestas no aceptan compromisos en nombre del jugador.
 
