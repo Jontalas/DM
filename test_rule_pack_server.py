@@ -311,6 +311,29 @@ class RulePackServerTests(unittest.TestCase):
         self.assertEqual(after['creation'],staged[0]['characters'][0]['creation'])
         self.assertEqual(after['sheet'],staged[0]['characters'][0]['sheet'])
 
+    def test_declared_action_results_reach_the_small_fact_contract_and_replay_in_backup(self):
+        from test_rule_pack_objectives import goal
+        self.action('install_rule_pack',package=document('original-staged-results-example'),policy='provided-rules')
+        self.action('create_pack_sheet',name='Aria',physical={'aptitude':[1]});cid=self.state()['state']['characters'][0]['id']
+        self.action('advance_pack_creation',character=cid,step='training',inputs={'role':'cronista','focus':1})
+        with patch.object(pack_director,'propose',return_value=narrative_reply(objectiveUpdates=[goal()])) as provider:
+            self.action('start_pack_adventure',character=cid)
+            provider.return_value=narrative_reply('explore',objectiveCheck={'objective':'farol','field':'success'})
+            self.action('talk_pack_adventure',character=cid,text='Examino la marca.',mode='action')
+            pending=self.state()['state']['narrativeView']['pending']
+            body=self.action('resolve_pack_request',request=pending['id'],physical={'pool':[3,4]})
+            self.assertTrue(self.request('/api/action',body,self.token)['duplicate'])
+            self.assertEqual(self.state()['state']['messages'][-1]['trace']['results'],{'success':True})
+            provider.return_value=narrative_reply()
+            self.action('continue_pack_adventure')
+            request=provider.call_args.args[0]['request']
+            self.assertEqual(request['contract'],pack_director.FACTS_CONTRACT)
+            self.assertEqual(request['verifiedResolution']['outputs']['success']['value'],True)
+            self.assertEqual(request['verifiedResolution']['objectiveStates'][0]['status'],'completed')
+            self.assertEqual(request['rules']['actions'],{});self.assertEqual(request['history'],[])
+        exported=self.request('/api/export',{},self.token);self.action('import',campaign=exported)
+        self.assertEqual(self.state()['state']['characters'][0]['sheet']['fields']['energy'],2)
+
     def test_generic_director_requests_engine_dice_and_continues_from_confirmed_state(self):
         self.action('install_rule_pack',package=document('live-lantern-example'),policy='provided-rules')
         self.action('create_pack_sheet',name='Aria');character=self.state()['state']['characters'][0]['id']

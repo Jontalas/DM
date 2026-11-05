@@ -10,7 +10,8 @@ const path=require('node:path'),assert=require('node:assert/strict');
   await context.addInitScript(t=>{if(!localStorage.getItem('cronicas-token'))localStorage.setItem('cronicas-token',t)},room.token);
   const page=await context.newPage(),actions=[],errors=[];
   page.on('pageerror',e=>errors.push(e.stack));page.on('request',r=>{if(r.url().endsWith('/api/action'))actions.push(r.postDataJSON())});
-  await page.goto(url);await page.locator('#packFile').setInputFiles('test_fixtures/rule_packs/live-lantern-example.json');
+  const resultContract=process.env.TEST_ACTION_RESULT_CONTRACT==='1';
+  await page.goto(url);await page.locator('#packFile').setInputFiles(resultContract?'test_fixtures/rule_packs/original-narrative-results-example.json':'test_fixtures/rule_packs/live-lantern-example.json');
   await page.locator('#packInstall [name=use]').check();await page.locator('#packInstall button').click();
   await page.locator('#packCreate [name=name]').fill('Aria');await page.locator('#packCreate button').click();
   await page.locator('#packStoryStart summary').click();
@@ -66,6 +67,12 @@ const path=require('node:path'),assert=require('node:assert/strict');
   assert.equal(actions.filter(a=>a.type==='continue_pack_adventure').length,0);
   assert.deepEqual(await page.evaluate(()=>snapshot.state.messages.find(m=>m.kind==='pack-action').trace.rolls.dice.values),[3,4]);
   assert.equal(await page.evaluate(()=>snapshot.state.narrativeView.objectives[0].status),'completed');
+  if(resultContract){
+   assert.match(await page.locator('.pack-confirmed-results').textContent(),/Éxito: Sí/);
+   assert.match(await page.locator('.pack-confirmed-results').textContent(),/Objetivo completado: Investigar la marca/);
+   const beforeIntent=actions.length;await page.locator('.pack-confirmed-results summary').click();
+   assert.match(await page.locator('.pack-confirmed-results').textContent(),/Investigo el farol/);assert.equal(actions.length,beforeIntent);
+  }
   await page.locator('#packObjectives > summary').click();
   assert.match(await page.locator('[data-pack-objective=marca]').textContent(),/Completado/);
   const beforeEvidence=actions.length;await page.locator('[data-pack-objective=marca] summary').click();

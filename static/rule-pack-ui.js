@@ -8,7 +8,15 @@ window.RulePackUI=(()=>{
  function historyEntry(m,doc){
   if(m.kind==='system')return `<p>${esc(m.text)}</p>`;
   if(m.kind==='pack-talk'||m.kind==='pack-director')return `<article class="pack-story-message"><h4>${esc(m.speaker)}${m.mode==='ooc'?' · Fuera de personaje':''}</h4><p>${esc(m.text)}</p>${m.limitation?`<p class="notice">Límite del motor: ${esc(m.limitation)}</p>`:''}</article>`;
-  return `<article><h4>${esc(m.speaker)} · ${esc(doc.actions[m.action]?.label||m.action)}</h4>${Object.entries(m.trace.rolls).filter(([,r])=>r.rolled).map(([id,r])=>`<p>${esc(id)}: ${esc(r.values.join(', '))} → ${r.total} · ${r.origin==='physical'?'dados físicos':'servidor'}</p>`).join('')}${Object.entries(m.trace.changes).map(([id,v])=>`<p>${esc(doc.fields[id]?.label||id)}: ${esc(shown(v.before))} → ${esc(shown(v.after))}</p>`).join('')}${m.trace.triggers.map(t=>`<p>Consecuencia automática: ${esc(doc.triggers[t.id]?.label||t.id)}</p>`).join('')}</article>`;
+  let resultContext='';
+  if(m.trace.results){
+   const index=snapshot.state.messages.indexOf(m),declaration=snapshot.state.messages.slice(0,Math.max(0,index)).reverse().find(event=>event.kind==='pack-talk'&&event.mode==='action'&&event.character===m.character);
+   if(declaration)resultContext+=`<details><summary>Declaración resuelta</summary><p>${esc(declaration.text)}</p></details>`;
+   const goals=snapshot.state.narrativeView?.objectives||[],proof=m.objectiveResolution,goal=goals.find(goal=>goal.id===proof?.objective);
+   if(proof?.met)resultContext+=`<p>Objetivo completado: ${esc(goal?.title||'objetivo registrado')}.</p>`;
+   else if(proof||goals.length)resultContext+='<p>Esta resolución no registra ningún objetivo completado.</p>';
+  }
+  return `<article><h4>${esc(m.speaker)} · ${esc(doc.actions[m.action]?.label||m.action)}</h4>${m.trace.results?`<section class="pack-confirmed-results"><h4>Resultado confirmado</h4>${Object.entries(m.trace.results).map(([id,value])=>`<p><strong>${esc(doc.fields[id]?.label||id)}: ${esc(shown(value))}</strong></p>`).join('')}${resultContext}</section>`:''}${Object.entries(m.trace.rolls).filter(([,r])=>r.rolled).map(([id,r])=>`<p>${esc(id)}: ${esc(r.values.join(', '))} → ${r.total} · ${r.origin==='physical'?'dados físicos':'servidor'}</p>`).join('')}${Object.entries(m.trace.changes).filter(([id])=>!Object.hasOwn(m.trace.results||{},id)).map(([id,v])=>`<p>${esc(doc.fields[id]?.label||id)}: ${esc(shown(v.before))} → ${esc(shown(v.after))}</p>`).join('')}${m.trace.triggers.map(t=>`<p>Consecuencia automática: ${esc(doc.triggers[t.id]?.label||t.id)}</p>`).join('')}</article>`;
  }
  function followStory(key){if(!$('#app').hidden&&scope()===key)($('#packStoryResolve')||$('#packStoryContinue')||$('#packStoryTalk'))?.scrollIntoView({block:'nearest'});}
  function renderAdventure(root,doc){

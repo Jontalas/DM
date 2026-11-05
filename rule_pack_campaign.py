@@ -277,7 +277,7 @@ def validate_restored(state,campaign='import-validation'):
             else:entries=[creation]
             sheet=pack.new_sheet(character['owner'])
             for index,entry in enumerate(entries):
-                _keys(entry,('inputs','trace'));trace=entry['trace'];_keys(trace,('action','sources','rolls','changes','triggers'))
+                _keys(entry,('inputs','trace'));trace=entry['trace'];_keys(trace,('action','sources','rolls','changes','triggers','results') if isinstance(trace,dict) and 'results' in trace else ('action','sources','rolls','changes','triggers'))
                 if not isinstance(trace['rolls'],dict) or any(not isinstance(v,dict) for v in trace['rolls'].values()):raise RulePackError('Dados de creación inválidos')
                 physical={key:value.get('values') for key,value in trace['rolls'].items() if value.get('rolled')}
                 sheet,expected=pack.advance_character(sheet,pack.creation_steps[index],entry['inputs'],character['owner'],physical=physical,
@@ -299,7 +299,7 @@ def validate_restored(state,campaign='import-validation'):
         if event['kind']!='pack-action' or not isinstance(event['character'],str) or event['character'] not in sheets or type(event['host'])!=bool:raise RulePackError('Acción registrada inválida')
         _text(event['speaker'],120)
         trace=event['trace']
-        _keys(trace,('action','sources','rolls','changes','triggers'))
+        _keys(trace,('action','sources','rolls','changes','triggers','results') if isinstance(trace,dict) and 'results' in trace else ('action','sources','rolls','changes','triggers'))
         if not isinstance(trace['rolls'],dict) or any(not isinstance(v,dict) for v in trace['rolls'].values()):raise RulePackError('Dados registrados inválidos')
         physical={key:value.get('values') for key,value in trace['rolls'].items() if value.get('rolled')}
         previous=sheets[event['character']]

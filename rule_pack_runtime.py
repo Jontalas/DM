@@ -11,7 +11,7 @@ import secrets
 from bisect import bisect_right
 
 FORMAT='cronicas-rules-1'
-CAPABILITIES={'scalar-fields','expressions','tables','dice','actions','triggers','character-creation','staged-character-creation'}
+CAPABILITIES={'scalar-fields','expressions','tables','dice','actions','triggers','character-creation','staged-character-creation','action-results'}
 LIMIT=10**12
 OPS={'add':(1,20),'sub':(2,2),'mul':(2,2),'floor_div':(2,2),'min':(1,20),'max':(1,20),
      'eq':(2,2),'ne':(2,2),'lt':(2,2),'le':(2,2),'gt':(2,2),'ge':(2,2),
@@ -133,7 +133,7 @@ class RulePack:
             if 'derive' in spec:self._expression(spec['derive'],{'fields':fields})
         self._order=self._derived_order()
         for action in data['actions'].values():
-            _keys(action,('label','sources','inputs','requires','rolls','effects'),('permission',))
+            _keys(action,('label','sources','inputs','requires','rolls','effects'),('permission','resultFields'))
             _text(action['label']);self._sources(action)
             if action.get('permission','owner') not in ('owner','host'):_fail('Permiso de acción no compatible')
             if not isinstance(action['inputs'],dict) or len(action['inputs'])>32:_fail('Entradas de acción fuera de límites')
@@ -155,6 +155,10 @@ class RulePack:
                 self._expression(roll.get('when',True),{**scopes,'rolls':rolls})
                 rolls.add(identifier)
             self._effects(action['effects'],{**scopes,'rolls':rolls})
+            if 'resultFields' in action:
+                results=action['resultFields']
+                if not isinstance(results,list) or not 1<=len(results)<=16 or any(not isinstance(field,str) or field not in fields for field in results) or len(set(results))!=len(results):
+                    _fail('Las salidas relevantes necesitan entre uno y dieciséis campos existentes distintos')
         for trigger in data['triggers'].values():
             _keys(trigger,('label','sources','when','effects'));_text(trigger['label']);self._sources(trigger)
             self._expression(trigger['when'],{'fields':fields});self._effects(trigger['effects'],{'fields':fields})
@@ -173,6 +177,7 @@ class RulePack:
         used={'scalar-fields','expressions','actions'}
         if self.creation is not None:used.add('character-creation')
         if 'steps' in data.get('creation',{}):used.add('staged-character-creation')
+        if any('resultFields' in action for action in data['actions'].values()):used.add('action-results')
         if data['tables']:used.add('tables')
         if data['triggers']:used.add('triggers')
         if any(action['rolls'] for action in data['actions'].values()):used.add('dice')
@@ -318,8 +323,8 @@ class RulePack:
         self._fields(sheet['fields'],[50000]);return sheet
 
     def view(self,sheet):
-        self._sheet(sheet)
-        return {'package':copy.deepcopy(sheet['package']),'owner':sheet['owner'],'revision':sheet['revision'],'fields':self._fields(sheet['fields'],[50000])}
+        fields=self._sheet(sheet)
+        return {'package':copy.deepcopy(sheet['package']),'owner':sheet['owner'],'revision':sheet['revision'],'fields':fields}
 
     def create_character(self,owner,inputs=None,physical=None,draw=None):
         sheet=self.new_sheet(owner)
@@ -373,7 +378,7 @@ class RulePack:
         if sheet['format']!='cronicas-sheet-1' or sheet['package']!={'id':self.id,'version':self.version,'sha256':self.digest}:_fail('La ficha requiere otra versión o contenido del paquete')
         _text(sheet['owner'],100)
         if type(sheet['revision'])!=int or not 0<=sheet['revision']<=1000000:_fail('Revisión de ficha inválida')
-        self._fields(sheet['fields'],[50000])
+        return self._fields(sheet['fields'],[50000])
 
     def _batch(self,stored,effects,context,budget):
         updates={}
@@ -453,5 +458,7 @@ class RulePack:
                         stored=updated;changed=True
             if not changed:break
         result=copy.deepcopy(sheet);result['fields']=stored;result['revision']+=1
-        self._sheet(result)
+        values=self._sheet(result)
+        if 'resultFields' in action:
+            trace['results']={field:copy.deepcopy(values[field]) for field in action['resultFields']}
         return result,trace
