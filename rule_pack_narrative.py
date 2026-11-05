@@ -3,6 +3,7 @@ import copy
 import json
 import secrets
 import time
+import rule_pack_world as world
 from rule_pack_runtime import RulePackError,read_document
 import rule_pack_director as director
 
@@ -83,12 +84,17 @@ def apply(state,action,me,pack,call=None,draw=None):
         **({'recovery':reply['recovery']} if 'recovery' in reply else {}))
     result['narrative']={'revision':(memory['revision'] if memory else 0)+1,'summary':reply['summary'],
         'preparation':reply['preparation'],'pending':pending,'continuation':None}
+    npcs=world.merge(memory.get('npcs',[]) if memory else [],reply.get('npcUpdates',[]))
+    if npcs:result['narrative']['npcs']=npcs
     return result
 
 
 def public_view(memory):
     if memory is None:return None
-    return {key:copy.deepcopy(memory[key]) for key in ('revision','summary','pending','continuation')}
+    result={key:copy.deepcopy(memory[key]) for key in ('revision','summary','pending','continuation')}
+    known=world.public_view(memory.get('npcs',[]))
+    if known:result['npcs']=known
+    return result
 
 
 def validate(state,pack):
@@ -97,7 +103,9 @@ def validate(state,pack):
         if any(event.get('kind') in ('pack-talk','pack-director') for event in state['messages']):raise RulePackError('El registro narrativo requiere su memoria de aventura')
         return
     if not state['characters']:raise RulePackError('Aventura sin personajes')
-    _keys(memory,('revision','summary','preparation','pending','continuation'))
+    _keys(memory,('revision','summary','preparation','pending','continuation'),('npcs',))
+    world.validate(memory.get('npcs',[]))
+    if {npc['id'] for npc in memory.get('npcs',[])}&{actor['id'] for actor in state['characters']}:raise RulePackError('Un personaje jugador no puede convertirse en PNJ')
     if type(memory['revision'])!=int or not 1<=memory['revision']<=1000000:raise RulePackError('Revisión narrativa inválida')
     for key,limit in (('summary',4000),('preparation',6000)):
         if not isinstance(memory[key],str) or not memory[key].strip() or len(memory[key])>limit:raise RulePackError('Memoria narrativa fuera de límites')

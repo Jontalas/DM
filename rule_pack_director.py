@@ -9,6 +9,7 @@ import hashlib
 import json
 import os
 import time
+import rule_pack_world as world
 import urllib.error
 import urllib.request
 from model_config import model_name
@@ -23,6 +24,12 @@ La declaración actual es del jugador: no añadas decisiones, desplazamientos, p
 En start abre una situación original a partir del objetivo, tono y límites, con información útil y una decisión abierta; no elijas por los personajes. En talk/action puedes proponer UNA acción del catálogo para el personaje que declara: proposal.action debe ser un id disponible, inputsJson un objeto JSON con las entradas pertinentes y reason un motivo breve. No elijas opciones personales no declaradas: pregunta si faltan. Es una solicitud pendiente, no una resolución; no afirmes sus consecuencias antes de los dados. Para propuestas vacías usa action vacío, inputsJson "{}" y reason vacío. En diálogo, fuera de personaje y continue no propongas acciones. En continue narra únicamente consecuencias del resultado confirmado incluido; no pidas otra tirada ni decidas por el personaje.
 Si una mecánica necesaria no está cubierta, indica limitation de forma explícita y deja proposal vacía; no simules cambios mediante prosa ni pidas al jugador que calcule o edite estadísticas. Puedes seguir ficción sin efectos reglamentarios cuando sea apropiado. No declares completado un objetivo solo porque se intentó.
 Hasta 180 palabras de narration. summary es memoria pública breve de hechos y declaraciones (hasta 150 palabras); preparation es memoria privada de PNJ, situación, secretos y cuestiones abiertas (hasta 220 palabras). Conserva continuidad sin inventar estadísticas ni resultados. La memoria narrativa no sustituye las fichas ni el registro mecánico.'''
+
+
+PROMPT+=''' Puedes devolver npcUpdates: hasta tres PNJ nuevos o actualizados por intervención, solo cuando cambien. Usa id estable en minúsculas sin espacios, name, known (si el grupo ya conoce su existencia), public (únicamente hechos conocidos por el grupo) y private (preparación reservada). Para PNJ desconocidos public debe estar vacío. Conserva los ids existentes; no borres el conocimiento previo ni incluyas personajes jugadores en este registro. Hasta 16 PNJ en total. Los PNJ son memoria ficticia: no asignes estadísticas, efectos, recursos ni decisiones de jugadores. Omite npcUpdates o usa [] si no hay cambios; conserva notas previas al actualizar y escribe como máximo 90 palabras por PNJ entre ambos textos.'''
+
+
+PROMPT+=''' Cuando actualices PNJ, limita narration a 100 palabras, summary a 80, preparation a 120 y cada PNJ a 40 palabras entre public y private para respetar el presupuesto de salida. Las notas son resúmenes; no dupliques todo el registro en preparation.'''
 
 
 def _text(value,limit,empty=False):
@@ -51,6 +58,8 @@ def prepare(state,operation,actor,text,kind,pack):
             'coverage':data['coverage'],'fieldLabels':{key:spec['label'] for key,spec in data['fields'].items()},'actions':available},
         'allowedActions':allowed,'history':history,'summary':memory.get('summary',''),
         'directorKnowledge':{'preparation':memory.get('preparation','')},'confirmedResult':confirmed}
+    # Preserve legacy request hashes for pending paid captures without a registry.
+    if memory.get('npcs'):request['directorKnowledge']['npcs']=world.validate(memory['npcs'])
     raw=canonical(request).encode('utf-8')
     if len(raw)>65000:raise RulePackError('El contexto de esta aventura supera el límite del director; no se ha llamado a IA')
     return {'request':request,'sha256':hashlib.sha256(raw).hexdigest(),'sourceScheme':'director-v1',
@@ -59,7 +68,7 @@ def prepare(state,operation,actor,text,kind,pack):
 
 def schema(prepared):
     return {'type':'object','properties':{
-        **{key:{'type':'string'} for key in ('narration','limitation','summary','preparation')},
+        **{key:{'type':'string'} for key in ('narration','limitation','summary','preparation')},'npcUpdates':world.schema(),
         'proposal':{'type':'object','properties':{'action':{'type':'string','enum':['',*prepared['request']['allowedActions']]},
             'inputsJson':{'type':'string'},'reason':{'type':'string'}},
             'required':['action','inputsJson','reason'],'additionalProperties':False}},
@@ -67,7 +76,7 @@ def schema(prepared):
 
 
 def validate_reply(prepared,reply):
-    if not isinstance(reply,dict) or set(reply)-{'usage','recovery'}!={'narration','limitation','summary','preparation','proposal'}:raise RulePackError('Respuesta del director incompleta o con operaciones no permitidas')
+    if not isinstance(reply,dict) or set(reply)-{'usage','recovery','npcUpdates'}!={'narration','limitation','summary','preparation','proposal'}:raise RulePackError('Respuesta del director incompleta o con operaciones no permitidas')
     result={key:_text(reply[key],limit,empty) for key,limit,empty in
         [('narration',10000,False),('limitation',1000,True),('summary',4000,False),('preparation',6000,False)]}
     proposal=reply['proposal']
@@ -79,6 +88,11 @@ def validate_reply(prepared,reply):
     reason=_text(proposal['reason'],600,True)
     if not proposal['action'] and (inputs or reason) or proposal['action'] and (not reason or result['limitation']):raise RulePackError('La solicitud contradice la limitación o su estado vacío')
     result['proposal']={'action':proposal['action'],'inputsJson':canonical(inputs),'reason':reason}
+    if 'npcUpdates' in reply:
+        previous=prepared['request']['directorKnowledge'].get('npcs',[])
+        world.merge(previous,reply['npcUpdates'])
+        if any(npc['id'] in {actor['id'] for actor in prepared['request']['party']} for npc in reply['npcUpdates']):raise RulePackError('Un personaje jugador no puede convertirse en PNJ')
+        result['npcUpdates']=world.validate(reply['npcUpdates'])
     if 'recovery' in reply:
         validate_recovery(reply['recovery'])
         if prepared['request']['operation']!='continue' or proposal['action']:raise RulePackError('La recuperación no puede crear decisiones ni acciones')
@@ -114,7 +128,7 @@ def _complete_prefix(text):
             return result,incomplete
         try:key,end=decoder.raw_decode(text,position)
         except (ValueError,RecursionError):raise RulePackError('Clave incompleta en captura parcial') from None
-        if not isinstance(key,str) or key not in ('narration','limitation','summary','preparation','proposal') or key in result:raise RulePackError('Clave desconocida o repetida en captura parcial')
+        if not isinstance(key,str) or key not in ('narration','limitation','summary','preparation','proposal','npcUpdates') or key in result:raise RulePackError('Clave desconocida o repetida en captura parcial')
         position=spaces(end)
         if position>=len(text) or text[position]!=':':raise RulePackError('Miembro JSON incompleto en captura parcial')
         position=spaces(position+1);start=position
@@ -134,7 +148,7 @@ def _recover_continuation(prepared,text,raw):
     request=prepared['request']
     if request['operation']!='continue' or request['allowedActions']:raise RulePackError('Una respuesta incompleta no puede interpretar una declaración nueva')
     reply,incomplete=_complete_prefix(text)
-    if not {'narration','limitation','summary'}<=set(reply) or incomplete not in (None,'preparation','proposal'):raise RulePackError('Faltan campos públicos completos; no se ha inventado una continuación')
+    if not {'narration','limitation','summary'}<=set(reply) or incomplete not in (None,'preparation','proposal','npcUpdates'):raise RulePackError('Faltan campos públicos completos; no se ha inventado una continuación')
     kept='preparation' not in reply
     if kept:reply['preparation']=request['directorKnowledge']['preparation']
     if 'proposal' not in reply:reply['proposal']={'action':'','inputsJson':'{}','reason':''}

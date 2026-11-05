@@ -159,6 +159,22 @@ class RulePackServerTests(unittest.TestCase):
         self.assertEqual(after['messages'][-1]['trace'],staged['messages'][-1]['trace'])
         self.assertEqual(after['narrativeView']['continuation'],{'character':cid,'message':len(after['messages'])-1})
 
+    def test_npc_memory_is_committed_with_narration_and_filtered_for_every_player(self):
+        from test_rule_pack_world import npc
+        cid=self.install()
+        guest=self.request('/api/join',{'name':'Luis','invite':self.state()['invite']})['token']
+        with patch.object(pack_director,'propose',return_value=narrative_reply(npcUpdates=[npc(),npc('sombra',name='PRIVATE-NAME',known=False,public='')])) as provider:
+            self.action('start_pack_adventure',character=cid)
+            provider.return_value=narrative_reply()
+            self.action('talk_pack_adventure',character=cid,text='Saludo a Arda.',mode='dialogue')
+            self.assertEqual(len(provider.call_args.args[0]['request']['directorKnowledge']['npcs']),2)
+        for token in [self.token,guest]:
+            view=self.state(token)['state']
+            self.assertEqual(view['narrativeView']['npcs'],[{'id':'arda','name':'Arda','public':'Archivera junto al farol.'}])
+            self.assertNotIn('PRIVATE-NPC',str(view));self.assertNotIn('PRIVATE-NAME',str(view))
+        exported=self.request('/api/export',{},self.token)
+        self.assertEqual(len(exported['state']['narrative']['npcs']),2)
+
     def test_data_defined_creation_validates_choices_deduplicates_dice_and_recovers(self):
         self.action('install_rule_pack',package=document('original-creation-example'),policy='provided-rules')
         with patch('action_randomness.hmac.digest',return_value=(3).to_bytes(32,'big')) as rng:
