@@ -1,6 +1,7 @@
 """Bounded fictional people, places and links; never mechanics/player choices."""
 import copy
 import re
+import hashlib
 from rule_pack_runtime import RulePackError
 
 MAX_NPCS=16
@@ -100,3 +101,35 @@ def relationship_schema():
     return {'type':'array','items':{'type':'object','properties':{
         **{key:{'type':'string'} for key in ('id','from','to','public','private')},'known':{'type':'boolean'}},
         'required':['id','from','to','known','public','private'],'additionalProperties':False}}
+
+
+def normalize_start_identifiers(reply,raw):
+    """Translate only the observed typed-id representation, without new facts."""
+    if not isinstance(reply,dict):return reply
+    result=copy.deepcopy(reply);changed=0;endpoint_changes={}
+    for field,prefix,kind in [('npcUpdates','npc:','npc'),('placeUpdates','place:','place'),
+                              ('relationshipUpdates','rel:','rel'),('objectiveUpdates','obj:','obj')]:
+        entries=result.get(field,[])
+        if not isinstance(entries,list):return reply
+        for entry in entries:
+            if not isinstance(entry,dict):return reply
+            identifier=entry.get('id')
+            if isinstance(identifier,str) and identifier.startswith(prefix):
+                bare=identifier[len(prefix):]
+                if not re.fullmatch('[a-z][a-z0-9-]{0,47}',bare):return reply
+                entry['id']=bare;changed+=1
+                if kind in ('npc','place'):endpoint_changes[kind+':'+identifier]=kind+':'+bare
+    if not changed:return reply
+    for entry in result.get('relationshipUpdates',[]):
+        for key in ('from','to'):
+            value=entry.get(key)
+            if isinstance(value,str) and value in endpoint_changes:entry[key]=endpoint_changes[value];changed+=1
+    result['normalization']={'kind':'typed-world-identifiers-v1','sourceReplySha256':hashlib.sha256(raw).hexdigest(),'changedIdentifiers':changed}
+    return result
+
+
+def validate_normalization(value):
+    if (not isinstance(value,dict) or set(value)!={'kind','sourceReplySha256','changedIdentifiers'}
+        or value['kind']!='typed-world-identifiers-v1' or not isinstance(value['sourceReplySha256'],str)
+        or not re.fullmatch('[a-f0-9]{64}',value['sourceReplySha256']) or type(value['changedIdentifiers'])!=int
+        or not 1<=value['changedIdentifiers']<=128):raise RulePackError('Procedencia de identificadores normalizados inválida')

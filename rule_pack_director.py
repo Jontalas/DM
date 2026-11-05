@@ -27,7 +27,7 @@ La declaración pertenece al jugador. No añadas decisiones, movimientos, palabr
 
 En start abre una situación original o de la fuente, con información útil y una decisión abierta. En talk/action puedes proponer UNA allowedAction del personaje que declara: proposal.action es su id, inputsJson es un objeto JSON textual de opciones pertinentes y reason un motivo breve. No elijas opciones personales ausentes. La propuesta está pendiente: no afirmes consecuencias antes de resolver. Propuesta vacía: action="", inputsJson="{}", reason="". Diálogo, OOC y continue no proponen acciones. En continue narra únicamente el resultado confirmado, sin otra tirada ni decisiones del PJ; respeta los objetivos resueltos por el motor.
 
-Memoria opcional: omitir actualizaciones conserva los registros previos. Mantén ids estables, conocimiento público y secretos separados; no conviertas PJ en PNJ ni ocultes conocimiento ya descubierto. npcUpdates y placeUpdates contienen id/name/known/public/private; máximo 16 PNJ y 8 lugares. Para desconocidos public está vacío. relationshipUpdates contiene id/from/to/known/public/private; máximo 16 relaciones. Extremos npc:id o place:id existentes o creados en esta respuesta, distintos e inmutables; una relación pública requiere ambos conocidos. Estas notas no mueven personajes, avanzan tiempo, conceden acceso ni aplican reglas.
+Memoria opcional: omitir actualizaciones conserva los registros previos. Usa los id simples ofrecidos por el esquema, estables y sin prefijos tipados; npc: y place: solo se usan en extremos de relaciones. Separa conocimiento y secretos; no conviertas PJ en PNJ ni ocultes conocimiento descubierto. npcUpdates y placeUpdates contienen id/name/known/public/private; máximo 16 PNJ y 8 lugares. Para desconocidos public está vacío. relationshipUpdates contiene id/from/to/known/public/private; máximo 16 relaciones. Extremos npc:id o place:id existentes o creados en esta respuesta, distintos e inmutables; una relación pública requiere ambos conocidos. Estas notas no mueven personajes, avanzan tiempo, conceden acceso ni aplican reglas.
 
 objectiveUpdates contiene id/title/detail/known/private; máximo 12 oportunidades, sin compromisos del jugador. Conserva título/detalle; otro objetivo necesita otro id. Nunca escribas status, evidence ni recompensas. Solo junto a proposal.action puedes incluir objectiveCheck:{objective:id,field:id}: objetivo conocido abierto, vinculado a ESTA declaración y a un booleano almacenado que ESA acción asigne incondicionalmente. El motor lo completa solo si esa solicitud se resuelve con las mismas opciones y valor true. No uses estadísticas ajenas, intentos, éxitos anteriores ni prosa como evidencia. Si falta ese resultado o la relación es ambigua, conserva el objetivo abierto y explica la limitación. No reveles objetivos desconocidos.
 
@@ -90,16 +90,33 @@ def schema(prepared):
             'required':['action','inputsJson','reason'],'additionalProperties':False}},
         'required':['narration','limitation','summary','preparation','proposal'],'additionalProperties':False}
     request=prepared['request'];fields=request['character']['sheet']['fields']
+    registry_ids={}
+    for field,registry,prefix,limit in [('npcUpdates','npcs','npc-',16),('placeUpdates','places','place-',8),
+                                       ('relationshipUpdates','relationships','rel-',16),('objectiveUpdates','objectives','obj-',12)]:
+        known=[item['id'] for item in request['directorKnowledge'].get(registry,[])]
+        excluded={actor['id'] for actor in request['party']} if registry=='npcs' else set()
+        available=[prefix+str(i) for i in range(1,limit+1) if prefix+str(i) not in known and prefix+str(i) not in excluded]
+        identifiers=[*known,*available[:max(0,limit-len(known))]]
+        registry_ids[registry]=identifiers
+        if identifiers:result['properties'][field]['items']['properties']['id']['enum']=identifiers
+        else:result['properties'].pop(field)
+    endpoints=['npc:'+identifier for identifier in registry_ids['npcs']]+['place:'+identifier for identifier in registry_ids['places']]
+    if 'relationshipUpdates' in result['properties']:
+        for key in ('from','to'):result['properties']['relationshipUpdates']['items']['properties'][key]['enum']=endpoints
     evidence_fields=sorted({effect['field'] for action in request['allowedActions']
         for effect in request['rules']['actions'][action]['effects']
         if type(fields.get(effect['field']))==bool and effect.get('when',True) is True})
-    if evidence_fields:result['properties']['objectiveCheck']['properties']['field']['enum']=evidence_fields
+    completed_goals={item['id'] for item in request['directorKnowledge'].get('objectives',[]) if item['status']=='completed'}
+    objective_ids=[identifier for identifier in registry_ids['objectives'] if identifier not in completed_goals]
+    if evidence_fields and objective_ids:
+        result['properties']['objectiveCheck']['properties']['field']['enum']=evidence_fields
+        result['properties']['objectiveCheck']['properties']['objective']['enum']=objective_ids
     else:result['properties'].pop('objectiveCheck')
     return result
 
 
 def validate_reply(prepared,reply):
-    if not isinstance(reply,dict) or set(reply)-{'usage','recovery','npcUpdates','objectiveUpdates','objectiveCheck','placeUpdates','relationshipUpdates'}!={'narration','limitation','summary','preparation','proposal'}:raise RulePackError('Respuesta del director incompleta o con operaciones no permitidas')
+    if not isinstance(reply,dict) or set(reply)-{'usage','recovery','normalization','npcUpdates','objectiveUpdates','objectiveCheck','placeUpdates','relationshipUpdates'}!={'narration','limitation','summary','preparation','proposal'}:raise RulePackError('Respuesta del director incompleta o con operaciones no permitidas')
     result={key:_text(reply[key],limit,empty) for key,limit,empty in
         [('narration',10000,False),('limitation',1000,True),('summary',4000,False),('preparation',6000,False)]}
     validate_pending_reply(prepared['request'],result)
@@ -132,6 +149,10 @@ def validate_reply(prepared,reply):
         validate_recovery(reply['recovery'])
         if prepared['request']['operation']!='continue' or proposal['action']:raise RulePackError('La recuperación no puede crear decisiones ni acciones')
         result['recovery']=copy.deepcopy(reply['recovery'])
+    if 'normalization' in reply:
+        world.validate_normalization(reply['normalization'])
+        if prepared['request']['operation']!='start' or proposal['action'] or 'recovery' in reply:raise RulePackError('La normalización de identificadores no interpreta acciones ni continuaciones')
+        result['normalization']=copy.deepcopy(reply['normalization'])
     if 'usage' in reply:
         usage=reply['usage']
         if not isinstance(usage,dict) or set(usage)!={'inputTokens','outputTokens','latencyMs'} or any(type(v)!=int or not 0<=v<=10000000 for v in usage.values()):raise RulePackError('Medición del director inválida')
@@ -204,7 +225,11 @@ def parse_response(prepared,raw,elapsed=0):
     if output.get('stop_reason')=='max_tokens':reply=_recover_continuation(prepared,text,raw)
     elif output.get('stop_reason')=='end_turn':
         reply=read_document(text)
-        if isinstance(reply,dict) and 'recovery' in reply:raise RulePackError('El proveedor no puede declarar una recuperación de transporte')
+        if isinstance(reply,dict) and ('recovery' in reply or 'normalization' in reply):raise RulePackError('El proveedor no puede declarar recuperación ni normalización de transporte')
+        if prepared['request']['operation']=='start':
+            reply=world.normalize_start_identifiers(reply,raw)
+            if isinstance(reply,dict) and 'normalization' in reply:
+                reply['limitation']=(reply.get('limitation','')+' Se ha recuperado la preparación recibida ajustando únicamente identificadores tipados; no se han inventado datos ni reglas.').strip()
         reply=validate_reply(prepared,reply)
     else:raise RulePackError('El director no terminó su respuesta')
     usage=output.get('usage',{})

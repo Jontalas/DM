@@ -93,7 +93,8 @@ def apply(state,action,me,pack,call=None,draw=None,source_loader=None):
             'reason':proposal['reason'],'packageSha256':pack.digest,'sheetRevision':actor['sheet']['revision']}
     if operation=='talk':_log(result,'pack-talk',actor,me,text=text,mode=mode)
     _log(result,'pack-director',actor,me,text=reply['narration'],limitation=reply['limitation'],usage=reply.get('usage'),
-        **({'recovery':reply['recovery']} if 'recovery' in reply else {}))
+        **({'recovery':reply['recovery']} if 'recovery' in reply else {}),
+        **({'normalization':reply['normalization']} if 'normalization' in reply else {}))
     result['narrative']={'revision':(memory['revision'] if memory else 0)+1,'summary':reply['summary'],
         'preparation':reply['preparation'],'pending':pending,'continuation':None}
     npcs=world.merge(memory.get('npcs',[]) if memory else [],reply.get('npcUpdates',[]))
@@ -159,7 +160,7 @@ def validate(state,pack):
 def validate_event(event,characters):
     base=('kind','character','actor','speaker','time','text')
     _keys(event,(*base,'mode') if event['kind']=='pack-talk' else (*base,'limitation','usage'),
-        ('recovery',) if event['kind']=='pack-director' else ())
+        ('recovery','normalization') if event['kind']=='pack-director' else ())
     if not isinstance(event['character'],str) or event['character'] not in characters or not isinstance(event['text'],str) or not 1<=len(event['text'])<=10000:raise RulePackError('Intervención narrativa inválida')
     if event['kind']=='pack-talk':
         if event['mode'] not in ('action','dialogue','ooc') or len(event['text'])>4000:raise RulePackError('Declaración guardada inválida')
@@ -169,3 +170,6 @@ def validate_event(event,characters):
         if not isinstance(usage,dict) or set(usage)!={'inputTokens','outputTokens','latencyMs'} or any(type(v)!=int or not 0<=v<=10000000 for v in usage.values()):raise RulePackError('Consumo narrativo guardado inválido')
     if not isinstance(event['speaker'],str) or not 1<=len(event['speaker'])<=120:raise RulePackError('Autor narrativo inválido')
     if 'recovery' in event:director.validate_recovery(event['recovery'])
+    if 'normalization' in event:
+        world.validate_normalization(event['normalization'])
+        if 'recovery' in event:raise RulePackError('Procedencias de respuesta incompatibles')

@@ -359,6 +359,30 @@ class RulePackServerTests(unittest.TestCase):
             self.assertTrue(self.request('/api/action',body,self.token)['duplicate']);self.assertEqual(provider.call_count,1)
         self.assertEqual(self.state()['state']['narrativeView']['revision'],1)
 
+    def test_typed_world_ids_recover_from_private_raw_capture_and_keep_normalization_trace(self):
+        import json
+        import rule_preparation_attempt as attempts
+        from test_rule_pack_world import npc,place,relationship
+        from test_rule_pack_objectives import goal
+        cid=self.install();before=self.state()
+        body={'id':secrets.token_hex(12),'version':before['version'],'type':'start_pack_adventure','character':cid}
+        answer=narrative_reply(npcUpdates=[npc('npc:arda')],placeUpdates=[place('place:archivo')],
+            relationshipUpdates=[relationship('rel:arda-archivo')],objectiveUpdates=[goal('obj:marca')])
+        raw=json.dumps({'stop_reason':'end_turn','content':[{'type':'text','text':json.dumps(answer)}],
+            'usage':{'input_tokens':4025,'output_tokens':662}}).encode();prepared=[]
+        def transport(request,response_observer=None):
+            prepared.append(request);response_observer(raw,10);return pack_director.parse_response(request,raw,10)
+        with patch.object(pack_director,'propose',side_effect=transport) as provider:
+            with patch.object(server.STORE,'commit',side_effect=Unavailable('Commit failed after capture')):
+                self.rejected(lambda:self.request('/api/action',body,self.token),503)
+            attempts.forget(server.STORE,before['me']['campaign'],attempts.key(before['me']['id'],prepared[0]['sha256']))
+            self.request('/api/action',body,self.token);self.assertEqual(provider.call_count,1)
+        after=self.state()['state'];event=next(m for m in after['messages'] if m['kind']=='pack-director')
+        self.assertEqual(event['normalization']['changedIdentifiers'],4)
+        self.assertEqual(after['narrativeView']['npcs'][0]['id'],'arda')
+        self.assertEqual(after['narrativeView']['objectives'][0]['id'],'marca')
+        campaign.validate_restored(self.request('/api/export',{},self.token)['state'])
+
     def test_undeclared_movement_is_captured_and_rejected_again_without_another_call(self):
         import io,json
         import rule_preparation_attempt as attempts

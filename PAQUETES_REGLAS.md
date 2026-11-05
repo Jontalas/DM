@@ -1,5 +1,13 @@
 # Motor común y paquetes de reglas importables
 
+## Identificadores de registros y recuperación del inicio
+
+Ensayo nuevo posterior al creador, separado del anterior: máximo tres llamadas previstas y solo UNA ejecutada en este punto. La respuesta inicial terminó con end_turn, 4.025 tokens entrada/662 salida y thinking_tokens=0, pero usó id tipados dentro de los registros (`npc:arda`, `place:archivo`, `rel:arda-archivo`, `obj:marca`). El contrato requería id simples y prefijos solo en extremos de relaciones; el servidor rechazó y conservó captura antes de confirmar. No se hizo otra inferencia para sustituirla.
+
+El esquema ahora enumera identificadores simples disponibles/actuales, objetivos abiertos admisibles y extremos tipados, sin cambiar reglas ni nombres. Recuperación acotada **solo en start completo**: quitar exactamente el prefijo propio del tipo al id, ajustar únicamente referencias doblemente tipadas reconocidas si existen y validar de nuevo todos los registros/referencias. Colisiones, prefijos de otro tipo, sufijos inválidos, referencias inexistentes, claves desconocidas, truncados y procedencia declarada por proveedor se rechazan. No se extiende a una nueva declaración, continuación ni decisión mecánica. Los textos y valores permanecen idénticos; no se deducen equivalencias ficticias ni reglas.
+
+Se registra `normalization:{kind:typed-world-identifiers-v1,sourceReplySha256,changedIdentifiers}` y aviso visible. Copias/eventos validan esta procedencia opcional. La captura real vuelve a validar localmente con cuatro cambios de id, conservando 4.025/662 y latencia original; todavía no recuperada en producción en este punto. **415 pruebas completas con emulador sin omisiones (82,344 s)**; después **73 afectadas con emulador correctas (47,158 s)** incluyendo fallo de confirmación, captura cruda, caché retirada, recuperación sin otra llamada y traza en copia. Navegador simulado correcto. No se afirma todavía aceptación del nuevo recorrido narrativo ni hito personal alcanzado.
+
 ## Creador lineal por etapas
 
 Nueva capacidad general `staged-character-creation`, además de `character-creation`. Mantiene `creation:{action:id}` y añade `creation:{steps:[id1,id2,...]}`: de una a doce acciones owner distintas, en orden fijo. Cada etapa valida decisiones/requisitos con la ficha confirmada anterior, aplica dados/efectos/desencadenantes y aumenta revisión. Los desencadenantes se comprueban después de cada etapa, igual que en una acción; las fuentes y valores previos deben justificarlo, no inventar estadísticas provisionales. Ramas, ciclos, retrocesos y cambio de etapas no están soportados.

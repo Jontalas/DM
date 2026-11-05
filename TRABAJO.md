@@ -1,5 +1,15 @@
 # Continuidad del desarrollo autónomo
 
+## Nuevo ensayo con creación y defecto de ids recuperable — 5 de noviembre de 2026
+
+Creador por etapas desplegado en `3bc066f6dfbb063d17239aee49664e77581d41d3`, Render `7572644501` success, salud/revisión correctas. API real sin IA verifica copia parcial/dado 1, propietario, límite de enfoque 1, rechazo de 2, etapa final, duplicado y explorar. Navegador real de etapa pendiente y copia completa correcto, invitado sin control, móvil revisado. Sesión privada `.deps/staged-creation-live-session.json` verified; no repetir.
+
+Un ensayo real NUEVO con creador completo y futura declaración natural, `.deps/staged-adventure-live-session.json`: solo primera llamada ejecutada (de máximo tres), captura end_turn, entrada 4.025/salida 662 y thinking_tokens=0 observado en captura. Proveedor usó id con tipo en los registros (`npc:arda`, `place:archivo`, `rel:arda-archivo`, `obj:marca`); rechazo correcto/captura privada, sin nuevo inicio ni otra inferencia. Revisión del relato inicial no encuentra decisión ejecutada del PJ: ofrece oportunidad abierta sin tiradas. No se considera aceptado el recorrido hasta acabar y revisar las otras intervenciones.
+
+Corrección local: ids futuros enumerados por esquema y prefijos reservados a extremos de relaciones. Parser recupera únicamente start completo con esa representación reconocida, elimina exactamente prefijo propio del tipo, ajusta doble prefijo de referencia conocido si aparece, y vuelve a validar. Rechaza colisiones, otros tipos, sufijos/refs/claves inválidos, truncado, talk/continue y procedencia aportada por proveedor. Texto, ficha, reglas y decisiones no cambian; aviso y normalización con SHA del raw/count quedan en evento/copia. La captura real pasa localmente con cuatro cambios. **415 pruebas completas con emulador, sin omisiones (82,344 s)**; después **73 afectadas con emulador correctas (47,158 s)** para raw/captura fría/confirmación fallida/recuperación sin otra llamada y copia. Navegador simulado correcto.
+
+Pendiente desplegar; guion privado `.deps/recover_staged_adventure_start.py` preparado exige bytes/versión/acción originales y no hace inferencia. Después quedan DOS llamadas del presupuesto original para declaración natural y continuación, con resultados confirmados y revisión narrativa explícita. No existe aún guion terminado de continuación; no ejecutar el inicial de nuevo ni borrar/renombrar su sesión. La revisión anterior con movimiento indebido permanece documentada y no se sustituye. Nada de esto activa hitos personales del usuario.
+
 ## Creación por etapas con elecciones dependientes — 5 de noviembre de 2026
 
 Prompt consolidado confirmado en producción `fce9ad40234dea2e43f641283911fdad9174f8c3`, Render `7572367539` success, revisión y salud HTTPS correctas. Ninguna inferencia posterior a las tres del ensayo con incidencia narrativa.
