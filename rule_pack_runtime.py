@@ -11,7 +11,7 @@ import secrets
 from bisect import bisect_right
 
 FORMAT='cronicas-rules-1'
-CAPABILITIES={'scalar-fields','expressions','tables','dice','actions','triggers'}
+CAPABILITIES={'scalar-fields','expressions','tables','dice','actions','triggers','character-creation'}
 LIMIT=10**12
 OPS={'add':(1,20),'sub':(2,2),'mul':(2,2),'floor_div':(2,2),'min':(1,20),'max':(1,20),
      'eq':(2,2),'ne':(2,2),'lt':(2,2),'le':(2,2),'gt':(2,2),'ge':(2,2),
@@ -79,7 +79,7 @@ class RulePack:
     def __init__(self,raw):
         self._data=read_document(raw)
         data=self._data
-        _keys(data,('format','id','version','engineVersion','name','edition','license','sources','coverage','requires','fields','tables','actions','triggers'))
+        _keys(data,('format','id','version','engineVersion','name','edition','license','sources','coverage','requires','fields','tables','actions','triggers'),('creation',))
         if data['format']!=FORMAT or type(data['engineVersion'])!=int or data['engineVersion']!=1:_fail('Versión del motor de paquetes no compatible')
         self.id=_id(data['id']);self.version=_text(data['version'],40)
         if not re.fullmatch(r'[0-9]+\.[0-9]+\.[0-9]+',self.version):_fail('Versión de paquete inválida; usa mayor.menor.revisión')
@@ -158,7 +158,12 @@ class RulePack:
         for trigger in data['triggers'].values():
             _keys(trigger,('label','sources','when','effects'));_text(trigger['label']);self._sources(trigger)
             self._expression(trigger['when'],{'fields':fields});self._effects(trigger['effects'],{'fields':fields})
+        self.creation=None
+        if 'creation' in data:
+            _keys(data['creation'],('action',));self.creation=_id(data['creation']['action'])
+            if self.creation not in data['actions'] or data['actions'][self.creation].get('permission','owner')!='owner':_fail('La creación debe referir a una acción del propietario')
         used={'scalar-fields','expressions','actions'}
+        if self.creation is not None:used.add('character-creation')
         if data['tables']:used.add('tables')
         if data['triggers']:used.add('triggers')
         if any(action['rolls'] for action in data['actions'].values()):used.add('dice')
@@ -307,6 +312,15 @@ class RulePack:
         self._sheet(sheet)
         return {'package':copy.deepcopy(sheet['package']),'owner':sheet['owner'],'revision':sheet['revision'],'fields':self._fields(sheet['fields'],[50000])}
 
+    def create_character(self,owner,inputs=None,physical=None,draw=None):
+        sheet=self.new_sheet(owner)
+        if inputs is not None and not isinstance(inputs,dict) or physical is not None and not isinstance(physical,dict):_fail('Decisiones o dados de creación inválidos')
+        if self.creation is None:
+            if inputs or physical:_fail('Este paquete no define decisiones ni dados de creación')
+            return sheet,None
+        return self.execute(sheet,self.creation,{} if inputs is None else inputs,owner,
+            physical=physical,draw=draw,creating=True)
+
     def _sheet(self,sheet):
         _keys(sheet,('format','package','owner','revision','fields'))
         if sheet['format']!='cronicas-sheet-1' or sheet['package']!={'id':self.id,'version':self.version,'sha256':self.digest}:_fail('La ficha requiere otra versión o contenido del paquete')
@@ -322,8 +336,10 @@ class RulePack:
         result={**stored,**updates};self._fields(result,budget)
         return result,{key:{'before':stored[key],'after':value} for key,value in updates.items() if stored[key]!=value or type(stored[key])!=type(value)}
 
-    def execute(self,sheet,action_id,inputs,actor,host=False,physical=None,draw=None):
+    def execute(self,sheet,action_id,inputs,actor,host=False,physical=None,draw=None,creating=False):
         self._sheet(sheet)
+        if type(creating)!=bool or creating!=(action_id==self.creation) or creating and sheet['revision']!=0:_fail('La acción de creación solo se resuelve al crear una ficha nueva')
+        if self.creation is not None and not creating and sheet['revision']==0:_fail('Completa la creación del personaje antes de jugar')
         if not isinstance(action_id,str) or action_id not in self._data['actions']:_fail('Acción no definida por este paquete')
         action=self._data['actions'][action_id]
         if not isinstance(actor,str) or not actor or len(actor)>100 or (action.get('permission','owner')=='owner' and actor!=sheet['owner']) or (action.get('permission')=='host' and host is not True):

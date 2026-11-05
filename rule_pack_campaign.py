@@ -152,11 +152,14 @@ def execute_action(state,body,me,prepare_record=None):
             result['package']['composition']=copy.deepcopy(previous['composition'])
         _system(result,'Paquete importado: '+pack.document()['name']+' '+pack.version+'. Fidelidad al manual sin verificar.',me['id'])
     elif kind=='create_pack_sheet':
-        _keys(action,('type','name'));pack=runtime(state,me['campaign'])
+        if set(action)-{'type','name','inputs','physical'} or not {'type','name'}<=set(action):raise RulePackError('Datos de creación no admitidos')
+        pack=runtime(state,me['campaign'])
         if state['package']['policy']!='provided-rules':raise RulePackError('El paquete está en borrador; el anfitrión debe elegir expresamente usar sus definiciones aportadas')
         if len(state['characters'])>=100:raise RulePackError('Esta campaña admite hasta cien fichas')
         name=_text(action['name'],80)
-        character={'id':secrets.token_hex(12),'name':name,'owner':me['id'],'sheet':pack.new_sheet(me['id'])}
+        sheet,trace=pack.create_character(me['id'],action.get('inputs',{}),physical=action.get('physical'))
+        character={'id':secrets.token_hex(12),'name':name,'owner':me['id'],'sheet':sheet}
+        if trace is not None:character['creation']={'inputs':copy.deepcopy(action.get('inputs',{})),'trace':trace}
         result['characters'].append(character);_system(result,'Ficha creada con valores iniciales del paquete: '+name,me['id'])
     elif kind=='run_pack_action':
         if set(action)-{'type','character','action','inputs','physical'} or not {'type','character','action'}<=set(action):raise RulePackError('Acción de paquete inválida')
@@ -223,11 +226,21 @@ def validate_restored(state,campaign='import-validation'):
     pack=runtime(state,campaign);sheets={};ids=set()
     if state['characters'] and state['package']['policy']!='provided-rules':raise RulePackError('Un paquete en borrador no admite fichas activas')
     for character in state['characters']:
-        _keys(character,('id','name','owner','sheet'));identifier=_text(character['id'],200)
+        _keys(character,('id','name','owner','sheet','creation') if pack.creation is not None else ('id','name','owner','sheet'));identifier=_text(character['id'],200)
         if identifier in ids:raise RulePackError('Ficha duplicada')
         ids.add(identifier);_text(character['name'],80);_text(character['owner'],100)
         if not isinstance(character['sheet'],dict) or character['owner']!=character['sheet'].get('owner'):raise RulePackError('La ficha pertenece a otro propietario')
-        pack.view(character['sheet']);sheets[identifier]=pack.new_sheet(character['owner'])
+        pack.view(character['sheet'])
+        if pack.creation is not None:
+            creation=character['creation'];_keys(creation,('inputs','trace'))
+            trace=creation['trace'];_keys(trace,('action','sources','rolls','changes','triggers'))
+            if not isinstance(trace['rolls'],dict) or any(not isinstance(v,dict) for v in trace['rolls'].values()):raise RulePackError('Dados de creación inválidos')
+            physical={key:value.get('values') for key,value in trace['rolls'].items() if value.get('rolled')}
+            sheet,expected=pack.create_character(character['owner'],creation['inputs'],physical=physical,
+                draw=lambda sides:(_ for _ in ()).throw(RulePackError('Faltan dados de creación; no se ha vuelto a tirar')))
+            if _comparable_trace(trace)!=_comparable_trace(expected):raise RulePackError('La creación no coincide con las reglas y dados guardados')
+            sheets[identifier]=sheet
+        else:sheets[identifier]=pack.new_sheet(character['owner'])
     for event in state['messages']:
         if not isinstance(event,dict):raise RulePackError('Registro de campaña inválido')
         if type(event.get('time')) not in (int,float) or not math.isfinite(event['time']):raise RulePackError('Fecha de registro inválida')

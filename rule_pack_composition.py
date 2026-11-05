@@ -25,8 +25,12 @@ def compose(documents,version):
     result=packs[0].document();result['version']=version
     sources={};groups={group:{} for group in ('fields','tables','actions','triggers')}
     coverage={'implemented':set(),'pending':set()};capabilities=set()
+    creation=None
     for pack in packs:
         data=pack.document()
+        if 'creation' in data:
+            if creation is not None and creation!=data['creation']:raise RulePackError('Los bloques definen creadores incompatibles; resuelve el conflicto explícitamente')
+            creation=copy.deepcopy(data['creation'])
         for key in ('id','name','edition','license','engineVersion','format'):
             if _canonical(data[key])!=_canonical(result[key]):raise RulePackError('Los bloques difieren en '+key+'; no se mezclan juegos, ediciones ni atribuciones automáticamente')
         for source in data['sources']:
@@ -48,6 +52,7 @@ def compose(documents,version):
         for definition in entries.values():definition['sources']=sorted(set(definition['sources']))
     result['sources']=[sources[key] for key in sorted(sources)]
     result['requires']=sorted(capabilities)
+    if creation is not None:result['creation']=creation
     # Pending coverage is retained: adding a block does not prove it resolved a gap.
     result['coverage']={key:sorted(values) for key,values in coverage.items()}
     compiled=RulePack(result)

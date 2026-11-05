@@ -90,6 +90,26 @@ class RulePackServerTests(unittest.TestCase):
         self.assertEqual(state['messages'][-1]['trace']['triggers'][0]['id'],'exhaustion')
         self.rejected(lambda:self.action('run_pack_action',character=cid,action='attempt'))
 
+    def test_data_defined_creation_validates_choices_deduplicates_dice_and_recovers(self):
+        self.action('install_rule_pack',package=document('original-creation-example'),policy='provided-rules')
+        with patch('rule_pack_runtime.secrets.randbelow',return_value=3) as rng:
+            self.rejected(lambda:self.action('create_pack_sheet',name='Aria',inputs={'role':'vigía','focus':2}))
+            self.assertEqual(rng.call_count,0)
+            body=self.action('create_pack_sheet',name='Aria',inputs={'role':'cronista','focus':2})
+            self.assertTrue(self.request('/api/action',body,self.token)['duplicate']);self.assertEqual(rng.call_count,1)
+            state=self.state()['state'];character=state['characters'][0]
+            self.assertEqual(character['sheet']['fields']['talent'],6)
+            self.assertEqual(character['creation']['trace']['rolls']['aptitude']['values'],[4])
+            self.rejected(lambda:self.action('run_pack_action',character=character['id'],action='generate',inputs={'role':'cronista'}))
+            self.assertEqual(rng.call_count,1)
+        exported=self.request('/api/export',{},self.token)
+        other=self.request('/api/create',{'title':'Creation recovery','player':'Eva','ruleset':'rule-pack'})['token']
+        with patch('rule_pack_runtime.secrets.randbelow',side_effect=AssertionError('Import generated another character')):
+            self.action('import',other,campaign=exported)
+        recovered=self.state(other)['state']['characters'][0]
+        self.assertEqual(recovered['sheet']['fields'],character['sheet']['fields'])
+        self.assertEqual(recovered['creation'],character['creation'])
+
     def test_ownership_and_package_replacement_reject_before_randomness(self):
         cid=self.install()
         guest=self.request('/api/join',{'name':'Luis','invite':self.state()['invite']})['token']

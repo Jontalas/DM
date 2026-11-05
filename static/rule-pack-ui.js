@@ -59,6 +59,7 @@ window.RulePackUI=(()=>{
   const c=snapshot.state.characters.find(v=>v.id===id);if(!c)return;
   const doc=snapshot.state.package.document;
   modal(`<div class="eyebrow">FICHA · ${esc(doc.name)}</div><h2>${esc(c.name)}</h2><dl class="pack-fields">${Object.entries(doc.fields).map(([key,spec])=>`<div><dt>${esc(spec.label)}</dt><dd>${esc(shown(c.view.fields[key]))}</dd></div>`).join('')}</dl><small>Valores calculados por el motor. Los cambios se realizan mediante acciones del paquete.</small>`);
+  if(c.creation)$('#modalContent').insertAdjacentHTML('beforeend',`<details><summary>Origen de la ficha: elecciones y dados</summary>${Object.entries(c.creation.inputs).map(([id,value])=>`<p>${esc(doc.actions[doc.creation.action].inputs[id]?.label||id)}: ${esc(shown(value))}</p>`).join('')}${Object.entries(c.creation.trace.rolls).filter(([,r])=>r.rolled).map(([id,r])=>`<p>${esc(id)}: ${esc(r.values.join(', '))} → ${r.total} · ${r.origin==='physical'?'dados físicos':'servidor'}</p>`).join('')}</details>`);
  }
  function render(){
   const s=snapshot.state,me=snapshot.me;
@@ -73,11 +74,20 @@ window.RulePackUI=(()=>{
   if($('#packActivate'))$('#packActivate').onclick=()=>review(s.package.document,s.packageView);
   if($('#packCreate')){
    const nameKey=scope()+':new-name';$('#packCreate').elements.name.value=drafts.get(nameKey)||'';
-   $('#packCreate').oninput=e=>drafts.set(nameKey,e.currentTarget.elements.name.value);
-   $('#packCreate').onsubmit=run(async e=>{await act('create_pack_sheet',{name:e.target.elements.name.value});drafts.delete(nameKey);if($('#packCreate'))$('#packCreate').elements.name.value='';});
+   const creation=doc.creation?doc.actions[doc.creation.action]:null,choiceKey=scope()+':creation-choices';
+   if(creation){
+    const saved=drafts.get(choiceKey)||{};
+    $('#packCreate h3').textContent='Crear tu personaje';
+    $('#packCreate p').textContent=creation.rolls.length?'Elige las opciones de tu personaje. Al confirmar, se tiran los dados y se calcula la ficha según este paquete.':'Elige las opciones de tu personaje. El motor comprobará los requisitos y calculará la ficha.';
+    $('#packCreate button').insertAdjacentHTML('beforebegin',`<fieldset><legend>${esc(creation.label)}</legend>${Object.entries(creation.inputs).map(([id,spec],i)=>`<label>${esc(spec.label)}${input(spec,i,saved[id]??spec.default)}</label>`).join('')}</fieldset>`);
+    $('#packCreate button').textContent=creation.rolls.length?'Crear personaje y tirar':'Crear personaje';
+   }
+   $('#packCreate').oninput=e=>{drafts.set(nameKey,e.currentTarget.elements.name.value);if(creation)drafts.set(choiceKey,formValues(e.currentTarget,creation));};
+   $('#packCreate').onchange=$('#packCreate').oninput;
+   $('#packCreate').onsubmit=run(async e=>{await act('create_pack_sheet',{name:e.target.elements.name.value,...(creation?{inputs:formValues(e.target,creation)}:{})});drafts.delete(nameKey);drafts.delete(choiceKey);if($('#packCreate'))$('#packCreate').elements.name.value='';});
   }
   $$('[data-pack-character]').forEach(b=>b.onclick=()=>openCharacter(b.dataset.packCharacter));
-  $$('[data-pack-action]').forEach(b=>b.onclick=()=>openAction(b.dataset.packTarget,b.dataset.packAction));
+  $$('[data-pack-action]').forEach(b=>{if(b.dataset.packAction===doc?.creation?.action)b.remove();else b.onclick=()=>openAction(b.dataset.packTarget,b.dataset.packAction);});
   if($('#packExport'))$('#packExport').onclick=()=>$('#exportBtn').onclick();
   if($('#packImport'))$('#packImport').onchange=run(async e=>{
    const file=e.target.files[0];if(!file)return;if(file.size>8000000)throw Error('La copia supera el tamaño admitido.');

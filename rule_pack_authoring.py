@@ -24,6 +24,9 @@ Campo: {type:integer|boolean|text,label,sources:[id],initial:valor} o derive:exp
 Expresión: literal escalar; {ref:[fields,id]}, {ref:[inputs,id]}, {ref:[rolls,id,total|values|kept|sides|rolled]} (values/kept admiten índice entero adicional); {op:nombre,args:[expresiones]}; {table:id,at:expresión}. Operaciones permitidas se enumeran en engine.operations. if recibe condición/verdadero/falso; not un argumento; sub/floor_div/comparaciones dos. No existe división decimal ni código arbitrario. Los campos derivados solo leen fields. count/sides solo leen fields/inputs, nunca dados. Las tiradas pueden leer resultados anteriores, nunca futuros. Los efectos se aplican simultáneamente desde la misma instantánea; los desencadenantes ordenados por id se repiten hasta estabilizarse y no deben ciclar. requires contiene requisitos previos a tirar.
 Incluye ejemplos deterministas con nombre, steps:[{action,inputs,physical:{id:[dados]}}] y expected:{campo:valor}. Se empieza con una ficha nueva en cada ejemplo, sin modificar valores iniciales por fuera. En la respuesta, stepsJson es el texto JSON de la lista steps y expectedJson el texto JSON del objeto expected. Aporta todos los dados necesarios; los ejemplos no pueden usar azar. Prueba éxito/fallo y límites relevantes que permitan las fuentes. Estos ejemplos comprueban coherencia del paquete, no validan por sí solos el manual. No copies párrafos del libro en comentarios o etiquetas. Respuesta JSON ajustada al esquema.'''
 
+PROMPT+='''
+Capacidad character-creation: raíz opcional creation:{action:id}. Esa acción existente, con permiso owner, define las decisiones, requisitos, tiradas y efectos de creación en una sola resolución; no se puede ejecutar durante la partida. El formulario se genera desde sus inputs. Los valores initial son el estado previo a esa resolución y deben estar justificados por las fuentes, nunca estadísticas jugables inventadas. Si hacen falta etapas interactivas dependientes de resultados anteriores que una resolución no expresa, devuelve unsupported. Para un paquete con creation, cada ejemplo comienza con esa acción y sus decisiones/dados explícitos; después solo acciones de partida. No vuelvas a generar atributos para ejecutar una acción normal.'''
+
 SCHEMA={'type':'object','properties':{
  'status':{'type':'string','enum':['candidate','ambiguous','unsupported']},
  'packageJson':{'type':'string'},
@@ -127,10 +130,12 @@ def validate_reply(prepared,result):
         steps=read_document(example['stepsJson']);expected=read_document(example['expectedJson'])
         if not isinstance(steps,list) or not 1<=len(steps)<=20 or not isinstance(expected,dict) or not expected or set(expected)-set(document['fields']):raise RulePackError('Ejemplo sin acciones o campos esperados válidos')
         sheet=pack.new_sheet('authoring-example')
-        for step in steps:
+        for index,step in enumerate(steps):
             _keys(step,('action','inputs','physical'))
+            creating=pack.creation is not None and index==0
+            if creating and step['action']!=pack.creation:raise RulePackError('El ejemplo debe comenzar con la creación del personaje')
             sheet,_=pack.execute(sheet,step['action'],step['inputs'],'authoring-example',host=True,physical=step['physical'],
-                draw=lambda sides:(_ for _ in ()).throw(RulePackError('Faltan dados explícitos en un ejemplo; no se ha tirado')))
+                draw=lambda sides:(_ for _ in ()).throw(RulePackError('Faltan dados explícitos en un ejemplo; no se ha tirado')),creating=creating)
         fields=pack.view(sheet)['fields']
         if any(canonical(fields[key])!=canonical(value) for key,value in expected.items()):raise RulePackError('El paquete no cumple sus propios ejemplos')
         checks.append({'name':example['name'],'steps':copy.deepcopy(steps),'expected':copy.deepcopy(expected),'status':'passed'})

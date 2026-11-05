@@ -1,0 +1,29 @@
+{
+  "format":"cronicas-rules-1","id":"original-creation-example","version":"1.0.0","engineVersion":1,
+  "name":"Exploradores de la linterna","edition":"Ejemplo propio de creación 1",
+  "license":{"id":"CC0-1.0","attribution":"Reglas originales de prueba; no representan ningún juego comercial."},
+  "sources":[{"id":"creation-example","title":"Reglas propias de exploradores","edition":"1","locator":"Antes de crear: oficio pendiente y talento 0. El jugador elige vigía o cronista y enfoque 0–2; vigía admite enfoque máximo 1. Crear tira 1d6 y suma enfoque para talento. Energía inicial 3. Explorar gasta 1, tira 2d6 y tiene éxito con 7 o más. Energía 0 activa agotamiento."}],
+  "coverage":{"implemented":["Elección de oficio y enfoque, talento aleatorio, exploración y agotamiento"],"pending":["Ejemplo propio acotado; no contiene aventura, inventario ni combate"]},
+  "requires":["scalar-fields","expressions","dice","actions","triggers","character-creation"],
+  "creation":{"action":"generate"},
+  "fields":{
+    "role":{"type":"text","label":"Oficio","initial":"pendiente","options":["pendiente","vigía","cronista"],"sources":["creation-example"]},
+    "talent":{"type":"integer","label":"Talento","initial":0,"min":0,"max":8,"sources":["creation-example"]},
+    "energy":{"type":"integer","label":"Energía","initial":3,"min":0,"max":3,"sources":["creation-example"]},
+    "success":{"type":"boolean","label":"Resultado","initial":false,"sources":["creation-example"]},
+    "exhausted":{"type":"boolean","label":"Agotamiento","initial":false,"sources":["creation-example"]}
+  },
+  "tables":{},
+  "actions":{
+    "generate":{"label":"Tu oficio y aptitudes","sources":["creation-example"],
+      "inputs":{"role":{"type":"text","label":"Oficio","options":["vigía","cronista"]},"focus":{"type":"integer","label":"Enfoque","min":0,"max":2,"default":0}},
+      "requires":[{"op":"or","args":[{"op":"eq","args":[{"ref":["inputs","role"]},"cronista"]},{"op":"le","args":[{"ref":["inputs","focus"]},1]}]}],
+      "rolls":[{"id":"aptitude","count":1,"sides":6,"keep":"all"}],
+      "effects":[{"field":"role","value":{"ref":["inputs","role"]}},{"field":"talent","value":{"op":"add","args":[{"ref":["rolls","aptitude","total"]},{"ref":["inputs","focus"]}]}}]},
+    "explore":{"label":"Explorar","sources":["creation-example"],"inputs":{},
+      "requires":[{"op":"gt","args":[{"ref":["fields","energy"]},0]}],
+      "rolls":[{"id":"pool","count":2,"sides":6,"keep":"all"}],
+      "effects":[{"field":"energy","value":{"op":"sub","args":[{"ref":["fields","energy"]},1]}},{"field":"success","value":{"op":"ge","args":[{"ref":["rolls","pool","total"]},7]}}]}
+  },
+  "triggers":{"exhaustion":{"label":"Agotamiento","sources":["creation-example"],"when":{"op":"eq","args":[{"ref":["fields","energy"]},0]},"effects":[{"field":"exhausted","value":true}]}}
+}

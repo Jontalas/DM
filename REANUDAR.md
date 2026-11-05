@@ -1,5 +1,7 @@
 # Reanudar el desarrollo
 
+Último bloque: creación de personajes definida por el paquete (`character-creation` y `creation.action`), formulario generado, decisiones/dados/efectos confirmados conjuntamente, traza inicial y recuperación sin RNG. Ejemplo propio; no es creación completa de Pathfinder/Cairn ni un creador de varias etapas. Suite completa de 342 pruebas con emulador correcta; 35 pruebas del núcleo afectado y navegadores de creación/paquetes correctos. Siguiente: conversión real acotada y recorrido jugable genérico; comprobar accesos y camino de despliegue existente sin detener trabajo independiente.
+
 Actualización actual: recuperación duradera de preparaciones en desarrollo, con reserva por campaña/actor/solicitud antes de inferir y captura privada de respuesta antes de validarla. Confirmación conserva un marcador mínimo para impedir nuevas llamadas desde solicitudes simultáneas antiguas. Leer el último apartado de TRABAJO.md; conversión real y recorrido genérico completo siguen pendientes. El objetivo permanece activo.
 
 **Desarrollo reanudado por el usuario el 4 de noviembre de 2026.** Este archivo conserva el punto de pausa como referencia histórica; el estado actual se registra en TRABAJO.md. Vuelve a aplicarse la autonomía permanente.

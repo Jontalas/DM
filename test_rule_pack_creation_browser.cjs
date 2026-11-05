@@ -1,0 +1,63 @@
+const {chromium}=require('./.deps/browser-tests/node_modules/playwright');
+const {spawn}=require('node:child_process'),{createInterface}=require('node:readline');
+const path=require('node:path'),assert=require('node:assert/strict');
+(async()=>{
+ const fixture=spawn(path.resolve('.venv/Scripts/python.exe'),['test_browser_fixture.py'],{env:{...process.env,TEST_RULE_PACK_FIXTURE:'1'},stdio:['ignore','pipe','inherit']});let browser;
+ try{
+  const url=await new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(Error('Fixture timeout')),15000);createInterface({input:fixture.stdout}).once('line',line=>{clearTimeout(timer);resolve(line)});fixture.once('exit',()=>reject(Error('Fixture exited')))});
+  browser=await chromium.launch({headless:true,executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe'});
+  const context=await browser.newContext(),room=await (await context.request.post(url+'/api/create',{data:{player:'Ana',title:'Exploradores de la linterna',ruleset:'rule-pack'}})).json();
+  await context.addInitScript(t=>{if(!localStorage.getItem('cronicas-token'))localStorage.setItem('cronicas-token',t)},room.token);
+  const page=await context.newPage(),actions=[],errors=[];
+  page.on('pageerror',e=>errors.push(e.stack));page.on('request',r=>{if(r.url().endsWith('/api/action'))actions.push(r.postDataJSON())});
+  await page.goto(url);await page.locator('#packFile').setInputFiles('test_fixtures/rule_packs/original-creation-example.json');
+  await page.locator('#packInstall [name=use]').check();await page.locator('#packInstall button').click();
+  await page.locator('#packCreate fieldset').waitFor();
+  await page.locator('#packCreate [name=name]').fill('Lúa');
+  await page.locator('#packCreate [name=input0]').selectOption('cronista');await page.locator('#packCreate [name=input1]').fill('2');
+  await page.evaluate(()=>refresh(true));
+  assert.equal(await page.locator('#packCreate [name=name]').inputValue(),'Lúa');
+  assert.equal(await page.locator('#packCreate [name=input0]').inputValue(),'cronista');
+  assert.equal(await page.locator('#packCreate [name=input1]').inputValue(),'2');assert.equal(actions.length,1);
+  await page.setViewportSize({width:390,height:1000});await page.locator('#packCreate').scrollIntoViewIfNeeded();
+  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+  await page.screenshot({path:'.deps/rule-pack-creation-mobile.png',fullPage:true});
+  await page.setViewportSize({width:1280,height:900});
+  await page.locator('#packCreate [name=input0]').selectOption('vigía');await page.locator('#packCreate button').click();
+  await page.waitForFunction(()=>!busy&&snapshot.state.characters.length===0&&document.querySelector('#toast').textContent.includes('requisitos'));
+  assert.equal(actions.length,2);assert.equal(await page.locator('#packCreate [name=input1]').inputValue(),'2');
+  await page.locator('#packCreate [name=input0]').selectOption('cronista');
+  let lost=false;
+  await page.route('**/api/action',async route=>{
+   if(!lost&&route.request().postDataJSON()?.type==='create_pack_sheet'){lost=true;await route.fetch();await route.abort('connectionfailed')}
+   else await route.continue();
+  });
+  await page.locator('#packCreate button').click();
+  await page.waitForFunction(()=>snapshot.state.characters.length===1&&localStorage.getItem('cronicas-pending'));
+  const pending=await page.evaluate(()=>JSON.parse(localStorage.getItem('cronicas-pending'))),character=await page.evaluate(()=>snapshot.state.characters[0]);
+  assert.equal(character.sheet.fields.talent,8);assert.equal(character.sheet.fields.role,'cronista');assert.equal(character.sheet.revision,1);
+  assert.deepEqual(character.creation.trace.rolls.aptitude.values,[6]);
+  await page.reload();await page.waitForFunction(()=>snapshot?.state.characters.length===1&&!localStorage.getItem('cronicas-pending'));
+  assert.equal(actions.at(-1).id,pending.body.id);assert.deepEqual(await page.evaluate(()=>snapshot.state.characters[0].creation),character.creation);
+  assert.equal(await page.locator('[data-pack-action=generate]').count(),0);
+  await page.unroute('**/api/action');await page.locator('[data-pack-character]').click();
+  await page.locator('#modalContent summary').click();assert.match(await page.locator('#modalContent').textContent(),/cronista/);
+  assert.match(await page.locator('#modalContent').textContent(),/aptitude: 6 → 6/);await page.locator('#closeModal').click();
+  const beforePlay=actions.length;await page.locator('[data-pack-action=explore]').click();await page.locator('#packAction button').click();
+  await page.waitForFunction(()=>snapshot.state.characters[0].sheet.fields.energy===2);
+  assert.equal(actions.length,beforePlay+1);assert.equal(await page.evaluate(()=>snapshot.state.characters[0].sheet.fields.talent),8);
+  await page.setViewportSize({width:390,height:844});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+  await page.screenshot({path:'.deps/rule-pack-creation-play-mobile.png',fullPage:true});
+  const invite=await page.evaluate(()=>snapshot.invite),guest=await (await context.request.post(url+'/api/join',{data:{name:'Luis',invite}})).json();
+  const guestContext=await browser.newContext();await guestContext.addInitScript(t=>localStorage.setItem('cronicas-token',t),guest.token);
+  const guestPage=await guestContext.newPage();guestPage.on('pageerror',e=>errors.push(e.stack));await guestPage.goto(url);await guestPage.locator('#packCreate fieldset').waitFor();
+  assert.equal(await guestPage.locator('[data-pack-action]').count(),0);
+  await guestPage.locator('#packCreate [name=name]').fill('Ivo');await guestPage.locator('#packCreate [name=input0]').selectOption('vigía');
+  await guestPage.locator('#packCreate [name=input1]').fill('1');await guestPage.locator('#packCreate button').click();
+  await guestPage.waitForFunction(()=>snapshot.state.characters.length===2);
+  assert.ok(await guestPage.evaluate(()=>snapshot.state.characters[1].owner===snapshot.me.id));
+  assert.equal(await guestPage.locator('[data-pack-action=explore]').count(),1);assert.equal(await guestPage.locator('[data-pack-action=generate]').count(),0);
+  await guestContext.close();assert.deepEqual(errors,[]);
+  console.log('Data-defined creator: choices, validation, no navigation actions, single dice resolution, lost response recovery, trace, gameplay, ownership and mobile passed. No AI.');
+ }finally{if(browser)await browser.close();fixture.kill()}
+})().catch(error=>{console.error(error);process.exitCode=1});

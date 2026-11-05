@@ -20,6 +20,7 @@ El motor reconoce capacidades, no nombres de juegos. Los identificadores del paq
 | `actions` | Entradas tipadas, requisitos, tiradas y efectos simultáneos |
 | `rolls` | Cantidad/tamaño configurables, conservar todos o los mayores/menores y tiradas condicionales |
 | `triggers` | Efectos automáticos sobre el estado hasta estabilizarse, sin bucles abiertos |
+| `creation` | Acción de creación opcional: decisiones legales, dados y efectos iniciales en una resolución |
 
 Una referencia, por ejemplo `{"ref":["fields","dex"]}`, lee un campo definido. `{"op":"le","args":[{"ref":["rolls","save","total"]},{"ref":["fields","dex"]}]}` expresa comparar una tirada con ese valor. El significado reglamentario se define en el paquete y se revisa contra su fuente; el núcleo solo proporciona operaciones.
 
@@ -29,7 +30,7 @@ Los valores calculados no se guardan como copias editables: se derivan al consul
 
 `RulePack` lee y valida el documento. `new_sheet(owner)` crea una ficha inicial; `view(sheet)` calcula su vista; `execute(sheet, action, inputs, actor, ...)` devuelve una ficha nueva y la trazabilidad. El núcleo es independiente del almacenamiento: no confirma en Firebase por sí mismo. `rule_pack_campaign.py` lo integra con las versiones, permisos y marcadores de acción transaccionales existentes, conservando tiradas ante reenvíos. Un único adaptador genérico atiende paquetes con identificadores nuevos sin registrar cada juego en Python.
 
-El anfitrión instala el paquete en borrador. Para ejecutar sus definiciones debe seleccionar expresamente la política de reglas aportadas (`provided-rules`): esto no certifica correspondencia con el manual. No se admite declarar una política «verificada» desde el cliente. Las fichas se crean con valores iniciales, no mediante un creador completo. La sustitución del paquete se bloquea cuando existen fichas hasta disponer de migraciones verificadas. En esta versión los campos y el paquete son compartidos por los miembros autorizados de la campaña; no hay campos privados ni soporte de secretos dentro del paquete.
+El anfitrión instala el paquete en borrador. Para ejecutar sus definiciones debe seleccionar expresamente la política de reglas aportadas (`provided-rules`): esto no certifica correspondencia con el manual. No se admite declarar una política «verificada» desde el cliente. Los paquetes anteriores crean fichas con valores iniciales. Un paquete con `creation` genera un formulario de elecciones y resuelve sus dados/efectos iniciales; no es todavía un creador de varias etapas ni certifica opciones no incluidas. La sustitución del paquete se bloquea cuando existen fichas hasta disponer de migraciones verificadas. En esta versión los campos y el paquete son compartidos por los miembros autorizados de la campaña; no hay campos privados ni soporte de secretos dentro del paquete.
 
 La inspección estructural es local y sin almacenamiento, IA ni dados. La caché de compilación se acota y separa por campaña. La recuperación reproduce las resoluciones con los dados guardados y compara trazas y estado final; no vuelve a tirar ni certifica la identidad histórica de un archivo externo. Al importar una copia, la propiedad se reasigna al anfitrión. El estado se limita a 750.000 bytes y el importador a 5.000 entradas, sin borrar automáticamente historial.
 
@@ -116,12 +117,24 @@ Evidencia PDF: 42 pruebas de intérprete, preparación, procedencia, recursos e 
 También se abrió el manual privado real de Pathfinder (93.828.277 bytes): PDF p.87, 6.388 caracteres extraídos y cero acciones enviadas. Original renderizado completo contrastado visualmente con la referencia previa, folio 86. Captura privada en `.deps/rule-source-original-p87.png`; no se publica el manual ni su texto. Esto prueba lectura/render de esa página, no conversión automática de todo Pathfinder ni fidelidad de una propuesta de IA.
 
 1. Carga, inspección e instalación JSON integradas y probadas en servidor e interfaz comunes; pendiente habilitar el recorrido tras completar las dependencias de producto. No requiere un registro nuevo por identificador de paquete.
-2. Formularios, ficha inicial y acciones escalares generados desde el paquete con validación del servidor; pendientes creación guiada completa, colecciones/inventario, efectos amplios y solicitudes de tirada mediante capacidades generales.
+2. Formularios, ficha y creación de una resolución generados desde el paquete con validación del servidor; pendientes creación guiada con decisiones entre etapas, colecciones/inventario, efectos amplios y solicitudes de tirada mediante capacidades generales.
 3. Preparación asistida de texto y páginas PDF integrada y probada con proveedor simulado. Pendientes procesamiento de manuales por bloques reutilizables, OCR/documentos adicionales, revisión estructurada de tablas y validación con proveedor real. No repetir extracción ni inferencia por acción de partida.
 4. Detectar operaciones no expresables, ambigüedades, ediciones incompatibles y permisos de uso. Resolver lo que pueda verificarse; solicitar una decisión solo cuando sea imprescindible. Ampliar primitivas comunes cuando falten, sin volver a adaptadores por juego.
 5. Migrar por bloques las reglas verificadas existentes al formato y probar el recorrido completo, conservando campañas, datos privados y límites reales.
 
 No activar automáticamente un paquete por superar el análisis sintáctico: compilar, pasar ejemplos y corresponder a las fuentes son comprobaciones distintas. Tampoco ejecutar código generado arbitrario como atajo a la importación sin programación.
+
+## Creación de personajes definida por el paquete
+
+La capacidad `character-creation` añade una raíz opcional `"creation":{"action":"generate"}`. El identificador refiere a una acción normal del catálogo, con permiso `owner`, cuyos `inputs`, `requires`, `rolls`, `effects` y fuentes definen el creador. La aplicación genera las elecciones desde esos datos; el servidor comprueba requisitos antes de tirar, resuelve los efectos y guarda la ficha, las entradas y la traza en una sola acción confirmada. No hay fórmulas ni nombres de juegos en la interfaz. El ejemplo completo, con reglas propias, está en `test_fixtures/rule_packs/original-creation-example.json`.
+
+`RulePack.create_character(owner, inputs, physical, draw)` devuelve ficha y traza inicial. `new_sheet` sigue creando el estado base para validación/reproducción; si existe creador, esa ficha base no puede ejecutar acciones de partida antes de la creación. La acción reservada de creación no aparece en los botones de juego y el servidor rechaza ejecutarla de nuevo, incluso para el anfitrión. Un reenvío con el mismo identificador recupera la confirmación sin dados nuevos. Crear otro personaje es una decisión nueva y sí resuelve otros dados.
+
+Los valores `initial` describen el estado anterior a la resolución; deben estar justificados en las fuentes. El preparador no puede inventar estadísticas provisionales para aparentar cobertura. La creación debe poder expresar todas sus elecciones y cálculos en una resolución. Si una elección depende de ver una tirada anterior, hacen falta etapas adicionales todavía pendientes; el preparador debe indicar la limitación. Este bloque no implementa creación completa de Pathfinder ni de Cairn.
+
+La ficha incluye `creation:{inputs,trace}` cuando corresponde. Recuperar una copia reproduce esa creación con sus dados guardados antes de reproducir las acciones posteriores, y comprueba el estado final. Rechaza trazas, decisiones o valores adulterados; no vuelve a tirar. La combinación de paquetes conserva el creador si solo un bloque lo define o las referencias coinciden; rechaza creadores incompatibles. Los ejemplos del preparador deben comenzar por la creación cuando el paquete la define.
+
+Navegar y editar elecciones no genera llamadas de IA ni escrituras. Confirmar usa la acción transaccional existente, sin consultas reglamentarias al proveedor. Las elecciones y la traza son visibles con la ficha, conforme al modelo actual de campos compartidos de la campaña.
 
 ## Recuperación de preparación facturable
 
