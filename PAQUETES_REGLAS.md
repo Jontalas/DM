@@ -1,5 +1,15 @@
 # Motor común y paquetes de reglas importables
 
+## Perfiles de creación separados (capacidad en validación)
+
+Validación local final: 443 pruebas completas con emulador sin omisiones, correctas (168,821 s). Cinco pruebas nuevas de perfil/progreso/límites/composición/permisos y navegador de creador normal con acciones del perfil alternativo ocultas correctos; no nuevas inferencias reales. Pendiente despliegue en este punto.
+
+`creation-profiles` añade `creationProfiles:{id:{label,sources,steps}}`, hasta ocho perfiles de una a doce etapas propias. Requiere también character-creation y, si hay varias etapas, staged-character-creation. Cada etapa debe ser una acción existente del propietario, trazable y sin repeticiones en el perfil. Composición combina perfiles compatibles y rechaza conflictos explícitamente.
+
+El runtime permite seleccionar un perfil explícito mediante `new_sheet(owner,profile=...)` o `create_character(...,profile=...)`; el identificador queda en la ficha y determina sus etapas/límites. El creador `creation` predeterminado y las fichas sin profile conservan forma, progreso y cálculos anteriores. Todas las acciones reservadas por cualquier perfil se excluyen del juego normal, del director y de los botones de acciones, aunque no pertenezcan al creador predeterminado. La API actual de jugadores no permite elegir un perfil distinto ni importarlo como atajo de creación de PJ.
+
+Es una capacidad general del kernel; todavía no hay registro privado de actores ni controlador automático de PNJ conectado a estos perfiles. No convierte una preparación de PJ en reglas válidas de PNJ ni incorpora criaturas o tablas de Pathfinder. Ejemplo propio CC0: original-creation-profiles-example.json. Contraste previo del manual en PNJ_FUENTES.md; siguiente integración en ACTORES_Y_OBJETIVOS.md.
+
 ## Descubrimientos de aventura vinculados a resultados
 
 Integración local en validación: `prepare_pack_discoveries` fija una vez citas exactas de la fuente privada, ligadas a objetivos conocidos abiertos y campos booleanos almacenados. Preparación técnica con permiso `provided-adventure`; no hay todavía asistente ni extracción automática de consecuencias. La asociación semántica es preparación aportada, no certificación reglamentaria. Requiere `action-results`; no concede recursos ni altera otras fichas.

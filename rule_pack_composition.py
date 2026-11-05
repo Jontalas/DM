@@ -23,7 +23,7 @@ def compose(documents,version):
     # Input order cannot decide which rule or source wins.
     packs.sort(key=lambda pack:pack.digest)
     result=packs[0].document();result['version']=version
-    sources={};groups={group:{} for group in ('fields','tables','actions','triggers')}
+    sources={};groups={group:{} for group in ('fields','tables','actions','triggers','creationProfiles')}
     coverage={'implemented':set(),'pending':set()};capabilities=set()
     creation=None
     for pack in packs:
@@ -38,7 +38,7 @@ def compose(documents,version):
             if identifier in sources and _canonical(sources[identifier])!=_canonical(source):raise RulePackError('Una referencia de fuente tiene definiciones incompatibles: '+identifier)
             sources[identifier]=copy.deepcopy(source)
         for group,entries in groups.items():
-            for identifier,definition in data[group].items():
+            for identifier,definition in data.get(group,{}).items():
                 if identifier not in entries:entries[identifier]=copy.deepcopy(definition);continue
                 existing=entries[identifier]
                 old={key:value for key,value in existing.items() if key!='sources'}
@@ -48,6 +48,7 @@ def compose(documents,version):
         capabilities.update(data['requires'])
         for key in coverage:coverage[key].update(data['coverage'][key])
     result.update({group:{key:entries[key] for key in sorted(entries)} for group,entries in groups.items()})
+    if not result['creationProfiles']:result.pop('creationProfiles')
     for entries in groups.values():
         for definition in entries.values():definition['sources']=sorted(set(definition['sources']))
     result['sources']=[sources[key] for key in sorted(sources)]

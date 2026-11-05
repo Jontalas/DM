@@ -11,7 +11,7 @@ import secrets
 from bisect import bisect_right
 
 FORMAT='cronicas-rules-1'
-CAPABILITIES={'scalar-fields','expressions','tables','dice','actions','triggers','character-creation','staged-character-creation','action-results'}
+CAPABILITIES={'scalar-fields','expressions','tables','dice','actions','triggers','character-creation','staged-character-creation','action-results','creation-profiles'}
 LIMIT=10**12
 OPS={'add':(1,20),'sub':(2,2),'mul':(2,2),'floor_div':(2,2),'min':(1,20),'max':(1,20),
      'eq':(2,2),'ne':(2,2),'lt':(2,2),'le':(2,2),'gt':(2,2),'ge':(2,2),
@@ -79,7 +79,7 @@ class RulePack:
     def __init__(self,raw):
         self._data=read_document(raw)
         data=self._data
-        _keys(data,('format','id','version','engineVersion','name','edition','license','sources','coverage','requires','fields','tables','actions','triggers'),('creation',))
+        _keys(data,('format','id','version','engineVersion','name','edition','license','sources','coverage','requires','fields','tables','actions','triggers'),('creation','creationProfiles'))
         if data['format']!=FORMAT or type(data['engineVersion'])!=int or data['engineVersion']!=1:_fail('Versión del motor de paquetes no compatible')
         self.id=_id(data['id']);self.version=_text(data['version'],40)
         if not re.fullmatch(r'[0-9]+\.[0-9]+\.[0-9]+',self.version):_fail('Versión de paquete inválida; usa mayor.menor.revisión')
@@ -174,8 +174,24 @@ class RulePack:
             for action in self.creation_steps:
                 if action not in data['actions'] or data['actions'][action].get('permission','owner')!='owner':_fail('Cada etapa debe referir a una acción del propietario')
             self.creation=self.creation_steps[0]
+        self.creation_profiles={}
+        if 'creationProfiles' in data:
+            profiles=data['creationProfiles']
+            if not isinstance(profiles,dict) or not 1<=len(profiles)<=8:_fail('Perfiles de creación fuera de límites')
+            for identifier,profile in profiles.items():
+                _id(identifier);_keys(profile,('label','sources','steps'));_text(profile['label']);self._sources(profile)
+                steps=profile['steps']
+                if not isinstance(steps,list) or not 1<=len(steps)<=12:_fail('Etapas de perfil fuera de límites')
+                for step in steps:
+                    _id(step)
+                    if step not in data['actions'] or data['actions'][step].get('permission','owner')!='owner':_fail('El perfil necesita acciones de creación del propietario')
+                if len(set(steps))!=len(steps):_fail('El perfil no puede repetir etapas')
+                self.creation_profiles[identifier]=copy.deepcopy(profile)
+        self.reserved_creation_actions=set(self.creation_steps)|{step for profile in self.creation_profiles.values() for step in profile['steps']}
         used={'scalar-fields','expressions','actions'}
         if self.creation is not None:used.add('character-creation')
+        if self.creation_profiles:used.update({'creation-profiles','character-creation'})
+        if any(len(profile['steps'])>1 for profile in self.creation_profiles.values()):used.add('staged-character-creation')
         if 'steps' in data.get('creation',{}):used.add('staged-character-creation')
         if any('resultFields' in action for action in data['actions'].values()):used.add('action-results')
         if data['tables']:used.add('tables')
@@ -316,29 +332,36 @@ class RulePack:
         for key in self._order:values[key]=self._value(specs[key],self._eval(specs[key]['derive'],{'fields':values},budget))
         return values
 
-    def new_sheet(self,owner):
+    def new_sheet(self,owner,profile=None):
         _text(owner,100)
         sheet={'format':'cronicas-sheet-1','package':{'id':self.id,'version':self.version,'sha256':self.digest if hasattr(self,'digest') else ''},
             'owner':owner,'revision':0,'fields':{key:copy.deepcopy(spec['initial']) for key,spec in self._data['fields'].items() if 'initial' in spec}}
+        if profile is not None:
+            if not isinstance(profile,str) or profile not in self.creation_profiles:_fail('Perfil de creación no disponible')
+            sheet['profile']=profile
         self._fields(sheet['fields'],[50000]);return sheet
+
+    def _creation_steps(self,sheet):
+        return self.creation_profiles[sheet['profile']]['steps'] if 'profile' in sheet else self.creation_steps
 
     def view(self,sheet):
         fields=self._sheet(sheet)
-        return {'package':copy.deepcopy(sheet['package']),'owner':sheet['owner'],'revision':sheet['revision'],'fields':fields}
+        return {'package':copy.deepcopy(sheet['package']),'owner':sheet['owner'],'revision':sheet['revision'],'fields':fields,
+            **({'profile':sheet['profile']} if 'profile' in sheet else {})}
 
-    def create_character(self,owner,inputs=None,physical=None,draw=None):
-        sheet=self.new_sheet(owner)
+    def create_character(self,owner,inputs=None,physical=None,draw=None,profile=None):
+        sheet=self.new_sheet(owner,profile=profile);steps=self._creation_steps(sheet)
         if inputs is not None and not isinstance(inputs,dict) or physical is not None and not isinstance(physical,dict):_fail('Decisiones o dados de creación inválidos')
-        if self.creation is None:
+        if not steps:
             if inputs or physical:_fail('Este paquete no define decisiones ni dados de creación')
             return sheet,None
-        return self.execute(sheet,self.creation,{} if inputs is None else inputs,owner,
+        return self.execute(sheet,steps[0],{} if inputs is None else inputs,owner,
             physical=physical,draw=draw,creating=True)
 
     def creation_progress(self,sheet):
-        self._sheet(sheet);completed=min(sheet['revision'],len(self.creation_steps))
-        return {'complete':completed==len(self.creation_steps),'completed':completed,'total':len(self.creation_steps),
-            'next':self.creation_steps[completed] if completed<len(self.creation_steps) else None}
+        self._sheet(sheet);steps=self._creation_steps(sheet);completed=min(sheet['revision'],len(steps))
+        return {'complete':completed==len(steps),'completed':completed,'total':len(steps),
+            'next':steps[completed] if completed<len(steps) else None}
 
     def ready(self,sheet):return self.creation_progress(sheet)['complete']
 
@@ -374,7 +397,8 @@ class RulePack:
         return self.execute(sheet,step,inputs,actor,physical=physical,draw=draw,creating=True)
 
     def _sheet(self,sheet):
-        _keys(sheet,('format','package','owner','revision','fields'))
+        _keys(sheet,('format','package','owner','revision','fields'),('profile',))
+        if 'profile' in sheet and (not isinstance(sheet['profile'],str) or sheet['profile'] not in self.creation_profiles):_fail('Perfil de ficha incompatible con el paquete')
         if sheet['format']!='cronicas-sheet-1' or sheet['package']!={'id':self.id,'version':self.version,'sha256':self.digest}:_fail('La ficha requiere otra versión o contenido del paquete')
         _text(sheet['owner'],100)
         if type(sheet['revision'])!=int or not 0<=sheet['revision']<=1000000:_fail('Revisión de ficha inválida')
@@ -390,11 +414,12 @@ class RulePack:
 
     def _prepare_action(self,sheet,action_id,inputs,actor,host=False,physical=None,creating=False):
         self._sheet(sheet)
+        steps=self._creation_steps(sheet)
         if type(creating)!=bool:_fail('Modo de creación inválido')
         if creating:
-            if sheet['revision']>=len(self.creation_steps) or action_id!=self.creation_steps[sheet['revision']]:_fail('La etapa de creación no corresponde al progreso confirmado de esta ficha')
-        elif action_id in self.creation_steps:_fail('Las acciones de creación solo se resuelven durante su etapa correspondiente')
-        elif sheet['revision']<len(self.creation_steps):_fail('Completa la creación del personaje antes de jugar')
+            if sheet['revision']>=len(steps) or action_id!=steps[sheet['revision']]:_fail('La etapa de creación no corresponde al progreso confirmado de esta ficha')
+        elif isinstance(action_id,str) and action_id in self.reserved_creation_actions:_fail('Las acciones de creación solo se resuelven durante su etapa correspondiente')
+        elif sheet['revision']<len(steps):_fail('Completa la creación del personaje antes de jugar')
         if not isinstance(action_id,str) or action_id not in self._data['actions']:_fail('Acción no definida por este paquete')
         action=self._data['actions'][action_id]
         if not isinstance(actor,str) or not actor or len(actor)>100 or (action.get('permission','owner')=='owner' and actor!=sheet['owner']) or (action.get('permission')=='host' and host is not True):

@@ -49,7 +49,7 @@ def prepare(state,operation,actor,text,kind,pack,prepared_goals=None):
     if not pack.ready(actor['sheet']):raise RulePackError('Completa las etapas de creación de tu personaje antes de iniciar o continuar la aventura')
     data=pack.document();memory=state.get('narrative') or {}
     available={key:spec for key,spec in data['actions'].items()
-        if key not in pack.creation_steps and spec.get('permission','owner')=='owner'}
+        if key not in pack.reserved_creation_actions and spec.get('permission','owner')=='owner'}
     allowed=list(available) if operation=='talk' and kind=='action' and not memory.get('pending') else []
     history=[]
     for event in state['messages'][-16:]:
