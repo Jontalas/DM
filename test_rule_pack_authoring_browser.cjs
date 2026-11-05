@@ -21,7 +21,7 @@ const path=require('node:path'),assert=require('node:assert/strict');
   await page.locator('#packPrepare button[type=submit]').click();await page.locator('#packPreparationReport').waitFor();
   assert.equal(actions.length,1);assert.equal(actions[0].type,'prepare_rule_pack');
   assert.equal(await page.evaluate(()=>snapshot.state.package),null);
-  assert.equal(await page.evaluate(()=>snapshot.state.authoring.report.sourceVerification),'unverified');
+  assert.equal(await page.evaluate(()=>RulePreparationWorkspace.record(snapshot.state).report.sourceVerification),'unverified');
   await page.reload();await page.locator('#packPreparationReport').click();
   assert.match(await page.locator('#modalContent').textContent(),/2 ejemplos comprobados/);
   assert.match(await page.locator('#modalContent').textContent(),/123 tokens de entrada/);

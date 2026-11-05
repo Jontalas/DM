@@ -1,5 +1,6 @@
 """Servidor desechable SOLO para Playwright, sin credenciales ni servicios remotos."""
 import os
+import json
 import engine
 import server
 from test_support import TestStore
@@ -22,7 +23,12 @@ def main():
                 return authoring.validate_reply(prepared,{'status':'unsupported','packageJson':'','examples':[],
                     'issues':[{'kind':'unsupported','message':'La operación de esta prueba no está disponible en el motor.',
                         'sources':[prepared['sources'][0]['id']]}]})
-            report=authoring.validate_reply(prepared,authoring_fixture.reply(prepared))
+            answer=authoring_fixture.reply(prepared)
+            if prepared['request']['scope']=='TEST_DICE_BLOCK':
+                document=json.loads(answer['packageJson']);document['triggers']={}
+                document['coverage']={'implemented':['Recurso y prueba de dos dados'],'pending':['Agotamiento automático']}
+                answer['packageJson']=json.dumps(document);answer['examples']=answer['examples'][:1]
+            report=authoring.validate_reply(prepared,answer)
             report['usage']={'inputTokens':123,'outputTokens':456,'latencyMs':1}
             return report
         authoring.propose=fixture_prepare

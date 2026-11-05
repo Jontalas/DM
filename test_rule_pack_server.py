@@ -143,8 +143,9 @@ class RulePackServerTests(unittest.TestCase):
             self.assertEqual(provider.call_count,1)
             self.assertNotIn('PRIVATE-SOURCE-FRAGMENT',str(self.state(guest)))
             self.assertNotIn('authoring',self.state(guest)['state'])
+            self.assertNotIn('authoringWorkspace',self.state(guest)['state'])
             state=self.state()['state'];self.assertIsNone(state['package'])
-            self.assertEqual(state['authoring']['report']['sourceVerification'],'unverified')
+            self.assertEqual(campaign.preparation_record(state)['report']['sourceVerification'],'unverified')
             self.rejected(lambda:self.action('install_prepared_rule_pack',preparation='stale',policy='provided-rules'))
             self.action('install_prepared_rule_pack',preparation=prepared['sha256'],policy='draft')
             self.rejected(lambda:self.action('create_pack_sheet',name='Aria'))
@@ -211,6 +212,53 @@ class RulePackServerTests(unittest.TestCase):
             self.action('install_prepared_rule_pack',preparation=prepared['sha256'],policy='provided-rules')
             self.action('create_pack_sheet',name='Aria')
         self.assertEqual(self.state()['state']['package']['document']['sources'],prepared['sources'])
+
+    def test_preparation_workspace_retains_old_block_and_shares_text(self):
+        first=authoring_fixture.request();second=copy.deepcopy(first);second['scope']='Otro bloque de reglas'
+        def propose(prepared):return authoring.validate_reply(prepared,authoring_fixture.reply(prepared))
+        with patch.object(authoring,'propose',side_effect=propose) as provider:
+            self.action('prepare_rule_pack',request=first);self.action('prepare_rule_pack',request=second)
+            self.rejected(lambda:self.action('prepare_rule_pack',request=first))
+            self.assertEqual(provider.call_count,2)
+            state=self.state()['state'];workspace=state['authoringWorkspace']
+            self.assertIsNone(state['authoring']);self.assertEqual(len(workspace['blocks']),2)
+            self.assertEqual(len(workspace['sources']),1);self.assertEqual(len(workspace['texts']),1)
+            exported=self.request('/api/export',{},self.token)
+            self.action('import',campaign=exported)
+            older=authoring.prepare_input(first)['sha256']
+            self.action('install_prepared_rule_pack',preparation=older,policy='provided-rules')
+            self.assertEqual(provider.call_count,2)
+            altered=copy.deepcopy(exported);key=next(iter(altered['state']['authoringWorkspace']['texts']))
+            altered['state']['authoringWorkspace']['texts'][key]='Changed original'
+            self.rejected(lambda:self.action('import',campaign=altered))
+
+    def test_preparation_workspace_reserves_capacity_before_provider(self):
+        import rule_preparation_workspace as workspaces
+        with patch.object(workspaces,'MAX_BYTES',100),patch.object(authoring,'propose',side_effect=AssertionError('Capacity failure called provider')):
+            self.rejected(lambda:self.action('prepare_rule_pack',request=authoring_fixture.request()))
+
+    def test_failed_new_block_preserves_previous_preparation(self):
+        raw=authoring_fixture.request();prepared=authoring.prepare_input(raw)
+        report=authoring.validate_reply(prepared,authoring_fixture.reply(prepared))
+        with patch.object(authoring,'propose',return_value=report):self.action('prepare_rule_pack',request=raw)
+        other=copy.deepcopy(raw);other['scope']='Different requested block'
+        with patch.object(authoring,'propose',side_effect=RulePackError('Rejected proposal')):
+            self.rejected(lambda:self.action('prepare_rule_pack',request=other))
+        self.assertEqual(self.state()['state']['authoringWorkspace']['latest'],prepared['sha256'])
+
+    def test_legacy_preparation_moves_into_workspace_only_after_success(self):
+        raw=authoring_fixture.request();prepared=authoring.prepare_input(raw,authoring.LEGACY_SOURCE_SCHEME)
+        report=authoring.validate_reply(prepared,authoring_fixture.reply(prepared))
+        exported=self.request('/api/export',{},self.token)
+        exported['state'].pop('authoringWorkspace',None)
+        exported['state']['authoring']={'request':raw,'sha256':prepared['sha256'],'report':report}
+        self.action('import',campaign=exported)
+        other=copy.deepcopy(raw);other['scope']='Nuevo bloque';current=authoring.prepare_input(other)
+        with patch.object(authoring,'propose',return_value=authoring.validate_reply(current,authoring_fixture.reply(current))):
+            self.action('prepare_rule_pack',request=other)
+        state=self.state()['state'];self.assertIsNone(state['authoring'])
+        self.assertEqual(len(state['authoringWorkspace']['blocks']),2);self.assertEqual(len(state['authoringWorkspace']['texts']),1)
+        self.assertEqual(campaign.preparation_record(state,prepared['sha256'])['report'],report)
 
 
 class RulePackWaitressTests(RulePackServerTests):

@@ -1,0 +1,11 @@
+const assert=require('node:assert/strict'),workspace=require('./static/rule-preparation-workspace');
+const make=(hash,scope)=>({sha256:hash,sourceScheme:'fragment-v2',request:{identity:{name:'Original',version:'1.0.0'},scope,document:{pages:[{page:1,source:'source-a'}]}},report:{status:'candidate'}});
+const state={authoring:null,authoringWorkspace:{latest:'block-b',blocks:{'block-a':make('block-a','First scope'),'block-b':make('block-b','Second scope')},sources:{'source-a':{sha256:'text-a'}},texts:{'text-a':'PRIVATE ORIGINAL TEXT'}}};
+const before=structuredClone(state),first=workspace.record(state,'block-a');
+assert.equal(first.request.document.pages[0].text,'PRIVATE ORIGINAL TEXT');assert.equal(workspace.record(state).sha256,'block-b');
+assert.equal(workspace.list(state)[0].sha256,'block-b');assert.equal(workspace.list(state).length,2);
+first.request.document.pages[0].text='Changed';assert.deepEqual(state,before);assert.equal(workspace.record(state,'missing'),null);
+const legacy={authoring:{sha256:'old',request:{document:{pages:[{page:1,text:'Legacy text'}]}}}};
+assert.equal(workspace.record(legacy).request.document.pages[0].text,'Legacy text');assert.equal(workspace.record(legacy,'other'),null);
+assert.equal(workspace.record({}),null);assert.deepEqual(workspace.list({}),[]);
+console.log('Preparation workspace: local expansion, independent blocks, shared text, immutable reads, latest and legacy fallback passed.');
