@@ -14,6 +14,8 @@ Ratificación expresa del usuario, 5 de noviembre de 2026: continuar el desarrol
 
 Pruebas personales del usuario: avisar únicamente en puntos de inflexión excepcionales con funcionalidades grandes terminadas o prácticamente terminadas, conforme a los hitos y criterios de PRODUCTO.md. No solicitar pruebas habituales por entregas parciales. Preparar y verificar el recorrido antes de invitarle; su prueba es opcional y el desarrollo debe continuar con lo pendiente sin esperar respuesta.
 
+Vista de avances, petición del usuario del 5 de noviembre de 2026: cuando sea posible, mantener la aplicación ejecutándose localmente y mostrarla en una pestaña del IDE; se refiere a la aplicación funcionando, no a abrir código. Es secundario: no debe retrasar el desarrollo ni generar gasto o interacción necesaria. Distinguir datos de demostración y director simulado de producción. Si las herramientas no permiten abrir/controlar la pestaña, dejar el servidor y un enlace local accesible, informar brevemente del límite y continuar sin pedir configuración al usuario. No confundir estos vistazos opcionales con los hitos excepcionales de prueba personal.
+
 Evaluar skills y métodos por beneficios comprobables y coste. Aplicar los disponibles cuando sean pertinentes; documentar dependencias y límites. La colaboración entre agentes se puede proponer cuando justifique su consumo, sin convertirla en requisito de trabajo.
 
 ## Referencia principal: mesa virtual al estilo de Roll20

@@ -222,7 +222,11 @@ class RulePackServerTests(unittest.TestCase):
             self.action('talk_pack_adventure',character=cid,mode='action',text='Examino la marca.')
             pending=self.state()['state']['narrativeView']['pending']
             with patch.object(server.STORE,'load_adventure_source',side_effect=AssertionError('Dice/view fetched source')):
-                body=self.action('resolve_pack_request',request=pending['id'],physical={'dice':[3,4]})
+                before=self.state();body={'id':secrets.token_hex(12),'version':before['version'],'type':'resolve_pack_request','request':pending['id'],'physical':{'dice':[3,4]}}
+                with patch.object(server.STORE,'commit',side_effect=Unavailable('Interrupted before discovery commit')):
+                    self.rejected(lambda:self.request('/api/action',body,self.token),503)
+                self.assertEqual(self.state(),before)
+                self.request('/api/action',body,self.token)
                 self.assertTrue(self.request('/api/action',body,self.token)['duplicate'])
                 for token in [self.token,guest]:
                     view=self.state(token)['state'];self.assertEqual(view['narrativeView']['discoveries'][0]['text'],quote)
