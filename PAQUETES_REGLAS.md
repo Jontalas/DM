@@ -55,6 +55,10 @@ La primera integración añade siete casos repetidos bajo HTTP y Waitress: inspe
 
 ## Trabajo necesario para cumplir el objetivo
 
+### Composición determinista: núcleo todavía sin interfaz
+
+`rule_pack_composition.py` combina paquetes completos del mismo juego, edición y atribución con una versión posterior. Fusiona fuentes idénticas por identificador y referencias adicionales para definiciones iguales; rechaza conflictos sin elegir por orden ni sobrescribir. No elimina cobertura pendiente por inferir que otro bloque la haya resuelto. Recompila el resultado y conserva las huellas de entrada en una procedencia separada. No instala ni migra estado. Quince pruebas de composición e intérprete correctas, usando solo reglas originales de ejemplo. Faltan integración de preparación/interfaz y bloques parcialmente definidos; este núcleo no equivale a importar un manual completo por capítulos.
+
 ### Preparación asistida de fragmentos: primer recorrido
 
 El anfitrión aporta título, edición, atribución, ámbito de uso declarado, alcance y texto. El servidor admite hasta 32 páginas/fragmentos con numeración única y 24.000 caracteres de texto en total; la interfaz permite un fragmento `.txt`/`.md` UTF-8 o varias páginas seleccionadas de un PDF local. No se envía el resto de la campaña al proveedor. El ámbito de uso es una declaración del aportante, no una comprobación jurídica ni una licencia concedida por la aplicación.
