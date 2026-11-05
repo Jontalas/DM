@@ -1,5 +1,13 @@
 # Reanudar el desarrollo
 
+## Continuidad prioritaria confirmada — 5 de noviembre
+
+Producción/origin/main `ce6bf4254ca431b266b21851d4a0b620606380f9`, Render `7573979546` success. Resultados canónicos y facts-2 desplegados. `.deps/action-results-live-session.json` verified: dos éxitos consecutivos, segundo sin delta del booleano, resultados explícitos, duplicados y copia/propietario correctos; cero inferencias. Navegador producción anfitrión/copia/invitado/móvil correcto, cero acciones al consultar/abrir herramienta. No repetir ese guion.
+
+Ensayo `.deps/facts-director-live-session.json` **failed**, apertura simulada identificada, UNA llamada real de máximo dos: propuesta explore y objectiveCheck correctos, pero limitation afirma que falta la tirada; servidor rechaza correctamente la combinación contradictoria. Respuesta capturada intacta, sin tirada/cambio de ficha ni continuación. NO repetir guion, ni eliminar limitation del original, ni gastar otra llamada para buscar un pase. Uso observado: 5.400 entrada/313 salida, thinking 0. La nueva continuación facts-2 sigue sin comprobación real; los navegadores simulados sí pasan. Textos del guion escritos por tubería sufrieron sustituciones de caracteres; corregir el mecanismo de escritura antes de futuros ensayos, sin alterar evidencia original.
+
+Corrección local posterior: prompt distingue tirada pendiente de falta de cobertura y separa evidencia facts-2 de objectiveResolution antiguo; regresión de rechazo atómico y solicitud válida equivalente. 88 pruebas afectadas con emulador correctas sin omisiones (67,224 s), más 16 deterministas tras el último ajuste. Resguardar/desplegar, después continuar consecuencias estructuradas y actores, según CONSECUENCIAS_ESTRUCTURADAS.md. Ningún hito personal alcanzado ni dependencia del usuario. Los estados inferiores son históricos y quedan superados por este apartado.
+
 ## Estado vigente: desarrollo reanudado — 5 de noviembre de 2026
 
 **El usuario ha reanudado expresamente. Este apartado prevalece sobre la pausa histórica inferior; desarrollo activo.**

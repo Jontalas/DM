@@ -35,6 +35,8 @@ No modificar manuales ni reproducir tablas no autorizadas. Antes de trasladar un
 
 ## Seguimiento y aceptación
 
+Actualización de producción: action-results/facts-2 desplegados en ce6bf4254ca431b266b21851d4a0b620606380f9, con resultados repetidos, copia y navegador real verificados sin IA. Ensayo posterior de apertura simulada: una llamada (5.400 entrada/313 salida, sin thinking) propuso acción/vínculo correctos, pero describió una tirada pendiente en limitation; rechazo atómico correcto, respuesta conservada. No se ha probado todavía una continuación real facts-2. No se elimina esa limitación del original ni se repite la llamada. El prompt distingue ahora falta de cobertura de resolución pendiente; regresión comprueba rechazo sin dados ni cambios y equivalente legal con limitation vacía. Esta aclaración no certifica que futuras respuestas sean coherentes.
+
 Por sesión técnica: máximo de llamadas fijado antes de comenzar, llamadas realmente efectuadas, uso observado, captura reutilizada, resultado del motor, persistencia/copia, privacidad, agencia y coherencia narrativa evaluados por separado. Registrar aceptación negativa sin alterar originales. El contador de pruebas no sustituye estas condiciones.
 
 El hito de primera aventura autónoma completa de PRODUCTO.md permanece pendiente. El desarrollo continúa mientras se corrigen estos puntos y el motor/recorrido restante, sin pedir al usuario que pruebe cada entrega, configure fichas o desbloquee análisis que puede realizar el agente.

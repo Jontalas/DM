@@ -76,3 +76,16 @@ class ResolutionFactTests(unittest.TestCase):
         prepared=director.prepare(state,'continue',state['characters'][0],'','action',campaign.runtime(state,f.me['campaign']))
         self.assertEqual(prepared['request']['contract'],director.CONTRACT);self.assertTrue(prepared['request']['rules']['actions'])
         self.assertIn('trace',prepared['request']['confirmedResult']);self.assertNotIn('results',prepared['request']['confirmedResult']['trace'])
+
+    def test_pending_roll_is_not_a_coverage_limitation_and_rejection_is_atomic(self):
+        before=copy.deepcopy(self.state)
+        answer=fixture.reply('explore',limitation='Explorar requiere una tirada pendiente del motor.',
+            objectiveCheck={'objective':'farol','field':'success'})
+        with patch('rule_pack_runtime.secrets.randbelow',side_effect=AssertionError('Rejected proposal rolled')):
+            with self.assertRaisesRegex(RulePackError,'contradice'):
+                self.apply(self.state,'talk_pack_adventure',answer,character=self.character,text='Examino la marca.',mode='action')
+        self.assertEqual(self.state,before)
+        answer['limitation']=''
+        pending=self.apply(self.state,'talk_pack_adventure',answer,character=self.character,text='Examino la marca.',mode='action')
+        self.assertEqual(pending['characters'],before['characters'])
+        self.assertEqual(pending['narrative']['pending']['objectiveCheck'],{'objective':'farol','field':'success'})
