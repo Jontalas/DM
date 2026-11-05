@@ -41,7 +41,7 @@ def file_response(environ, start_response, path, private=False):
     size = path.stat().st_size
     content_type = mimetypes.guess_type(str(path))[0] or 'application/octet-stream'
     if path.suffix=='.mjs':content_type='text/javascript'
-    if path.suffix in {'.js','.mjs','.css','.html'}: content_type += '; charset=utf-8'
+    if path.suffix in {'.js','.mjs','.css','.html','.txt','.md'}: content_type += '; charset=utf-8'
     start_response('200 OK',[('Content-Type',content_type),('Content-Length',str(size)),('Cache-Control','private, no-store' if private else server.static_cache_control(path))])
     if environ['REQUEST_METHOD']=='HEAD': stream.close(); return []
     wrapper = environ.get('wsgi.file_wrapper',FileWrapper)
@@ -78,6 +78,8 @@ def application(environ, start_response):
             finally:stream.close()
         return blocks()
     static_root = (server.ROOT/'static').resolve()
+    notice=server.public_notice_path(path)
+    if notice is not None:return file_response(environ,start_response,notice)
     target = (static_root/('index.html' if path=='/' else path.lstrip('/'))).resolve()
     if not target.is_relative_to(static_root) or not target.is_file():
         return error(start_response,404,'No encontrado')

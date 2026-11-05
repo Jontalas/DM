@@ -51,7 +51,7 @@ def build_context(state,text,refs,rules=False,check_actors=None,starting=False,s
     public={k:v for k,v in state.items() if k not in {'secrets','directorNotes','directorMemory','adventureModule','adventureRoute','routeProgress','private','messages'}}
     if state.get('adventureModule'):public['adventureModuleView']=adventure_modules.public_view(state)
     if state.get('adventureRoute') and not rules:public['adventureRouteView']=adventure_routes.public_view(state)
-    public['characters']=[{k:v for k,v in c.items() if k!='creation'} for c in state.get('characters',[])]
+    public['characters']=[{k:v for k,v in c.items() if k not in ('creation','npcCreation')} for c in state.get('characters',[])]
     history=[{'speaker':m['speaker'],'kind':m['kind'],'text':repair_text(m['text']) if m.get('kind')=='director' else m['text'],
               **({'check':m['check']} if m.get('kind')=='rules' and m.get('check') else {}),
               **({'routeTransition':m['routeTransition']} if m.get('kind')=='rules' and m.get('routeTransition') else {})} for m in state['messages'][-30:]

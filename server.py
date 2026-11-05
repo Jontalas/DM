@@ -34,6 +34,11 @@ def static_cache_control(path):
     return 'public, max-age=31536000, immutable' if immutable else 'no-cache'
 
 
+def public_notice_path(path):
+    from npc_catalog import NOTICE_FILES
+    return ROOT/'licenses'/path.removeprefix('/licenses/') if path in {'/licenses/'+name for name in NOTICE_FILES} else None
+
+
 def initialize():
     global STORE
     if STORE is None: STORE=FirestoreStore.from_environment()
@@ -156,7 +161,10 @@ def execute_action(body,me):
             else:
                 for key in initial_state({}):
                     if key not in state:raise ValueError('Falta '+key)
-                for character in state['characters']:character['owner']=me['id']
+                import npc_catalog
+                npc_catalog.validate_restored(state)
+                for character in state['characters']:
+                    if not character.get('npcCreation'):character['owner']=me['id']
                 adventure_modules.validate_restored(state)
                 adventure_routes.validate_restored(state)
                 state['private']={}
@@ -327,9 +335,10 @@ class Handler(BaseHTTPRequestHandler):
                 with stream:
                     while chunk:=stream.read(65536):self.wfile.write(chunk)
                 return
-            path=ROOT/'static'/('index.html' if url.path=='/' else url.path.lstrip('/'))
-            if not path.resolve().is_relative_to((ROOT/'static').resolve()) or not path.is_file():self.reply({'error':'No encontrado'},404);return
-            types={'.html':'text/html; charset=utf-8','.css':'text/css','.js':'text/javascript; charset=utf-8','.mjs':'text/javascript; charset=utf-8','.wasm':'application/wasm'}
+            notice=public_notice_path(url.path)
+            path=notice or ROOT/'static'/('index.html' if url.path=='/' else url.path.lstrip('/'))
+            if (notice is None and not path.resolve().is_relative_to((ROOT/'static').resolve())) or not path.is_file():self.reply({'error':'No encontrado'},404);return
+            types={'.html':'text/html; charset=utf-8','.css':'text/css','.js':'text/javascript; charset=utf-8','.mjs':'text/javascript; charset=utf-8','.wasm':'application/wasm','.txt':'text/plain; charset=utf-8','.md':'text/plain; charset=utf-8'}
             size=path.stat().st_size;self.send_response(200);self.send_header('Content-Type',types.get(path.suffix,'application/octet-stream'));self.send_header('Content-Length',str(size));self.send_header('Cache-Control',static_cache_control(path));self.end_headers()
             with path.open('rb') as stream:
                 while chunk:=stream.read(65536):self.wfile.write(chunk)
@@ -372,7 +381,11 @@ class Handler(BaseHTTPRequestHandler):
                 if state.get('ruleset')=='rule-pack':
                     state=attach_workspace(state,me,clear_reference=True)
                     state=attach_adventure_source(state,me,clear_reference=True)
-                self.reply({'format':'cronicas-1','title':row['title'],'state':state});return
+                payload={'format':'cronicas-1','title':row['title'],'state':state}
+                import npc_catalog
+                notices=npc_catalog.export_notices(state)
+                if notices:payload['licenses']=notices
+                self.reply(payload);return
             raise ValueError('Operación desconocida')
         except PermissionError as exc:self.reply({'error':str(exc)},403)
         except Conflict as exc:self.reply({'error':str(exc)},409)

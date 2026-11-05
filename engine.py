@@ -110,6 +110,17 @@ def apply_action(s,b,me):
         k=b.get('kind','action')
         if k not in ['action','dialogue','ooc','private']: raise ValueError('Tipo de mensaje inválido')
         log(s,text,k,speaker=speaker,owner=me['id'],visibility='private' if k=='private' else 'public')
+    elif kind=='create_npc':
+        host(me)
+        if set(b)-{'type','template','name','id','version'}:raise ValueError('Prepara PNJ por plantilla; no se admiten estadísticas directas')
+        if s['board']['active']:raise ValueError('Prepara los PNJ antes de iniciar el combate')
+        if len([c for c in s['characters'] if c.get('npcCreation')])>=16:raise ValueError('Máximo dieciséis PNJ preparados en este bloque')
+        import npc_catalog
+        data,source=npc_catalog.prepare(b.get('template'),s.get('ruleset','pathfinder-1e'),name=b.get('name'))
+        apply_action(s,{'type':'character','character':data|{'enemy':True,'owner':'director'}},me)
+        created=s['characters'][-1];created['npcCreation']=source|{'manualOverride':False}
+        s['messages'][-1]['text']='PNJ preparado desde plantilla verificada: '+created['name']+'. Perfil parcial de espada corta; consulta sus límites de cobertura.'
+        s['messages'][-1]['refs']=[{'book':source['sources'][0]['book'],'page':source['sources'][0]['pdfPage']}]
     elif kind=='create_character':
         if s['board']['active']:raise ValueError('Finaliza el combate antes de crear un personaje')
         if type(b.get('enemy',False))!=bool:raise ValueError('Tipo de participante inválido')
@@ -130,17 +141,22 @@ def apply_action(s,b,me):
         if len(attrs)!=6 or any(type(v)!=int or not 1<=v<=60 for v in attrs): raise ValueError('Características inválidas')
         hp=int(d.get('maxHp',10)); speed=int(d.get('speed',6))
         if not 1<=hp<=10000 or not 1<=speed<=100: raise ValueError('PG o velocidad inválidos')
-        owner=d.get('owner',me['id'])
+        owner=d.get('owner',old['owner'] if old and old.get('npcCreation') else me['id'])
+        if old and old.get('npcCreation') and (owner!='director' or d.get('enemy',old['enemy']) is not True):raise ValueError('Un PNJ preparado no se convierte en personaje jugador')
         if not me['host']: owner=me['id']
-        data={'id':cid or secrets.token_hex(6),'name':str(d.get('name','Aventurero'))[:80],'owner':owner,'race':str(d.get('race','Humano')),'class':str(d.get('class','Sin clase')),'level':int(d.get('level',1)),'abilities':attrs,'hp':int(d.get('hp',hp)),'maxHp':hp,'ac':int(d.get('ac',10)),'saves':d.get('saves',[0,0,0]),'speed':speed,'initiative':int(d.get('initiative',(attrs[1]-10)//2)),'attack':int(d.get('attack',0)),'damage':str(d.get('damage','1d6')),'skills':d.get('skills',''),'feats':d.get('feats',''),'equipment':d.get('equipment',''),'spells':d.get('spells',''),'resources':d.get('resources',''),'conditions':d.get('conditions',''),'load':d.get('load',''),'notes':d.get('notes',''),'x':old['x'] if old else len(s['characters'])%12,'y':old['y'] if old else 0,'enemy':bool(d.get('enemy',False))}
+        data={'id':cid or secrets.token_hex(6),'name':str(d.get('name','Aventurero'))[:80],'owner':owner,'race':str(d.get('race','Humano')),'class':str(d.get('class','Sin clase')),'level':int(d.get('level',1)),'abilities':attrs,'hp':int(d.get('hp',hp)),'maxHp':hp,'ac':int(d.get('ac',10)),'saves':d.get('saves',[0,0,0]),'speed':speed,'initiative':int(d.get('initiative',(attrs[1]-10)//2)),'attack':int(d.get('attack',0)),'damage':str(d.get('damage','1d6')),'skills':d.get('skills',''),'feats':d.get('feats',''),'equipment':d.get('equipment',''),'spells':d.get('spells',''),'resources':d.get('resources',''),'conditions':d.get('conditions',''),'load':d.get('load',''),'notes':d.get('notes',''),'x':old['x'] if old else len(s['characters'])%12,'y':old['y'] if old else 0,'enemy':bool(d.get('enemy',old['enemy'] if old and old.get('npcCreation') else False))}
         if data['enemy']: host(me)
         saves=data['saves']
         if not isinstance(saves,list) or len(saves)!=3:raise ValueError('Indica Fortaleza, Reflejos y Voluntad como tres totales')
         for value in saves:checks.integer(value)
         data['skillTotals']=checks.skill_totals(d.get('skillTotals',old.get('skillTotals',[]) if old else []))
         if old and old.get('creation'):data['creation']={**copy.deepcopy(old['creation']),'manualOverride':True}
+        if old and old.get('npcCreation'):data['npcCreation']={**copy.deepcopy(old['npcCreation']),'manualOverride':True}
         if d.get('meleeProfile') is not None:
             data['meleeProfile']=copy.deepcopy(d['meleeProfile']);combat.profile(data)
+        if data.get('npcCreation'):
+            import npc_catalog
+            npc_catalog.validate_character(data,s.get('ruleset','pathfinder-1e'))
         if old: s['characters'][s['characters'].index(old)]=data
         else:
             occupied={(v['x'],v['y']) for v in s['characters']}

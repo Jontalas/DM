@@ -1,5 +1,15 @@
 # Plantillas de adversarios desde fuentes verificadas
 
+## Integración local posterior
+
+API create_npc integrada y en validación final: anfitrión, datos de catálogo, fuera de combate, colocación libre, propietario director y límite16. No acepta totales del cliente. Procedencia por huella de plantilla; ampliar el catálogo no invalida entradas anteriores. La copia verifica la plantilla y conserva propietario/controlador de PNJ; solo reasigna PJ. PG actuales/posición son estado dinámico validado. Modificar estadísticas mediante el editor avanzado marca explícitamente corrección excepcional, sin transferir el PNJ al jugador.
+
+La ficha muestra cobertura y fuentes; el invitado consulta sin guardar. El contexto del director conserva estadísticas y omite auditoría repetida. /licenses/ sirve únicamente los tres avisos declarados; exportar campaña con PNJ incorpora sus textos una vez en la raíz de la copia. No añade escrituras de licencia al estado de Firebase ni tokens al modelo.
+
+HTTP/Waitress, copia, permisos, deduplicación, alteraciones de ficha y licencia pública/exportada correctos; navegador anfitrión/invitado/móvil correcto, cero acciones por consultar. Suite previa530 correcta sin omisiones (222,759s); final con ajuste de licencias en ejecución, .deps/npc-preparation-final-legal-tests.log. Todavía sin despliegue de este API, sin interfaz de incorporación y sin encuentro autónomo habilitado.
+
+Validación final: **531 pruebas completas con emulador correctas sin omisiones (230,223s)**. Exportación contiene avisos una sola vez y la consulta pública de los textos no accede a Firebase. Navegador de preparación correcto; cambios pendientes de despliegue/verificación en este punto.
+
 Estado: fábrica local aislada, sin API de incorporación, interfaz de PNJ ni encuentro autónomo nuevo. Prioridad: permitir un conflicto acotado del módulo actual sin que el anfitrión tenga que calcular o escribir estadísticas. No representa todavía una aventura completa ni un hito de prueba personal.
 
 `catalogs/npc-catalog.json` contiene una primera plantilla de datos, identificada por sistema/versión/fuentes: goblin combatiente 1 del Bestiario aportado. `npc_catalog.prepare` devuelve una copia de los valores y un registro de procedencia con huella, fuentes, perfil, cobertura y límites. No convierte reglas entre sistemas, no sube niveles, no usa el creador de PJ como creador de criaturas y no realiza llamadas de IA, Firebase ni nuevas tiradas.

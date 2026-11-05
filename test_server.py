@@ -32,6 +32,38 @@ class IntegrationTests(unittest.TestCase):
         self.action('talk',text='Secreto',kind='private',director=False)
         self.assertFalse(any(m['text']=='Secreto' for m in self.state(guest)['state']['messages']))
 
+    def test_source_npc_is_deduplicated_host_prepared_and_keeps_director_on_copy(self):
+        from test_character_builder import choices
+        import copy
+        self.action('create_character',choices=choices())
+        with patch.object(server,'ai_reply',side_effect=AssertionError('NPC preparation called AI')):
+            body=self.action('create_npc',template='pf1-goblin-warrior-1',name='Vigía')
+            self.assertTrue(self.request('/api/action',body,self.token)['duplicate'])
+        current=self.state();actors=current['state']['characters'];self.assertEqual(len(actors),2)
+        npc=next(actor for actor in actors if actor.get('npcCreation'))
+        self.assertEqual((npc['owner'],npc['hp']),('director',7));self.assertFalse(npc['npcCreation']['manualOverride'])
+        guest=self.request('/api/join',{'name':'Luis','invite':current['invite']})['token']
+        with self.assertRaises(urllib.error.HTTPError) as error:self.action('create_npc',guest,template='pf1-goblin-warrior-1')
+        self.assertEqual(error.exception.code,403);error.exception.close()
+        exported=self.request('/api/export',{},self.token)
+        self.assertIn('15. COPYRIGHT NOTICE',exported['licenses']['OGL-1.0a-Bestiary.txt'])
+        self.assertIn('15. COPYRIGHT NOTICE',exported['licenses']['OGL-1.0a-Core-Rulebook.txt'])
+        with patch.object(server,'repository',side_effect=AssertionError('Public license accessed Firebase')):
+            for name in ('OGL-1.0a-Bestiary.txt','OGL-1.0a-Core-Rulebook.txt'):
+                with urllib.request.urlopen(self.url+'/licenses/'+name) as response:
+                    self.assertEqual(response.headers.get_content_type(),'text/plain')
+                    self.assertEqual(response.read().decode('utf-8').replace('\r\n','\n'),exported['licenses'][name])
+        tampered=copy.deepcopy(exported);next(c for c in tampered['state']['characters'] if c.get('npcCreation'))['attack']=999
+        before=self.state()
+        with self.assertRaises(urllib.error.HTTPError) as error:self.action('import',campaign=tampered)
+        self.assertEqual(error.exception.code,400);error.exception.close();self.assertEqual(self.state(),before)
+        other=self.request('/api/create',{'title':'Copia de PNJ','player':'Otra jugadora'})['token']
+        self.action('import',other,campaign=exported);copied=self.state(other)
+        npc_copy=next(c for c in copied['state']['characters'] if c.get('npcCreation'))
+        self.assertEqual(npc_copy['owner'],'director');self.assertEqual(npc_copy['npcCreation'],npc['npcCreation'])
+        player=next(c for c in copied['state']['characters'] if not c.get('npcCreation'))
+        self.assertEqual(player['owner'],copied['me']['id']);self.assertNotEqual(player['owner'],npc_copy['owner'])
+
     def test_imported_text_is_bounded_private_atomic_and_replay_safe(self):
         from test_adventure import reply
         from test_character_builder import choices
