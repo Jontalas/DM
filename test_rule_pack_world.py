@@ -62,3 +62,26 @@ class WorldNarrativeTests(unittest.TestCase):
         started=campaign.execute_action(self.state,{'type':'start_pack_adventure','character':self.character},self.me,
             narrative_call=Mock(return_value=reply(npcUpdates=[npc('sombra',known=False,public='')])))
         self.assertNotIn('npcs',campaign.public_view(started,self.me)['narrativeView'])
+
+    def test_player_identity_cannot_be_overwritten_by_an_npc(self):
+        state=copy.deepcopy(self.state);state['characters'][0]['id']='arda'
+        with self.assertRaises(RulePackError):
+            campaign.execute_action(state,{'type':'start_pack_adventure','character':'arda'},self.me,
+                narrative_call=Mock(return_value=reply(npcUpdates=[npc()])))
+        self.assertIsNone(state['narrative'])
+
+    def test_truncated_npc_update_preserves_the_previous_registry(self):
+        import json
+        def call(state,kind,answer=None,**data):
+            return campaign.execute_action(state,{'type':kind,**data},self.me,narrative_call=Mock(return_value=answer or reply()))
+        state=call(self.state,'start_pack_adventure',reply(npcUpdates=[npc()]),character=self.character)
+        state=call(state,'talk_pack_adventure',reply('intentar'),character=self.character,text='Intento investigar.',mode='action')
+        state=call(state,'resolve_pack_request',request=state['narrative']['pending']['id'],physical={'dice':[3,4]})
+        prepared=director.prepare(state,'continue',state['characters'][0],'','action',campaign.runtime(state,self.me['campaign']))
+        partial=json.dumps(reply())[:-1]+',"npcUpdates":[{"id":"incompleto'
+        raw=json.dumps({'stop_reason':'max_tokens','content':[{'type':'text','text':partial}]}).encode()
+        recovered=director.parse_response(prepared,raw)
+        after=call(state,'continue_pack_adventure',recovered)
+        self.assertEqual(after['narrative']['npcs'],state['narrative']['npcs'])
+        self.assertEqual(after['characters'],state['characters'])
+        self.assertIsNone(after['narrative']['continuation'])

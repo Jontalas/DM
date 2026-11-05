@@ -2,6 +2,8 @@
 
 ## Evidencia vigente del 5 de noviembre: director y recuperación
 
+**Último despliegue confirmado: `2f311b2`, Render `7571321251` success**, revisión/salud HTTPS y navegador real correctos. Consulta local de PNJ ya publicada. Ensayo real original sigue usando exactamente tres inferencias: no genera retrospectivamente registros de PNJ; muestra estado vacío. El nuevo registro se comprueba con proveedor simulado. Dos pruebas posteriores de identidad del jugador y truncado de npcUpdates también correctas; siete pruebas world en total. Objetivos estructurados todavía pendientes: no confundir una memoria de PNJ con resolución verificable de objetivos ni mundo completo.
+
 PNJ desplegados en `fc854e8`, Render `7571265969` success, con 376 pruebas completas y navegador simulado correctos. Después se añadió la consulta local «Personajes que conocéis» al diario; navegador ampliado y captura móvil correctos, pendiente del siguiente despliegue. Esto supera las referencias a ausencia de panel en los hitos inferiores. No hay inferencia real nueva para probar generación de PNJ; las comprobaciones del nuevo campo usan proveedor simulado.
 
 Actualización posterior: dados duraderos desplegados en `79d3729`, Render `7571119776` success, HTTPS/revisión/salud y campaña técnica con dados reales del servidor y duplicado comprobados. **369 pruebas completas con emulador, sin omisiones (72,110 s)**; los fallos de persistencia se inyectaron únicamente localmente. Sin inferencias nuevas. La etiqueta de desarrollo del párrafo histórico siguiente queda superada por esta evidencia.
