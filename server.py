@@ -57,12 +57,31 @@ def load(cid):
     return row,state
 
 
-def view(row,state,me):
+def attach_workspace(state,me,clear_reference=False):
+    reference=state.get('authoringWorkspaceRef')
+    if reference is None:return state
+    if not me['host']:raise PermissionError('Solo el anfitrión consulta las preparaciones privadas')
+    result=dict(state);result['authoringWorkspace']=repository().load_rule_workspace(me['campaign'],reference)
+    if clear_reference:result['authoringWorkspaceRef']=None
+    return result
+
+
+def view(row,state,me,known_workspace=None):
     selected=rulesets.adapter(state.get('ruleset',rulesets.DEFAULT))
     if selected is not None:
-        return {'id':row['id'],'title':row['title'],'version':row['version'],
+        cached=None;workspace_unavailable=False
+        if state.get('ruleset')=='rule-pack' and me['host'] and state.get('authoringWorkspaceRef'):
+            reference=state['authoringWorkspaceRef']
+            if known_workspace==reference['sha256']:cached=reference['sha256']
+            else:
+                try:state=attach_workspace(state,me)
+                except Unavailable:workspace_unavailable=True
+        result={'id':row['id'],'title':row['title'],'version':row['version'],
             'state':selected.public_view(state,me),'me':me,'players':repository().players(row['id']),
             'invite':row['invite'] if me['host'] else None}
+        if cached:result['workspaceUnchanged']=cached
+        if workspace_unavailable:result['workspaceUnavailable']=True
+        return result
     state=json.loads(json.dumps(state))
     module_view=adventure_modules.public_view(state)
     route_view=adventure_routes.public_view(state)
@@ -113,6 +132,10 @@ def execute_action(body,me):
         row,state=load(cid)
         if body.get('version')!=row['version']:raise Conflict('La mesa ha cambiado. Revisa tu acción antes de enviarla')
         selected=rulesets.adapter(state['ruleset'])
+        workspace_readonly=False
+        if state['ruleset']=='rule-pack' and me['host'] and body['type'] in ('prepare_rule_pack','install_prepared_rule_pack'):
+            workspace_readonly=body['type']=='install_prepared_rule_pack' and state.get('authoringWorkspaceRef') is not None
+            state=attach_workspace(state,me)
         title=None
         if body['type']=='import':
             if not me['host']:raise PermissionError('Solo el anfitrión importa')
@@ -197,6 +220,7 @@ def execute_action(body,me):
                     state['pending'].append({'reason':'Revisar prueba propuesta: '+str(proposal.get('reason','Prueba no válida'))[:500],'source':'El motor no pudo validar la solicitud de Claude; resolución asistida'})
         else:apply_action(state,body,me)
         # Firestore CAS + marker are atomic. A conflict never reruns RNG or the provider.
+        if workspace_readonly:state['authoringWorkspace']=None
         duplicate=store.commit(cid,aid,me['id'],signature,row['version'],state,title)
         return {'duplicate':True} if duplicate else {'ok':True}
 
@@ -244,7 +268,7 @@ class Handler(BaseHTTPRequestHandler):
             if url.path=='/api/state':
                 me=self.auth();row=repository().metadata(me['campaign'])
                 if query.get('version',[''])[0]==str(row['version']):self.reply({'unchanged':True});return
-                row,state=load(me['campaign']);self.reply(view(row,state,me));return
+                row,state=load(me['campaign']);self.reply(view(row,state,me,query.get('workspace',[''])[0]));return
             if url.path=='/api/search':
                 self.auth();self.reply(search(query.get('q',[''])[0],query.get('book',[None])[0]));return
             if url.path.startswith('/books/'):
@@ -296,7 +320,9 @@ class Handler(BaseHTTPRequestHandler):
                 self.reply({'answer':result['narration'],'refs':[{'book':r['book'],'page':r['page']} for r in refs]});return
             if path=='/api/export':
                 if not me['host']:raise PermissionError('Solo el anfitrión exporta la campaña completa')
-                row,state=load(me['campaign']);self.reply({'format':'cronicas-1','title':row['title'],'state':state});return
+                row,state=load(me['campaign'])
+                if state.get('ruleset')=='rule-pack':state=attach_workspace(state,me,clear_reference=True)
+                self.reply({'format':'cronicas-1','title':row['title'],'state':state});return
             raise ValueError('Operación desconocida')
         except PermissionError as exc:self.reply({'error':str(exc)},403)
         except Conflict as exc:self.reply({'error':str(exc)},409)

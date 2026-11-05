@@ -9,10 +9,11 @@ from firebase_store import Conflict, FirestoreStore, digest, words
 class TestStore:
     __test__=False
     def __init__(self):
-        self.campaigns={};self.sessions={};self.members={};self.invites={};self.actions={};self.pages={};self.lock=threading.RLock()
+        self.campaigns={};self.sessions={};self.members={};self.invites={};self.actions={};self.pages={};self.workspaces={};self.lock=threading.RLock()
     def health(self):pass
     def create(self,title,state,name):
         cid=secrets.token_hex(12);pid=secrets.token_hex(8);token=secrets.token_hex(32);invite=secrets.token_hex(24)
+        state=self._light_state(cid,state)
         self.campaigns[cid]=({'id':cid,'title':title,'invite':invite,'version':0},copy.deepcopy(state))
         me={'id':pid,'name':name,'host':1,'campaign':cid};self.sessions[digest(token)]=me;self.members[cid]=[me];self.invites[invite]=cid
         return token
@@ -27,6 +28,16 @@ class TestStore:
         return copy.deepcopy(self.sessions[digest(token)])
     def metadata(self,cid):return copy.deepcopy(self.campaigns[cid][0])
     def load(self,cid):return copy.deepcopy(self.campaigns[cid])
+    def _light_state(self,cid,state):
+        if state.get('ruleset')!='rule-pack':return state
+        from rule_workspace_asset import detach
+        light,asset=detach(state)
+        if asset is not None:self.workspaces[cid,asset['reference']['sha256']]=asset['packed']
+        return light
+    def load_rule_workspace(self,cid,reference):
+        import json
+        from rule_workspace_asset import decode
+        return json.loads(decode(reference,self.workspaces[cid,reference['sha256']]))
     def players(self,cid):return [{k:v for k,v in p.items() if k!='campaign'} for p in self.members[cid]]
     def completed(self,cid,aid,actor,fingerprint):
         marker=self.actions.get((cid,aid))
@@ -38,7 +49,7 @@ class TestStore:
             if self.campaigns[cid][0]['version']!=version:raise Conflict('Estado antiguo')
             meta=copy.deepcopy(self.campaigns[cid][0]);meta['version']+=1
             if title is not None:meta['title']=title
-            self.campaigns[cid]=(meta,copy.deepcopy(state));self.actions[cid,aid]=(actor,fingerprint)
+            self.campaigns[cid]=(meta,copy.deepcopy(self._light_state(cid,state)));self.actions[cid,aid]=(actor,fingerprint)
             return False
     def index_book(self,book,pages):self.pages[book]=copy.deepcopy(pages)
     def counts(self):return {b:len(self.pages.get(b,[])) for b in ['reglas','bestiario','trey']}

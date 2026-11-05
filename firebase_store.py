@@ -8,6 +8,7 @@ import threading
 import time
 import unicodedata
 import zlib
+from collections import OrderedDict
 
 BOOKS = {'trey': 'Trey.pdf', 'reglas': 'Pathfinder_en_escastellano_subido para_elgrimorio.pdf', 'bestiario': 'bestiario pathfinder spanish [Unlocked by www.freemypdf.com].pdf'}
 CHUNK_BYTES = 192 * 1024
@@ -59,6 +60,8 @@ class FirestoreStore:
         self._health_lock=threading.Lock()
         self._reader=None
         self._reader_lock=threading.Lock()
+        self._workspace_cache=OrderedDict()
+        self._workspace_lock=threading.RLock()
         self.prefix=os.environ.get('FIREBASE_COLLECTION_PREFIX','cronicas')
         if not re.fullmatch(r'[A-Za-z0-9_-]{1,60}',self.prefix): raise ValueError('Prefijo Firebase inválido')
 
@@ -77,6 +80,10 @@ class FirestoreStore:
 
     def _stage(self,cid,state):
         from google.cloud import firestore
+        if state.get('ruleset')=='rule-pack':
+            from rule_workspace_asset import detach
+            state,asset=detach(state)
+            if asset is not None:self._stage_rule_workspace(cid,asset)
         chunks=encode_state(state);sid=secrets.token_hex(16)
         # Keep each write request well below Firestore's 10 MiB request limit.
         for start in range(0,len(chunks),20):
@@ -85,6 +92,43 @@ class FirestoreStore:
                 batch.create(self.campaign(cid).collection('snapshots').document(f'{sid}-{i}'),{'data':chunks[i],'createdAt':firestore.SERVER_TIMESTAMP})
             batch.commit()
         return {'snapshot':sid,'chunks':len(chunks)}
+
+    def _cache_workspace(self,cid,reference,raw):
+        with self._workspace_lock:
+            key=(cid,reference['sha256']);self._workspace_cache[key]=raw;self._workspace_cache.move_to_end(key)
+            while len(self._workspace_cache)>8:self._workspace_cache.popitem(last=False)
+
+    def _fetch_rule_workspace(self,cid,reference):
+        from rule_workspace_asset import decode
+        from google.api_core.exceptions import GoogleAPICallError
+        try:snap=self.campaign(cid).collection('ruleWorkspaces').document(reference['sha256']).get(timeout=10,retry=None)
+        except GoogleAPICallError as error:raise Unavailable('No se pueden consultar las preparaciones privadas ahora') from error
+        if not snap.exists:raise Unavailable('Faltan las fuentes privadas; conserva la copia antes de corregir la campaña')
+        try:return decode(reference,snap.to_dict()['data'])
+        except (KeyError,ValueError,TypeError) as error:raise Unavailable('Las preparaciones privadas no están íntegras') from error
+
+    def load_rule_workspace(self,cid,reference):
+        from rule_workspace_asset import validate_ref
+        validate_ref(reference);key=(cid,reference['sha256'])
+        with self._workspace_lock:
+            raw=self._workspace_cache.get(key)
+            if raw is not None:self._workspace_cache.move_to_end(key)
+            else:
+                raw=self._fetch_rule_workspace(cid,reference);self._cache_workspace(cid,reference,raw)
+        return json.loads(raw)
+
+    def _stage_rule_workspace(self,cid,asset):
+        from google.cloud import firestore
+        from google.api_core.exceptions import AlreadyExists
+        reference=asset['reference'];key=(cid,reference['sha256'])
+        with self._workspace_lock:
+            if key in self._workspace_cache:return
+        ref=self.campaign(cid).collection('ruleWorkspaces').document(reference['sha256'])
+        try:ref.create({'data':asset['packed'],'createdAt':firestore.SERVER_TIMESTAMP})
+        except AlreadyExists:
+            raw=self._fetch_rule_workspace(cid,reference)
+            self._cache_workspace(cid,reference,raw);return
+        self._cache_workspace(cid,reference,asset['raw'])
 
     def _decode(self,cid,meta):
         refs=[self.campaign(cid).collection('snapshots').document(f"{meta['snapshot']}-{i}") for i in range(meta['chunks'])]

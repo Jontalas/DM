@@ -18,7 +18,7 @@ async function openSavedCampaign(id,characterId){
   localStorage.setItem('cronicas-token',token);
  }catch(error){token=previousToken;throw error}
  bookReader.reset();document.body.classList.remove('reader-wide');readerExpanded=false;
- snapshot=next;lastVersion=next.version;path=[];ruler=[];rememberCampaign();render();
+ snapshot=next;snapshotToken=token;lastVersion=next.version;path=[];ruler=[];rememberCampaign();render();
  if($('#modal').open)$('#modal').close();
  if(characterId&&next.state.characters.some(c=>c.id===characterId&&c.owner===next.me.id)){
   if(next.state.ruleset==='rule-pack')RulePackUI.openCharacter(characterId);else if(next.state.ruleset==='cairn-1e')CairnUI.openCharacter(characterId);else characterForm(characterId);

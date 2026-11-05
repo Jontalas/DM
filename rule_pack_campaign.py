@@ -32,7 +32,10 @@ def _keys(value,required):
 
 def _size(state):
     if len(state.get('messages',[]))>MAX_MESSAGES:raise RulePackError('El registro alcanza su límite; conserva una copia antes de ampliar o archivar datos')
-    if len(_canonical(state).encode('utf-8'))>MAX_BYTES:raise RulePackError('La campaña supera su límite de estado; conserva una copia antes de ampliar o archivar datos')
+    game={key:value for key,value in state.items() if key not in ('authoring','authoringWorkspace')}
+    if len(_canonical(game).encode('utf-8'))>MAX_BYTES:raise RulePackError('La campaña supera su límite de estado; conserva una copia antes de ampliar o archivar datos')
+    for field in ('authoring','authoringWorkspace'):
+        if state.get(field) is not None and len(_canonical(state[field]).encode('utf-8'))>MAX_BYTES:raise RulePackError('Las preparaciones privadas superan su límite independiente')
 
 
 @lru_cache(maxsize=16)
@@ -73,7 +76,7 @@ def _description(pack):
 
 
 def initial_state(config):
-    return {'ruleset':ID,'package':None,'authoring':None,'authoringWorkspace':None,'characters':[],'messages':[],
+    return {'ruleset':ID,'package':None,'authoring':None,'authoringWorkspace':None,'authoringWorkspaceRef':None,'characters':[],'messages':[],
         'tone':str(config.get('tone',''))[:200],'limits':str(config.get('limits',''))[:2000],
         'goal':str(config.get('goal',''))[:2000]}
 
@@ -173,7 +176,7 @@ def execute_action(state,body,me):
 
 def public_view(state,me):
     result=copy.deepcopy(state)
-    if not me['host']:result.pop('authoring',None);result.pop('authoringWorkspace',None)
+    if not me['host']:result.pop('authoring',None);result.pop('authoringWorkspace',None);result.pop('authoringWorkspaceRef',None)
     if state.get('package'):
         pack=runtime(state,me['campaign'])
         result['packageView']=_description(pack)|{'policy':state['package']['policy']}
@@ -193,10 +196,11 @@ def _comparable_trace(trace):
 
 def validate_restored(state,campaign='import-validation'):
     keys=set(initial_state({}))
-    for optional in ('authoring','authoringWorkspace'):
+    for optional in ('authoring','authoringWorkspace','authoringWorkspaceRef'):
         if optional not in state:keys.remove(optional) # Earlier experimental exports.
     _keys(state,keys)
     if state['ruleset']!=ID:raise RulePackError('Formato de campaña de paquetes incompatible')
+    if state.get('authoringWorkspaceRef') is not None:raise RulePackError('La copia debe incluir las fuentes completas; usa Guardar copia en la campaña original')
     for key,limit in [('tone',200),('limits',2000),('goal',2000)]:
         if not isinstance(state[key],str) or len(state[key])>limit:raise RulePackError('Texto de campaña fuera de límites')
     if not isinstance(state['characters'],list) or len(state['characters'])>100:raise RulePackError('Lista de fichas inválida')

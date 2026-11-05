@@ -1,5 +1,5 @@
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
-let token=localStorage.getItem('cronicas-token'), model={}, snapshot, path=[], ruler=[], lastVersion=-1, busy=false, toastTimer;
+let token=localStorage.getItem('cronicas-token'), model={}, snapshot, snapshotToken, path=[], ruler=[], lastVersion=-1, busy=false, toastTimer;
 const names={reglas:'Reglas básicas',bestiario:'Bestiario',trey:'TREY'};
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function toast(s){$('#toast').textContent=s;$('#toast').hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('#toast').hidden=true,7000)}
@@ -8,7 +8,22 @@ function values(form){return Object.fromEntries(new FormData(form))}
 function physical(d){if(d.physical?.trim())d.physical=d.physical.split(',').map(Number);else delete d.physical;return d}
 async function act(type,data={}){if(JSON.parse(localStorage.getItem('cronicas-pending')||'null')?.token===token)throw Error('Recarga la mesa para recuperar el envio pendiente antes de otra accion');if(busy)throw Error('Hay una acción en curso');busy=true;$('#send').disabled=true;$('#sync').textContent='Resolviendo…';const body={...data,type,id:crypto.randomUUID(),version:snapshot.version};try{localStorage.setItem('cronicas-pending',JSON.stringify({token,body}));await api('/api/action',body);localStorage.removeItem('cronicas-pending');path=[];await refresh(true)}catch(e){if(e.name==='QuotaExceededError')throw Error('No hay espacio en el navegador para conservar este envio. No se ha enviado al servidor; libera espacio o importa una copia mas pequena.');if(e.confirmed)localStorage.removeItem('cronicas-pending');try{await refresh(true)}catch{}throw e}finally{busy=false;$('#send').disabled=false}}
 function run(fn){return async e=>{e?.preventDefault();try{await fn(e)}catch(err){toast(err.message)}}}
-async function refresh(force=false){if(!token)return;let next=await api('/api/state'+(!force&&snapshot?'?version='+snapshot.version:''));if(next.unchanged){$('#sync').textContent='Guardado en Firebase';return}snapshot=next;rememberCampaign();$('#sync').textContent='● Guardado en Firebase';if(!force&&lastVersion===next.version)return;lastVersion=next.version;render()}
+async function refresh(force=false){
+ if(!token)return;
+ const requestedToken=token,previous=snapshot,params=new URLSearchParams();
+ if(!force&&previous&&snapshotToken===requestedToken)params.set('version',previous.version);
+ const cached=previous?.me.host&&snapshotToken===requestedToken&&previous.state.authoringWorkspace&&previous.state.authoringWorkspaceRef?.sha256;
+ if(cached)params.set('workspace',cached);
+ const next=await api('/api/state'+(params.size?'?'+params:''));
+ if(token!==requestedToken)return;
+ if(next.unchanged){$('#sync').textContent='Guardado en Firebase';return}
+ if(next.workspaceUnchanged){
+  if(!cached||next.workspaceUnchanged!==cached||next.id!==previous.id||next.me.id!==previous.me.id||!next.me.host)throw Error('La caché privada no corresponde a este acceso; recarga para recuperarla.');
+  next.state.authoringWorkspace=previous.state.authoringWorkspace;
+ }
+ snapshot=next;snapshotToken=requestedToken;rememberCampaign();$('#sync').textContent='● Guardado en Firebase';
+ if(!force&&lastVersion===next.version)return;lastVersion=next.version;render();
+}
 function chooseTab(id,loadDocument=true){if(id==='board'&&window.matchMedia('(min-width:1100px)').matches)id='story';$$('.tab').forEach(x=>x.classList.toggle('active',x.id===id));$$('[data-tab]').forEach(x=>x.classList.toggle('active',x.dataset.tab===id));document.body.classList.toggle('reader-wide',id==='books'&&readerExpanded);if(id==='books'&&loadDocument)openBook();}
 function ref(book,page,label){return `<button type="button" class="rule-link" data-book="${esc(book)}" data-page="${Number(page)}">${esc(label||names[book]+' · PDF p.'+page)} ↗</button>`}
 function render(){if(snapshot.state.ruleset==='rule-pack'){RulePackUI.render();return}if($('#rulePackWorkspace'))$('#rulePackWorkspace').hidden=true;if(snapshot.state.ruleset==='cairn-1e'){$('#campaignTitle').textContent=snapshot.title;$('#campaignMeta').textContent='Cairn 1e';$('#inviteBtn').hidden=!snapshot.me.host;$('#welcome').hidden=true;$('#app').hidden=false;$('#app > .workspace').hidden=true;run(()=>CairnUI.render())();return}if($('#systemWorkspace'))$('#systemWorkspace').hidden=true;$('#app > .workspace').hidden=false;const s=snapshot.state, me=snapshot.me;$('#savedLibraryPanel').hidden=true;$('#welcome').hidden=true;$('#app').hidden=false;$('#campaignTitle').textContent=snapshot.title;$('#campaignMeta').textContent=`Pathfinder 1e · ${snapshot.players.length} jugadores · ${s.characters.length} personajes`;$('#place').textContent=s.location;$('#objective').textContent=s.goal;$('#sceneNum').textContent=s.scene;$('#tokenNum').textContent=`${s.tokens} / ${s.threshold}`;$('#phase').textContent=s.turned?'Punto de giro alcanzado · desenlace':'Desarrollo de la aventura';$('#sceneTitle').textContent=`Escena ${s.scene} · ${s.location}`;

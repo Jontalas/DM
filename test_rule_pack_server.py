@@ -3,9 +3,11 @@ import copy
 import unittest
 import urllib.error
 import urllib.request
+import secrets
 from unittest.mock import patch
 import rulesets
 import server
+from firebase_store import Unavailable
 import test_server
 import test_render
 import rule_pack_campaign as campaign
@@ -259,6 +261,36 @@ class RulePackServerTests(unittest.TestCase):
         state=self.state()['state'];self.assertIsNone(state['authoring'])
         self.assertEqual(len(state['authoringWorkspace']['blocks']),2);self.assertEqual(len(state['authoringWorkspace']['texts']),1)
         self.assertEqual(campaign.preparation_record(state,prepared['sha256'])['report'],report)
+
+    def test_workspace_cache_protocol_omits_payload_and_never_fetches_for_guest(self):
+        raw=authoring_fixture.request();prepared=authoring.prepare_input(raw)
+        with patch.object(authoring,'propose',return_value=authoring.validate_reply(prepared,authoring_fixture.reply(prepared))):self.action('prepare_rule_pack',request=raw)
+        state=self.state();reference=state['state']['authoringWorkspaceRef'];self.assertIsNotNone(reference)
+        with patch.object(server.STORE,'load_rule_workspace',side_effect=AssertionError('Known workspace fetched')):
+            response=self.request('/api/state?workspace='+reference['sha256'],token=self.token)
+            self.assertEqual(response['workspaceUnchanged'],reference['sha256']);self.assertIsNone(response['state']['authoringWorkspace'])
+        exported=self.request('/api/export',{},self.token)
+        self.assertIsNone(exported['state']['authoringWorkspaceRef']);self.assertTrue(exported['state']['authoringWorkspace']['blocks'])
+        guest=self.request('/api/join',{'name':'Luis','invite':state['invite']})['token']
+        with patch.object(server.STORE,'load_rule_workspace',side_effect=AssertionError('Guest fetched private workspace')):
+            self.assertNotIn('authoringWorkspaceRef',self.state(guest)['state'])
+        forged=copy.deepcopy(exported);forged['state']['authoringWorkspace']=None;forged['state']['authoringWorkspaceRef']=reference
+        self.rejected(lambda:self.action('import',campaign=forged))
+
+    def test_unavailable_sources_preserve_play_and_never_export_an_incomplete_copy(self):
+        raw=authoring_fixture.request();prepared=authoring.prepare_input(raw)
+        with patch.object(authoring,'propose',return_value=authoring.validate_reply(prepared,authoring_fixture.reply(prepared))):self.action('prepare_rule_pack',request=raw)
+        self.action('install_prepared_rule_pack',preparation=prepared['sha256'],policy='provided-rules');self.action('create_pack_sheet',name='Aria')
+        current=self.state();cid=current['state']['characters'][0]['id']
+        with patch.object(server.STORE,'load_rule_workspace',side_effect=Unavailable('Private sources unavailable')) as fetch:
+            unavailable=self.state();self.assertTrue(unavailable['workspaceUnavailable'])
+            calls=fetch.call_count
+            self.request('/api/action',{'id':secrets.token_hex(12),'version':unavailable['version'],'type':'run_pack_action','character':cid,'action':'attempt','physical':{'pool':[3,4]}},self.token)
+            self.assertEqual(fetch.call_count,calls)
+            after=self.state();self.assertEqual(after['state']['characters'][0]['sheet']['fields']['energy'],2)
+            self.assertEqual(after['state']['authoringWorkspaceRef'],current['state']['authoringWorkspaceRef'])
+            with self.assertRaises(urllib.error.HTTPError) as error:self.request('/api/export',{},self.token)
+            self.assertEqual(error.exception.code,503);error.exception.close()
 
 
 class RulePackWaitressTests(RulePackServerTests):

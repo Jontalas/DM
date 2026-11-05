@@ -45,6 +45,10 @@ window.RulePackAuthoringUI=(()=>{
  }
  function render(root){
   if(!snapshot.me.host)return;
+  if(snapshot.workspaceUnavailable){
+   root.querySelector('.pack-columns > section').insertAdjacentHTML('afterbegin','<section class="card"><h3>Fuentes privadas no disponibles</h3><p>Las reglas instaladas y la partida se conservan. No se ha vaciado el archivo de preparaciones. Para consultar informes, preparar reglas o guardar una copia completa, recupera primero las fuentes.</p><button id="retryRuleWorkspace" type="button">Reintentar recuperación de fuentes</button></section>');
+   $('#retryRuleWorkspace').onclick=run(()=>refresh(true));return;
+  }
   const record=RulePreparationWorkspace.record(snapshot.state),blocks=RulePreparationWorkspace.list(snapshot.state);
   if(snapshot.state.characters.length&&!record)return;
   root.querySelector('.pack-columns > section').insertAdjacentHTML('afterbegin',`<section class="card"><h3>Preparar desde reglas escritas</h3><p>Convierte un fragmento de texto en una propuesta revisable. Admite texto o páginas de un PDF local; no convierte un manual completo de una vez.</p>${!snapshot.state.characters.length?`<button id="packPrepareOpen" ${model.aiConfigured?'':'disabled'}>Aportar reglas y preparar con IA</button>${!model.aiConfigured?'<small>Anthropic no está configurado. Puedes seguir importando un paquete JSON ya preparado.</small>':''}`:''}${record?'<button id="packPreparationReport">Consultar preparación guardada</button>':''}</section>`);
