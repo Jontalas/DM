@@ -2,6 +2,8 @@
 
 Contrato en diseño, no disponible todavía. Continúa el trabajo de RESOLUCIONES_NARRATIVAS.md. No introduce reglas de Pathfinder ni certifica una aventura completa.
 
+Primer núcleo implementado de forma aislada en adventure_discoveries.py: preparación por cita exacta y huella de fuente, vínculo a solicitud/objetivo/campo, recibo de éxito y proyección sin secretos. Tres pruebas cubren Unicode/CRLF, alteraciones, referencias, fracaso, solicitud ajena, duplicados y privacidad. Nueve pruebas correctas junto con resultados canónicos. Aún no se habilita en campañas ni se ofrece como función disponible. Siguiente integración: guardar catálogo privado inmutable, ligar antes de tirar, confirmar recibos junto a la acción y reproducirlos al importar; después contexto y diario. La automatización de preparación no debe convertirse en administración rutinaria del jugador.
+
 ## Problema que debe resolver
 
 Un éxito calculado puede cerrar un objetivo vinculado, pero el descubrimiento concreto sigue dependiendo de prosa. La fuente privada no es por sí sola un catálogo ejecutable: citarla no autoriza al servidor a inferir desplazamientos, daño o decisiones de personajes.
