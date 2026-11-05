@@ -36,6 +36,9 @@ def main():
         from test_rule_pack_narrative import reply as pack_reply
         def fixture_pack_director(prepared,response_observer=None):
             request=prepared['request'];action='';changes={}
+            if request['operation']=='start':
+                changes['npcUpdates']=[{'id':'arda','name':'Arda <archivera>','known':True,'public':'Custodia el archivo junto al farol.','private':'PRIVATE-NPC: esconde una carta.'},
+                    {'id':'sombra','name':'PRIVATE-NPC-NAME','known':False,'public':'','private':'Todavía no se ha presentado.'}]
             if request['operation']=='talk' and request['kind']=='action':
                 if 'TEST_UNSUPPORTED' in request['declaration']['text']:changes['limitation']='Este paquete no define esa mecánica.'
                 elif request['allowedActions']:action=request['allowedActions'][0]

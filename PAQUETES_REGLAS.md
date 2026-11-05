@@ -2,6 +2,8 @@
 
 ## Evidencia vigente del 5 de noviembre: director y recuperación
 
+PNJ desplegados en `fc854e8`, Render `7571265969` success, con 376 pruebas completas y navegador simulado correctos. Después se añadió la consulta local «Personajes que conocéis» al diario; navegador ampliado y captura móvil correctos, pendiente del siguiente despliegue. Esto supera las referencias a ausencia de panel en los hitos inferiores. No hay inferencia real nueva para probar generación de PNJ; las comprobaciones del nuevo campo usan proveedor simulado.
+
 Actualización posterior: dados duraderos desplegados en `79d3729`, Render `7571119776` success, HTTPS/revisión/salud y campaña técnica con dados reales del servidor y duplicado comprobados. **369 pruebas completas con emulador, sin omisiones (72,110 s)**; los fallos de persistencia se inyectaron únicamente localmente. Sin inferencias nuevas. La etiqueta de desarrollo del párrafo histórico siguiente queda superada por esta evidencia.
 
 Memoria de PNJ en validación: `rule_pack_world.py` admite hasta 16 identidades estables, con nombre, conocido por el grupo, notas públicas y privadas. `npcUpdates` es opcional en la respuesta habitual del director y admite como máximo tres registros por turno; ausencia conserva todos los anteriores. No elimina PNJ ni retira su conocimiento una vez descubierto. Las notas describen ficción, no estadísticas ni operaciones del motor. No admite campos adicionales; los personajes jugadores no se convierten en PNJ.
