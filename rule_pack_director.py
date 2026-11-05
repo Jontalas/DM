@@ -67,7 +67,7 @@ def schema(prepared):
 
 
 def validate_reply(prepared,reply):
-    if not isinstance(reply,dict) or set(reply)-{'usage'}!={'narration','limitation','summary','preparation','proposal'}:raise RulePackError('Respuesta del director incompleta o con operaciones no permitidas')
+    if not isinstance(reply,dict) or set(reply)-{'usage','recovery'}!={'narration','limitation','summary','preparation','proposal'}:raise RulePackError('Respuesta del director incompleta o con operaciones no permitidas')
     result={key:_text(reply[key],limit,empty) for key,limit,empty in
         [('narration',10000,False),('limitation',1000,True),('summary',4000,False),('preparation',6000,False)]}
     proposal=reply['proposal']
@@ -79,6 +79,10 @@ def validate_reply(prepared,reply):
     reason=_text(proposal['reason'],600,True)
     if not proposal['action'] and (inputs or reason) or proposal['action'] and (not reason or result['limitation']):raise RulePackError('La solicitud contradice la limitación o su estado vacío')
     result['proposal']={'action':proposal['action'],'inputsJson':canonical(inputs),'reason':reason}
+    if 'recovery' in reply:
+        validate_recovery(reply['recovery'])
+        if prepared['request']['operation']!='continue' or proposal['action']:raise RulePackError('La recuperación no puede crear decisiones ni acciones')
+        result['recovery']=copy.deepcopy(reply['recovery'])
     if 'usage' in reply:
         usage=reply['usage']
         if not isinstance(usage,dict) or set(usage)!={'inputTokens','outputTokens','latencyMs'} or any(type(v)!=int or not 0<=v<=10000000 for v in usage.values()):raise RulePackError('Medición del director inválida')
@@ -86,12 +90,75 @@ def validate_reply(prepared,reply):
     return result
 
 
+def validate_recovery(value):
+    if (not isinstance(value,dict) or set(value)!={'kind','reason','keptPreparation','sourceReplySha256'}
+        or value['kind']!='completed-public-continuation-v1' or value['reason']!='max_tokens' or type(value['keptPreparation'])!=bool
+        or not isinstance(value['sourceReplySha256'],str) or len(value['sourceReplySha256'])!=64
+        or any(c not in '0123456789abcdef' for c in value['sourceReplySha256'])):raise RulePackError('Procedencia de recuperación narrativa inválida')
+
+
+def _complete_prefix(text):
+    """Read complete JSON members only; never complete a cut-off string/value."""
+    decoder=json.JSONDecoder();position=0;result={};incomplete=None
+    def spaces(index):
+        while index<len(text) and text[index].isspace():index+=1
+        return index
+    position=spaces(position)
+    if position>=len(text) or text[position]!='{':raise RulePackError('La captura parcial no empieza con un objeto JSON')
+    position+=1
+    for _ in range(6):
+        position=spaces(position)
+        if position>=len(text):return result,incomplete
+        if text[position]=='}':
+            if spaces(position+1)!=len(text):raise RulePackError('Contenido adicional tras la captura parcial')
+            return result,incomplete
+        try:key,end=decoder.raw_decode(text,position)
+        except (ValueError,RecursionError):raise RulePackError('Clave incompleta en captura parcial') from None
+        if not isinstance(key,str) or key not in ('narration','limitation','summary','preparation','proposal') or key in result:raise RulePackError('Clave desconocida o repetida en captura parcial')
+        position=spaces(end)
+        if position>=len(text) or text[position]!=':':raise RulePackError('Miembro JSON incompleto en captura parcial')
+        position=spaces(position+1);start=position
+        try:_,end=decoder.raw_decode(text,position)
+        except (ValueError,RecursionError):return result,key
+        result[key]=read_document(text[start:end]);position=spaces(end)
+        if position==len(text):return result,incomplete
+        if text[position]==',':position+=1;continue
+        if text[position]=='}':
+            if spaces(position+1)!=len(text):raise RulePackError('Contenido adicional tras la captura parcial')
+            return result,incomplete
+        raise RulePackError('Separador JSON inválido en captura parcial')
+    raise RulePackError('Demasiados miembros en captura parcial')
+
+
+def _recover_continuation(prepared,text,raw):
+    request=prepared['request']
+    if request['operation']!='continue' or request['allowedActions']:raise RulePackError('Una respuesta incompleta no puede interpretar una declaración nueva')
+    reply,incomplete=_complete_prefix(text)
+    if not {'narration','limitation','summary'}<=set(reply) or incomplete not in (None,'preparation','proposal'):raise RulePackError('Faltan campos públicos completos; no se ha inventado una continuación')
+    kept='preparation' not in reply
+    if kept:reply['preparation']=request['directorKnowledge']['preparation']
+    if 'proposal' not in reply:reply['proposal']={'action':'','inputsJson':'{}','reason':''}
+    # A continuation's schema permits no proposal. Validate before annotating.
+    reply=validate_reply(prepared,reply)
+    notice='Relato recuperado de una respuesta interrumpida. '+('Se conserva la preparación privada anterior; no se ha inventado la parte ausente.' if kept else 'Se conservaron únicamente campos JSON completos.')
+    reply['limitation']=(reply['limitation']+' '+notice).strip()
+    reply['recovery']={'kind':'completed-public-continuation-v1','reason':'max_tokens','keptPreparation':kept,
+        'sourceReplySha256':hashlib.sha256(raw).hexdigest()}
+    return validate_reply(prepared,reply)
+
+
 def parse_response(prepared,raw,elapsed=0):
     if not isinstance(raw,bytes) or len(raw)>MAX_RESPONSE:raise RulePackError('Respuesta del director demasiado grande')
     output=read_document(raw)
-    if not isinstance(output,dict) or output.get('stop_reason')!='end_turn':raise RulePackError('El director no terminó su respuesta')
-    reply=read_document(''.join(b['text'] for b in output.get('content',[]) if b.get('type')=='text'))
-    reply=validate_reply(prepared,reply);usage=output.get('usage',{})
+    if not isinstance(output,dict):raise RulePackError('Respuesta del director inválida')
+    text=''.join(b['text'] for b in output.get('content',[]) if b.get('type')=='text')
+    if output.get('stop_reason')=='max_tokens':reply=_recover_continuation(prepared,text,raw)
+    elif output.get('stop_reason')=='end_turn':
+        reply=read_document(text)
+        if isinstance(reply,dict) and 'recovery' in reply:raise RulePackError('El proveedor no puede declarar una recuperación de transporte')
+        reply=validate_reply(prepared,reply)
+    else:raise RulePackError('El director no terminó su respuesta')
+    usage=output.get('usage',{})
     reply['usage']={'inputTokens':usage.get('input_tokens',0),'outputTokens':usage.get('output_tokens',0),'latencyMs':elapsed}
     return validate_reply(prepared,reply)
 
@@ -108,9 +175,9 @@ def restore(prepared,payload,scheme):
 def propose(prepared,response_observer=None):
     key=os.environ.get('ANTHROPIC_API_KEY')
     if not key:raise RulePackError('Falta configurar el director de IA')
-    body={'model':model_name(),'max_tokens':1800,'system':PROMPT,
+    body={'model':model_name(),'max_tokens':1800,'thinking':{'type':'disabled'},'system':PROMPT,
         'messages':[{'role':'user','content':canonical(prepared['request'])}],
-        'output_config':{'format':{'type':'json_schema','schema':schema(prepared)}}}
+        'output_config':{'effort':'low','format':{'type':'json_schema','schema':schema(prepared)}}}
     request=urllib.request.Request('https://api.anthropic.com/v1/messages',data=json.dumps(body).encode(),
         headers={'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'})
     started=time.monotonic()

@@ -1,5 +1,6 @@
 import base64
 import copy
+import hashlib
 import io
 import json
 import os
@@ -141,8 +142,36 @@ class RulePackNarrativeTests(unittest.TestCase):
         with patch.dict(os.environ,{'ANTHROPIC_API_KEY':'fixture-never-sent'}),patch.object(director.urllib.request,'urlopen',return_value=io.BytesIO(output)) as provider:
             first=attempts.run(store,'room','ana',prepared,converter=director.propose,restore=director.restore)
             self.assertEqual(provider.call_count,1)
+            body=json.loads(provider.call_args.args[0].data)
+            self.assertEqual(body['thinking'],{'type':'disabled'});self.assertEqual(body['output_config']['effort'],'low')
         cold=TestStore();cold.preparations=copy.deepcopy(store.preparations)
         saved=next(iter(cold.preparations.values()));self.assertEqual(saved['promptSha256'],prepared['promptSha256'])
         with patch.dict(os.environ,{'ANTHROPIC_API_KEY':''}),patch.object(director,'propose',side_effect=AssertionError('Cold recovery called provider')):
             second=attempts.run(cold,'room','ana',prepared,converter=director.propose,restore=director.restore)
         self.assertEqual(first,second);self.assertEqual(second['usage']['outputTokens'],200)
+
+    def test_truncated_continuation_preserves_only_complete_public_fields_and_prior_preparation(self):
+        state=self.pending();state=self.apply(state,'resolve_pack_request',request=state['narrative']['pending']['id'],physical={'dice':[3,4]})
+        actor=state['characters'][0];pack=campaign.runtime(state,self.me['campaign'])
+        prepared=director.prepare(state,'continue',actor,'','action',pack)
+        fields={'narration':'El resultado confirmado muestra una marca. ¿Qué haces?',
+            'limitation':'','summary':'Se confirmó el éxito con total 7 y energía final 2.'}
+        text=json.dumps(fields,ensure_ascii=False)[:-1]+',"preparation":'
+        raw=json.dumps({'stop_reason':'max_tokens','content':[{'type':'text','text':text}],
+            'usage':{'input_tokens':100,'output_tokens':1800}}).encode()
+        recovered=director.parse_response(prepared,raw,15)
+        self.assertEqual(recovered['narration'],fields['narration']);self.assertEqual(recovered['summary'],fields['summary'])
+        self.assertEqual(recovered['preparation'],state['narrative']['preparation'])
+        self.assertEqual(recovered['proposal']['action'],'');self.assertTrue(recovered['recovery']['keptPreparation'])
+        self.assertEqual(recovered['recovery']['sourceReplySha256'],hashlib.sha256(raw).hexdigest())
+        self.assertIn('respuesta interrumpida',recovered['limitation'])
+        completed=self.apply(state,'continue_pack_adventure',recovered)
+        self.assertEqual(completed['characters'],state['characters']);campaign.validate_restored(completed)
+        self.assertIn('recovery',completed['messages'][-1])
+        for bad in (text.replace('"summary"','"unknown"'),text.replace('"summary"','"narration"'),
+            text[:text.index('"summary"')]+ '"summary":"incompleto',text.replace('"preparation":','"sheet":')):
+            data=json.loads(raw);data['content'][0]['text']=bad
+            with self.assertRaises(RulePackError):director.parse_response(prepared,json.dumps(data).encode())
+        for operation in ('start','talk'):
+            other=copy.deepcopy(prepared);other['request']['operation']=operation
+            with self.assertRaises(RulePackError):director.parse_response(other,raw)
