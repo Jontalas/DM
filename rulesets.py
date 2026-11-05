@@ -8,11 +8,19 @@ SYSTEMS={DEFAULT:{'id':DEFAULT,'name':'Pathfinder 1e','edition':'Primera edició
     'limits':['Otras clases y niveles','Conjuros','Cobertura completa de combate y exploración'],
     'companion':'TREY en su ámbito; no sustituye reglas de Pathfinder'}}
 
+# The data-workspace can be addressed explicitly for bounded verification. It is
+# deliberately absent from catalog(): it does not yet offer an AI-led adventure.
+PREPARATION_SYSTEMS={'rule-pack':{'id':'rule-pack','name':'Preparación de reglas aportadas',
+    'edition':'Paquetes de datos v1','status':'experimental','visibility':'unlisted',
+    'characterCreation':'Valores iniciales o creador de una resolución definido por el paquete',
+    'coverage':['Preparación privada de fragmentos','Instalación revisada de paquetes','Fichas y acciones definidas por datos'],
+    'limits':['Sin aventura con director de IA','Sin conversión certificada de manuales completos','Sin creador de varias etapas']}}
+
 
 def require(identifier=DEFAULT):
-    if not isinstance(identifier,str) or identifier not in SYSTEMS:
+    if not isinstance(identifier,str) or identifier not in SYSTEMS and identifier not in PREPARATION_SYSTEMS:
         raise ValueError('Ese sistema de juego todavía no está disponible; no se mezclarán sus reglas con Pathfinder')
-    return copy.deepcopy(SYSTEMS[identifier])
+    return copy.deepcopy(SYSTEMS[identifier] if identifier in SYSTEMS else PREPARATION_SYSTEMS[identifier])
 
 
 def catalog():

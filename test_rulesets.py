@@ -24,6 +24,16 @@ class RulesetIdentityTests(unittest.TestCase):
         self.assertEqual(state['ruleset'],'pathfinder-1e');self.assertEqual(state['notes'],'Existing campaign')
         self.assertEqual(store.campaigns[me['campaign']],before)
 
+    def test_preparation_workspace_is_explicit_unlisted_and_does_not_claim_adventure(self):
+        self.assertNotIn('rule-pack',[entry['id'] for entry in rulesets.catalog()])
+        descriptor=rulesets.require('rule-pack')
+        self.assertEqual(descriptor['visibility'],'unlisted');self.assertEqual(descriptor['status'],'experimental')
+        self.assertIn('Sin aventura con director de IA',descriptor['limits'])
+        with patch('engine.initial_state',side_effect=AssertionError('Workspace used Pathfinder')):
+            state=rulesets.new_campaign({'ruleset':'rule-pack'})
+        self.assertEqual(state['ruleset'],'rule-pack');self.assertIsNone(state['package'])
+        self.assertEqual(state['characters'],[])
+
     def test_catalog_descriptors_cannot_be_mutated_by_callers(self):
         value=rulesets.require();value['coverage'].append('Invented coverage')
         self.assertNotIn('Invented coverage',rulesets.require()['coverage'])
