@@ -238,6 +238,35 @@ class RulePackServerTests(unittest.TestCase):
         exported=self.request('/api/export',{},self.token);self.action('import',campaign=exported)
         self.assertEqual(self.state()['state']['narrativeView']['discoveries'][0]['text'],quote)
 
+    def test_private_actor_creation_recovers_server_dice_after_failed_commit(self):
+        from test_creation_profiles import profile_document
+        from test_rule_pack_world import npc
+        data=profile_document();data['creationProfiles']['support']['steps']=['aptitude','training']
+        self.action('install_rule_pack',package=data,policy='provided-rules')
+        self.action('create_pack_sheet',name='Aria',physical={'aptitude':[1]});cid=self.state()['state']['characters'][0]['id']
+        self.action('advance_pack_creation',character=cid,step='training',inputs={'role':'cronista','focus':1})
+        with patch.object(pack_director,'propose',return_value=narrative_reply(npcUpdates=[npc()])) as provider:
+            self.action('start_pack_adventure',character=cid)
+            before=self.state();body={'id':secrets.token_hex(12),'version':before['version'],'type':'create_pack_actor','actor':'a'*24,'npc':'arda',
+                'profile':'support','stages':[{'inputs':{},'physical':{}},{'inputs':{'role':'cronista','focus':0},'physical':{}}],
+                'publicFields':[],'policy':'provided-profile'}
+            captured=[]
+            def fail(*args,**kwargs):captured.append(copy.deepcopy(args[5]));raise Unavailable('Interrupted actor commit')
+            with patch.object(server.STORE,'commit',side_effect=fail):self.rejected(lambda:self.request('/api/action',body,self.token),503)
+            self.assertEqual(self.state(),before)
+            old=server.STORE
+            from firebase_store import FirestoreStore
+            if isinstance(old,FirestoreStore):server.STORE=FirestoreStore.from_environment();server.STORE.prefix=old.prefix
+            try:
+                self.request('/api/action',body,self.token);self.assertTrue(self.request('/api/action',body,self.token)['duplicate'])
+                exported=self.request('/api/export',{},self.token)
+                self.assertEqual(exported['state']['actors'],captured[0]['actors'])
+                view=self.state()['state'];self.assertNotIn('actors',view);self.assertEqual(view['actorViews'][0]['fields'],{})
+                self.action('import',campaign=exported)
+                self.assertEqual(self.request('/api/export',{},self.token)['state']['actors'],captured[0]['actors'])
+                self.assertEqual(provider.call_count,1)
+            finally:server.STORE=old
+
     def test_imported_adventure_plan_start_recovers_captured_response_without_reconfiguration(self):
         from test_adventure_plan import plan_document
         self.action('install_rule_pack',package=document('original-narrative-results-example'),policy='provided-rules')

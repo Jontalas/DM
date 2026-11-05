@@ -109,7 +109,20 @@ def execute_action(state,body,me,prepare_record=None,narrative_call=None,draw=No
     if kind in narrative.ACTIONS:
         result=narrative.apply(state,action,me,runtime(state,me['campaign']),call=narrative_call,draw=draw,source_loader=source_loader)
         _size(result);return result
-    if kind=='prepare_rule_pack':
+    if kind=='create_pack_actor':
+        if not me['host']:raise PermissionError('Solo el anfitrión prepara actores no jugadores')
+        _keys(action,('type','actor','npc','profile','stages','publicFields','policy'))
+        pack=runtime(state,me['campaign']);memory=state.get('narrative')
+        if state['package']['policy']!='provided-rules' or memory is None or memory['pending'] is not None or memory['continuation'] is not None:
+            raise RulePackError('Prepara actores con reglas activadas y entre intervenciones resueltas')
+        import rule_pack_actors as actors
+        previous=state.get('actors',[])
+        if len(previous)>=actors.MAX_ACTORS or any(a['id']==action['actor'] or a['npc']==action['npc'] for a in previous) or any(c['id']==action['actor'] for c in state['characters']):
+            raise RulePackError('Identidad de actor o referencia de PNJ ya utilizada, o límite alcanzado')
+        actor=actors.create(pack,action['actor'],action['npc'],action['profile'],action['stages'],action['publicFields'],memory.get('npcs',[]),action['policy'],draw=draw)
+        result['actors']=[*previous,actor]
+        actors.validate_registry(result['actors'],pack,memory.get('npcs',[]),[c['id'] for c in state['characters']])
+    elif kind=='prepare_rule_pack':
         if not me['host']:raise PermissionError('Solo el anfitrión prepara reglas desde documentos')
         _keys(action,('type','request'))
         if state['characters']:raise RulePackError('Prepara otra campaña para nuevas reglas; la migración de fichas todavía no está disponible')
@@ -202,6 +215,10 @@ def execute_action(state,body,me,prepare_record=None,narrative_call=None,draw=No
 
 def public_view(state,me):
     result=copy.deepcopy(state)
+    private_actors=result.pop('actors',None)
+    if private_actors is not None:
+        from rule_pack_actors import public_view as actor_view
+        result['actorViews']=actor_view(private_actors,runtime(state,me['campaign']),(state.get('narrative') or {}).get('npcs',[]))
     source=result.pop('adventureSource',None);source_ref=result.pop('adventureSourceRef',None)
     if me['host'] and (source is not None or source_ref is not None):
         import adventure_source
@@ -232,6 +249,7 @@ def _comparable_trace(trace):
 
 def validate_restored(state,campaign='import-validation'):
     keys=set(initial_state({}))
+    if 'actors' in state:keys.add('actors')
     for optional in ('authoring','authoringWorkspace','authoringWorkspaceRef','narrative','adventureSource','adventureSourceRef'):
         if optional not in state:keys.remove(optional) # Earlier experimental exports.
     _keys(state,keys)
@@ -254,6 +272,7 @@ def validate_restored(state,campaign='import-validation'):
         from rule_pack_authoring import validate_record
         validate_record(state['authoring'])
     if state['package'] is None:
+        if 'actors' in state:raise RulePackError('Actores sin paquete de reglas')
         if state.get('narrative') is not None:raise RulePackError('Aventura sin paquete de reglas')
         if state['characters']:raise RulePackError('Estado de fichas sin paquete')
         for event in state['messages']:
@@ -315,6 +334,9 @@ def validate_restored(state,campaign='import-validation'):
         if _canonical(character['sheet'])!=_canonical(sheets[character['id']]):raise RulePackError('Los valores actuales no coinciden con las acciones registradas')
     import rule_pack_narrative as narrative
     narrative.validate(state,pack)
+    if 'actors' in state:
+        from rule_pack_actors import validate_registry
+        validate_registry(state['actors'],pack,(state.get('narrative') or {}).get('npcs',[]),ids)
     _size(state)
 
 

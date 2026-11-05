@@ -79,6 +79,11 @@ window.RulePackUI=(()=>{
   if(state.adventureSourceView)controls.insertAdjacentHTML('afterbegin',`<p class="pack-source-note">Aventura aportada: ${esc(state.adventureSourceView.title)}</p>`);
   controls.querySelector('details').insertAdjacentHTML('afterend',`<details id="packKnownNpcs" ${drafts.get(npcKey)?'open':''}><summary>Personajes que conocéis${npcs.length?` · ${npcs.length}`:''}</summary>${npcs.length?npcs.map(npc=>`<article><h4>${esc(npc.name)}</h4><p>${esc(npc.public||'Sin más notas conocidas por el grupo.')}</p></article>`).join(''):'<p>Aún no hay personajes anotados.</p>'}</details>`);
   $('#packKnownNpcs').ontoggle=e=>{if(e.target.isConnected)drafts.set(npcKey,e.target.open);};
+  const npcCards=$('#packKnownNpcs').querySelectorAll('article');
+  for(const actor of state.actorViews||[]){
+   const card=npcCards[npcs.findIndex(npc=>npc.id===actor.npc)],fields=Object.values(actor.fields);
+   if(card&&fields.length)card.insertAdjacentHTML('beforeend',`<dl class="pack-shared-actor-fields">${fields.map(field=>`<dt>${esc(field.label)}</dt><dd>${esc(shown(field.value))}</dd>`).join('')}</dl>`);
+  }
   const goalKey=key+':objectives',goals=memory.objectives||[];
   $('#packKnownNpcs').insertAdjacentHTML('afterend',`<details id="packObjectives" ${drafts.get(goalKey)?'open':''}><summary>Objetivos de la aventura${goals.length?` · ${goals.filter(g=>g.status==='completed').length}/${goals.length}`:''}</summary><p>Son oportunidades de la aventura; tú decides cómo actuar.</p>${goals.length?goals.map(goal=>`<article data-pack-objective="${esc(goal.id)}"><h4>${esc(goal.title)} · ${goal.status==='completed'?'Completado':'Abierto'}</h4><p>${esc(goal.detail)}</p>${goal.evidence?`<details><summary>Ver resultado que lo completó</summary><p>${esc(doc.actions[state.messages[goal.evidence.message]?.action]?.label||'Acción confirmada')} · ${esc(doc.fields[goal.evidence.field]?.label||goal.evidence.field)}: Sí. Revisión de ficha ${goal.evidence.sheetRevision}.</p></details>`:''}</article>`).join(''):'<p>Aún no hay objetivos anotados.</p>'}</details>`);
   $('#packObjectives').ontoggle=e=>{if(e.target.isConnected&&e.target.id==='packObjectives')drafts.set(goalKey,e.target.open);};

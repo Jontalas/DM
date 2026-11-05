@@ -179,7 +179,7 @@ def execute_action(body,me):
                     preparation_key=attempts.key(me['id'],prepared['sha256'])
                     return attempts.run(store,cid,me['id'],prepared,converter=director.propose,restore=director.restore)
                 state=selected.execute_action(state,body,me,narrative_call=narrative_call,source_loader=lambda current:attach_adventure_source(current,me))
-            elif state['ruleset']=='rule-pack' and body['type'] in ('create_pack_sheet','advance_pack_creation','run_pack_action','resolve_pack_request'):
+            elif state['ruleset']=='rule-pack' and body['type'] in ('create_pack_sheet','advance_pack_creation','run_pack_action','resolve_pack_request','create_pack_actor'):
                 from action_randomness import ActionRandomness
                 randomness=ActionRandomness(store,cid,aid,me['id'],signature,row['version'])
                 state=selected.execute_action(state,body,me,draw=randomness)

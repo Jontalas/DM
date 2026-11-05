@@ -18,17 +18,14 @@ def main():
     import test_browser_fixture as fixture
     import server
     import rule_pack_campaign as campaign
-    from test_adventure_discoveries import DiscoveryCampaignTests
-    from test_rule_pack_narrative import reply
+    from test_rule_pack_actors import ActorCampaignTests
     from waitress.server import create_server
 
     def preview_server(application,**options):
-        example=DiscoveryCampaignTests();example.setUp()
-        state=example.resolved(example.pending(example.prepared()),[3,4])
-        state=example.apply(state,'continue_pack_adventure',answer=reply(
-            narration='La señal del farol indica el camino al archivo. Arda espera junto al mostrador. ¿Qué haces?',
-            summary='La marca del farol ha sido descifrada; señala el archivo.'))
-        token=server.STORE.create('Vista local · descubrimientos confirmados',campaign.initial_state({}),'Vista local')
+        example=ActorCampaignTests();example.setUp()
+        state=campaign.execute_action(example.state,example.action,example.me)
+        state=campaign.execute_action(state,example.action|{'actor':'b'*24,'npc':'sombra'},example.me)
+        token=server.STORE.create('Vista local · PNJ y fichas privadas',campaign.initial_state({}),'Vista local')
         me=server.STORE.identity(token);cid=me['campaign']
         demo=campaign.import_campaign(state,me);row,_=server.STORE.campaigns[cid]
         server.STORE.campaigns[cid]=(row,server.STORE._light_state(cid,demo))
