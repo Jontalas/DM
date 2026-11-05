@@ -2,6 +2,8 @@
 
 Estado: análisis del siguiente bloque, sin cambio de comportamiento. La recuperación actual está comprobada cuando falla el commit y la versión de la mesa sigue igual: semilla privada duradera, cliente Firestore nuevo, dos fichas/objetivo/revelación y barrera conjunta. No vuelve a llamar al proveedor ni genera otra secuencia.
 
+Primer bloque aislado posterior: pending_randomness.py describe clave/huella/versión de reserva por solicitud con opt-in pending-resolution-v2. Cinco pruebas correctas: legado intacto, mensaje OOC/id/versión HTTP no cambian la reserva; cambios de fichas/mundo/elecciones sí cambian su huella; propietario/solicitud/ámbito inválidos rechazados. Solo devuelve hashes, sin fichas. No integrado al almacenamiento, servidor ni navegador; todavía no recupera resoluciones con versiones intermedias.
+
 El servidor calcula fingerprint sobre el cuerpo entero, incluido version. Antes de ejecutar compara esa versión con la mesa actual. La reserva de ActionRandomness se identifica por campaign/actionId y vincula actor, fingerprint y version. Si otra intervención avanza la mesa tras una interrupción, el cuerpo original se rechaza por versión. Cambiar version cambia la huella; reutilizar el identificador no sustituye la reserva. Es una negativa conservadora, no una recuperación automática ya implementada.
 
 Siguiente objetivo: permitir recuperar la misma solicitud mecánica pendiente cuando la intervención intermedia no alteró su legalidad, sin permitir otra secuencia de dados ni aplicar un resultado sobre fichas distintas. Mantener el control de versiones para todas las demás acciones; no eliminarlo de forma general.

@@ -1,5 +1,7 @@
 # Objetivos vinculados a un PNJ concreto: siguiente contrato
 
+Despliegue confirmado: 4439a0b8852e890069fe9d6ba758f0990b2a280e, Render 7587362349 success y salud/revisión exactas. Ensayo mecánico de producción sin IA: objetivo/revelación/dos fichas/duplicados/copia/invitado correctos, apertura simulada y continuación no invocada. Navegador anfitrión/invitado/copia/móvil correcto, objetivo y revelación visibles, cero acciones por consultar. Las referencias inferiores a «pendiente» corresponden al cierre local previo. La aceptación narrativa real sigue sin certificar.
+
 Estado: integración local conectada mediante plan-3; pendiente suite final, respaldo y despliegue. Plan-1 y plan-2 conservan la ausencia de vínculos dirigidos. Siete pruebas de recorrido, seis de compilador y dos HTTP/Waitress de recuperación tras fallo de commit correctas; navegador completo con proveedor simulado correcto. No se han hecho más inferencias reales.
 
 Validación final: **506 pruebas completas con emulador correctas sin omisiones (213,075 s)**. Trece pruebas posteriores de rutas/recorrido correctas, incluidas formas y orígenes inválidos. Navegadores plan-3 y plan-2 correctos. Pendiente despliegue y verificación mecánica aislada de producción, sin nueva inferencia.

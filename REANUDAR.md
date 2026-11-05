@@ -13,10 +13,10 @@ Los cuatro grandes hitos de prueba personal de PRODUCTO.md siguen pendientes. No
 ## Repositorio y producción confirmados
 
 - Rama de trabajo: feature/rule-pack-engine.
-- main/origin y feature respaldados en **3b43f4fd0c2428e4e330c40cca9b465d442ecd52**.
-- Producción: https://dm-cronicas.onrender.com, Render **7587164446 success**, revisión exacta en /api/status y /healthz HTTPS 200 confirmados.
+- Último bloque de código desplegado: **4439a0b8852e890069fe9d6ba758f0990b2a280e** (main/origin).
+- Producción: https://dm-cronicas.onrender.com, Render **7587362349 success**, revisión exacta en /api/status y /healthz HTTPS 200 confirmados.
 - Desplegados: perfiles de creación de PJ/PNJ, actores privados, plan-2 importable con PNJ preparados, selector explícito abstracto, resolución atómica de dos fichas, evidencia privada reproducible y proyección pública acotada.
-- No incluye combate espacial/PF, turnos automáticos de PNJ, objetivos de aventura sobre PNJ concretos ni interpretación dirigida por texto libre. El preparador automático excluye target-sheets/abstract-scene-targets hasta admitir ejemplos completos de dos fichas.
+- Incluye vínculos preparados de objetivos de aventura a PNJ concretos mediante plan-3. No incluye combate espacial/PF, turnos automáticos de PNJ ni interpretación dirigida por texto libre. El preparador automático excluye target-sheets/abstract-scene-targets hasta admitir ejemplos completos de dos fichas.
 
 Historial técnico de estas capacidades en PAQUETES_REGLAS.md, ACTORES_Y_OBJETIVOS.md, RESOLUCIONES_ENTRE_FICHAS.md y PREPARACION_AVENTURAS.md. No repetir despliegues ni verificaciones que ya constan terminados sin un cambio o fallo nuevo.
 
@@ -41,15 +41,17 @@ OBJETIVOS_DIRIGIDOS.md define el contrato pendiente. `objective_targets.py` comp
 
 Integración **local posterior** conectada: plan-3 añade objectiveTargets, prepara vínculo privado y su huella junto al catálogo, deriva objetivo/descubrimientos antes de dados y confirma ambas fichas/cierre/revelaciones juntos. Director usa contrato target-objectives-8 y no ofrece objetivos reservados a PNJ entre sus propuestas individuales. Recuperación comprueba huella/cronología y acción/PNJ/decisiones de la evidencia. Plan-1/2 mantienen recorrido anterior. Siete pruebas nuevas de recorrido correctas; dos HTTP/Waitress de fallo de commit/cliente Firestore nuevo verifican dados [5,6] preservados, dos fichas/objetivo/revelación y duplicado sin IA. Navegador plan-3 completo correcto con proveedor simulado. Suite completa en curso, sesión **25345**, log `.deps/target-objective-final-tests.log`. Terminar antes de respaldo/despliegue; no anunciar objetivos dirigidos disponibles en producción todavía. Ejemplo propio test_fixtures/original-target-objective-plan.json. Nada de esto añade reglas Pathfinder ni certificación narrativa.
 
-Resultado final del bloque plan-3: **506 pruebas completas con emulador correctas sin omisiones (213,075 s)**. Después, trece pruebas de rutas/recorrido incluyendo formas/orígenes inválidos correctas. Navegador plan-2 también correcto. Preparado .deps/verify_target_objective_production.py, sesión target-objective-live-session.json aún no creada: usar solo tras verificar despliegue exacto; apertura simulada, cero inferencias, no continue. Próximo bloque de fiabilidad analizado en RECUPERACION_CONCURRENTE.md; todavía no implementado, no omitir CAS ni cambiar claves de semillas sin su barrera atómica.
+Resultado final del bloque plan-3: **506 pruebas completas con emulador correctas sin omisiones (213,075 s)**. Después, trece pruebas de rutas/recorrido incluyendo formas/orígenes inválidos correctas. Navegador plan-2 también correcto. Desplegado y verificado: `.deps/target-objective-live-session.json` verified con apertura simulada, cero inferencias, objetivo/revelación/dos fichas/copia/invitado correctos y continuación no invocada. No repetir el guion. Navegador de producción anfitrión/invitado/copia/móvil correcto, objetivo completado y descubrimiento visibles, cero acciones al consultar; captura `.deps/target-objective-production-mobile.png`.
+
+Siguiente bloque en curso: RECUPERACION_CONCURRENTE.md. Nuevo `pending_randomness.py` describe una reserva por solicitud/propietario con huella de elecciones, fichas y mundo, independiente de id/versión HTTP cuando solo cambia un mensaje OOC. Cinco pruebas específicas correctas. **Aislado, no integrado ni habilitado**: falta ampliar almacenamiento/commit para confirmar su clave atómicamente, añadir ámbito solo a solicitudes nuevas y mantener reservas antiguas; después conectar servidor y recuperación del navegador. No omitir CAS ni habilitar el descriptor sin su barrera. Scope previsto pending-resolution-v2, la memoria narrativa actual todavía no lo admite.
 
 Después: ampliar recorrido autónomo completo, recuperación/concurrencia con cambios intermedios de versión, reglas verificadas del módulo actual y capacidades de mesa en PRODUCTO.md. No asumir alcance, visibilidad individual o iniciativa por conocer un PNJ.
 
 ## Vista local secundaria
 
-http://127.0.0.1:8765, `scripts/preview_local.py`. Datos desechables, perfiles propios, director simulado, sin Anthropic/Firebase. Muestra selector explícito abstracto y campos compartidos del PNJ. Navegador comprobado, cero acciones al consultar; fuentes tipográficas normales sí usan Google Fonts. No existe herramienta disponible para controlar una pestaña del IDE; ya se informó sin pedir configuración al usuario.
+http://127.0.0.1:8765, `scripts/preview_local.py`. Datos desechables, perfiles propios, director simulado, sin Anthropic/Firebase. Muestra plan-3 con dos PNJ preparados, selector explícito y objetivo vinculado a Arda. Navegador comprobado, cero acciones al consultar; fuentes tipográficas normales sí usan Google Fonts. No existe herramienta disponible para controlar una pestaña del IDE; ya se informó sin pedir configuración al usuario.
 
-Último lanzador conocido **51124**. Comprobar HTTP antes de arrancar otra instancia. Para reiniciar, verificar primero con Get-CimInstance que el PID corresponde a scripts/preview_local.py y terminar solo ese árbol. Arrancar oculto mediante Start-Process, logs `.deps/local-preview.log` y `.deps/local-preview-error.log`. No detener otros procesos. Los cambios Python necesitan reiniciar este proceso; no hacerlo por cada edición si retrasa el trabajo.
+Último lanzador conocido **50452**, tras verificar/terminar 51124. Comprobar HTTP antes de arrancar otra instancia. Para reiniciar, verificar primero con Get-CimInstance que el PID corresponde a scripts/preview_local.py y terminar solo ese árbol. Arrancar oculto mediante Start-Process, logs `.deps/local-preview.log` y `.deps/local-preview-error.log`. No detener otros procesos. Los cambios Python necesitan reiniciar este proceso; no hacerlo por cada edición si retrasa el trabajo.
 
 ## Verificación y herramientas
 

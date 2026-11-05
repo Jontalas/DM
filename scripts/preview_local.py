@@ -18,13 +18,13 @@ def main():
     import test_browser_fixture as fixture
     import server
     import rule_pack_campaign as campaign
-    from test_target_context import AbstractTargetContextTests
+    from test_target_objective_plan import TargetObjectivePlanTests
     from waitress.server import create_server
 
     def preview_server(application,**options):
-        example=AbstractTargetContextTests();example.setUp();state=example.state
+        example=TargetObjectivePlanTests();example.setUp();state=example.state
         state['actors'][0]['publicFields']=['energy','exhausted']
-        token=server.STORE.create('Vista local · acciones abstractas de demostración',campaign.initial_state({}),'Vista local')
+        token=server.STORE.create('Vista local · objetivos dirigidos de demostración',campaign.initial_state({}),'Vista local')
         me=server.STORE.identity(token);cid=me['campaign']
         demo=campaign.import_campaign(state,me);row,_=server.STORE.campaigns[cid]
         server.STORE.campaigns[cid]=(row,server.STORE._light_state(cid,demo))
@@ -33,7 +33,7 @@ def main():
             if environ.get('PATH_INFO') in ('/','/index.html'):
                 html=(ROOT/'static/index.html').read_text(encoding='utf-8')
                 html=html.replace('</head>','<script>localStorage.setItem("cronicas-token",'+json.dumps(token)+');</script></head>')
-                banner='<aside style="padding:10px 18px;background:#243e39;color:#f3e4bd;text-align:center;font:14px sans-serif">Vista local · acciones abstractas de demostración · director simulado · sin IA ni base remota</aside>'
+                banner='<aside style="padding:10px 18px;background:#243e39;color:#f3e4bd;text-align:center;font:14px sans-serif">Vista local · objetivos dirigidos de demostración · director simulado · sin IA ni base remota</aside>'
                 body=html.replace('<body>','<body>'+banner,1).encode('utf-8')
                 start_response('200 OK',[('Content-Type','text/html; charset=utf-8'),('Content-Length',str(len(body))),('Cache-Control','no-store')])
                 return [body]
