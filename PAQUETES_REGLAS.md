@@ -2,6 +2,8 @@
 
 ## Ensayo real integrado y límite de agencia encontrado
 
+Actualización posterior: mitigación de agencia desplegada en `e3a3578`, Render `7572278011` success, revisión/salud HTTPS correctas. Prompt consolidado localmente de 6.716 a 3.891 caracteres (993 a 525 palabras), conservando contratos y límites; 32 pruebas afectadas correctas. No se ha medido todavía el ahorro de tokens/precio ni verificado calidad con nueva inferencia real. El ensayo con incidencia sigue sin aceptación narrativa y no se repite.
+
 Fuente privada desplegada en `e2616a8`, Render `7572081576` success y revisión/salud HTTPS correctas. Un nuevo ensayo acotado ejecutó exactamente tres inferencias: inició un PNJ, lugar, relación y objetivo; solicitó Intentar vinculado; el motor confirmó [3,4]/objetivo/ficha y la continuación llegó completa, sin truncado ni recuperación. Original/copia/permisos y navegador real/móvil comprobados. Uso observado: 17.445 tokens de entrada y 1.642 de salida (684/493/465); thinking desactivado/esfuerzo bajo aceptados por el proveedor. No se calcula importe ni se afirma ahorro comparable frente a sesiones con otro contexto.
 
 La revisión del relato detectó una vulneración concreta de agencia: la segunda respuesta presentó que Aria se acercaba al mostrador sin declararlo y volvió a pedir declarar una acción ya declarada. **El recorrido narrativo no se acepta como terminado**, aunque la integración mecánica sí pasó. Sesión privada `verified-with-narrative-issues`, `narrativeAcceptance=false`; no se repite el ensayo ni se hace una cuarta llamada para sustituir evidencia desfavorable. Historial y fuente técnica originales conservados.

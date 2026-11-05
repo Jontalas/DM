@@ -1,5 +1,13 @@
 # Continuidad del desarrollo autónomo
 
+## Agencia desplegada y prompt consolidado — 5 de noviembre de 2026
+
+`e3a357822136c084275b564c1563c4f80760d5cb` desplegado, Render `7572278011` success, revisión exacta y salud HTTPS comprobadas. Detector acotado y motivo de rechazo ya activos. No se altera el historial del ensayo técnico con incidencia ni se hace otra inferencia para sustituirlo.
+
+Prompt consolidado localmente: 6.716 → 3.891 caracteres y 993 → 525 palabras. Se eliminaron apéndices repetidos/límites contradictorios, conservando rol, autoridad del paquete, privacidad, agencia, propuestas pendientes, booleanos de objetivos, PNJ/lugares/relaciones, fuente no ejecutable y fragmentos acotados. Instrucción positiva de describir mundo/solicitud y atribuir intenciones, sin repetir el ejemplo negativo que incluía el movimiento indebido. Misma salida máxima 1.800 tokens, thinking desactivado/esfuerzo bajo y mismas huellas de solicitud para reutilizar capturas. **32 pruebas afectadas correctas (0,079 s)**. No se ha hecho otra inferencia real, ni se afirma reducción exacta de tokens/precio o calidad narrativa ya certificada. Falta respaldo/despliegue de este texto.
+
+Siguiente trabajo general: creador lineal por etapas con decisiones dependientes de resultados confirmados, trazas por etapa, reanudación/copia sin RNG, validación de propiedad/orden y asistente. Mantener compatibilidad con creadores actuales de una resolución. Contrastar bloques de juegos con originales antes de ofrecérselos al jugador; ejemplo original acotado no acredita Pathfinder completo. No esperar nueva intervención ni activar un hito personal por esta base técnica.
+
 ## Ensayo real nuevo y defecto de agencia detectado — 5 de noviembre de 2026
 
 Corrección validada: **401 pruebas completas con emulador, sin omisiones (84,150 s)** y navegador simulado correcto. Se precisó después el tipo `NarrativeAgencyError` para conservar el motivo específico a través de transporte y restauración, sin revelar texto privado. **76 pruebas afectadas con emulador correctas (41,864 s)**, incluida regresión HTTP y Waitress: respuesta raw con «Aria se acerca…» capturada antes del rechazo, estado idéntico, segundo envío con la caché auxiliar retirada vuelve a rechazar desde Firestore, proveedor llamado una vez y diagnóstico pendiente captured. No hay nueva inferencia real. Corrección pendiente de respaldo/despliegue. Continuar luego con reducción de redundancias del prompt y recorrido completo; los hitos personales no se activan por esta entrega.
