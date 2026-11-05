@@ -238,6 +238,43 @@ class RulePackServerTests(unittest.TestCase):
         exported=self.request('/api/export',{},self.token);self.action('import',campaign=exported)
         self.assertEqual(self.state()['state']['narrativeView']['discoveries'][0]['text'],quote)
 
+    def test_pending_dice_recover_after_other_players_ooc_and_new_http_version(self):
+        from test_target_objective_plan import TargetObjectivePlanTests
+        fixture=TargetObjectivePlanTests();fixture.setUp()
+        self.action('import',campaign={'format':'cronicas-1','title':'Recuperación concurrente — apertura simulada','state':fixture.state})
+        guest=self.request('/api/join',{'name':'Luis','invite':self.state()['invite']})['token']
+        self.action('create_pack_sheet',guest,name='Luis',physical={'aptitude':[1]})
+        guest_view=self.state(guest);guest_id=next(c['id'] for c in guest_view['state']['characters'] if c['owner']==guest_view['me']['id'])
+        self.action('advance_pack_creation',guest,character=guest_id,step='training',inputs={'role':'cronista','focus':0})
+        with patch.object(pack_director,'propose',side_effect=AssertionError('Recovery called AI')):
+            self.action('request_pack_target',character=fixture.cid,action='contest',target='a'*24,inputs={})
+            before=self.state();pending=before['state']['narrativeView']['pending'];captured=[]
+            body={'id':secrets.token_hex(12),'version':before['version'],'type':'resolve_pack_request','request':pending['id']}
+            def fail(*args,**kwargs):captured.append(copy.deepcopy(args[5]));raise Unavailable('Interrupted pending resolution')
+            with patch('secrets.token_bytes',return_value=bytes(32)):
+                with patch.object(server.STORE,'commit',side_effect=fail):self.rejected(lambda:self.request('/api/action',body,self.token),503)
+            self.action('talk_pack_adventure',guest,character=guest_id,mode='ooc',text='Un mensaje fuera de personaje.')
+            self.rejected(lambda:self.request('/api/action',body,self.token),409)
+            current=self.state();retry=body|{'id':secrets.token_hex(12),'version':current['version']}
+            # Switching to physical dice must not bypass the server stream that
+            # was already reserved by the interrupted attempt.
+            self.rejected(lambda:self.request('/api/action',retry|{'physical':{'pool':[3,4]}},self.token),409)
+            old=server.STORE
+            from firebase_store import FirestoreStore
+            if isinstance(old,FirestoreStore):server.STORE=FirestoreStore.from_environment();server.STORE.prefix=old.prefix
+            try:
+                self.request('/api/action',retry,self.token);self.assertTrue(self.request('/api/action',retry,self.token)['duplicate'])
+                exported=self.request('/api/export',{},self.token);result=exported['state'];campaign.validate_restored(result)
+                self.assertEqual(result['actors'],captured[0]['actors'])
+                expected=next(c for c in captured[0]['characters'] if c['id']==fixture.cid)
+                self.assertEqual(next(c for c in result['characters'] if c['id']==fixture.cid),expected)
+                self.assertEqual(result['messages'][-1]['trace'],captured[0]['messages'][-1]['trace'])
+                self.assertEqual(result['messages'][-1]['trace']['rolls']['pool']['values'],[5,6])
+                self.assertEqual(result['narrative']['objectives'][0]['status'],'completed')
+                self.assertEqual(len(result['narrative']['discoveries']['receipts']),1)
+                self.assertTrue(any(message.get('text')=='Un mensaje fuera de personaje.' for message in result['messages']))
+            finally:server.STORE=old
+
     def test_target_goal_and_discovery_retry_preserves_both_sheets_and_evidence(self):
         from test_target_objective_plan import TargetObjectivePlanTests
         fixture=TargetObjectivePlanTests();fixture.setUp()

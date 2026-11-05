@@ -10,6 +10,7 @@ class PendingRandomnessDescriptorTests(unittest.TestCase):
     def setUp(self):
         example=fixture.TargetObjectivePlanTests();example.setUp();self.me=example.me
         self.state=example.pending();self.pack=campaign.runtime(self.state,self.me['campaign'])
+        self.state['narrative']['pending'].pop('randomnessScope',None)
         self.action={'type':'resolve_pack_request','request':self.state['narrative']['pending']['id'],'id':'first','version':10}
 
     def enable(self):self.state['narrative']['pending']['randomnessScope']=pending_randomness.SCOPE

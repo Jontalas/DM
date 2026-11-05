@@ -281,9 +281,20 @@ class FirestoreStore:
         if not isinstance(seed,bytes) or len(seed)!=32:raise Unavailable('La reserva de dados no está íntegra')
         return seed
 
-    def commit(self,cid,aid,actor,fingerprint,version,state,title=None,preparation_key=None,randomness=False):
+    def check_action_random_seed(self,cid,aid,actor,fingerprint,version):
+        existing=self.campaign(cid).collection('ruleActionRandomness').document(digest(aid)).get().to_dict()
+        if existing is None:return None
+        if existing.get('phase')=='confirmed' or any(existing.get(key)!=value for key,value in [('actor',actor),('fingerprint',fingerprint),('version',version)]):
+            raise Conflict('La solicitud conserva otra reserva de dados o ya está confirmada')
+        seed=existing.get('seed')
+        if not isinstance(seed,bytes) or len(seed)!=32:raise Unavailable('La reserva de dados no está íntegra')
+        return seed
+
+    def commit(self,cid,aid,actor,fingerprint,version,state,title=None,preparation_key=None,randomness=False,randomness_key=None):
         from google.cloud import firestore
         from google.api_core.exceptions import AlreadyExists, FailedPrecondition
+        if randomness_key is not None and (randomness is not True or not isinstance(randomness_key,str) or not re.fullmatch('pending:[a-f0-9]{64}',randomness_key)):
+            raise ValueError('Clave de confirmación de dados inválida')
         # Optimistic CAS avoids holding read locks while concurrent clients commit.
         # The timestamp precondition and marker creation belong to the SAME atomic batch.
         ref=self.campaign(cid);marker=ref.collection('actions').document(digest(aid))
@@ -299,7 +310,7 @@ class FirestoreStore:
         batch.update(ref,update,option=firestore.LastUpdateOption(meta.update_time))
         batch.create(marker,{'actor':actor,'fingerprint':fingerprint,'version':version+1})
         if randomness:
-            batch.set(ref.collection('ruleActionRandomness').document(digest(aid)),{'phase':'confirmed'})
+            batch.set(ref.collection('ruleActionRandomness').document(digest(aid if randomness_key is None else randomness_key)),{'phase':'confirmed'})
         if preparation_key is not None:
             batch.set(ref.collection('rulePreparationAttempts').document(preparation_key),
                 {'actor':actor,'phase':'confirmed'})

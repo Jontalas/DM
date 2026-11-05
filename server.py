@@ -181,7 +181,11 @@ def execute_action(body,me):
                 state=selected.execute_action(state,body,me,narrative_call=narrative_call,source_loader=lambda current:attach_adventure_source(current,me))
             elif state['ruleset']=='rule-pack' and body['type'] in ('create_pack_sheet','advance_pack_creation','run_pack_action','resolve_pack_request','create_pack_actor'):
                 from action_randomness import ActionRandomness
-                randomness=ActionRandomness(store,cid,aid,me['id'],signature,row['version'])
+                reservation=None
+                if body['type']=='resolve_pack_request':
+                    from pending_randomness import describe
+                    reservation=describe(state,body,me,selected.runtime(state,cid))
+                randomness=ActionRandomness(store,cid,aid,me['id'],signature,row['version'],reservation=reservation)
                 state=selected.execute_action(state,body,me,draw=randomness)
             else:state=selected.execute_action(state,body,me)
         elif body['type']=='start_adventure':
@@ -249,9 +253,12 @@ def execute_action(body,me):
                     state['pending'].append({'reason':'Revisar prueba propuesta: '+str(proposal.get('reason','Prueba no válida'))[:500],'source':'El motor no pudo validar la solicitud de Claude; resolución asistida'})
         else:apply_action(state,body,me)
         # Firestore CAS + marker are atomic. A conflict never reruns RNG or the provider.
+        if randomness is not None:randomness.verify_if_unused()
         if workspace_readonly:state['authoringWorkspace']=None
         options={'preparation_key':preparation_key} if preparation_key is not None else {}
-        if randomness is not None and randomness.seed is not None:options['randomness']=True
+        if randomness is not None and randomness.seed is not None:
+            options['randomness']=True
+            if randomness.reservation_key!=aid:options['randomness_key']=randomness.reservation_key
         duplicate=store.commit(cid,aid,me['id'],signature,row['version'],state,title,**options)
         if preparation_key is not None:attempts.forget(store,cid,preparation_key)
         return {'duplicate':True} if duplicate else {'ok':True}

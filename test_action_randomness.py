@@ -7,6 +7,30 @@ from firebase_store import Conflict
 
 
 class ActionRandomnessTests(unittest.TestCase):
+    def test_explicit_pending_reservation_survives_new_http_identity_and_version(self):
+        store=TestStore();reservation={'key':'pending:'+'a'*64,'fingerprint':'b'*64,'version':0}
+        first=ActionRandomness(store,'campaign','http-one','actor','body-one',3,reservation=reservation)
+        values=[first(sides) for sides in [6,20,6]]
+        second=ActionRandomness(store,'campaign','http-two','actor','body-two',4,reservation=reservation)
+        self.assertEqual(values,[second(sides) for sides in [6,20,6]])
+        with self.assertRaises(Conflict):ActionRandomness(store,'campaign','http-three','actor','body-three',4,
+            reservation=reservation|{'fingerprint':'c'*64})(6)
+        self.assertNotIn(('campaign','http-one'),store.randomness)
+
+    def test_pending_descriptor_is_explicit_and_bounded_before_drawing(self):
+        store=TestStore();reservation={'key':'pending:'+'a'*64,'fingerprint':'b'*64,'version':0}
+        for changed in [{'key':'other'},{'fingerprint':'invalid'},{'version':True},{'extra':1}]:
+            with self.assertRaises(ValueError):ActionRandomness(store,'campaign','http','actor','body',3,reservation=reservation|changed)
+        self.assertFalse(hasattr(store,'randomness'))
+
+    def test_no_dice_check_does_not_create_a_seed_but_rejects_changed_existing_reservation(self):
+        store=TestStore();reservation={'key':'pending:'+'a'*64,'fingerprint':'b'*64,'version':0}
+        first=ActionRandomness(store,'campaign','http-one','actor','body-one',3,reservation=reservation)
+        first.verify_if_unused();self.assertFalse(hasattr(store,'randomness'))
+        first(6)
+        changed=ActionRandomness(store,'campaign','http-two','actor','body-two',4,reservation=reservation|{'fingerprint':'c'*64})
+        with self.assertRaises(Conflict):changed.verify_if_unused()
+
     def test_replay_stream_and_independent_actions(self):
         store=TestStore()
         def stream(action):return ActionRandomness(store,'campaign',action,'actor','fingerprint',3)

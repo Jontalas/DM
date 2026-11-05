@@ -80,6 +80,29 @@ class FirestoreEmulatorTests(unittest.TestCase):
         self.store=make_store();self.token=self.store.create('Fixture',initial_state({}),'Ana');self.me=self.store.identity(self.token);self.cid=self.me['campaign']
     def another_client(self):
         other=FirestoreStore.from_environment();other.prefix=self.store.prefix;return other
+    def test_pending_seed_survives_intermediate_version_and_confirms_in_same_batch(self):
+        from action_randomness import ActionRandomness
+        row,state=self.store.load(self.cid);reservation={'key':'pending:'+'a'*64,'fingerprint':'b'*64,'version':0}
+        first=ActionRandomness(self.store,self.cid,'http-first',self.me['id'],'first-body',row['version'],reservation=reservation)
+        values=[first(6),first(20)]
+        intervening=copy.deepcopy(state);intervening['notes']='Intervención compatible'
+        self.store.commit(self.cid,'ooc',self.me['id'],'ooc-body',row['version'],intervening)
+        with self.assertRaises(Conflict):self.store.commit(self.cid,'http-first',self.me['id'],'first-body',row['version'],state,
+            randomness=True,randomness_key=reservation['key'])
+        other=self.another_client();fresh=other.load(self.cid)
+        second=ActionRandomness(other,self.cid,'http-second',self.me['id'],'second-body',fresh[0]['version'],reservation=reservation)
+        self.assertEqual(values,[second(6),second(20)])
+        candidate=copy.deepcopy(fresh[1]);candidate['notes']='Resolución confirmada'
+        other.commit(self.cid,'http-second',self.me['id'],'second-body',fresh[0]['version'],candidate,randomness=True,randomness_key=reservation['key'])
+        self.assertTrue(other.commit(self.cid,'http-second',self.me['id'],'second-body',fresh[0]['version'],candidate,randomness=True,randomness_key=reservation['key']))
+        self.assertEqual(self.store.load(self.cid)[1]['notes'],'Resolución confirmada')
+        with self.assertRaises(Conflict):ActionRandomness(self.store,self.cid,'http-third',self.me['id'],'third-body',2,reservation=reservation)(6)
+
+    def test_invalid_pending_confirmation_key_cannot_write_state(self):
+        row,state=self.store.load(self.cid)
+        for options in [{'randomness_key':'pending:'+'a'*64},{'randomness':True,'randomness_key':'other'}]:
+            with self.assertRaises(ValueError):self.store.commit(self.cid,'invalid',self.me['id'],'body',row['version'],state,**options)
+        self.assertEqual(self.store.metadata(self.cid)['version'],row['version'])
     def test_fresh_client_recovers_confirmed_state_and_hashed_session(self):
         row,state=self.store.load(self.cid);state['notes']='Escena confirmada'
         self.store.commit(self.cid,'a1',self.me['id'],'signature',row['version'],state)

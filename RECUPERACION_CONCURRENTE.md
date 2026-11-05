@@ -1,5 +1,17 @@
 # Recuperación de tiradas con intervenciones intermedias
 
+## Integración local posterior, 6 de noviembre
+
+Solicitudes nuevas llevan randomnessScope:pending-resolution-v2. Las antiguas siguen usando actionId/version, sin reinterpretar semillas ya reservadas. El servidor deriva clave/huella de solicitud, propietario, paquete, elecciones, fichas y registros de mundo; el estado completo vuelve a pasar su preflight antes de cualquier dado. ActionRandomness acepta explícitamente ese descriptor. Firestore confirma su clave en el mismo lote que estado y marcador HTTP; la versión/CAS general de la mesa permanece obligatoria.
+
+La recuperación del navegador intenta primero el envío original. Solo ante 409 y la misma solicitud pendiente con el ámbito nuevo, carga el estado vigente y envía una vez las mismas decisiones con id/versión HTTP nuevos. Persiste ese cuerpo antes de enviarlo; si vuelve a interrumpirse puede recuperarlo sin repetir consecuencias. No añade llamadas a IA ni cambios por consultar.
+
+Coste específico: cuando una resolución nueva no genera dados del servidor, una lectura de la reserva comprueba que no está sustituyendo una secuencia ya reservada por dados físicos o una rama sin dados. No crea semillas ni escrituras para ello. Las resoluciones que sí generan dados reutilizan la reserva normal, sin esa lectura adicional. Se conserva así la consistencia entre reintentos; no afecta a navegación ni a las solicitudes antiguas.
+
+Validaciones locales: descriptor/HMAC, lote Firestore/CAS/cliente nuevo y rechazo de claves inválidas correctos. HTTP/Waitress: fallo de commit, OOC de otro jugador, cuerpo antiguo rechazado, cambio a dados físicos rechazado, cliente nuevo y nuevo id/versión recuperan [5,6], ambas fichas/objetivo/revelación y duplicado sin IA. Navegador de recuperación automático y regresión de plan-3 correctos. Suite completa en ejecución, `.deps/pending-recovery-final-tests.log`, sesión 61059. No desplegado todavía.
+
+Validación final local: **518 pruebas completas con emulador correctas sin omisiones (221,200 s)**. Captura original antigua revalidada sin IA; no se han repetido evaluaciones narrativas ni alterado sus resultados negativos. Pendiente respaldo/despliegue y verificación de producción en este punto.
+
 Estado: análisis del siguiente bloque, sin cambio de comportamiento. La recuperación actual está comprobada cuando falla el commit y la versión de la mesa sigue igual: semilla privada duradera, cliente Firestore nuevo, dos fichas/objetivo/revelación y barrera conjunta. No vuelve a llamar al proveedor ni genera otra secuencia.
 
 Primer bloque aislado posterior: pending_randomness.py describe clave/huella/versión de reserva por solicitud con opt-in pending-resolution-v2. Cinco pruebas correctas: legado intacto, mensaje OOC/id/versión HTTP no cambian la reserva; cambios de fichas/mundo/elecciones sí cambian su huella; propietario/solicitud/ámbito inválidos rechazados. Solo devuelve hashes, sin fichas. No integrado al almacenamiento, servidor ni navegador; todavía no recupera resoluciones con versiones intermedias.

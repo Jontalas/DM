@@ -10,6 +10,7 @@ import target_journal
 import objective_targets
 import rule_pack_objectives as objectives
 import adventure_discoveries as discoveries
+from pending_randomness import SCOPE as RANDOMNESS_SCOPE
 
 
 def _room(state):
@@ -28,7 +29,7 @@ def request(state,action,me,pack):
     result=copy.deepcopy(state);memory=result['narrative'];text='Solicito '+label+' sobre '+npc['name']+'.'
     memory['pending']={'id':secrets.token_hex(12),'character':binding['character'],'action':action['action'],'inputs':preview['inputs'],
         'rolls':preview['rolls'],'reason':'Acción elegida sobre '+npc['name']+' en contexto abstracto compartido.',
-        'packageSha256':pack.digest,'sheetRevision':binding['characterRevision'],'targetBinding':binding}
+        'packageSha256':pack.digest,'sheetRevision':binding['characterRevision'],'targetBinding':binding,'randomnessScope':RANDOMNESS_SCOPE}
     check=objective_targets.binding(result,action['action'],binding['npc'],preview['inputs'])
     if check is not None:
         memory['pending']['objectiveCheck']=check

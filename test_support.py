@@ -90,7 +90,17 @@ class TestStore:
             if existing.get('phase')=='confirmed' or any(existing.get(k)!=v for k,v in [('actor',actor),('fingerprint',fingerprint),('version',version)]):
                 raise Conflict('Reserva de dados incompatible o confirmada')
             return existing['seed']
-    def commit(self,cid,aid,actor,fingerprint,version,state,title=None,preparation_key=None,randomness=False):
+    def check_action_random_seed(self,cid,aid,actor,fingerprint,version):
+        with self.lock:
+            existing=getattr(self,'randomness',{}).get((cid,aid))
+            if existing is None:return None
+            if existing.get('phase')=='confirmed' or any(existing.get(k)!=v for k,v in [('actor',actor),('fingerprint',fingerprint),('version',version)]):
+                raise Conflict('Reserva de dados incompatible o confirmada')
+            return existing['seed']
+    def commit(self,cid,aid,actor,fingerprint,version,state,title=None,preparation_key=None,randomness=False,randomness_key=None):
+        import re
+        if randomness_key is not None and (randomness is not True or not isinstance(randomness_key,str) or not re.fullmatch('pending:[a-f0-9]{64}',randomness_key)):
+            raise ValueError('Clave de confirmación de dados inválida')
         with self.lock:
             if self.completed(cid,aid,actor,fingerprint):return True
             if self.campaigns[cid][0]['version']!=version:raise Conflict('Estado antiguo')
@@ -98,7 +108,7 @@ class TestStore:
             if title is not None:meta['title']=title
             self.campaigns[cid]=(meta,copy.deepcopy(self._light_state(cid,state)));self.actions[cid,aid]=(actor,fingerprint)
             if preparation_key is not None:self.preparations[cid,preparation_key]={'actor':actor,'phase':'confirmed'}
-            if randomness:self.randomness[cid,aid]={'phase':'confirmed'}
+            if randomness:self.randomness[cid,aid if randomness_key is None else randomness_key]={'phase':'confirmed'}
             return False
     def index_book(self,book,pages):self.pages[book]=copy.deepcopy(pages)
     def counts(self):return {b:len(self.pages.get(b,[])) for b in ['reglas','bestiario','trey']}

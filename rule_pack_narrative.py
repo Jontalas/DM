@@ -147,6 +147,8 @@ def apply(state,action,me,pack,call=None,draw=None,source_loader=None):
         inputs=read_document(proposal['inputsJson']);preview=pack.preview(actor['sheet'],proposal['action'],inputs,me['id'])
         pending={'id':secrets.token_hex(12),'character':actor['id'],'action':proposal['action'],'inputs':preview['inputs'],'rolls':preview['rolls'],
             'reason':proposal['reason'],'packageSha256':pack.digest,'sheetRevision':actor['sheet']['revision']}
+        from pending_randomness import SCOPE
+        pending['randomnessScope']=SCOPE
     if operation=='talk':_log(result,'pack-talk',actor,me,text=text,mode=mode)
     _log(result,'pack-director',actor,me,text=reply['narration'],limitation=reply['limitation'],usage=reply.get('usage'),
         **({'recovery':reply['recovery']} if 'recovery' in reply else {}),
@@ -222,7 +224,10 @@ def validate(state,pack):
     pending=memory['pending'];continuation=memory['continuation']
     if pending is not None and continuation is not None:raise RulePackError('No puede haber solicitud y resultado pendientes a la vez')
     if pending is not None:
-        _keys(pending,('id','character','action','inputs','rolls','reason','packageSha256','sheetRevision'),('objectiveCheck','discoveryBindings','targetBinding'))
+        _keys(pending,('id','character','action','inputs','rolls','reason','packageSha256','sheetRevision'),('objectiveCheck','discoveryBindings','targetBinding','randomnessScope'))
+        if 'randomnessScope' in pending:
+            from pending_randomness import SCOPE
+            if pending['randomnessScope']!=SCOPE:raise RulePackError('Ámbito de reserva pendiente inválido')
         expected=discoveries.bindings(memory['discoveries']['catalog'],pending.get('objectiveCheck'),pending['id']) if 'discoveries' in memory else []
         if pending.get('discoveryBindings',[])!=expected:raise RulePackError('Vínculos de descubrimiento de la solicitud incompatibles')
         if 'objectiveCheck' in pending:objectives.check_spec(pending['objectiveCheck'],pending['action'],memory.get('objectives',[]),pack.document())

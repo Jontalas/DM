@@ -6,6 +6,17 @@ function toast(s){$('#toast').textContent=s;$('#toast').hidden=false;clearTimeou
 async function api(url,body){let r=await fetch(url,{method:body?'POST':'GET',headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},body:body?JSON.stringify(body):undefined});let d=await r.json();if(!r.ok){const err=Error(d.error||'Error del servidor');err.confirmed=r.status>=400&&r.status<500;err.status=r.status;throw err}return d}
 function values(form){return Object.fromEntries(new FormData(form))}
 function physical(d){if(d.physical?.trim())d.physical=d.physical.split(',').map(Number);else delete d.physical;return d}
+async function recoverSubmission(saved){
+ try{await api('/api/action',saved.body)}catch(error){
+  if(error.status!==409||saved.body.type!=='resolve_pack_request')throw error;
+  await refresh(true);
+  const pending=snapshot?.state.narrativeView?.pending;
+  if(pending?.id!==saved.body.request||pending.randomnessScope!=='pending-resolution-v2')throw error;
+  const body={...saved.body,id:crypto.randomUUID(),version:snapshot.version};
+  localStorage.setItem('cronicas-pending',JSON.stringify({token,body}));
+  await api('/api/action',body);
+ }
+}
 async function act(type,data={}){if(JSON.parse(localStorage.getItem('cronicas-pending')||'null')?.token===token)throw Error('Recarga la mesa para recuperar el envio pendiente antes de otra accion');if(busy)throw Error('Hay una acción en curso');busy=true;$('#send').disabled=true;$('#sync').textContent='Resolviendo…';const body={...data,type,id:crypto.randomUUID(),version:snapshot.version};try{localStorage.setItem('cronicas-pending',JSON.stringify({token,body}));await api('/api/action',body);localStorage.removeItem('cronicas-pending');path=[];await refresh(true)}catch(e){if(e.name==='QuotaExceededError')throw Error('No hay espacio en el navegador para conservar este envio. No se ha enviado al servidor; libera espacio o importa una copia mas pequena.');if(e.confirmed)localStorage.removeItem('cronicas-pending');try{await refresh(true)}catch{}throw e}finally{busy=false;$('#send').disabled=false}}
 function run(fn){return async e=>{e?.preventDefault();try{await fn(e)}catch(err){toast(err.message)}}}
 async function refresh(force=false){
@@ -144,7 +155,7 @@ async function loadSystemChoices(){
   $('#systemChoiceHint').textContent=selected.status==='experimental'?'Experimental: recorrido en pruebas, con límites indicados al entrar.':(selected.coverage||[]).join(' · ');
  };label.querySelector('select').onchange();
 }
-async function init(){renderSavedCampaigns();try{model=await api('/api/status');await loadSystemChoices();$('#capabilities').innerHTML=`<p><strong>● Guardado persistente</strong><br>${esc(model.storage)}</p><p>${model.aiConfigured?'● IA configurada: '+esc(model.model):'○ Director de IA sin configurar'}<br>Conexión real a Claude Haiku; sin respuestas prefijadas.</p><p>${Object.entries(model.books).map(([k,n])=>esc(names[k])+': '+n+' páginas indexadas').join('<br>')}</p>`;$('#aiHint').textContent=model.aiConfigured?'IA configurada · cada respuesta requiere el servicio Claude Haiku en ejecución.':'IA no configurada · configura ANTHROPIC_API_KEY en el servidor. Puedes desmarcar «Responder con IA» para preparar la mesa.';$('#resume').hidden=!token;const invite=new URLSearchParams(location.search).get('invite');if(invite)$('#inviteInput').value=invite;if(token&&!invite){const pending=JSON.parse(localStorage.getItem('cronicas-pending')||'null');if(pending&&pending.token===token){try{await api('/api/action',pending.body);localStorage.removeItem('cronicas-pending');toast('Envio recuperado con su identificador original')}catch(e){if(e.confirmed)localStorage.removeItem('cronicas-pending');toast(e.message)}}await refresh(true)}}catch(e){toast(e.message)}}
+async function init(){renderSavedCampaigns();try{model=await api('/api/status');await loadSystemChoices();$('#capabilities').innerHTML=`<p><strong>● Guardado persistente</strong><br>${esc(model.storage)}</p><p>${model.aiConfigured?'● IA configurada: '+esc(model.model):'○ Director de IA sin configurar'}<br>Conexión real a Claude Haiku; sin respuestas prefijadas.</p><p>${Object.entries(model.books).map(([k,n])=>esc(names[k])+': '+n+' páginas indexadas').join('<br>')}</p>`;$('#aiHint').textContent=model.aiConfigured?'IA configurada · cada respuesta requiere el servicio Claude Haiku en ejecución.':'IA no configurada · configura ANTHROPIC_API_KEY en el servidor. Puedes desmarcar «Responder con IA» para preparar la mesa.';$('#resume').hidden=!token;const invite=new URLSearchParams(location.search).get('invite');if(invite)$('#inviteInput').value=invite;if(token&&!invite){const pending=JSON.parse(localStorage.getItem('cronicas-pending')||'null');if(pending&&pending.token===token){try{busy=true;await recoverSubmission(pending);localStorage.removeItem('cronicas-pending');toast('Envío recuperado')}catch(e){if(e.confirmed)localStorage.removeItem('cronicas-pending');toast(e.message)}finally{busy=false}}await refresh(true)}}catch(e){toast(e.message)}}
 const tabletopControls=window.TabletopControls.mount({
  scroller:$('.board-scroll'),grid:$('#grid'),tool:$('#tool'),zoom:$('#zoom'),snapshot:()=>snapshot&&(!snapshot.state.ruleset||snapshot.state.ruleset==='pathfinder-1e')?snapshot:null,
  select:id=>{$('#boardCharacter').value=id;path=[];renderBoard()},
