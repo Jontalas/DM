@@ -1,6 +1,14 @@
 # Objetivos vinculados a un PNJ concreto: siguiente contrato
 
-Estado: compilador/selector aislado `objective_targets.py` con cinco pruebas; todavía sin conexión a planes, solicitudes o cierre de objetivos. Los formatos plan-1 y plan-2 y las acciones dirigidas actuales no cierran objetivos por un éxito sobre un PNJ. Mantener esa negativa hasta conectar y probar el contrato completo.
+Estado: integración local conectada mediante plan-3; pendiente suite final, respaldo y despliegue. Plan-1 y plan-2 conservan la ausencia de vínculos dirigidos. Siete pruebas de recorrido, seis de compilador y dos HTTP/Waitress de recuperación tras fallo de commit correctas; navegador completo con proveedor simulado correcto. No se han hecho más inferencias reales.
+
+Validación final: **506 pruebas completas con emulador correctas sin omisiones (213,075 s)**. Trece pruebas posteriores de rutas/recorrido correctas, incluidas formas y orígenes inválidos. Navegadores plan-3 y plan-2 correctos. Pendiente despliegue y verificación mecánica aislada de producción, sin nueva inferencia.
+
+`cronicas-adventure-plan-3` conserva el formato 2 y añade objectiveTargets, una lista de hasta doce rutas objective/action/field/npc/inputs. Las entradas se normalizan con RulePack.action_inputs. Una combinación acción/PNJ/entradas admite un solo objetivo preparado; alternativas para un mismo objetivo pueden usar combinaciones distintas. El archivo completo sigue limitado a 60.000 bytes y las rutas normalizadas a 18.000 bytes. Ejemplo propio CC0: test_fixtures/original-target-objective-plan.json.
+
+El inicio conserva el almacén privado cronológico y su huella en el catálogo de descubrimientos; no son una firma de autenticidad externa. Recuperar rechaza la eliminación aislada o alteración del almacén, orígenes posteriores de objetivo/PNJ y pruebas de otra acción/PNJ/decisiones. La solicitud explícita deriva el vínculo automáticamente: no se admite que el cliente lo elija ni retire. Resolver con decisiones editadas no completa el objetivo original aunque la acción tenga éxito. Una oportunidad ya cerrada no se vuelve a vincular.
+
+Contrato optativo `rule-pack-director-target-objectives-8`: solo comunica identidades de objetivos dirigidos ya conocidos y los excluye de propuestas individuales, sin exponer la ruta privada ni inventar el PNJ requerido. La continuación mantiene el contrato público 7 y consume hechos confirmados. La semántica entre oportunidad y fórmula continúa siendo preparación aportada; no acredita reglas oficiales.
 
 La preparación aportada debe declarar, de forma privada e inmutable, objetivo, acción, resultado booleano propio, identidad del PNJ y decisiones de entrada exactas. La identidad procede del registro de ficción enlazado con el actor preparado; conocer su nombre no acredita presencia, percepción ni legalidad. La asociación semántica sigue siendo preparación aportada, nunca certificación de un manual.
 

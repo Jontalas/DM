@@ -13,8 +13,8 @@ Los cuatro grandes hitos de prueba personal de PRODUCTO.md siguen pendientes. No
 ## Repositorio y producción confirmados
 
 - Rama de trabajo: feature/rule-pack-engine.
-- main/origin y feature respaldados en **bee0f7f3232d871ebcd9b11be5e84b3f31f54c6c**.
-- Producción: https://dm-cronicas.onrender.com, Render **7586944990 success**, revisión exacta en /api/status y /healthz HTTPS 200 confirmados.
+- main/origin y feature respaldados en **3b43f4fd0c2428e4e330c40cca9b465d442ecd52**.
+- Producción: https://dm-cronicas.onrender.com, Render **7587164446 success**, revisión exacta en /api/status y /healthz HTTPS 200 confirmados.
 - Desplegados: perfiles de creación de PJ/PNJ, actores privados, plan-2 importable con PNJ preparados, selector explícito abstracto, resolución atómica de dos fichas, evidencia privada reproducible y proyección pública acotada.
 - No incluye combate espacial/PF, turnos automáticos de PNJ, objetivos de aventura sobre PNJ concretos ni interpretación dirigida por texto libre. El preparador automático excluye target-sheets/abstract-scene-targets hasta admitir ejemplos completos de dos fichas.
 
@@ -24,7 +24,7 @@ Historial técnico de estas capacidades en PAQUETES_REGLAS.md, ACTORES_Y_OBJETIV
 
 Ensayo real nuevo `.deps/actor-plan-director-live-session.json`: **dos llamadas de dos**, 11.354 tokens entrada/868 salida. Inicio con plan-2, actores, prueba física [3,4], ambas fichas y recuperación correctos; **narrativeAcceptance=false**, fase verified-mechanics-with-narrative-issues. La continuación reveló la carta privada de Arda y confundió la prueba abstracta con investigar la marca. Conservar esta evidencia negativa. **No repetir el guion ni gastar más llamadas para obtener aceptación.**
 
-Corrección posterior todavía local:
+Corrección posterior desplegada y verificada:
 
 - Las nuevas resoluciones guardan `continuationScope:public` en su evidencia privada y usan `rule-pack-director-target-public-facts-7`.
 - Solo entrega registros conocidos con private vacío y hechos verificados. Excluye fuente, preparación y resumen anterior; evita recuperar la fuente remota por esta continuación.
@@ -33,13 +33,15 @@ Corrección posterior todavía local:
 - Pruebas de no filtración/no lectura/no sobrescritura/compatibilidad y HTTP/Waitress correctas; navegador plan-2 correcto. Comparación del mismo resultado original: 4.189→3.718 bytes, carta ausente, cero llamadas al medir. No equivale a tokens facturados ni aceptación narrativa real del contrato 7.
 - Suite completa terminada: **499 pruebas correctas sin omisiones (209,526 s)**, log `.deps/public-target-final-tests.log`. Después: seis pruebas específicas de rutas/límites y dos HTTP/Waitress de continuación sin leer fuente correctas; eliminada la importación incidental de tres pruebas duplicadas del selector en el nuevo módulo de pruebas. La suite previa plan-2: 489 correctas (210,018 s).
 
-Después de pasar comprobaciones, commit/push feature y main, verificar Render/revisión/salud exactos. No repetir inferencias reales en esta fase. Un ensayo mecánico nuevo de producción debe omitir continue para no facturar IA; las consultas y navegadores no deben mandar acciones.
+Ensayo mecánico de producción `.deps/public-target-live-session.json` verified, cero inferencias, apertura simulada, marca continuationScope:public confirmada, ambas fichas/duplicados/copia/invitado correctos. No repetir ese guion. No repetir inferencias reales en esta fase; la aceptación narrativa real del contrato 7 sigue sin verificar.
 
 ## Siguiente desarrollo ya iniciado
 
 OBJETIVOS_DIRIGIDOS.md define el contrato pendiente. `objective_targets.py` compila y selecciona rutas por acción, PNJ y entradas normalizadas, exige resultado booleano propio incondicional, rechaza ambigüedad y limita también los valores predeterminados expandidos. **Seis pruebas específicas correctas**. `RulePack.action_inputs` extrae la misma normalización de entradas que ya usaba el runtime; 20 pruebas de runtime/creador/perfiles y 36 afectadas posteriores correctas.
 
-Todavía **no conectado** a plan, solicitudes, cierre ni descubrimientos. No anunciar objetivos dirigidos utilizables. Continuar conexión completa después de respaldar la corrección narrativa: identidad concreta y decisiones preparadas antes de dados, cronología, prueba pública/privada coherente y cierre/revelación en el mismo commit. Impedir también que una acción individual cierre un objetivo reservado a otro PNJ. Ninguna llamada de IA adicional para esos cálculos.
+Integración **local posterior** conectada: plan-3 añade objectiveTargets, prepara vínculo privado y su huella junto al catálogo, deriva objetivo/descubrimientos antes de dados y confirma ambas fichas/cierre/revelaciones juntos. Director usa contrato target-objectives-8 y no ofrece objetivos reservados a PNJ entre sus propuestas individuales. Recuperación comprueba huella/cronología y acción/PNJ/decisiones de la evidencia. Plan-1/2 mantienen recorrido anterior. Siete pruebas nuevas de recorrido correctas; dos HTTP/Waitress de fallo de commit/cliente Firestore nuevo verifican dados [5,6] preservados, dos fichas/objetivo/revelación y duplicado sin IA. Navegador plan-3 completo correcto con proveedor simulado. Suite completa en curso, sesión **25345**, log `.deps/target-objective-final-tests.log`. Terminar antes de respaldo/despliegue; no anunciar objetivos dirigidos disponibles en producción todavía. Ejemplo propio test_fixtures/original-target-objective-plan.json. Nada de esto añade reglas Pathfinder ni certificación narrativa.
+
+Resultado final del bloque plan-3: **506 pruebas completas con emulador correctas sin omisiones (213,075 s)**. Después, trece pruebas de rutas/recorrido incluyendo formas/orígenes inválidos correctas. Navegador plan-2 también correcto. Preparado .deps/verify_target_objective_production.py, sesión target-objective-live-session.json aún no creada: usar solo tras verificar despliegue exacto; apertura simulada, cero inferencias, no continue. Próximo bloque de fiabilidad analizado en RECUPERACION_CONCURRENTE.md; todavía no implementado, no omitir CAS ni cambiar claves de semillas sin su barrera atómica.
 
 Después: ampliar recorrido autónomo completo, recuperación/concurrencia con cambios intermedios de versión, reglas verificadas del módulo actual y capacidades de mesa en PRODUCTO.md. No asumir alcance, visibilidad individual o iniciativa por conocer un PNJ.
 

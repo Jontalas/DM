@@ -238,6 +238,30 @@ class RulePackServerTests(unittest.TestCase):
         exported=self.request('/api/export',{},self.token);self.action('import',campaign=exported)
         self.assertEqual(self.state()['state']['narrativeView']['discoveries'][0]['text'],quote)
 
+    def test_target_goal_and_discovery_retry_preserves_both_sheets_and_evidence(self):
+        from test_target_objective_plan import TargetObjectivePlanTests
+        fixture=TargetObjectivePlanTests();fixture.setUp()
+        self.action('import',campaign={'format':'cronicas-1','title':'Objetivo dirigido — apertura simulada','state':fixture.state})
+        with patch.object(pack_director,'propose',side_effect=AssertionError('Target goal mechanics called AI')):
+            self.action('request_pack_target',character=fixture.cid,action='contest',target='a'*24,inputs={})
+            before=self.state();pending=before['state']['narrativeView']['pending'];captured=[]
+            body={'id':secrets.token_hex(12),'version':before['version'],'type':'resolve_pack_request','request':pending['id']}
+            def fail(*args,**kwargs):captured.append(copy.deepcopy(args[5]));raise Unavailable('Target goal commit interrupted')
+            with patch('secrets.token_bytes',return_value=bytes(32)):
+                with patch.object(server.STORE,'commit',side_effect=fail):self.rejected(lambda:self.request('/api/action',body,self.token),503)
+            self.assertEqual(self.state(),before);old=server.STORE
+            from firebase_store import FirestoreStore
+            if isinstance(old,FirestoreStore):server.STORE=FirestoreStore.from_environment();server.STORE.prefix=old.prefix
+            try:
+                self.request('/api/action',body,self.token);self.assertTrue(self.request('/api/action',body,self.token)['duplicate'])
+                exported=self.request('/api/export',{},self.token);campaign.validate_restored(exported['state'])
+                for key in ('characters','actors','targetResolutions'):self.assertEqual(exported['state'][key],captured[0][key])
+                self.assertEqual(exported['state']['narrative']['objectives'],captured[0]['narrative']['objectives'])
+                self.assertEqual(exported['state']['narrative']['discoveries'],captured[0]['narrative']['discoveries'])
+                public=self.state()['state']['narrativeView'];self.assertEqual(public['objectives'][0]['status'],'completed')
+                self.assertEqual(len(public['discoveries']),1);self.assertNotIn('objectiveTargets',public)
+            finally:server.STORE=old
+
     def test_actor_plan_starts_and_resolves_without_individual_npc_setup(self):
         from test_adventure_actor_plan import AdventureActorPlanTests
         fixture=AdventureActorPlanTests();fixture.setUp()

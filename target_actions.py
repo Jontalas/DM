@@ -7,6 +7,9 @@ from rule_pack_authoring import canonical
 import actor_references
 import target_context
 import target_journal
+import objective_targets
+import rule_pack_objectives as objectives
+import adventure_discoveries as discoveries
 
 
 def _room(state):
@@ -26,16 +29,24 @@ def request(state,action,me,pack):
     memory['pending']={'id':secrets.token_hex(12),'character':binding['character'],'action':action['action'],'inputs':preview['inputs'],
         'rolls':preview['rolls'],'reason':'Acción elegida sobre '+npc['name']+' en contexto abstracto compartido.',
         'packageSha256':pack.digest,'sheetRevision':binding['characterRevision'],'targetBinding':binding}
+    check=objective_targets.binding(result,action['action'],binding['npc'],preview['inputs'])
+    if check is not None:
+        memory['pending']['objectiveCheck']=check
+        if 'discoveries' in memory:
+            memory['pending']['discoveryBindings']=discoveries.bindings(memory['discoveries']['catalog'],check,memory['pending']['id'])
     result['messages'].append({'kind':'pack-talk','character':binding['character'],'actor':me['id'],'speaker':me['name'],'time':time.time(),'text':text,'mode':'action'})
     return result
 
 
 def check_pending(state,pending,me,pack):
-    if 'objectiveCheck' in pending or 'discoveryBindings' in pending:
-        raise RulePackError('La vinculación de objetivos de aventura a otro actor aún no está soportada')
     binding=pending['targetBinding']
     if not isinstance(binding,dict) or binding.get('character')!=pending['character']:raise RulePackError('Objetivo vinculado a otra ficha')
     actor_references.validate(binding,state,me,pack)
+    check=objective_targets.check_request(state,pending,binding['npc'])
+    memory=state['narrative']
+    if check is not None:objectives.check_spec(check,pending['action'],memory.get('objectives',[]),pack.document())
+    expected=discoveries.bindings(memory['discoveries']['catalog'],check,pending['id']) if 'discoveries' in memory else []
+    if pending.get('discoveryBindings',[])!=expected:raise RulePackError('Vínculos de descubrimiento dirigidos incompatibles')
     actual,preview=target_context.select(state,pending['character'],binding['target'],pending['action'],pending['inputs'],me,pack)
     if actual!=binding or canonical(preview['rolls'])!=canonical(pending['rolls']):raise RulePackError('La selección o sus dados cambiaron antes de resolver')
     return binding
@@ -58,5 +69,12 @@ def resolve(state,action,me,pack,draw=None):
     if len(canonical(result['targetResolutions']).encode('utf-8'))>target_journal.MAX_BYTES:raise RulePackError('La evidencia privada supera su límite; no se ha aplicado la acción')
     next(c for c in result['characters'] if c['id']==pending['character'])['sheet']=player
     next(a for a in result['actors'] if a['id']==binding['target'])['sheet']=other
+    goals,proof=objectives.resolve(memory.get('objectives',[]),pending,result['messages'][-1],player,position,pack.document())
+    if goals:result['narrative']['objectives']=goals
+    if proof is not None:result['messages'][-1]['objectiveResolution']=proof
+    if 'discoveries' in memory:
+        receipts=[receipt for item in pending.get('discoveryBindings',[]) if (receipt:=discoveries.resolve(memory['discoveries']['catalog'],item,proof,position)) is not None]
+        if receipts:
+            result['narrative']['discoveries']['receipts'].extend(receipts);result['messages'][-1]['discoveryReveals']=receipts
     result['narrative']['pending']=None;result['narrative']['continuation']={'character':pending['character'],'message':position}
     return result

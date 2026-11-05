@@ -1,0 +1,96 @@
+{
+  "format": "cronicas-adventure-plan-3",
+  "source": {
+    "title": "El farol — ejemplo propio",
+    "text": "Preparación propia CC0.\r\nLa marca señala el archivo.\r\nOtro secreto."
+  },
+  "package": {
+    "id": "original-abstract-context-example",
+    "version": "1.3.0",
+    "sha256": "b3aaf4a458bf42992637a29dd0c74379ae1c71beffc74f0435852a42a46d4956"
+  },
+  "objectives": [
+    {
+      "id": "farol",
+      "title": "Descifrar la marca del farol",
+      "detail": "Investigar la marca que ha señalado Arda.",
+      "known": true,
+      "private": "PRIVATE-GOAL: la marca apunta al archivo."
+    }
+  ],
+  "discoveries": [
+    {
+      "id": "archivo",
+      "objective": "farol",
+      "field": "success",
+      "start": 25,
+      "end": 52,
+      "text": "La marca señala el archivo."
+    }
+  ],
+  "npcPreparation": {
+    "format": "cronicas-adventure-actors-1",
+    "package": {
+      "id": "original-abstract-context-example",
+      "version": "1.3.0",
+      "sha256": "b3aaf4a458bf42992637a29dd0c74379ae1c71beffc74f0435852a42a46d4956"
+    },
+    "npcs": [
+      {
+        "id": "arda",
+        "name": "Arda",
+        "known": true,
+        "public": "Archivera junto al farol.",
+        "private": "PRIVATE-NPC: oculta una carta."
+      },
+      {
+        "id": "sombra",
+        "name": "Arda",
+        "known": true,
+        "public": "Otra participante de la escena abstracta.",
+        "private": "PRIVATE-NPC: oculta una carta."
+      }
+    ],
+    "actors": [
+      {
+        "id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+        "npc": "arda",
+        "profile": "support",
+        "stages": [
+          {
+            "inputs": {},
+            "physical": {}
+          }
+        ],
+        "publicFields": [
+          "energy",
+          "exhausted"
+        ]
+      },
+      {
+        "id": "bbbbbbbbbbbbbbbbbbbbbbbb",
+        "npc": "sombra",
+        "profile": "support",
+        "stages": [
+          {
+            "inputs": {},
+            "physical": {}
+          }
+        ],
+        "publicFields": [
+          "energy",
+          "exhausted"
+        ]
+      }
+    ]
+  },
+  "objectiveTargets": [
+    {
+      "objective": "farol",
+      "action": "contest",
+      "field": "success",
+      "npc": "arda",
+      "inputs": {}
+    }
+  ]
+}

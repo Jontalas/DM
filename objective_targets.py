@@ -5,12 +5,17 @@ or a prior success. Presence, permissions and action requirements still belong
 to target_context and the runtime at the moment of execution.
 """
 import copy
+import hashlib
 from rule_pack_authoring import canonical
 from rule_pack_runtime import RulePackError
 import rule_pack_objectives as objectives
 
 MAX_ROUTES=12
 MAX_BYTES=18000
+FORMAT='cronicas-objective-targets-1'
+
+
+def digest(store):return hashlib.sha256(canonical(store).encode('utf-8')).hexdigest()
 
 
 def compile_routes(routes,pack,goals,actors):
@@ -19,6 +24,8 @@ def compile_routes(routes,pack,goals,actors):
     try:size=len(canonical(routes).encode('utf-8'))
     except (TypeError,ValueError,RecursionError):raise RulePackError('Vínculos dirigidos no serializables') from None
     if size>MAX_BYTES:raise RulePackError('Vínculos de objetivos dirigidos fuera de límites')
+    if not isinstance(actors,list) or len(actors)>16 or any(not isinstance(actor,dict) or not isinstance(actor.get('npc'),str) for actor in actors):
+        raise RulePackError('Registro de PNJ inválido para los vínculos')
     document=pack.document();npcs={actor['npc'] for actor in actors};known_goals={g['id']:g for g in goals}
     result=[];selectors=set()
     for route in routes:
@@ -50,3 +57,47 @@ def select(routes,goals,action,npc,inputs):
         and route['npc']==npc and objectives.inputs_hash(route['inputs'])==objectives.inputs_hash(inputs)]
     if len(matches)>1:raise RulePackError('Vínculo dirigido ambiguo')
     return {key:matches[0][key] for key in ('objective','field')} if matches else None
+
+
+def binding(state,action,npc,inputs):
+    memory=state.get('narrative') or {};store=memory.get('objectiveTargets')
+    return select(store['routes'],memory.get('objectives',[]),action,npc,inputs) if store else None
+
+
+def check_request(state,pending,npc=None):
+    memory=state.get('narrative') or {};store=memory.get('objectiveTargets');check=pending.get('objectiveCheck')
+    expected=binding(state,pending['action'],npc,pending['inputs'])
+    if npc is not None:
+        if check!=expected:raise RulePackError('La solicitud no conserva el vínculo preparado para ese PNJ y decisiones')
+    elif check and store and any(route['objective']==check['objective'] for route in store['routes']):
+        raise RulePackError('Este objetivo requiere su acción dirigida y PNJ preparados')
+    return expected
+
+
+def validate_store(state,pack):
+    memory=state.get('narrative') or {};store=memory.get('objectiveTargets')
+    marker=(memory.get('discoveries') or {}).get('objectiveTargetsSha256')
+    if store is None:
+        if marker is not None:raise RulePackError('Falta el vínculo dirigido de la preparación')
+        return
+    if not isinstance(store,dict) or set(store)!={'format','routes','installedAt'} or store['format']!=FORMAT:
+        raise RulePackError('Preparación de objetivos dirigidos inválida')
+    compiled=compile_routes(store['routes'],pack,memory.get('objectives',[]),state.get('actors',[]))
+    if marker!=digest(store):raise RulePackError('Los vínculos dirigidos difieren de la preparación registrada')
+    if canonical(compiled)!=canonical(store['routes']):raise RulePackError('Las decisiones de los vínculos no están normalizadas')
+    index=store['installedAt'];messages=state['messages']
+    if type(index)!=int or not 0<=index<len(messages) or messages[index].get('kind')!='system':raise RulePackError('Vínculos dirigidos sin preparación registrada')
+    for route in compiled:
+        goal=next(goal for goal in memory['objectives'] if goal['id']==route['objective'])
+        actor=next(actor for actor in state['actors'] if actor['npc']==route['npc'])
+        if goal['introducedAt']>=index or type(actor.get('introducedAt'))!=int or actor['introducedAt']>index:
+            raise RulePackError('El vínculo precede a la preparación del objetivo o PNJ')
+    for position,event in enumerate(messages):
+        proof=event.get('objectiveResolution')
+        if proof is None:continue
+        routes=[route for route in compiled if route['objective']==proof.get('objective')]
+        if not routes:continue
+        reference=event.get('targetRef');reference=reference if isinstance(reference,dict) else {}
+        if position<=index or not any(event.get('action')==route['action'] and reference.get('npc')==route['npc']
+            and proof.get('field')==route['field'] and proof.get('inputsSha256')==objectives.inputs_hash(route['inputs']) for route in routes):
+            raise RulePackError('La evidencia no corresponde al PNJ, acción y decisiones preparados')

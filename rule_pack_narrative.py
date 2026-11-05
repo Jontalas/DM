@@ -99,6 +99,8 @@ def apply(state,action,me,pack,call=None,draw=None,source_loader=None):
             if director.canonical(pending['rolls'])!=director.canonical(preview['rolls']):raise RulePackError('Los dados previstos no coinciden con la ficha y las reglas')
             inputs=action.get('inputs',pending['inputs'])
             if 'objectiveCheck' in pending:objectives.check_spec(pending['objectiveCheck'],pending['action'],memory.get('objectives',[]),pack.document())
+            from objective_targets import check_request
+            check_request(result,pending)
             expected=discoveries.bindings(memory['discoveries']['catalog'],pending.get('objectiveCheck'),pending['id']) if 'discoveries' in memory else []
             if pending.get('discoveryBindings',[])!=expected:raise RulePackError('La solicitud perdió su vínculo de descubrimiento')
             sheet,trace=pack.execute(actor['sheet'],pending['action'],inputs,me['id'],physical=action.get('physical'),draw=draw)
@@ -137,7 +139,8 @@ def apply(state,action,me,pack,call=None,draw=None,source_loader=None):
     if len(json.dumps(game,ensure_ascii=False).encode('utf-8'))>650000 or len(state['messages'])>4997:raise RulePackError('No hay espacio reservado para otra intervención; no se ha llamado a IA')
     from target_journal import public_continuation
     if result.get('adventureSourceRef') is not None and result.get('adventureSource') is None and source_loader is not None and not (operation=='continue' and public_continuation(result)):result=source_loader(result)
-    prepared=director.prepare(result,operation,actor,text,mode,pack,prepared_goals=prepared_goals,prepared_npcs=prepared_npcs)
+    prepared=director.prepare(result,operation,actor,text,mode,pack,prepared_goals=prepared_goals,prepared_npcs=prepared_npcs,
+        prepared_target_goals=[route['objective'] for route in prepared_plan['objectiveTargets']] if prepared_plan and 'objectiveTargets' in prepared_plan else None)
     reply=director.validate_reply(prepared,(call or director.propose)(prepared))
     proposal=reply['proposal'];pending=memory.get('pending') if memory else None
     if proposal['action']:
@@ -161,6 +164,7 @@ def apply(state,action,me,pack,call=None,draw=None,source_loader=None):
     goals=objectives.merge(prepared_goals if prepared_goals is not None else memory.get('objectives',[]) if memory else [],reply.get('objectiveUpdates',[]),len(result['messages'])-1)
     if goals:result['narrative']['objectives']=goals
     if memory and 'discoveries' in memory:result['narrative']['discoveries']=copy.deepcopy(memory['discoveries'])
+    if memory and 'objectiveTargets' in memory:result['narrative']['objectiveTargets']=copy.deepcopy(memory['objectiveTargets'])
     if prepared_plan is not None:
         if prepared_npcs is not None:
             result['actors']=copy.deepcopy(prepared_plan['npcPreparation']['actors'])
@@ -169,6 +173,10 @@ def apply(state,action,me,pack,call=None,draw=None,source_loader=None):
         result['messages'].append({'kind':'system','text':'Preparación estructurada aportada: objetivos y consecuencias informativas cargados; no certifica reglas.','actor':me['id'],'time':time.time()})
         result['narrative']['discoveries']={'catalog':prepared_plan['catalog'],'sourceSha256':prepared_plan['source']['sha256'],
             'installedAt':index,'receipts':[],'planSha256':prepared_plan['sha256']}
+        if 'objectiveTargets' in prepared_plan:
+            import objective_targets
+            result['narrative']['objectiveTargets']={'format':objective_targets.FORMAT,'routes':prepared_plan['objectiveTargets'],'installedAt':index}
+            result['narrative']['discoveries']['objectiveTargetsSha256']=objective_targets.digest(result['narrative']['objectiveTargets'])
     if 'objectiveCheck' in reply:
         pending['objectiveCheck']=objectives.check_spec(reply['objectiveCheck'],pending['action'],goals,pack.document())
         if 'discoveries' in result['narrative']:
@@ -199,10 +207,12 @@ def validate(state,pack):
         if any(event.get('kind') in ('pack-talk','pack-director') for event in state['messages']):raise RulePackError('El registro narrativo requiere su memoria de aventura')
         return
     if not state['characters']:raise RulePackError('Aventura sin personajes')
-    _keys(memory,('revision','summary','preparation','pending','continuation'),('npcs','objectives','places','relationships','discoveries'))
+    _keys(memory,('revision','summary','preparation','pending','continuation'),('npcs','objectives','places','relationships','discoveries','objectiveTargets'))
     world.validate_places(memory.get('places',[]))
     world.validate_relationships(memory.get('relationships',[]),memory.get('npcs',[]),memory.get('places',[]))
     objectives.validate(memory.get('objectives',[]),state,pack)
+    import objective_targets
+    objective_targets.validate_store(state,pack)
     validate_discoveries(state,memory,pack)
     world.validate(memory.get('npcs',[]))
     if {npc['id'] for npc in memory.get('npcs',[])}&{actor['id'] for actor in state['characters']}:raise RulePackError('Un personaje jugador no puede convertirse en PNJ')
@@ -224,7 +234,9 @@ def validate(state,pack):
             from target_actions import check_pending
             check_pending(state,pending,{'id':actor['owner']},pack)
             preview={'rolls':pending['rolls']}
-        else:preview=pack.preview(actor['sheet'],pending['action'],pending['inputs'],actor['owner'])
+        else:
+            objective_targets.check_request(state,pending)
+            preview=pack.preview(actor['sheet'],pending['action'],pending['inputs'],actor['owner'])
         if director.canonical(pending['rolls'])!=director.canonical(preview['rolls']):raise RulePackError('Los dados previstos no coinciden con la ficha y las reglas')
     if continuation is not None:
         _keys(continuation,('character','message'));index=continuation['message']
@@ -258,7 +270,7 @@ def validate_discoveries(state,memory,pack):
     if store is None:
         if any('discoveryReveals' in event for event in messages):raise RulePackError('Revelaciones sin catálogo de aventura')
         return
-    _keys(store,('catalog','sourceSha256','installedAt','receipts'),('planSha256',))
+    _keys(store,('catalog','sourceSha256','installedAt','receipts'),('planSha256','objectiveTargetsSha256'))
     if 'planSha256' in store and (not isinstance(store['planSha256'],str) or not re.fullmatch('[a-f0-9]{64}',store['planSha256'])):
         raise RulePackError('Identidad de preparación aportada inválida')
     if 'action-results' not in pack.document()['requires']:raise RulePackError('Descubrimientos sin resultados explícitos de acción')

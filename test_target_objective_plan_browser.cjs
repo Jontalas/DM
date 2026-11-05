@@ -1,0 +1,40 @@
+const {chromium}=require('./.deps/browser-tests/node_modules/playwright');
+const {spawn}=require('node:child_process'),{createInterface}=require('node:readline');
+const path=require('node:path'),assert=require('node:assert/strict');
+(async()=>{
+ const fixture=spawn(path.resolve('.venv/Scripts/python.exe'),['test_browser_fixture.py'],{env:{...process.env,TEST_RULE_PACK_FIXTURE:'1'},stdio:['ignore','pipe','inherit']});let browser;
+ try{
+  const url=await new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(Error('Fixture timeout')),15000);createInterface({input:fixture.stdout}).once('line',line=>{clearTimeout(timer);resolve(line)});fixture.once('exit',()=>reject(Error('Fixture exited')))});
+  browser=await chromium.launch({headless:true,executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe'});
+  const context=await browser.newContext(),room=await (await context.request.post(url+'/api/create',{data:{player:'Ana',title:'PNJ preparados',ruleset:'rule-pack'}})).json();
+  await context.addInitScript(t=>localStorage.setItem('cronicas-token',t),room.token);
+  const page=await context.newPage(),actions=[],errors=[];
+  page.on('pageerror',e=>errors.push(e.stack));page.on('request',r=>{if(r.url().endsWith('/api/action'))actions.push(r.postDataJSON())});
+  await page.goto(url);await page.locator('#packFile').setInputFiles('test_fixtures/rule_packs/original-abstract-context-example.json');
+  await page.locator('#packInstall [name=use]').check();await page.locator('#packInstall button').click();
+  await page.locator('#packCreate [name=name]').fill('Aria');await page.locator('#packCreate button').click();
+  await page.locator('#packAction').waitFor();
+  await page.locator('#packAction select').selectOption('cronista');await page.locator('#packAction input[type=number]').fill('0');
+  await page.locator('#packAction button.primary').click();await page.locator('#packStoryStart').waitFor();
+  await page.locator('#packStoryStart summary').click();
+  await page.locator('#packAdventureFile').setInputFiles('test_fixtures/original-target-objective-plan.json');
+  await page.getByText(/estructurada cargada con PNJ/).waitFor();await page.locator('#packStoryStart [name=sourceUse]').check();
+  const before=actions.length;await page.evaluate(()=>refresh(true));assert.equal(actions.length,before);
+  assert.match(await page.locator('[data-plan-note]').textContent(),/PNJ preparados/);
+  await page.locator('#packStoryStart button').click();await page.locator('#packTargetChoices').waitFor();
+  assert.equal(actions.filter(a=>a.type==='start_pack_adventure').length,1);
+  assert.equal(actions.filter(a=>a.type==='create_pack_actor').length,0);
+  assert.equal(await page.evaluate(()=>Object.hasOwn(snapshot.state,'actors')),false);
+  await page.locator('#packTargetChoices > summary').click();
+  await page.locator('#packTargetChoice [name=action]').selectOption('contest');
+  assert.equal(await page.locator('#packTargetChoice [name=target] option').count(),3);
+  await page.locator('#packTargetChoice [name=target]').selectOption('a'.repeat(24));await page.locator('#packTargetChoice button').click();
+  await page.locator('#packStoryResolve summary').click();await page.locator('#packStoryResolve [name=dice0]').fill('3, 4');
+  await page.locator('#packStoryResolve button.primary').click();await page.waitForFunction(()=>snapshot.state.narrativeView.revision===2);
+  assert.equal(actions.filter(a=>a.type==='continue_pack_adventure').length,1);
+  const exported=await (await context.request.post(url+'/api/export',{headers:{Authorization:'Bearer '+room.token},data:{}})).json();
+  assert.equal(exported.state.actors.length,2);assert.equal(exported.state.actors[0].sheet.fields.energy,1);
+  assert.equal(exported.state.narrative.objectives[0].status,'completed');assert.equal(exported.state.narrative.discoveries.receipts.length,1);
+  assert.deepEqual(errors,[]);console.log('Target objective plan browser passed: one retained file, one simulated opening, ready NPCs without individual setup, explicit target resolution, one simulated continuation; prepared target goal completes and discovery is revealed.');
+ }finally{if(browser)await browser.close();fixture.kill()}
+})().catch(e=>{console.error(e);process.exitCode=1});

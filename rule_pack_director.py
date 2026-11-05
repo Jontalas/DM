@@ -26,6 +26,7 @@ PLAN_CONTRACT='rule-pack-director-plan-start-4'
 TARGET_CONTRACT='rule-pack-director-target-facts-5'
 ACTORS_PLAN_CONTRACT='rule-pack-director-plan-actors-start-6'
 PUBLIC_TARGET_CONTRACT='rule-pack-director-target-public-facts-7'
+TARGET_OBJECTIVES_CONTRACT='rule-pack-director-target-objectives-8'
 DISCOVERY_GUIDANCE='Los descubrimientos confirmados son información ya revelada. En continue, discoveriesRevealed de verifiedResolution identifica los revelados por ESTA resolución; confirmedDiscoveries conserva los anteriores. No confundas preparación de la fuente con hechos ocurridos ni vuelvas a bloquear un descubrimiento confirmado tras otra tirada.'
 MAX_RESPONSE=50000
 PROMPT='''Diriges en español una aventura persistente sin maestro humano. Usa exclusivamente el catálogo del paquete aportado; su fidelidad al manual no está certificada. No importes reglas por conocer el nombre de un juego. Solo el motor tira dados y modifica fichas, recursos, condiciones y objetivos. Si falta una mecánica, indica limitation y deja proposal vacía; no inventes estadísticas, dificultades, efectos ni administración para el jugador. Puedes dirigir ficción sin efectos reglamentarios. Una tirada pendiente de una acción disponible no es una limitación de cobertura: propón esa acción con limitation="" y explica la tirada pendiente en proposal.reason. Nunca combines una propuesta con limitation no vacía.
@@ -48,7 +49,7 @@ def _text(value,limit,empty=False):
     return repair_text(value).strip()
 
 
-def prepare(state,operation,actor,text,kind,pack,prepared_goals=None,prepared_npcs=None):
+def prepare(state,operation,actor,text,kind,pack,prepared_goals=None,prepared_npcs=None,prepared_target_goals=None):
     if not pack.ready(actor['sheet']):raise RulePackError('Completa las etapas de creación de tu personaje antes de iniciar o continuar la aventura')
     data=pack.document();memory=state.get('narrative') or {}
     available={key:spec for key,spec in data['actions'].items()
@@ -107,6 +108,13 @@ def prepare(state,operation,actor,text,kind,pack,prepared_goals=None,prepared_np
         request['contract']=ACTORS_PLAN_CONTRACT
         request['directorKnowledge']['npcs']=world.validate(prepared_npcs)
         request['providedActors']='Estos PNJ son preparación aportada. Conserva identidades y conocimiento inicial; los desconocidos son privados. Sus fichas y capacidades las gestiona el motor, no inventes estadísticas ni acciones del jugador. La preparación no acredita encuentros ni sucesos ya ocurridos.'
+    routes=(memory.get('objectiveTargets') or {}).get('routes',[])
+    targeted=prepared_target_goals if prepared_target_goals is not None else [route['objective'] for route in routes] if routes else None
+    if targeted is not None:
+        request['contract']=TARGET_OBJECTIVES_CONTRACT
+        known={goal['id'] for goal in request['directorKnowledge'].get('objectives',[]) if goal['known']}
+        request['targetObjectiveIds']=sorted(set(targeted)&known)
+        request['targetObjectivesContract']='Estos objetivos tienen vínculos preparados a acciones sobre PNJ. El motor los vincula al elegir explícitamente el objetivo en su selector. No los vincules a acciones individuales ni los completes por relato; no inventes el PNJ o las decisiones requeridas.'
     if operation=='continue' and 'targetRef' in confirmed:
         from resolution_facts import build
         request['contract']=TARGET_CONTRACT
@@ -156,7 +164,7 @@ def schema(prepared):
     evidence_fields=sorted({effect['field'] for action in request['allowedActions']
         for effect in request['rules']['actions'][action]['effects']
         if type(fields.get(effect['field']))==bool and effect.get('when',True) is True})
-    completed_goals={item['id'] for item in request['directorKnowledge'].get('objectives',[]) if item['status']=='completed'}
+    completed_goals={item['id'] for item in request['directorKnowledge'].get('objectives',[]) if item['status']=='completed'}|set(request.get('targetObjectiveIds',[]))
     objective_ids=[identifier for identifier in registry_ids['objectives'] if identifier not in completed_goals]
     if evidence_fields and objective_ids:
         result['properties']['objectiveCheck']['properties']['field']['enum']=['',*evidence_fields]
@@ -190,7 +198,9 @@ def validate_reply(prepared,reply):
     if 'objectiveCheck' in reply:
         if reply['objectiveCheck']=={'objective':'','field':''}:
             if prepared['request']['operation']!='talk' or prepared['request']['kind']!='action':raise RulePackError('La evaluación vacía de objetivo solo corresponde a una declaración de acción')
-        else:result['objectiveCheck']=objectives.check_spec(reply['objectiveCheck'],proposal['action'],goals,objectives.context_package(prepared['request']))
+        else:
+            if isinstance(reply['objectiveCheck'],dict) and reply['objectiveCheck'].get('objective') in prepared['request'].get('targetObjectiveIds',[]):raise RulePackError('El director no puede vincular ese objetivo a una acción individual')
+            result['objectiveCheck']=objectives.check_spec(reply['objectiveCheck'],proposal['action'],goals,objectives.context_package(prepared['request']))
     if 'npcUpdates' in reply:
         previous=prepared['request']['directorKnowledge'].get('npcs',[])
         world.merge(previous,reply['npcUpdates'])
