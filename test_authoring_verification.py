@@ -1,4 +1,5 @@
 import io
+import base64
 import json
 import os
 from pathlib import Path
@@ -54,6 +55,17 @@ class AuthoringVerificationTests(unittest.TestCase):
             with self.assertRaises(ValueError):verification.verify(self.raw,self.session,live=True)
             self.assertFalse(self.session.exists())
             with self.assertRaises(ValueError):verification.verify(self.raw,verification.ROOT/'public-capture.json',live=True)
+
+    def test_legacy_capture_without_scheme_is_replayed_with_original_sources(self):
+        prepared=authoring.prepare_input(self.raw,authoring.LEGACY_SOURCE_SCHEME)
+        response=json.dumps({'stop_reason':'end_turn','content':[{'type':'text','text':json.dumps(fixture.reply(prepared))}],
+            'usage':{'input_tokens':123,'output_tokens':456}}).encode()
+        record={'requestSha256':prepared['sha256'],'model':'captured-test-model','promptSha256':'old-prompt',
+            'phase':'response','responseBase64':base64.b64encode(response).decode()}
+        self.session.write_text(json.dumps(record),encoding='utf-8')
+        with patch.object(authoring.urllib.request,'urlopen',side_effect=AssertionError('Legacy replay accessed provider')):
+            result=verification.verify(self.raw,self.session)
+        self.assertEqual(result['mode'],'replay');self.assertEqual(result['status'],'candidate');self.assertFalse(result['samePrompt'])
 
 
 if __name__=='__main__':unittest.main()

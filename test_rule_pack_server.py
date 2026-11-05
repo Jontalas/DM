@@ -201,6 +201,17 @@ class RulePackServerTests(unittest.TestCase):
             self.request('/api/rule-pack/compose',{'packages':[base,additional],'version':'1.1.0'})
         self.assertEqual(error.exception.code,400);error.exception.close();self.assertEqual(self.state(),before)
 
+    def test_legacy_preparation_copy_keeps_its_original_source_scheme(self):
+        raw=authoring_fixture.request();prepared=authoring.prepare_input(raw,authoring.LEGACY_SOURCE_SCHEME)
+        report=authoring.validate_reply(prepared,authoring_fixture.reply(prepared))
+        exported=self.request('/api/export',{},self.token)
+        exported['state']['authoring']={'request':raw,'sha256':prepared['sha256'],'report':report}
+        with patch.object(authoring,'propose',side_effect=AssertionError('Legacy copy called provider')):
+            self.action('import',campaign=exported)
+            self.action('install_prepared_rule_pack',preparation=prepared['sha256'],policy='provided-rules')
+            self.action('create_pack_sheet',name='Aria')
+        self.assertEqual(self.state()['state']['package']['document']['sources'],prepared['sources'])
+
 
 class RulePackWaitressTests(RulePackServerTests):
     @classmethod

@@ -36,10 +36,11 @@ def _save(path,record):
 
 
 def verify(raw,path,live=False):
-    path=_path(path);prepared=authoring.prepare_input(raw)
+    path=_path(path)
     current_prompt=hashlib.sha256(authoring.PROMPT.encode()).hexdigest()
     if path.exists():
         record=json.loads(path.read_text(encoding='utf-8'))
+        prepared=authoring.prepare_input(raw,record.get('sourceScheme',authoring.LEGACY_SOURCE_SCHEME))
         if record.get('requestSha256')!=prepared['sha256']:raise ValueError('La sesión pertenece a otra fuente o alcance; se conserva sin modificar')
         captured=record.get('responseBase64')
         if not captured:raise ValueError('La llamada anterior no tiene respuesta capturada; su resultado es incierto y no se repetirá automáticamente')
@@ -47,10 +48,11 @@ def verify(raw,path,live=False):
         if len(response)>authoring.MAX_RESPONSE+1:raise ValueError('La captura supera el límite de respuesta')
         mode='replay'
     else:
+        prepared=authoring.prepare_input(raw)
         if not live:raise ValueError('No hay captura. Usa --live expresamente para una primera llamada; por defecto no se accede al proveedor')
         if not os.environ.get('ANTHROPIC_API_KEY'):raise ValueError('No hay clave local de Anthropic; no se ha creado sesión ni llamado al proveedor')
         record={'format':'cronicas-authoring-verification-1','requestSha256':prepared['sha256'],
-            'request':prepared['request'],'model':model_name(),'promptSha256':current_prompt,'phase':'started'}
+            'request':prepared['request'],'sourceScheme':prepared['sourceScheme'],'model':model_name(),'promptSha256':current_prompt,'phase':'started'}
         # Reserve this attempt before network I/O. No retry after uncertain exit.
         path.parent.mkdir(parents=True,exist_ok=True)
         with path.open('x',encoding='utf-8') as stream:stream.write(authoring.canonical(record)+'\n')

@@ -54,6 +54,48 @@ class RulePackAuthoringTests(unittest.TestCase):
         raw['document']['pages'][0]['page']=5
         with self.assertRaises(RulePackError):authoring.prepare_input(raw)
 
+    def test_fragment_identity_is_stable_across_scope_version_and_page_selection(self):
+        raw=request();prepared=authoring.prepare_input(raw)
+        raw['scope']='Preparar otro bloque de la misma página'
+        raw['identity']['version']='1.0.1';raw['identity']['id']='another-package-name'
+        raw['document']['pages'].append({'page':2,'text':'Otro fragmento del mismo documento.'})
+        changed=authoring.prepare_input(raw)
+        self.assertEqual(prepared['sources'][0],changed['sources'][0])
+        self.assertNotEqual(prepared['sha256'],changed['sha256'])
+        raw['document']['pages'].reverse()
+        self.assertEqual(authoring.prepare_input(raw)['sources'][1],prepared['sources'][0])
+        for key in ('text','title','edition','page'):
+            altered=request()
+            if key in ('title','edition'):altered['document'][key]+=' changed'
+            elif key=='page':altered['document']['pages'][0]['page']=2
+            else:altered['document']['pages'][0]['text']+=' changed'
+            with self.subTest(key=key):self.assertNotEqual(authoring.prepare_input(altered)['sources'][0]['id'],prepared['sources'][0]['id'])
+
+    def test_pdf_identity_uses_original_hash_but_not_extractor_if_text_is_unchanged(self):
+        raw=request();raw['document']['origin']={'kind':'pdf','sha256':'a'*64,'pageCount':4,'extractor':'pdfjs-6.5.438'}
+        prepared=authoring.prepare_input(raw);raw['document']['origin']['extractor']='pdfjs-6.5.439'
+        self.assertEqual(authoring.prepare_input(raw)['sources'],prepared['sources'])
+        raw['document']['origin']['sha256']='b'*64
+        self.assertNotEqual(authoring.prepare_input(raw)['sources'][0]['id'],prepared['sources'][0]['id'])
+
+    def test_legacy_record_replays_original_request_based_source_ids(self):
+        prepared=authoring.prepare_input(request(),authoring.LEGACY_SOURCE_SCHEME)
+        self.assertEqual(prepared['sources'][0]['id'],'source-'+prepared['sha256'][:12]+'-p1')
+        record={'request':request(),'sha256':prepared['sha256'],'report':authoring.validate_reply(prepared,reply(prepared))}
+        with patch.object(authoring,'propose',side_effect=AssertionError('Legacy recovery called provider')):
+            self.assertEqual(authoring.validate_record(record)['sources'],prepared['sources'])
+        record['sourceScheme']='unknown'
+        with self.assertRaises(RulePackError):authoring.validate_record(record)
+
+    def test_composing_separate_preparations_does_not_duplicate_the_same_fragment(self):
+        from rule_pack_composition import compose
+        first_prepared=authoring.prepare_input(request())
+        first=json.loads(reply(first_prepared)['packageJson']);first['triggers']={}
+        later=request();later['scope']='Preparar el desencadenante de agotamiento';later['identity']['version']='1.0.1'
+        second=json.loads(reply(authoring.prepare_input(later))['packageJson'])
+        result=compose([first,second],'1.1.0')['document']
+        self.assertEqual(len(result['sources']),1);self.assertIn('exhaustion',result['triggers'])
+
     def test_preflight_rejects_unbounded_missing_and_ambiguous_input_shape(self):
         for mutate in ('large','duplicate','bool-page','permission','unknown','empty'):
             raw=request()
@@ -131,7 +173,7 @@ class RulePackAuthoringTests(unittest.TestCase):
     def test_imported_preparation_rechecks_sources_examples_and_claims_without_provider(self):
         report=authoring.validate_reply(self.prepared,reply(self.prepared))
         report['usage']={'inputTokens':123,'outputTokens':456,'latencyMs':2}
-        record={'request':request(),'sha256':self.prepared['sha256'],'report':report}
+        record={'request':request(),'sha256':self.prepared['sha256'],'sourceScheme':self.prepared['sourceScheme'],'report':report}
         with patch.object(authoring,'propose',side_effect=AssertionError('Import called provider')):
             self.assertEqual(authoring.validate_record(record)['sha256'],record['sha256'])
             for kind in ('source','check','verification','digest'):

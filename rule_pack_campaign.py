@@ -95,7 +95,7 @@ def execute_action(state,body,me):
         prepared=prepare_input(action['request'])
         if state.get('authoring') and state['authoring']['sha256']==prepared['sha256']:raise RulePackError('Estos fragmentos y alcance ya tienen una preparación guardada; revísala sin repetir la llamada')
         # Reserve bounded space before a potentially billable provider call.
-        result['authoring']={'request':prepared['request'],'sha256':prepared['sha256'],'report':'x'*(MAX_RESPONSE+12000)}
+        result['authoring']={'request':prepared['request'],'sha256':prepared['sha256'],'sourceScheme':prepared['sourceScheme'],'report':'x'*(MAX_RESPONSE+12000)}
         _size(result)
         result['authoring']['report']=propose(prepared)
         _system(result,'Preparación de reglas guardada; requiere revisión y no ha sustituido el paquete de la campaña.',me['id'])
