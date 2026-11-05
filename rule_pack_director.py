@@ -10,6 +10,7 @@ import json
 import os
 import time
 import rule_pack_world as world
+import rule_pack_objectives as objectives
 import urllib.error
 import urllib.request
 from model_config import model_name
@@ -30,6 +31,9 @@ PROMPT+=''' Puedes devolver npcUpdates: hasta tres PNJ nuevos o actualizados por
 
 
 PROMPT+=''' Cuando actualices PNJ, limita narration a 100 palabras, summary a 80, preparation a 120 y cada PNJ a 40 palabras entre public y private para respetar el presupuesto de salida. Las notas son resúmenes; no dupliques todo el registro en preparation.'''
+
+
+PROMPT+=''' Puedes proponer objectiveUpdates: hasta dos oportunidades de aventura con id estable, title, detail, known y private. No son compromisos ni decisiones del jugador. Nunca incluyas status ni evidence; solo el motor puede completarlos. Conserva las descripciones existentes; un objetivo distinto necesita otro id. No reveles títulos ni detalles de objetivos desconocidos. Para vincular la acción que el jugador acaba de declarar a un objetivo conocido abierto, puedes incluir objectiveCheck:{objective: id, field: id de un resultado booleano que esa acción asigne sin condición}. Debe expresar el éxito pertinente de ESA declaración, no una estadística ajena, gasto de recurso o éxito de otra situación. El motor solo cerrará ese objetivo si resuelve esa solicitud con las mismas opciones y el resultado elegido es true. No uses objectiveCheck sin proposal.action. Si el paquete no expresa ese resultado o la relación es ambigua, no inventes el vínculo: conserva el objetivo abierto y explica la limitación. No concedas recompensas por completar objetivos. En continue recibe la evidencia ya confirmada; no declares otros objetivos completados ni crees nuevos vínculos. Al actualizar PNJ u objetivos mantén la salida breve: narration hasta 90 palabras, summary 60, preparation 80; como máximo una actualización de cada tipo y 35 palabras por registro siempre que baste.'''
 
 
 def _text(value,limit,empty=False):
@@ -60,6 +64,7 @@ def prepare(state,operation,actor,text,kind,pack):
         'directorKnowledge':{'preparation':memory.get('preparation','')},'confirmedResult':confirmed}
     # Preserve legacy request hashes for pending paid captures without a registry.
     if memory.get('npcs'):request['directorKnowledge']['npcs']=world.validate(memory['npcs'])
+    if memory.get('objectives'):request['directorKnowledge']['objectives']=copy.deepcopy(memory['objectives'])
     raw=canonical(request).encode('utf-8')
     if len(raw)>65000:raise RulePackError('El contexto de esta aventura supera el límite del director; no se ha llamado a IA')
     return {'request':request,'sha256':hashlib.sha256(raw).hexdigest(),'sourceScheme':'director-v1',
@@ -69,6 +74,9 @@ def prepare(state,operation,actor,text,kind,pack):
 def schema(prepared):
     return {'type':'object','properties':{
         **{key:{'type':'string'} for key in ('narration','limitation','summary','preparation')},'npcUpdates':world.schema(),
+        'objectiveUpdates':objectives.schema(),
+        'objectiveCheck':{'type':'object','properties':{'objective':{'type':'string'},'field':{'type':'string'}},
+            'required':['objective','field'],'additionalProperties':False},
         'proposal':{'type':'object','properties':{'action':{'type':'string','enum':['',*prepared['request']['allowedActions']]},
             'inputsJson':{'type':'string'},'reason':{'type':'string'}},
             'required':['action','inputsJson','reason'],'additionalProperties':False}},
@@ -76,7 +84,7 @@ def schema(prepared):
 
 
 def validate_reply(prepared,reply):
-    if not isinstance(reply,dict) or set(reply)-{'usage','recovery','npcUpdates'}!={'narration','limitation','summary','preparation','proposal'}:raise RulePackError('Respuesta del director incompleta o con operaciones no permitidas')
+    if not isinstance(reply,dict) or set(reply)-{'usage','recovery','npcUpdates','objectiveUpdates','objectiveCheck'}!={'narration','limitation','summary','preparation','proposal'}:raise RulePackError('Respuesta del director incompleta o con operaciones no permitidas')
     result={key:_text(reply[key],limit,empty) for key,limit,empty in
         [('narration',10000,False),('limitation',1000,True),('summary',4000,False),('preparation',6000,False)]}
     proposal=reply['proposal']
@@ -88,6 +96,11 @@ def validate_reply(prepared,reply):
     reason=_text(proposal['reason'],600,True)
     if not proposal['action'] and (inputs or reason) or proposal['action'] and (not reason or result['limitation']):raise RulePackError('La solicitud contradice la limitación o su estado vacío')
     result['proposal']={'action':proposal['action'],'inputsJson':canonical(inputs),'reason':reason}
+    previous=prepared['request']['directorKnowledge'].get('objectives',[])
+    goals=objectives.merge(previous,reply.get('objectiveUpdates',[]),0)
+    if 'objectiveUpdates' in reply:result['objectiveUpdates']=objectives.descriptors(reply['objectiveUpdates'])
+    if 'objectiveCheck' in reply:
+        result['objectiveCheck']=objectives.check_spec(reply['objectiveCheck'],proposal['action'],goals,objectives.context_package(prepared['request']))
     if 'npcUpdates' in reply:
         previous=prepared['request']['directorKnowledge'].get('npcs',[])
         world.merge(previous,reply['npcUpdates'])
@@ -128,7 +141,7 @@ def _complete_prefix(text):
             return result,incomplete
         try:key,end=decoder.raw_decode(text,position)
         except (ValueError,RecursionError):raise RulePackError('Clave incompleta en captura parcial') from None
-        if not isinstance(key,str) or key not in ('narration','limitation','summary','preparation','proposal','npcUpdates') or key in result:raise RulePackError('Clave desconocida o repetida en captura parcial')
+        if not isinstance(key,str) or key not in ('narration','limitation','summary','preparation','proposal','npcUpdates','objectiveUpdates','objectiveCheck') or key in result:raise RulePackError('Clave desconocida o repetida en captura parcial')
         position=spaces(end)
         if position>=len(text) or text[position]!=':':raise RulePackError('Miembro JSON incompleto en captura parcial')
         position=spaces(position+1);start=position
@@ -148,7 +161,7 @@ def _recover_continuation(prepared,text,raw):
     request=prepared['request']
     if request['operation']!='continue' or request['allowedActions']:raise RulePackError('Una respuesta incompleta no puede interpretar una declaración nueva')
     reply,incomplete=_complete_prefix(text)
-    if not {'narration','limitation','summary'}<=set(reply) or incomplete not in (None,'preparation','proposal','npcUpdates'):raise RulePackError('Faltan campos públicos completos; no se ha inventado una continuación')
+    if not {'narration','limitation','summary'}<=set(reply) or incomplete not in (None,'preparation','proposal','npcUpdates','objectiveUpdates'):raise RulePackError('Faltan campos públicos completos; no se ha inventado una continuación')
     kept='preparation' not in reply
     if kept:reply['preparation']=request['directorKnowledge']['preparation']
     if 'proposal' not in reply:reply['proposal']={'action':'','inputsJson':'{}','reason':''}

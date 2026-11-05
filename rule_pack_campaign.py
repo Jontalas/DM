@@ -260,7 +260,8 @@ def validate_restored(state,campaign='import-validation'):
         if event.get('kind') in ('pack-talk','pack-director'):
             import rule_pack_narrative as narrative
             narrative.validate_event(event,ids);continue
-        _keys(event,('kind','character','actor','speaker','host','time','action','inputs','trace'))
+        event_keys=('kind','character','actor','speaker','host','time','action','inputs','trace')
+        _keys(event,(*event_keys,'objectiveResolution') if 'objectiveResolution' in event else event_keys)
         if event['kind']!='pack-action' or not isinstance(event['character'],str) or event['character'] not in sheets or type(event['host'])!=bool:raise RulePackError('Acción registrada inválida')
         _text(event['speaker'],120)
         trace=event['trace']
@@ -272,6 +273,9 @@ def validate_restored(state,campaign='import-validation'):
         restored,expected=pack.execute(previous,event['action'],event['inputs'],previous['owner'],host=True,
             physical=physical,draw=lambda sides:(_ for _ in ()).throw(RulePackError('Faltan dados en el registro; no se ha vuelto a tirar')))
         if _comparable_trace(trace)!=_comparable_trace(expected):raise RulePackError('La resolución no coincide con las reglas y dados guardados')
+        if 'objectiveResolution' in event:
+            from rule_pack_objectives import validate_proof
+            validate_proof(event['objectiveResolution'],event,restored,pack.document())
         sheets[event['character']]=restored
     for character in state['characters']:
         if _canonical(character['sheet'])!=_canonical(sheets[character['id']]):raise RulePackError('Los valores actuales no coinciden con las acciones registradas')

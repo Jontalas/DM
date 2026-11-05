@@ -175,6 +175,33 @@ class RulePackServerTests(unittest.TestCase):
         exported=self.request('/api/export',{},self.token)
         self.assertEqual(len(exported['state']['narrative']['npcs']),2)
 
+    def test_objective_and_dice_commit_together_and_recover_the_same_request(self):
+        from test_rule_pack_objectives import goal
+        self.action('install_rule_pack',package=document('live-lantern-example'),policy='provided-rules')
+        self.action('create_pack_sheet',name='Aria');cid=self.state()['state']['characters'][0]['id']
+        guest=self.request('/api/join',{'name':'Luis','invite':self.state()['invite']})['token']
+        with patch.object(pack_director,'propose',return_value=narrative_reply(objectiveUpdates=[goal(),goal('oculto',known=False,title='PRIVATE-TITLE')])) as provider:
+            self.action('start_pack_adventure',character=cid)
+            provider.return_value=narrative_reply('intentar',objectiveCheck={'objective':'farol','field':'success'})
+            self.action('talk_pack_adventure',character=cid,text='Investigo la marca del farol.',mode='action')
+        before=self.state();pending=before['state']['narrativeView']['pending']
+        self.rejected(lambda:self.action('resolve_pack_request',guest,request=pending['id']),403)
+        body={'id':secrets.token_hex(12),'version':before['version'],'type':'resolve_pack_request','request':pending['id'],'physical':{'dice':[3,4]}}
+        with patch.object(server.STORE,'commit',side_effect=Unavailable('Interrupted before atomic commit')):
+            with self.assertRaises(urllib.error.HTTPError) as error:self.request('/api/action',body,self.token)
+            self.assertEqual(error.exception.code,503);error.exception.close()
+        self.assertEqual(self.state(),before)
+        self.request('/api/action',body,self.token);after=self.state()
+        self.assertEqual(after['state']['narrativeView']['objectives'][0]['status'],'completed')
+        self.assertEqual(after['state']['characters'][0]['sheet']['fields']['energy'],2)
+        self.assertTrue(self.request('/api/action',body,self.token)['duplicate'])
+        for token in [self.token,guest]:
+            view=self.state(token)['state'];self.assertEqual(len(view['narrativeView']['objectives']),1)
+            self.assertNotIn('PRIVATE-GOAL',str(view));self.assertNotIn('PRIVATE-TITLE',str(view))
+        exported=self.request('/api/export',{},self.token)
+        self.action('import',campaign=exported)
+        self.assertEqual(self.state()['state']['narrativeView']['objectives'],after['state']['narrativeView']['objectives'])
+
     def test_data_defined_creation_validates_choices_deduplicates_dice_and_recovers(self):
         self.action('install_rule_pack',package=document('original-creation-example'),policy='provided-rules')
         with patch('action_randomness.hmac.digest',return_value=(3).to_bytes(32,'big')) as rng:

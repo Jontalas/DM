@@ -10,6 +10,10 @@ Realizar autónomamente análisis, desarrollo, pruebas, documentación y desplie
 
 Instrucción permanente del usuario: una entrega terminada no es motivo para detener el trabajo. Continuar con el siguiente punto pendiente sin pedir «continúa», mientras exista trabajo autorizado que no requiera intervención imprescindible del usuario. Registrar progreso, evidencia y siguientes tareas para conservar continuidad entre sesiones.
 
+Ratificación expresa del usuario, 5 de noviembre de 2026: continuar el desarrollo en todo momento sin esperar su intervención; solicitarla únicamente cuando sea realmente necesaria para desbloquear el avance. Un informe de progreso, despliegue o checkpoint no termina el trabajo autorizado ni requiere una nueva orden para pasar al siguiente bloque.
+
+Pruebas personales del usuario: avisar únicamente en puntos de inflexión excepcionales con funcionalidades grandes terminadas o prácticamente terminadas, conforme a los hitos y criterios de PRODUCTO.md. No solicitar pruebas habituales por entregas parciales. Preparar y verificar el recorrido antes de invitarle; su prueba es opcional y el desarrollo debe continuar con lo pendiente sin esperar respuesta.
+
 Evaluar skills y métodos por beneficios comprobables y coste. Aplicar los disponibles cuando sean pertinentes; documentar dependencias y límites. La colaboración entre agentes se puede proponer cuando justifique su consumo, sin convertirla en requisito de trabajo.
 
 ## Referencia principal: mesa virtual al estilo de Roll20

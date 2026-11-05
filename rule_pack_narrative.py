@@ -4,6 +4,7 @@ import json
 import secrets
 import time
 import rule_pack_world as world
+import rule_pack_objectives as objectives
 from rule_pack_runtime import RulePackError,read_document
 import rule_pack_director as director
 
@@ -50,10 +51,14 @@ def apply(state,action,me,pack,call=None,draw=None):
             preview=pack.preview(actor['sheet'],pending['action'],pending['inputs'],me['id'])
             if director.canonical(pending['rolls'])!=director.canonical(preview['rolls']):raise RulePackError('Los dados previstos no coinciden con la ficha y las reglas')
             inputs=action.get('inputs',pending['inputs'])
+            if 'objectiveCheck' in pending:objectives.check_spec(pending['objectiveCheck'],pending['action'],memory.get('objectives',[]),pack.document())
             sheet,trace=pack.execute(actor['sheet'],pending['action'],inputs,me['id'],physical=action.get('physical'),draw=draw)
             actor['sheet']=sheet
             result['messages'].append({'kind':'pack-action','character':actor['id'],'actor':me['id'],'speaker':me['name'],
                 'host':bool(me['host']),'time':time.time(),'action':pending['action'],'inputs':copy.deepcopy(inputs),'trace':trace})
+            goals,proof=objectives.resolve(memory.get('objectives',[]),pending,result['messages'][-1],sheet,len(result['messages'])-1,pack.document())
+            if goals:memory['objectives']=goals
+            if proof is not None:result['messages'][-1]['objectiveResolution']=proof
             memory['pending']=None;memory['continuation']={'character':actor['id'],'message':len(result['messages'])-1};return result
         if kind=='talk_pack_adventure':
             _keys(action,('type','character','text','mode'))
@@ -86,6 +91,10 @@ def apply(state,action,me,pack,call=None,draw=None):
         'preparation':reply['preparation'],'pending':pending,'continuation':None}
     npcs=world.merge(memory.get('npcs',[]) if memory else [],reply.get('npcUpdates',[]))
     if npcs:result['narrative']['npcs']=npcs
+    goals=objectives.merge(memory.get('objectives',[]) if memory else [],reply.get('objectiveUpdates',[]),len(result['messages'])-1)
+    if goals:result['narrative']['objectives']=goals
+    if 'objectiveCheck' in reply:
+        pending['objectiveCheck']=objectives.check_spec(reply['objectiveCheck'],pending['action'],goals,pack.document())
     return result
 
 
@@ -94,6 +103,8 @@ def public_view(memory):
     result={key:copy.deepcopy(memory[key]) for key in ('revision','summary','pending','continuation')}
     known=world.public_view(memory.get('npcs',[]))
     if known:result['npcs']=known
+    known_goals=objectives.public_view(memory.get('objectives',[]))
+    if known_goals:result['objectives']=known_goals
     return result
 
 
@@ -103,7 +114,8 @@ def validate(state,pack):
         if any(event.get('kind') in ('pack-talk','pack-director') for event in state['messages']):raise RulePackError('El registro narrativo requiere su memoria de aventura')
         return
     if not state['characters']:raise RulePackError('Aventura sin personajes')
-    _keys(memory,('revision','summary','preparation','pending','continuation'),('npcs',))
+    _keys(memory,('revision','summary','preparation','pending','continuation'),('npcs','objectives'))
+    objectives.validate(memory.get('objectives',[]),state,pack)
     world.validate(memory.get('npcs',[]))
     if {npc['id'] for npc in memory.get('npcs',[])}&{actor['id'] for actor in state['characters']}:raise RulePackError('Un personaje jugador no puede convertirse en PNJ')
     if type(memory['revision'])!=int or not 1<=memory['revision']<=1000000:raise RulePackError('Revisión narrativa inválida')
@@ -112,7 +124,8 @@ def validate(state,pack):
     pending=memory['pending'];continuation=memory['continuation']
     if pending is not None and continuation is not None:raise RulePackError('No puede haber solicitud y resultado pendientes a la vez')
     if pending is not None:
-        _keys(pending,('id','character','action','inputs','rolls','reason','packageSha256','sheetRevision'))
+        _keys(pending,('id','character','action','inputs','rolls','reason','packageSha256','sheetRevision'),('objectiveCheck',))
+        if 'objectiveCheck' in pending:objectives.check_spec(pending['objectiveCheck'],pending['action'],memory.get('objectives',[]),pack.document())
         if not isinstance(pending['id'],str) or not 1<=len(pending['id'])<=100 or not isinstance(pending['reason'],str) or not 1<=len(pending['reason'])<=600:raise RulePackError('Solicitud narrativa inválida')
         actor=next((c for c in state['characters'] if c['id']==pending['character']),None)
         if actor is None or pending['packageSha256']!=pack.digest or type(pending['sheetRevision'])!=int or pending['sheetRevision']!=actor['sheet']['revision']:raise RulePackError('Solicitud vinculada a otra ficha o reglas')
