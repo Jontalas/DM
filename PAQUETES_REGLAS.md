@@ -1,5 +1,19 @@
 # Motor común y paquetes de reglas importables
 
+## Fuente privada de aventura breve
+
+Importación opcional al iniciar la aventura genérica: título, texto UTF-8 de hasta 12.000 caracteres (máximo 50.000 bytes serializados) y declaración de permiso de uso. Puede pegarse texto o leerse localmente un archivo .txt/.md; seleccionar/editar no llama a IA ni escribe. La fuente describe ficción y preparación, no instala reglas ni certifica una aventura/manual completo. No hay PDF/OCR en este bloque. No obliga a seguir una ruta ni convierte posibilidades o secretos del documento en hechos ocurridos.
+
+`adventure_source.py` conserva el texto original, incluidos saltos/Unicode, con hash del registro y recurso inmutable comprimido por campaña/hash en `adventureSources`. Las instantáneas de juego solo contienen una referencia pequeña; presupuesto de fuente y estado se validan por separado para no invalidar copias. Caché de ocho originales por repositorio, aislada por campaña; lectura fría una vez y copias mutables independientes. La exportación del anfitrión incorpora el original y la importación valida su integridad y reasigna propietarios. Jugadores no reciben texto ni referencia; el anfitrión solo recibe metadatos al consultar estado.
+
+En inicio el director recibe el texto acotado completo, sujeto al límite total de contexto. Después se recuperan de forma determinista hasta tres fragmentos de 1.400 caracteres y como máximo 8.000 bytes por coincidencias de palabras con declaración/resumen. No usa embeddings ni inferencias para buscar; esta selección lexical no garantiza fidelidad completa ni recuperación de toda información pertinente. Se conservan offsets para identificar fragmentos y el original no cambia. Documentos son datos, nunca instrucciones ni código; las acciones siguen validadas por el paquete.
+
+Navegación, OOC, acciones mecánicas y dados no leen ni vuelven a guardar el recurso de aventura. Solo intervenciones narrativas válidas lo recuperan cuando falta en caché, después de validar actor/permiso y antes del proveedor. Si no está disponible, no se genera una respuesta sin su contexto ni se pierde la resolución mecánica ya confirmada. Un fallo de confirmación posterior a IA recupera la misma respuesta/captura sin repetir llamada.
+
+Coste adicional: una escritura del original por campaña/hash y una lectura fría por reinicio/evicción cuando sea necesaria narración o exportación; sin escrituras repetidas del texto por acción. No hay servicio nuevo. Exclusión de índices para `adventureSources.data` añadida al archivo; **pendiente de aplicación administrativa**, como las anteriores. No se borran fuentes por antigüedad; la limpieza existente de snapshots no las procesa. Cualquier limpieza futura debe auditar referencias actuales, instantáneas y copias antes de eliminar originales.
+
+**399 pruebas completas con emulador oficial, sin omisiones (89,738 s)** y navegador simulado ampliado correctos: lectura local de archivo, borrador, privacidad, recurso separado, caché fría, corrupción, copia íntegra, fuente indisponible sin IA, dados sin lectura y recuperación de inicio sin llamada nueva. La captura real antigua sigue pasando su reproducción. Aún no hay inferencia real del proveedor con esta nueva fuente, ni hito personal alcanzado.
+
 ## Lugares y relaciones del mundo
 
 Memoria acotada de ocho lugares y dieciséis relaciones, con identidad estable y notas públicas/privadas, además de los PNJ. Las relaciones usan extremos tipados `npc:id` o `place:id`, deben referir registros existentes o creados en esa respuesta y no pueden cambiar de extremos retrospectivamente. Una relación pública solo enlaza extremos conocidos; el estado oculta registros y nombres desconocidos, también al anfitrión. Al importar se validan referencias, límites, campos y visibilidad. Las actualizaciones omitidas conservan los datos previos.

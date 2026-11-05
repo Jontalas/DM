@@ -66,6 +66,14 @@ def attach_workspace(state,me,clear_reference=False):
     return result
 
 
+def attach_adventure_source(state,me,clear_reference=False):
+    reference=state.get('adventureSourceRef')
+    if reference is None:return state
+    result=dict(state);result['adventureSource']=repository().load_adventure_source(me['campaign'],reference)
+    if clear_reference:result['adventureSourceRef']=None
+    return result
+
+
 def view(row,state,me,known_workspace=None):
     selected=rulesets.adapter(state.get('ruleset',rulesets.DEFAULT))
     if selected is not None:
@@ -168,7 +176,7 @@ def execute_action(body,me):
                     nonlocal preparation_key
                     preparation_key=attempts.key(me['id'],prepared['sha256'])
                     return attempts.run(store,cid,me['id'],prepared,converter=director.propose,restore=director.restore)
-                state=selected.execute_action(state,body,me,narrative_call=narrative_call)
+                state=selected.execute_action(state,body,me,narrative_call=narrative_call,source_loader=lambda current:attach_adventure_source(current,me))
             elif state['ruleset']=='rule-pack' and body['type'] in ('create_pack_sheet','run_pack_action','resolve_pack_request'):
                 from action_randomness import ActionRandomness
                 randomness=ActionRandomness(store,cid,aid,me['id'],signature,row['version'])
@@ -352,7 +360,9 @@ class Handler(BaseHTTPRequestHandler):
             if path=='/api/export':
                 if not me['host']:raise PermissionError('Solo el anfitrión exporta la campaña completa')
                 row,state=load(me['campaign'])
-                if state.get('ruleset')=='rule-pack':state=attach_workspace(state,me,clear_reference=True)
+                if state.get('ruleset')=='rule-pack':
+                    state=attach_workspace(state,me,clear_reference=True)
+                    state=attach_adventure_source(state,me,clear_reference=True)
                 self.reply({'format':'cronicas-1','title':row['title'],'state':state});return
             raise ValueError('Operación desconocida')
         except PermissionError as exc:self.reply({'error':str(exc)},403)

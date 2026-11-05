@@ -28,14 +28,19 @@ def _log(state,kind,actor,me,**values):
         'speaker':me['name'] if kind=='pack-talk' else 'Director de aventura','time':time.time(),**values})
 
 
-def apply(state,action,me,pack,call=None,draw=None):
+def apply(state,action,me,pack,call=None,draw=None,source_loader=None):
     kind=action['type'];result=copy.deepcopy(state);memory=result.get('narrative')
     if state['package']['policy']!='provided-rules':raise RulePackError('Activa el paquete antes de jugar')
     if kind=='start_pack_adventure':
-        _keys(action,('type','character'))
+        _keys(action,('type','character'),('sourceTitle','sourceText','sourcePolicy'))
         if not me['host']:raise PermissionError('Solo el anfitrión inicia la aventura compartida')
         if memory is not None:raise RulePackError('La aventura ya está iniciada')
         if len(state['characters'])>8:raise RulePackError('Este director admite como máximo ocho fichas; grupos grandes aún no verificados')
+        if any(key in action for key in ('sourceTitle','sourceText','sourcePolicy')):
+            if not all(key in action for key in ('sourceTitle','sourceText','sourcePolicy')):raise RulePackError('Faltan título, texto o permiso de la aventura aportada')
+            if state.get('adventureSource') is not None or state.get('adventureSourceRef') is not None:raise RulePackError('Esta campaña ya conserva su fuente original de aventura')
+            import adventure_source
+            result['adventureSource']=adventure_source.create(action['sourceTitle'],action['sourceText'],action['sourcePolicy'])
         actor=_actor(result,action['character'],me);operation='start';text='';mode='action'
     else:
         if memory is None:raise RulePackError('Inicia primero la aventura')
@@ -75,9 +80,10 @@ def apply(state,action,me,pack,call=None,draw=None):
             actor=_actor(result,continuation['character'],me);operation='continue';text='';mode='action'
         else:raise RulePackError('Operación narrativa desconocida')
     # Reserve growth before a potentially billable call. No private source read.
-    game={key:value for key,value in state.items() if key not in ('authoring','authoringWorkspace')}
+    game={key:value for key,value in state.items() if key not in ('authoring','authoringWorkspace','adventureSource')}
     if len(json.dumps(game,ensure_ascii=False).encode('utf-8'))>650000 or len(state['messages'])>4997:raise RulePackError('No hay espacio reservado para otra intervención; no se ha llamado a IA')
-    prepared=director.prepare(state,operation,actor,text,mode,pack)
+    if result.get('adventureSourceRef') is not None and result.get('adventureSource') is None and source_loader is not None:result=source_loader(result)
+    prepared=director.prepare(result,operation,actor,text,mode,pack)
     reply=director.validate_reply(prepared,(call or director.propose)(prepared))
     proposal=reply['proposal'];pending=memory.get('pending') if memory else None
     if proposal['action']:

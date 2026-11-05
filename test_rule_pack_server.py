@@ -202,6 +202,48 @@ class RulePackServerTests(unittest.TestCase):
         self.action('import',campaign=exported)
         self.assertEqual(self.state()['state']['narrativeView']['objectives'],after['state']['narrativeView']['objectives'])
 
+    def test_adventure_source_is_private_separate_and_not_loaded_for_view_or_dice(self):
+        self.action('install_rule_pack',package=document('live-lantern-example'),policy='provided-rules')
+        self.action('create_pack_sheet',name='Aria');cid=self.state()['state']['characters'][0]['id']
+        guest=self.request('/api/join',{'name':'Luis','invite':self.state()['invite']})['token']
+        text='PRIVATE-ADVENTURE-SOURCE: Arda guarda una carta secreta.\r\nEl archivo queda junto al farol.'
+        with patch.object(pack_director,'propose',return_value=narrative_reply()) as provider:
+            self.action('start_pack_adventure',character=cid,sourceTitle='Aventura privada',sourceText=text,sourcePolicy='provided-adventure')
+            self.assertEqual(provider.call_args.args[0]['request']['directorKnowledge']['adventureSource']['fragments'][0]['text'],text)
+            me=self.state()['me'];stored=server.STORE.load(me['campaign'])[1]
+            self.assertIsNone(stored['adventureSource']);self.assertIsNotNone(stored['adventureSourceRef'])
+            with patch.object(server.STORE,'load_adventure_source',side_effect=AssertionError('View/OOC fetched adventure source')):
+                for token in [self.token,guest]:self.assertNotIn('PRIVATE-ADVENTURE-SOURCE',str(self.state(token)))
+                self.action('talk_pack_adventure',character=cid,mode='ooc',text='Pausa.')
+                self.rejected(lambda:self.action('talk_pack_adventure',guest,character=cid,mode='dialogue',text='Hola'),403)
+            provider.return_value=narrative_reply('intentar')
+            self.action('talk_pack_adventure',character=cid,mode='action',text='Investigo la carta de Arda.')
+            self.assertLessEqual(sum(len(f['text'].encode()) for f in provider.call_args.args[0]['request']['directorKnowledge']['adventureSource']['fragments']),8000)
+            pending=self.state()['state']['narrativeView']['pending']
+            with patch.object(server.STORE,'load_adventure_source',side_effect=Unavailable('Source unavailable')):
+                self.action('resolve_pack_request',request=pending['id'],physical={'dice':[3,4]})
+                calls=provider.call_count
+                self.rejected(lambda:self.action('continue_pack_adventure'),503)
+                self.assertEqual(provider.call_count,calls)
+        exported=self.request('/api/export',{},self.token)
+        self.assertEqual(exported['state']['adventureSource']['text'],text);self.assertIsNone(exported['state']['adventureSourceRef'])
+        other=self.request('/api/create',{'title':'Source copy','player':'Eva','ruleset':'rule-pack'})['token']
+        self.action('import',other,campaign=exported)
+        self.assertEqual(self.request('/api/export',{},other)['state']['adventureSource'],exported['state']['adventureSource'])
+
+    def test_start_source_recovers_after_failed_commit_without_repeating_provider(self):
+        cid=self.install();before=self.state()
+        body={'id':secrets.token_hex(12),'version':before['version'],'type':'start_pack_adventure','character':cid,
+            'sourceTitle':'Aventura propia','sourceText':'PRIVATE-ADVENTURE-SOURCE: Arda espera junto al farol.','sourcePolicy':'provided-adventure'}
+        with patch.object(pack_director,'propose',return_value=narrative_reply()) as provider:
+            with patch.object(server.STORE,'commit',side_effect=Unavailable('Commit failed after response')):
+                with self.assertRaises(urllib.error.HTTPError) as error:self.request('/api/action',body,self.token)
+                self.assertEqual(error.exception.code,503);error.exception.close()
+            self.assertEqual(self.state(),before)
+            self.request('/api/action',body,self.token);self.assertEqual(provider.call_count,1)
+            self.assertTrue(self.request('/api/action',body,self.token)['duplicate'])
+        self.assertEqual(self.request('/api/export',{},self.token)['state']['adventureSource']['text'],body['sourceText'])
+
     def test_data_defined_creation_validates_choices_deduplicates_dice_and_recovers(self):
         self.action('install_rule_pack',package=document('original-creation-example'),policy='provided-rules')
         with patch('action_randomness.hmac.digest',return_value=(3).to_bytes(32,'big')) as rng:

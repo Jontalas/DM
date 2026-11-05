@@ -33,7 +33,15 @@ class TestStore:
         from rule_workspace_asset import detach
         light,asset=detach(state)
         if asset is not None:self.workspaces[cid,asset['reference']['sha256']]=asset['packed']
+        import adventure_source
+        light,asset=adventure_source.detach(light)
+        if asset is not None:
+            if not hasattr(self,'adventure_sources'):self.adventure_sources={}
+            self.adventure_sources[cid,asset['reference']['sha256']]=asset['packed']
         return light
+    def load_adventure_source(self,cid,reference):
+        import adventure_source
+        return adventure_source.decode(reference,self.adventure_sources[cid,reference['sha256']])
     def load_rule_workspace(self,cid,reference):
         import json
         from rule_workspace_asset import decode

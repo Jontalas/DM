@@ -1,5 +1,15 @@
 # Continuidad del desarrollo autónomo
 
+## Fuente privada de aventura y recuperación local pertinente — 5 de noviembre de 2026
+
+Bloque anterior confirmado en producción `8362f00752295dc26f6e2c6cc452ace09bfa4bdf`, Render `7571887499` success; revisión y salud HTTPS correctas. Navegador real de objetivos pasa sobre esa revisión. No hay inferencias nuevas ni hitos de prueba personal alcanzados.
+
+Nueva fuente de aventura breve integrada en experimental: título/texto UTF-8/permiso, pegado o archivo local .txt/.md, original preservado por hash en recurso privado `adventureSources` separado de snapshots. Referencia pequeña en juego, caché ocho por campaña/hash, copia completa y validación de integridad/propietario. Contexto inicial completo y después hasta tres fragmentos locales por coincidencias de palabras, máximo 8.000 bytes; no promete recuperación semántica perfecta. No incorpora reglas ni decide recorridos de jugadores. Sin PDF/OCR ni sustitución de fuente a mitad de aventura.
+
+Se validan permisos/actor y tamaño antes de recuperar fuente o llamar al proveedor. Consulta/OOC/dados no recuperan ni vuelven a guardar texto. Fuente indisponible bloquea únicamente nueva narración sin contexto, preservando dados/resultados y sin otra IA. Inicio con fallo de commit recupera respuesta con mismo id y fuente sin repetir llamada. Presupuesto privado separado del estado garantiza copia/importación incluso cerca del límite de juego. Nueva exclusión de índice en archivo pendiente de aplicación administrativa, no desplegada automáticamente con código. No hay limpieza automática de fuentes ni servicio nuevo.
+
+**399 pruebas completas con emulador oficial correctas, sin omisiones (89,738 s)**. Afectadas anteriores 67 con emulador correctas (42,773 s); navegador ampliado correcto con lectura real de .txt local, borrador conservado, ninguna llamada por consultar, privacidad de invitado y móvil. Reproducción de captura real original correcta. Aún no se ha ejecutado una inferencia real con la nueva fuente/configuración y registros integrados. Siguiente: respaldar/desplegar/verificar; después un ensayo nuevo acotado y recuperable de máximo tres inferencias, sin repetir sesiones anteriores ni crear costes recurrentes. Seguir desarrollo sin esperar aprobación rutinaria ni invitar al usuario a probar bloques pequeños.
+
 ## Lugares y relaciones, continuidad sin viajes ficticios — 5 de noviembre de 2026
 
 Implementados ocho lugares y dieciséis relaciones, con notas públicas/privadas y referencias `npc:id`/`place:id`. El servidor valida extremos, existencia, límites y visibilidad; los vínculos públicos requieren ambos extremos conocidos. No permite cambiar extremos de un id existente ni volver a ocultar conocimiento previo. Contexto, persistencia, copia, recuperación y diario integrados con las proyecciones de PNJ/objetivos. No mueve jugadores ni aplica reglas de viaje/tiempo/acceso por escribir ficción. Sin IA adicional por dato y sin documentos Firestore nuevos. Registros omitidos se conservan y contextos antiguos vacíos mantienen huellas.

@@ -17,13 +17,36 @@ window.RulePackUI=(()=>{
   const controls=document.createElement('div');controls.id='packAdventure';history.append(controls);
   if(!memory){
    controls.innerHTML=me.host&&own.length?`<h3>Jugar esta aventura</h3><p>El director abre una situación a partir del objetivo de la campaña. Solo se resuelven las mecánicas disponibles en el paquete.</p><form id="packStoryStart"><label>Tu personaje<select name="character">${own.map(c=>`<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('')}</select></label><button class="primary">Iniciar aventura con IA</button></form>`:'<p>Crea tu personaje para entrar en la aventura. El anfitrión inicia la escena compartida.</p>';
-   if($('#packStoryStart'))$('#packStoryStart').onsubmit=run(async e=>{sameCampaign(key);await act('start_pack_adventure',{character:e.target.elements.character.value});followStory(key);});
+   if($('#packStoryStart')){
+    const form=$('#packStoryStart'),sourceKey=key+':adventure-source',saved=drafts.get(sourceKey)||{};
+    if(!state.adventureSourceView){
+     form.querySelector('button').insertAdjacentHTML('beforebegin',`<details><summary>Usar una aventura aportada, opcional</summary><p>Texto de una aventura breve, hasta 12.000 caracteres. La fuente no añade reglas al paquete.</p><label>Título de la aventura<input name="sourceTitle" maxlength="100" value="${esc(saved.title||'')}"></label><label>Texto privado de preparación<textarea name="sourceText" maxlength="12000" rows="5">${esc(saved.text||'')}</textarea></label><label>Leer un archivo de texto local<input id="packAdventureFile" type="file" accept=".txt,.md,text/plain,text/markdown"></label><label class="check"><input name="sourceUse" type="checkbox" ${saved.use?'checked':''}> Puedo utilizar esta aventura como preparación de esta partida</label></details>`);
+     const remember=()=>drafts.set(sourceKey,{title:form.elements.sourceTitle.value,text:form.elements.sourceText.value,use:form.elements.sourceUse.checked});
+     form.oninput=remember;form.onchange=remember;
+     $('#packAdventureFile').onchange=run(async e=>{
+      const file=e.target.files[0];if(!file)return;
+      if(file.size>48000||! /\.(txt|md)$/i.test(file.name))throw Error('Usa un archivo .txt o .md de hasta 48.000 bytes.');
+      const text=new TextDecoder('utf-8',{fatal:true}).decode(await file.arrayBuffer());sameCampaign(key);
+      if(text.length>12000)throw Error('El texto supera los 12.000 caracteres.');
+      form.elements.sourceText.value=text;if(!form.elements.sourceTitle.value)form.elements.sourceTitle.value=file.name.replace(/\.[^.]+$/,'').slice(0,100);remember();
+     });
+    }
+    form.onsubmit=run(async e=>{
+     sameCampaign(key);const fields=e.target.elements,data={character:fields.character.value};
+     if(fields.sourceText?.value.trim()){
+      if(!fields.sourceUse.checked||!fields.sourceTitle.value.trim())throw Error('Indica el título y confirma que puedes utilizar la aventura aportada.');
+      Object.assign(data,{sourceTitle:fields.sourceTitle.value,sourceText:fields.sourceText.value,sourcePolicy:'provided-adventure'});
+     }
+     await act('start_pack_adventure',data);drafts.delete(sourceKey);followStory(key);
+    });
+   }
    return;
   }
   $$('[data-pack-action]').forEach(b=>b.remove());
   const pending=memory.pending,continuation=memory.continuation;
   controls.innerHTML=`<details><summary>Recordar lo ocurrido</summary><p>${esc(memory.summary)}</p></details>${pending?`<section class="pack-request"><h3>${esc(doc.actions[pending.action].label)}</h3><p>${esc(state.characters.find(c=>c.id===pending.character)?.name)} · ${esc(pending.reason)}</p><div id="packRequestBody"></div></section>`:''}${continuation?'<p>La ficha y los dados ya están guardados. Falta narrar ese resultado.</p><button id="packStoryContinue" class="primary">Continuar relato con IA</button>':''}${own.length?`<form id="packStoryTalk"><h3>Tu intervención</h3><label>Personaje<select name="character">${own.map(c=>`<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('')}</select></label><label>Intervención<select name="mode"><option value="action">Declarar acción</option><option value="dialogue">Hablar en personaje</option><option value="ooc">Fuera de personaje · sin IA</option></select></label><label>¿Qué haces o dices?<textarea name="text" maxlength="4000" rows="3" required></textarea></label><button class="primary">Enviar intervención</button></form>`:'<p>Necesitas un personaje propio para intervenir.</p>'}`;
   const npcKey=key+':known-npcs',npcs=memory.npcs||[];
+  if(state.adventureSourceView)controls.insertAdjacentHTML('afterbegin',`<p class="pack-source-note">Aventura aportada: ${esc(state.adventureSourceView.title)}</p>`);
   controls.querySelector('details').insertAdjacentHTML('afterend',`<details id="packKnownNpcs" ${drafts.get(npcKey)?'open':''}><summary>Personajes que conocéis${npcs.length?` · ${npcs.length}`:''}</summary>${npcs.length?npcs.map(npc=>`<article><h4>${esc(npc.name)}</h4><p>${esc(npc.public||'Sin más notas conocidas por el grupo.')}</p></article>`).join(''):'<p>Aún no hay personajes anotados.</p>'}</details>`);
   $('#packKnownNpcs').ontoggle=e=>{if(e.target.isConnected)drafts.set(npcKey,e.target.open);};
   const goalKey=key+':objectives',goals=memory.objectives||[];

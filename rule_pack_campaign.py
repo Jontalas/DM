@@ -32,10 +32,13 @@ def _keys(value,required):
 
 def _size(state):
     if len(state.get('messages',[]))>MAX_MESSAGES:raise RulePackError('El registro alcanza su límite; conserva una copia antes de ampliar o archivar datos')
-    game={key:value for key,value in state.items() if key not in ('authoring','authoringWorkspace')}
+    game={key:value for key,value in state.items() if key not in ('authoring','authoringWorkspace','adventureSource')}
     if len(_canonical(game).encode('utf-8'))>MAX_BYTES:raise RulePackError('La campaña supera su límite de estado; conserva una copia antes de ampliar o archivar datos')
     for field in ('authoring','authoringWorkspace'):
         if state.get(field) is not None and len(_canonical(state[field]).encode('utf-8'))>MAX_BYTES:raise RulePackError('Las preparaciones privadas superan su límite independiente')
+    if state.get('adventureSource') is not None:
+        from adventure_source import validate
+        validate(state['adventureSource'])
 
 
 @lru_cache(maxsize=16)
@@ -76,7 +79,7 @@ def _description(pack):
 
 
 def initial_state(config):
-    return {'ruleset':ID,'package':None,'authoring':None,'authoringWorkspace':None,'authoringWorkspaceRef':None,'narrative':None,'characters':[],'messages':[],
+    return {'ruleset':ID,'package':None,'authoring':None,'authoringWorkspace':None,'authoringWorkspaceRef':None,'adventureSource':None,'adventureSourceRef':None,'narrative':None,'characters':[],'messages':[],
         'tone':str(config.get('tone',''))[:200],'limits':str(config.get('limits',''))[:2000],
         'goal':str(config.get('goal',''))[:2000]}
 
@@ -97,14 +100,14 @@ def preparation_record(state,digest=None):
     return copy.deepcopy(record) if record and (digest is None or digest==record['sha256']) else None
 
 
-def execute_action(state,body,me,prepare_record=None,narrative_call=None,draw=None):
+def execute_action(state,body,me,prepare_record=None,narrative_call=None,draw=None,source_loader=None):
     action={key:value for key,value in body.items() if key not in ('id','version')}
     if state.get('ruleset')!=ID:raise RulePackError('Esta campaña no usa el motor de paquetes')
     if len(state['messages'])>=MAX_MESSAGES:raise RulePackError('El registro alcanza su límite; conserva una copia antes de ampliar o archivar datos')
     kind=action.get('type');result=copy.deepcopy(state)
     import rule_pack_narrative as narrative
     if kind in narrative.ACTIONS:
-        result=narrative.apply(state,action,me,runtime(state,me['campaign']),call=narrative_call,draw=draw)
+        result=narrative.apply(state,action,me,runtime(state,me['campaign']),call=narrative_call,draw=draw,source_loader=source_loader)
         _size(result);return result
     if kind=='prepare_rule_pack':
         if not me['host']:raise PermissionError('Solo el anfitrión prepara reglas desde documentos')
@@ -185,6 +188,11 @@ def execute_action(state,body,me,prepare_record=None,narrative_call=None,draw=No
 
 def public_view(state,me):
     result=copy.deepcopy(state)
+    source=result.pop('adventureSource',None);source_ref=result.pop('adventureSourceRef',None)
+    if me['host'] and (source is not None or source_ref is not None):
+        import adventure_source
+        meta=adventure_source.reference(source) if source is not None else adventure_source.validate_ref(source_ref)
+        result['adventureSourceView']={'title':meta['title'],'characters':meta['characters'],'sourceVerification':'unverified'}
     if 'narrative' in result:
         import rule_pack_narrative as narrative
         result['narrativeView']=narrative.public_view(result.pop('narrative'))
@@ -208,11 +216,15 @@ def _comparable_trace(trace):
 
 def validate_restored(state,campaign='import-validation'):
     keys=set(initial_state({}))
-    for optional in ('authoring','authoringWorkspace','authoringWorkspaceRef','narrative'):
+    for optional in ('authoring','authoringWorkspace','authoringWorkspaceRef','narrative','adventureSource','adventureSourceRef'):
         if optional not in state:keys.remove(optional) # Earlier experimental exports.
     _keys(state,keys)
     if state['ruleset']!=ID:raise RulePackError('Formato de campaña de paquetes incompatible')
     if state.get('authoringWorkspaceRef') is not None:raise RulePackError('La copia debe incluir las fuentes completas; usa Guardar copia en la campaña original')
+    if state.get('adventureSourceRef') is not None:raise RulePackError('La copia debe incluir la fuente completa de aventura; guarda una copia desde la campaña original')
+    if state.get('adventureSource') is not None:
+        import adventure_source
+        adventure_source.validate(state['adventureSource'])
     for key,limit in [('tone',200),('limits',2000),('goal',2000)]:
         if not isinstance(state[key],str) or len(state[key])>limit:raise RulePackError('Texto de campaña fuera de límites')
     if not isinstance(state['characters'],list) or len(state['characters'])>100:raise RulePackError('Lista de fichas inválida')

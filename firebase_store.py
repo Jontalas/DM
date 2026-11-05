@@ -61,6 +61,7 @@ class FirestoreStore:
         self._reader=None
         self._reader_lock=threading.Lock()
         self._workspace_cache=OrderedDict()
+        self._adventure_cache=OrderedDict()
         self._workspace_lock=threading.RLock()
         self.prefix=os.environ.get('FIREBASE_COLLECTION_PREFIX','cronicas')
         if not re.fullmatch(r'[A-Za-z0-9_-]{1,60}',self.prefix): raise ValueError('Prefijo Firebase inválido')
@@ -84,6 +85,9 @@ class FirestoreStore:
             from rule_workspace_asset import detach
             state,asset=detach(state)
             if asset is not None:self._stage_rule_workspace(cid,asset)
+            import adventure_source
+            state,asset=adventure_source.detach(state)
+            if asset is not None:self._stage_adventure_source(cid,asset)
         chunks=encode_state(state);sid=secrets.token_hex(16)
         # Keep each write request well below Firestore's 10 MiB request limit.
         for start in range(0,len(chunks),20):
@@ -129,6 +133,39 @@ class FirestoreStore:
             raw=self._fetch_rule_workspace(cid,reference)
             self._cache_workspace(cid,reference,raw);return
         self._cache_workspace(cid,reference,asset['raw'])
+
+    def _cache_adventure(self,cid,ref,record):
+        with self._workspace_lock:
+            key=(cid,ref['sha256']);self._adventure_cache[key]=record;self._adventure_cache.move_to_end(key)
+            while len(self._adventure_cache)>8:self._adventure_cache.popitem(last=False)
+
+    def load_adventure_source(self,cid,reference):
+        import adventure_source
+        from google.api_core.exceptions import GoogleAPICallError
+        adventure_source.validate_ref(reference);key=(cid,reference['sha256'])
+        with self._workspace_lock:
+            if key in self._adventure_cache:
+                record=self._adventure_cache[key]
+                if adventure_source.reference(record)!=reference:raise Unavailable('Referencia de aventura incompatible')
+                self._adventure_cache.move_to_end(key);return json.loads(json.dumps(record))
+            try:snap=self.campaign(cid).collection('adventureSources').document(reference['sha256']).get(timeout=10,retry=None)
+            except GoogleAPICallError as error:raise Unavailable('No se puede recuperar la fuente privada de aventura ahora') from error
+            if not snap.exists:raise Unavailable('Falta la fuente privada de aventura; conserva las copias originales')
+            try:record=adventure_source.decode(reference,snap.to_dict()['data'])
+            except (ValueError,KeyError,TypeError) as error:raise Unavailable('La fuente privada de aventura no está íntegra') from error
+            self._cache_adventure(cid,reference,record);return json.loads(json.dumps(record))
+
+    def _stage_adventure_source(self,cid,asset):
+        from google.cloud import firestore
+        from google.api_core.exceptions import AlreadyExists
+        import adventure_source
+        ref=asset['reference'];key=(cid,ref['sha256'])
+        with self._workspace_lock:
+            if key in self._adventure_cache:return
+        target=self.campaign(cid).collection('adventureSources').document(ref['sha256'])
+        try:target.create({'data':asset['packed'],'createdAt':firestore.SERVER_TIMESTAMP})
+        except AlreadyExists:self.load_adventure_source(cid,ref);return
+        self._cache_adventure(cid,ref,adventure_source.decode(ref,asset['packed']))
 
     def _decode(self,cid,meta):
         refs=[self.campaign(cid).collection('snapshots').document(f"{meta['snapshot']}-{i}") for i in range(meta['chunks'])]
