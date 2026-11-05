@@ -1,5 +1,15 @@
 # Reanudar el desarrollo
 
+## Estado prioritario — acciones abstractas entre fichas, 5 de noviembre
+
+Validación final: **478 pruebas completas con emulador correctas, sin omisiones (216,111 s)**; evidencia .deps/target-final-tests.log. Navegador explícito de acciones correcto nuevamente. Vista local actualizada al selector, HTTP/navegador correctos con cero acciones por consultar, lanzador verificado/reiniciado 51124 (43984 terminado). Pendiente respaldo y despliegue de este bloque; no se ha realizado ninguna inferencia nueva.
+
+La instrucción de continuidad sigue vigente: avanzar sin pedir «continúa» ni pruebas personales rutinarias. Bloque local integrado: registro privado cronológico de ambas fichas, recuperación/copia verificadas, proyección sin estadísticas privadas, contrato target-facts-5 y selector explícito de acciones sobre PNJ en escena abstracta compartida. request_pack_target no usa IA; resolve_pack_request confirma ambas fichas, evidencia y barrera juntas, con semilla duradera. La continuación narrativa normal conserva una única llamada posterior. No implementa combate espacial, turnos, percepción individual ni nuevas reglas Pathfinder.
+
+Las restricciones de despliegue que aparecen debajo son históricas: la ruta acotada abstract-scene-targets ya está conectada y comprobada localmente; producción todavía está en 7c2bc109f4548a5ce86553b0fabebb9be6264607 hasta verificar el nuevo despliegue. Suites completas de 466, 467 y 476 pruebas correctas; comprobación final con evidencia persistida en .deps/target-final-tests.log en curso. Navegadores de registro y selector correctos con proveedor simulado, incluido móvil. Ninguna inferencia real nueva ni hito personal alcanzado.
+
+Siguiente: completar verificación final, respaldar, desplegar y verificar revisión/salud. Después conectar objetivos de aventura con identidad concreta del PNJ y preparación importable de actores, conservando las fuentes y la agencia. Hoy esos vínculos se rechazan explícitamente: no cerrar un objetivo por acertar sobre otro PNJ. Mantener fuera del preparador automático ambas capacidades hasta que sus ejemplos cubran las dos fichas. RESOLUCIONES_ENTRE_FICHAS.md describe el contrato y límites actuales. Vista local secundaria en 127.0.0.1:8765; último lanzador conocido 43984, verificar su identidad antes de reiniciar. Datos de demostración y director simulado, sin base remota.
+
 ## Continuidad prioritaria confirmada — 5 de noviembre
 
 Respaldo confirmado del kernel target-sheets: feature/origin en `60b9d39` (código), main/producción se mantienen deliberadamente en `7c2bc109f4548a5ce86553b0fabebb9be6264607`. Los siguientes «falta respaldar» son históricos. No desplegar todavía la ruta de objetivo: falta integrar el registro mecánico privado/cronología y las validaciones de escena y permisos indicadas en RESOLUCIONES_ENTRE_FICHAS.md. Vista local activa en 127.0.0.1:8765, datos temporales y director simulado; su proceso sigue 18488. El desarrollo continúa autorizado sin confirmaciones ni pruebas personales rutinarias.

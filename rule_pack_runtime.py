@@ -11,7 +11,7 @@ import secrets
 from bisect import bisect_right
 
 FORMAT='cronicas-rules-1'
-CAPABILITIES={'scalar-fields','expressions','tables','dice','actions','triggers','character-creation','staged-character-creation','action-results','creation-profiles','target-sheets'}
+CAPABILITIES={'scalar-fields','expressions','tables','dice','actions','triggers','character-creation','staged-character-creation','action-results','creation-profiles','target-sheets','abstract-scene-targets'}
 LIMIT=10**12
 OPS={'add':(1,20),'sub':(2,2),'mul':(2,2),'floor_div':(2,2),'min':(1,20),'max':(1,20),
      'eq':(2,2),'ne':(2,2),'lt':(2,2),'le':(2,2),'gt':(2,2),'ge':(2,2),
@@ -133,8 +133,16 @@ class RulePack:
             if 'derive' in spec:self._expression(spec['derive'],{'fields':fields})
         self._order=self._derived_order()
         for action in data['actions'].values():
-            _keys(action,('label','sources','inputs','requires','rolls','effects'),('permission','resultFields','target'))
+            _keys(action,('label','sources','inputs','requires','rolls','effects'),('permission','resultFields','target','targetContext'))
             if 'target' in action and action['target'] is not True:_fail('Una acción con objetivo debe declararlo explícitamente')
+            if 'targetContext' in action:
+                context=action['targetContext']
+                _keys(context,('kind','sceneField','visibleField','turns'))
+                if not action.get('target') or context['kind']!='abstract-scene' or context['turns']!='not-required':
+                    _fail('Solo se admite contexto abstracto compartido sin turnos; no equivale a alcance o combate espacial')
+                for key,kind in [('sceneField','text'),('visibleField','boolean')]:
+                    field=context[key]
+                    if not isinstance(field,str) or field not in fields or data['fields'][field]['type']!=kind:_fail('Campo de contexto de objetivo incompatible')
             _text(action['label']);self._sources(action)
             if action.get('permission','owner') not in ('owner','host'):_fail('Permiso de acción no compatible')
             if not isinstance(action['inputs'],dict) or len(action['inputs'])>32:_fail('Entradas de acción fuera de límites')
@@ -193,6 +201,7 @@ class RulePack:
         if any(data['actions'][step].get('target') for step in self.reserved_creation_actions):_fail('La creación no admite objetivos externos')
         used={'scalar-fields','expressions','actions'}
         if any(action.get('target') for action in data['actions'].values()):used.add('target-sheets')
+        if any('targetContext' in action for action in data['actions'].values()):used.add('abstract-scene-targets')
         if self.creation is not None:used.add('character-creation')
         if self.creation_profiles:used.update({'creation-profiles','character-creation'})
         if any(len(profile['steps'])>1 for profile in self.creation_profiles.values()):used.add('staged-character-creation')
@@ -443,6 +452,8 @@ class RulePack:
             arguments[key]=self._value(spec,inputs.get(key,spec.get('default')))
         budget=[50000];fields=self._fields(sheet['fields'],budget);context={'fields':fields,'inputs':arguments,'rolls':{}}
         if target is not None:context['target']=self._fields(target['fields'],budget)
+        if 'targetContext' in action and not self.shared_target_context(action['targetContext'],fields,context['target']):
+            _fail('No se acredita escena abstracta compartida y percepción común del objetivo')
         if not all(_boolean(self._eval(condition,context,budget)) for condition in action['requires']):_fail('La acción no cumple los requisitos de sus reglas')
         physical={} if physical is None else physical
         ids={r['id'] for r in action['rolls']}
@@ -459,6 +470,11 @@ class RulePack:
                 if not isinstance(values,list) or len(values)!=count or any(type(v)!=int or not 1<=v<=sides for v in values):_fail('Resultados físicos inválidos; no se ha tirado en el servidor')
             specs.append((roll,count,sides,keep))
         return arguments,budget,context,specs
+
+    @staticmethod
+    def shared_target_context(spec,fields,target_fields):
+        scene=fields[spec['sceneField']]
+        return bool(scene.strip()) and scene==target_fields[spec['sceneField']] and target_fields[spec['visibleField']] is True
 
     def preview(self,sheet,action_id,inputs,actor,host=False):
         arguments,_,_,specs=self._prepare_action(sheet,action_id,inputs,actor,host=host)

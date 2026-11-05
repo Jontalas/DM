@@ -10,6 +10,8 @@ window.RulePackUI=(()=>{
   if(m.kind==='system')return `<p>${esc(m.text)}</p>`;
   if(m.kind==='pack-talk'||m.kind==='pack-director')return `<article class="pack-story-message"><h4>${esc(m.speaker)}${m.mode==='ooc'?' · Fuera de personaje':''}</h4><p>${esc(m.text)}</p>${m.limitation?`<p class="notice">Límite del motor: ${esc(m.limitation)}</p>`:''}</article>`;
   let resultContext='';
+  const targetName=m.targetRef?(snapshot.state.narrativeView?.npcs||[]).find(npc=>npc.id===m.targetRef.npc)?.name:null;
+  const targetContext=m.targetRef?`<p data-pack-target-result>Objetivo de la acción: ${esc(targetName||'PNJ registrado')}.</p>`:'';
   if(m.trace.results){
    const index=snapshot.state.messages.indexOf(m),declaration=snapshot.state.messages.slice(0,Math.max(0,index)).reverse().find(event=>event.kind==='pack-talk'&&event.mode==='action'&&event.character===m.character);
    if(declaration)resultContext+=`<details><summary>Declaración resuelta</summary><p>${esc(declaration.text)}</p></details>`;
@@ -17,9 +19,45 @@ window.RulePackUI=(()=>{
    if(proof?.met)resultContext+=`<p>Objetivo completado: ${esc(goal?.title||'objetivo registrado')}.</p>`;
    else if(proof||goals.length)resultContext+='<p>Esta resolución no registra ningún objetivo completado.</p>';
   }
-  return `<article><h4>${esc(m.speaker)} · ${esc(doc.actions[m.action]?.label||m.action)}</h4>${m.trace.results?`<section class="pack-confirmed-results"><h4>Resultado confirmado</h4>${Object.entries(m.trace.results).map(([id,value])=>`<p><strong>${esc(doc.fields[id]?.label||id)}: ${esc(shown(value))}</strong></p>`).join('')}${resultContext}</section>`:''}${Object.entries(m.trace.rolls).filter(([,r])=>r.rolled).map(([id,r])=>`<p>${esc(id)}: ${esc(r.values.join(', '))} → ${r.total} · ${r.origin==='physical'?'dados físicos':'servidor'}</p>`).join('')}${Object.entries(m.trace.changes).filter(([id])=>!Object.hasOwn(m.trace.results||{},id)).map(([id,v])=>`<p>${esc(doc.fields[id]?.label||id)}: ${esc(shown(v.before))} → ${esc(shown(v.after))}</p>`).join('')}${m.trace.triggers.map(t=>`<p>Consecuencia automática: ${esc(doc.triggers[t.id]?.label||t.id)}</p>`).join('')}</article>`;
+  return `<article><h4>${esc(m.speaker)} · ${esc(doc.actions[m.action]?.label||m.action)}</h4>${targetContext}${m.trace.results?`<section class="pack-confirmed-results"><h4>Resultado confirmado</h4>${Object.entries(m.trace.results).map(([id,value])=>`<p><strong>${esc(doc.fields[id]?.label||id)}: ${esc(shown(value))}</strong></p>`).join('')}${resultContext}</section>`:''}${Object.entries(m.trace.rolls).filter(([,r])=>r.rolled).map(([id,r])=>`<p>${esc(id)}: ${esc(r.values.join(', '))} → ${r.total} · ${r.origin==='physical'?'dados físicos':'servidor'}</p>`).join('')}${Object.entries(m.trace.changes).filter(([id])=>!Object.hasOwn(m.trace.results||{},id)).map(([id,v])=>`<p>${esc(doc.fields[id]?.label||id)}: ${esc(shown(v.before))} → ${esc(shown(v.after))}</p>`).join('')}${m.trace.triggers.map(t=>`<p>Consecuencia automática: ${esc(doc.triggers[t.id]?.label||t.id)}</p>`).join('')}</article>`;
  }
  function followStory(key){if(!$('#app').hidden&&scope()===key)($('#packStoryResolve')||$('#packStoryContinue')||$('#packStoryTalk'))?.scrollIntoView({block:'nearest'});}
+ function renderTargetChoices(controls,doc,own,key){
+  const options=snapshot.state.targetOptions?.byCharacter||{},actors=new Map((snapshot.state.actorViews||[]).map(actor=>[actor.id,actor]));
+  const characters=own.filter(character=>Object.keys(options[character.id]||{}).length);
+  if(!characters.length)return;
+  const draftKey=key+':target-choice',saved=drafts.get(draftKey)||{character:characters.length===1?characters[0].id:'',action:'',target:'',inputs:{},open:false};
+  controls.insertAdjacentHTML('beforeend',`<details id="packTargetChoices" ${saved.open?'open':''}><summary>Acciones sobre PNJ</summary><p>Escena abstracta compartida, sin iniciativa ni alcance espacial. Eliges acción y objetivo; los requisitos se comprobarán antes de tirar.</p><form id="packTargetChoice"></form></details>`);
+  const details=$('#packTargetChoices'),form=$('#packTargetChoice');
+  function draw(){
+   if(!characters.some(character=>character.id===saved.character))saved.character='';
+   const available=Object.entries(doc.actions).filter(([,action])=>{
+    const context=action.targetContext;
+    return context&&(!action.permission||action.permission==='owner')&&(options[saved.character]?.[context.sceneField+':'+context.visibleField]||[]).length;
+   });
+   if(!available.some(([id])=>id===saved.action)){saved.action='';saved.target='';saved.inputs={};}
+   const action=doc.actions[saved.action],context=action?.targetContext;
+   const targets=context?(options[saved.character]?.[context.sceneField+':'+context.visibleField]||[]).filter(id=>actors.has(id)):[];
+   if(!targets.includes(saved.target))saved.target='';
+   form.innerHTML=`<label>Tu personaje<select name="character" required><option value="">Elige personaje</option>${characters.map(character=>`<option value="${esc(character.id)}" ${character.id===saved.character?'selected':''}>${esc(character.name)}</option>`).join('')}</select></label><label>Acción<select name="action" required><option value="">Elige acción</option>${available.map(([id,spec])=>`<option value="${esc(id)}" ${id===saved.action?'selected':''}>${esc(spec.label)}</option>`).join('')}</select></label><label>Objetivo<select name="target" required><option value="">Elige PNJ</option>${targets.map(id=>`<option value="${esc(id)}" ${id===saved.target?'selected':''}>${esc(actors.get(id).name)}</option>`).join('')}</select></label>${action?Object.entries(action.inputs).map(([id,spec],index)=>`<label>${esc(spec.label)}${input(spec,index,saved.inputs[id])}</label>`).join(''):''}<button class="primary">Preparar acción</button>`;
+   drafts.set(draftKey,saved);
+  }
+  draw();
+  details.ontoggle=event=>{if(event.target.isConnected){saved.open=details.open;drafts.set(draftKey,saved);}};
+  form.oninput=event=>{if(event.target.name.startsWith('input')&&doc.actions[saved.action]){saved.inputs=formValues(form,doc.actions[saved.action]);drafts.set(draftKey,saved);}};
+  form.onchange=event=>{
+   const name=event.target.name;
+   if(name==='character'){saved.character=event.target.value;saved.action='';saved.target='';saved.inputs={};draw();}
+   else if(name==='action'){saved.action=event.target.value;saved.target='';saved.inputs={};draw();}
+   else if(name==='target'){saved.target=event.target.value;drafts.set(draftKey,saved);}
+   else if(doc.actions[saved.action]){saved.inputs=formValues(form,doc.actions[saved.action]);drafts.set(draftKey,saved);}
+  };
+  form.onsubmit=run(async()=>{
+   sameCampaign(key);if(!saved.character||!saved.action||!saved.target)throw Error('Elige tu personaje, acción y PNJ.');
+   saved.inputs=formValues(form,doc.actions[saved.action]);drafts.set(draftKey,saved);
+   await act('request_pack_target',{character:saved.character,action:saved.action,target:saved.target,inputs:saved.inputs});followStory(key);
+  });
+ }
  function renderAdventure(root,doc){
   if(snapshot.state.package?.policy!=='provided-rules')return;
   const key=scope(),state=snapshot.state,me=snapshot.me,memory=state.narrativeView,own=state.characters.filter(c=>c.owner===me.id&&c.creationProgress?.complete!==false);
@@ -95,6 +133,7 @@ window.RulePackUI=(()=>{
   const worldKey=key+':world-notes',places=memory.places||[],links=memory.relationships||[];
   $('#packObjectives').insertAdjacentHTML('afterend',`<details id="packWorld" ${drafts.get(worldKey)?'open':''}><summary>Lugares y vínculos</summary>${places.length?`<h4>Lugares recordados</h4>${places.map(place=>`<article data-pack-place="${esc(place.id)}"><h4>${esc(place.name)}</h4><p>${esc(place.public||'Sin más notas conocidas por el grupo.')}</p></article>`).join('')}`:''}${links.length?`<h4>Vínculos conocidos</h4><ul>${links.map(link=>`<li>${esc(link.fromName)} · ${esc(link.toName)}${link.public?`: ${esc(link.public)}`:''}</li>`).join('')}</ul>`:''}${!places.length&&!links.length?'<p>Aún no hay lugares ni vínculos anotados.</p>':''}</details>`);
   $('#packWorld').ontoggle=e=>{if(e.target.isConnected)drafts.set(worldKey,e.target.open);};
+  if(!pending&&!continuation)renderTargetChoices(controls,doc,own,key);
   if(pending){
    const actor=state.characters.find(c=>c.id===pending.character),action=doc.actions[pending.action],body=$('#packRequestBody');
    if(pending.objectiveCheck){

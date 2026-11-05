@@ -11,7 +11,7 @@ from rule_pack_runtime import RulePackError,read_document
 import rule_pack_director as director
 
 CALLS={'start_pack_adventure','talk_pack_adventure','continue_pack_adventure'}
-ACTIONS=CALLS|{'resolve_pack_request','cancel_pack_request','prepare_pack_discoveries'}
+ACTIONS=CALLS|{'resolve_pack_request','cancel_pack_request','prepare_pack_discoveries','request_pack_target'}
 
 
 def _keys(value,required,optional=()):
@@ -34,6 +34,9 @@ def apply(state,action,me,pack,call=None,draw=None,source_loader=None):
     kind=action['type'];result=copy.deepcopy(state);memory=result.get('narrative')
     prepared_plan=None;prepared_goals=None
     if state['package']['policy']!='provided-rules':raise RulePackError('Activa el paquete antes de jugar')
+    if kind=='request_pack_target':
+        from target_actions import request
+        return request(state,action,me,pack)
     if kind=='prepare_pack_discoveries':
         _keys(action,('type','definitions','policy'))
         if not me['host']:raise PermissionError('Solo el anfitrión prepara consecuencias de la aventura')
@@ -84,6 +87,9 @@ def apply(state,action,me,pack,call=None,draw=None,source_loader=None):
                 memory['pending']=None
                 _log(result,'pack-talk',actor,me,text='Retiro la acción pendiente.',mode='ooc');return result
             if pending['packageSha256']!=pack.digest or pending['sheetRevision']!=actor['sheet']['revision']:raise RulePackError('La ficha o reglas cambiaron; retira la solicitud y revisa la acción')
+            if 'targetBinding' in pending:
+                from target_actions import resolve
+                return resolve(result,action,me,pack,draw=draw)
             preview=pack.preview(actor['sheet'],pending['action'],pending['inputs'],me['id'])
             if director.canonical(pending['rolls'])!=director.canonical(preview['rolls']):raise RulePackError('Los dados previstos no coinciden con la ficha y las reglas')
             inputs=action.get('inputs',pending['inputs'])
@@ -192,7 +198,7 @@ def validate(state,pack):
     pending=memory['pending'];continuation=memory['continuation']
     if pending is not None and continuation is not None:raise RulePackError('No puede haber solicitud y resultado pendientes a la vez')
     if pending is not None:
-        _keys(pending,('id','character','action','inputs','rolls','reason','packageSha256','sheetRevision'),('objectiveCheck','discoveryBindings'))
+        _keys(pending,('id','character','action','inputs','rolls','reason','packageSha256','sheetRevision'),('objectiveCheck','discoveryBindings','targetBinding'))
         expected=discoveries.bindings(memory['discoveries']['catalog'],pending.get('objectiveCheck'),pending['id']) if 'discoveries' in memory else []
         if pending.get('discoveryBindings',[])!=expected:raise RulePackError('Vínculos de descubrimiento de la solicitud incompatibles')
         if 'objectiveCheck' in pending:objectives.check_spec(pending['objectiveCheck'],pending['action'],memory.get('objectives',[]),pack.document())
@@ -200,13 +206,19 @@ def validate(state,pack):
         actor=next((c for c in state['characters'] if c['id']==pending['character']),None)
         if actor is None or pending['packageSha256']!=pack.digest or type(pending['sheetRevision'])!=int or pending['sheetRevision']!=actor['sheet']['revision']:raise RulePackError('Solicitud vinculada a otra ficha o reglas')
         if not isinstance(pending['action'],str) or pending['action'] not in pack.document()['actions'] or pack.document()['actions'][pending['action']].get('permission','owner')!='owner':raise RulePackError('La solicitud no puede ejecutar herramientas del anfitrión')
-        preview=pack.preview(actor['sheet'],pending['action'],pending['inputs'],actor['owner'])
+        if 'targetBinding' in pending:
+            from target_actions import check_pending
+            check_pending(state,pending,{'id':actor['owner']},pack)
+            preview={'rolls':pending['rolls']}
+        else:preview=pack.preview(actor['sheet'],pending['action'],pending['inputs'],actor['owner'])
         if director.canonical(pending['rolls'])!=director.canonical(preview['rolls']):raise RulePackError('Los dados previstos no coinciden con la ficha y las reglas')
     if continuation is not None:
         _keys(continuation,('character','message'));index=continuation['message']
         if type(index)!=int or not 0<=index<len(state['messages']):raise RulePackError('Continuación narrativa sin resultado')
         event=state['messages'][index]
         if event.get('kind')!='pack-action' or event.get('character')!=continuation['character']:raise RulePackError('Continuación narrativa ligada a otro resultado')
+        if 'targetResolutions' in state and any(message.get('kind')=='pack-action' for message in state['messages'][index+1:]):
+            raise RulePackError('La continuación debe corresponder al último resultado mecánico confirmado')
 
 
 def validate_event(event,characters):

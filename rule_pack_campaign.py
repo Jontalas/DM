@@ -119,9 +119,16 @@ def execute_action(state,body,me,prepare_record=None,narrative_call=None,draw=No
         previous=state.get('actors',[])
         if len(previous)>=actors.MAX_ACTORS or any(a['id']==action['actor'] or a['npc']==action['npc'] for a in previous) or any(c['id']==action['actor'] for c in state['characters']):
             raise RulePackError('Identidad de actor o referencia de PNJ ya utilizada, o límite alcanzado')
-        actor=actors.create(pack,action['actor'],action['npc'],action['profile'],action['stages'],action['publicFields'],memory.get('npcs',[]),action['policy'],draw=draw)
+        actor=actors.create(pack,action['actor'],action['npc'],action['profile'],action['stages'],action['publicFields'],memory.get('npcs',[]),action['policy'],draw=draw,introduced_at=len(state['messages']))
         result['actors']=[*previous,actor]
-        actors.validate_registry(result['actors'],pack,memory.get('npcs',[]),[c['id'] for c in state['characters']])
+        if 'targetResolutions' not in state:
+            actors.validate_registry(result['actors'],pack,memory.get('npcs',[]),[c['id'] for c in state['characters']])
+        else:
+            # This operation does not alter existing persisted actors. Their
+            # evolved sheets were verified when imported/resolved; validate the
+            # new creation independently, without pretending old sheets reset.
+            actors.validate(actor,pack,memory.get('npcs',[]))
+            if len(_canonical(result['actors']).encode('utf-8'))>actors.MAX_BYTES:raise RulePackError('Registro privado de actores fuera de límites')
     elif kind=='prepare_rule_pack':
         if not me['host']:raise PermissionError('Solo el anfitrión prepara reglas desde documentos')
         _keys(action,('type','request'))
@@ -215,6 +222,7 @@ def execute_action(state,body,me,prepare_record=None,narrative_call=None,draw=No
 
 def public_view(state,me):
     result=copy.deepcopy(state)
+    result.pop('targetResolutions',None)
     private_actors=result.pop('actors',None)
     if private_actors is not None:
         from rule_pack_actors import public_view as actor_view
@@ -231,6 +239,9 @@ def public_view(state,me):
     if state.get('package'):
         pack=runtime(state,me['campaign'])
         result['packageView']=_description(pack)|{'policy':state['package']['policy']}
+        if 'abstract-scene-targets' in pack.document()['requires']:
+            from target_context import options
+            result['targetOptions']=options(state,me,pack)
         for character in result['characters']:
             if pack.creation is not None:character['creationProgress']=pack.creation_progress(character['sheet'])
             if not pack.ready(character['sheet']):character['creationInputs']=pack.creation_inputs(character['sheet'])
@@ -250,6 +261,7 @@ def _comparable_trace(trace):
 def validate_restored(state,campaign='import-validation'):
     keys=set(initial_state({}))
     if 'actors' in state:keys.add('actors')
+    if 'targetResolutions' in state:keys.add('targetResolutions')
     for optional in ('authoring','authoringWorkspace','authoringWorkspaceRef','narrative','adventureSource','adventureSourceRef'):
         if optional not in state:keys.remove(optional) # Earlier experimental exports.
     _keys(state,keys)
@@ -272,6 +284,7 @@ def validate_restored(state,campaign='import-validation'):
         from rule_pack_authoring import validate_record
         validate_record(state['authoring'])
     if state['package'] is None:
+        if 'targetResolutions' in state:raise RulePackError('Resoluciones privadas sin paquete')
         if 'actors' in state:raise RulePackError('Actores sin paquete de reglas')
         if state.get('narrative') is not None:raise RulePackError('Aventura sin paquete de reglas')
         if state['characters']:raise RulePackError('Estado de fichas sin paquete')
@@ -281,6 +294,8 @@ def validate_restored(state,campaign='import-validation'):
             _text(event['text'],2000);_text(event['actor'],100)
         _size(state);return
     pack=runtime(state,campaign);sheets={};ids=set()
+    journal='targetResolutions' in state
+    if journal and 'target-sheets' not in pack.document()['requires']:raise RulePackError('El paquete no declara resoluciones entre fichas')
     if state['characters'] and state['package']['policy']!='provided-rules':raise RulePackError('Un paquete en borrador no admite fichas activas')
     for character in state['characters']:
         _keys(character,('id','name','owner','sheet','creation') if pack.creation is not None else ('id','name','owner','sheet'));identifier=_text(character['id'],200)
@@ -314,12 +329,14 @@ def validate_restored(state,campaign='import-validation'):
             import rule_pack_narrative as narrative
             narrative.validate_event(event,ids);continue
         event_keys=('kind','character','actor','speaker','host','time','action','inputs','trace')
-        _keys(event,(*event_keys,*[key for key in ('objectiveResolution','discoveryReveals') if key in event]))
+        optional=('objectiveResolution','discoveryReveals','targetRef') if journal else ('objectiveResolution','discoveryReveals')
+        _keys(event,(*event_keys,*[key for key in optional if key in event]))
         if event['kind']!='pack-action' or not isinstance(event['character'],str) or event['character'] not in sheets or type(event['host'])!=bool:raise RulePackError('Acción registrada inválida')
         _text(event['speaker'],120)
         trace=event['trace']
         _keys(trace,('action','sources','rolls','changes','triggers','results') if isinstance(trace,dict) and 'results' in trace else ('action','sources','rolls','changes','triggers'))
         if not isinstance(trace['rolls'],dict) or any(not isinstance(v,dict) for v in trace['rolls'].values()):raise RulePackError('Dados registrados inválidos')
+        if journal:continue # Full private replay below validates both participants.
         physical={key:value.get('values') for key,value in trace['rolls'].items() if value.get('rolled')}
         previous=sheets[event['character']]
         # Verify mathematics, not historic identity authenticity of an external file.
@@ -330,13 +347,16 @@ def validate_restored(state,campaign='import-validation'):
             from rule_pack_objectives import validate_proof
             validate_proof(event['objectiveResolution'],event,restored,pack.document())
         sheets[event['character']]=restored
+    if journal:
+        from target_journal import replay
+        sheets=replay(state,pack,sheets)['players']
     for character in state['characters']:
         if _canonical(character['sheet'])!=_canonical(sheets[character['id']]):raise RulePackError('Los valores actuales no coinciden con las acciones registradas')
     import rule_pack_narrative as narrative
     narrative.validate(state,pack)
-    if 'actors' in state:
+    if 'actors' in state and not journal:
         from rule_pack_actors import validate_registry
-        validate_registry(state['actors'],pack,(state.get('narrative') or {}).get('npcs',[]),ids)
+        validate_registry(state['actors'],pack,(state.get('narrative') or {}).get('npcs',[]),ids,message_count=len(state['messages']))
     _size(state)
 
 

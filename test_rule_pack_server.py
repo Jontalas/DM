@@ -238,6 +238,49 @@ class RulePackServerTests(unittest.TestCase):
         exported=self.request('/api/export',{},self.token);self.action('import',campaign=exported)
         self.assertEqual(self.state()['state']['narrativeView']['discoveries'][0]['text'],quote)
 
+    def test_abstract_target_request_and_resolution_survive_failed_atomic_commit(self):
+        from test_target_context import AbstractTargetContextTests
+        fixture=AbstractTargetContextTests();fixture.setUp()
+        self.action('import',campaign={'format':'cronicas-1','title':'Escena abstracta propia — apertura simulada','state':fixture.state})
+        with patch.object(pack_director,'propose',side_effect=AssertionError('Mechanical request/resolution called AI')):
+            request=self.action('request_pack_target',character=fixture.cid,action='contest',target='a'*24,inputs={})
+            self.assertTrue(self.request('/api/action',request,self.token)['duplicate'])
+            before=self.state();pending=before['state']['narrativeView']['pending']
+            body={'id':secrets.token_hex(12),'version':before['version'],'type':'resolve_pack_request','request':pending['id']};captured=[]
+            def fail(*args,**kwargs):captured.append(copy.deepcopy(args[5]));raise Unavailable('Interrupted two-sheet commit')
+            with patch.object(server.STORE,'commit',side_effect=fail):self.rejected(lambda:self.request('/api/action',body,self.token),503)
+            self.assertEqual(self.state(),before)
+            old=server.STORE
+            from firebase_store import FirestoreStore
+            if isinstance(old,FirestoreStore):server.STORE=FirestoreStore.from_environment();server.STORE.prefix=old.prefix
+            try:
+                self.request('/api/action',body,self.token);self.assertTrue(self.request('/api/action',body,self.token)['duplicate'])
+                exported=self.request('/api/export',{},self.token)
+                for key in ('characters','actors','targetResolutions'):self.assertEqual(exported['state'][key],captured[0][key])
+                campaign.validate_restored(exported['state']);self.assertNotIn('targetResolutions',self.state()['state'])
+                self.assertEqual(exported['state']['messages'][-1]['trace']['rolls']['pool']['origin'],'server')
+            finally:server.STORE=old
+
+    def test_target_journal_import_is_private_and_continues_from_shared_confirmed_facts(self):
+        from test_target_journal import TargetJournalTests
+        fixture=TargetJournalTests();fixture.setUp();state=fixture.resolve(fixture.state,[3,4])
+        state['actors'][0]['publicFields']=['energy']
+        state['narrative']['continuation']={'character':fixture.cid,'message':len(state['messages'])-1}
+        self.action('import',campaign={'format':'cronicas-1','title':'Resolución importada — simulación identificada','state':state})
+        guest=self.request('/api/join',{'name':'Luis','invite':self.state()['invite']})['token']
+        for token in [self.token,guest]:
+            view=self.state(token)['state'];self.assertNotIn('targetResolutions',view);self.assertNotIn('actors',view)
+            self.assertNotIn('target',view['messages'][-1]['trace'])
+            self.assertEqual(view['actorViews'][0]['fields']['energy']['value'],1)
+        with patch.object(pack_director,'propose',return_value=narrative_reply(narration='La prueba confirmada reduce la energía compartida de Arda.')) as provider:
+            self.action('continue_pack_adventure');request=provider.call_args.args[0]['request']
+            self.assertEqual(request['contract'],pack_director.TARGET_CONTRACT)
+            self.assertEqual(request['verifiedResolution']['target']['fields'],{'energy':{'label':'Energía','value':1}})
+            self.assertNotIn('targetResolutions',request);self.assertEqual(provider.call_count,1)
+        exported=self.request('/api/export',{},self.token);self.assertEqual(len(exported['state']['targetResolutions']),1)
+        self.action('import',campaign=exported)
+        self.assertEqual(self.request('/api/export',{},self.token)['state']['actors'],exported['state']['actors'])
+
     def test_private_actor_creation_recovers_server_dice_after_failed_commit(self):
         from test_creation_profiles import profile_document
         from test_rule_pack_world import npc

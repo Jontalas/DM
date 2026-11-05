@@ -1,7 +1,7 @@
 """Bind known NPC actor identities/revisions, without declaring attacks legal.
 
-Not yet a campaign action. Position, visibility in the current scene, range,
-turns and rule-specific requirements remain responsibilities of the next layer.
+References feed the campaign request layer. Position, actual scene visibility,
+range, turns and rule-specific requirements belong to that separate layer.
 No inference, dice, storage or changes of either character occur here.
 """
 import copy

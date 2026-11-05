@@ -30,7 +30,7 @@ def _no_draw(sides):
     raise RulePackError('Esta preparación de actores requiere dados confirmados; no se ha generado otra tirada')
 
 
-def create(pack,identifier,npc,profile,stages,public_fields,npcs,policy,draw=None):
+def create(pack,identifier,npc,profile,stages,public_fields,npcs,policy,draw=None,introduced_at=None):
     identifier=_identity(identifier)
     if policy!='provided-profile':raise RulePackError('El actor requiere un perfil aportado explícitamente; no certifica reglas de PNJ')
     if not isinstance(npc,str) or npc not in {item['id'] for item in world.validate(npcs)}:
@@ -47,12 +47,17 @@ def create(pack,identifier,npc,profile,stages,public_fields,npcs,policy,draw=Non
         records.append({'inputs':copy.deepcopy(entry['inputs']),'trace':trace})
     actor={'id':identifier,'kind':'npc','controller':'director','npc':npc,'profile':profile,'policy':policy,
         'publicFields':selected,'sheet':sheet,'creation':{'steps':records}}
+    if introduced_at is not None:
+        if type(introduced_at)!=int or introduced_at<0:raise RulePackError('Origen cronológico del actor inválido')
+        actor['introducedAt']=introduced_at
     if len(canonical(actor).encode('utf-8'))>MAX_BYTES:raise RulePackError('La preparación del actor supera su límite')
     return actor
 
 
-def validate(actor,pack,npcs):
+def initial(actor,pack,npcs):
+    """Replay creation metadata; evolved fields still require journal validation."""
     keys={'id','kind','controller','npc','profile','policy','publicFields','sheet','creation'}
+    if isinstance(actor,dict) and 'introducedAt' in actor:keys.add('introducedAt')
     if not isinstance(actor,dict) or set(actor)!=keys or actor['kind']!='npc' or actor['controller']!='director':
         raise RulePackError('Registro privado de actor inválido')
     creation=actor['creation']
@@ -66,22 +71,34 @@ def validate(actor,pack,npcs):
             raise RulePackError('Dados de creación de actor inválidos')
         physical={key:value.get('values') for key,value in trace['rolls'].items() if value.get('rolled')}
         stages.append({'inputs':entry['inputs'],'physical':physical})
-    expected=create(pack,actor['id'],actor['npc'],actor['profile'],stages,actor['publicFields'],npcs,actor['policy'])
+    expected=create(pack,actor['id'],actor['npc'],actor['profile'],stages,actor['publicFields'],npcs,actor['policy'],introduced_at=actor.get('introducedAt'))
+    pack.view(actor['sheet'])
+    if any(actor['sheet'].get(key)!=expected['sheet'].get(key) for key in ('owner','profile','package')):
+        raise RulePackError('La identidad de ficha del actor difiere de su creación')
+    if actor['sheet']['revision']<expected['sheet']['revision']:raise RulePackError('La revisión del actor precede a su creación')
     for original,replayed in zip(creation['steps'],expected['creation']['steps']):
         for key,roll in original['trace']['rolls'].items():
             if roll.get('rolled') is True:
                 if roll.get('origin') not in ('server','physical'):raise RulePackError('Origen de dado de actor inválido')
                 if key in replayed['trace']['rolls']:replayed['trace']['rolls'][key]['origin']=roll['origin']
-    if canonical(actor)!=canonical(expected):raise RulePackError('La ficha del actor no coincide con su perfil y decisiones confirmadas')
+    if canonical(actor|{'sheet':expected['sheet']})!=canonical(expected):raise RulePackError('La creación del actor no coincide con el perfil y decisiones confirmadas')
     return copy.deepcopy(expected)
 
 
-def validate_registry(actors,pack,npcs,player_ids=()):
+def validate(actor,pack,npcs):
+    expected=initial(actor,pack,npcs)
+    if canonical(actor)!=canonical(expected):raise RulePackError('La ficha del actor no coincide con su perfil y decisiones confirmadas')
+    return expected
+
+
+def validate_registry(actors,pack,npcs,player_ids=(),message_count=None):
     if not isinstance(actors,list) or len(actors)>MAX_ACTORS or len(canonical(actors).encode('utf-8'))>MAX_BYTES:
         raise RulePackError('Registro privado de actores fuera de límites')
     seen=set();references=set();result=[]
     for actor in actors:
         validated=validate(actor,pack,npcs)
+        if message_count is not None and 'introducedAt' in validated and validated['introducedAt']>message_count:
+            raise RulePackError('El actor se preparó después del registro disponible')
         if validated['id'] in seen or validated['id'] in player_ids or validated['npc'] in references:
             raise RulePackError('Un actor no puede duplicar otra ficha ni otro PNJ')
         seen.add(validated['id']);references.add(validated['npc']);result.append(validated)

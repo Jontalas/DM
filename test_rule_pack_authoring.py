@@ -33,6 +33,16 @@ def reply(prepared):
 class RulePackAuthoringTests(unittest.TestCase):
     def setUp(self):self.prepared=authoring.prepare_input(request())
 
+    def test_target_math_is_not_advertised_until_authoring_examples_support_two_sheets(self):
+        self.assertNotIn('target-sheets',authoring.context(self.prepared)['engine']['capabilities'])
+        response=reply(self.prepared);data=json.loads(response['packageJson'])
+        data['requires'].append('target-sheets');data['actions']['attempt']['target']=True
+        response['packageJson']=json.dumps(data)
+        with self.assertRaisesRegex(RulePackError,'preparador'):authoring.validate_reply(self.prepared,response)
+        # Capability presentation does not change an already captured request key.
+        with patch.object(authoring,'CAPABILITIES',authoring.CAPABILITIES|{'future-library-capability'}):
+            self.assertEqual(authoring.prepare_input(request())['sha256'],self.prepared['sha256'])
+
     def test_legacy_prompt_identity_wrapper_is_flattened_without_changing_rules(self):
         original=reply(self.prepared);data=json.loads(original['packageJson'])
         expected=copy.deepcopy(data);data['identity']={key:data.pop(key) for key in ('id','name','edition','version')}

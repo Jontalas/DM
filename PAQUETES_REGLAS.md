@@ -1,5 +1,11 @@
 # Motor común y paquetes de reglas importables
 
+## Acciones sobre PNJ: cobertura actual
+
+`target-sheets` incorpora cálculo determinista de dos fichas con efectos por ámbito. `abstract-scene-targets` añade exclusivamente un contexto declarado de escena abstracta compartida, percepción común y ausencia explícita de iniciativa/alcance espacial. La interfaz ofrece selección de PNJ conocido sin IA; el servidor comprueba permisos, contexto y revisiones antes de dados y confirma ambas fichas juntas. Registro privado reproducible, proyección de campos compartidos y continuación optativa target-facts-5; detalles en RESOLUCIONES_ENTRE_FICHAS.md. El preparador automático todavía excluye estas capacidades y el director no las selecciona por texto libre.
+
+El registro privado de actores y sus perfiles ya existe; las afirmaciones históricas inferiores de «todavía no hay registro» corresponden al bloque inicial de perfiles. Preparación importable de esos actores y vínculos de objetivos de aventura con un PNJ concreto siguen pendientes. No añade combate Pathfinder ni acredita un segundo sistema oficial. Estado de despliegue y evidencia más recientes en REANUDAR.md.
+
 ## Perfiles de creación separados (capacidad en validación)
 
 Validación local final: 443 pruebas completas con emulador sin omisiones, correctas (168,821 s). Cinco pruebas nuevas de perfil/progreso/límites/composición/permisos y navegador de creador normal con acciones del perfil alternativo ocultas correctos; no nuevas inferencias reales. Pendiente despliegue en este punto.
