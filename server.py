@@ -149,6 +149,7 @@ def execute_action(body,me):
         if state['ruleset']=='rule-pack' and me['host'] and body['type'] in ('prepare_rule_pack','install_prepared_rule_pack'):
             workspace_readonly=body['type']=='install_prepared_rule_pack' and state.get('authoringWorkspaceRef') is not None
             state=attach_workspace(state,me)
+        import rule_preparation_attempt as attempts
         title=None;preparation_key=None;randomness=None
         def legacy_reply(text,refs,**options):
             nonlocal preparation_key
@@ -249,6 +250,8 @@ def execute_action(body,me):
                 text=body['text'];refs=search(text)
             actors=[c['id'] for c in state['characters'] if me['host'] or c['owner']==me['id']]
             result=legacy_reply(text,refs,check_actors=actors)
+            if body.get('kind')=='ooc' and (result.get('checks') or result.get('investigation')):
+                raise ValueError('Una intervención fuera de personaje no solicita pruebas ni investigaciones')
             if result.get('adventureModule') is not None:raise ValueError('La conversación no puede sustituir la aventura en curso')
             if body['type']=='continue_adventure' and (result.get('checks') or result.get('investigation')):
                 raise ValueError('La continuación debe narrar el resultado confirmado, sin solicitar otra prueba')

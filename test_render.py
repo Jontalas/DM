@@ -1,5 +1,6 @@
 """Despliegue: mismo recorrido HTTP bajo Waitress y almacenamiento separado."""
 import json
+import os
 from pathlib import Path
 import tempfile
 import threading
@@ -18,6 +19,8 @@ from test_support import make_store
 class ProductionServerTests(test_server.IntegrationTests):
     @classmethod
     def setUpClass(cls):
+        cls.ai_environment=patch.dict(os.environ,{'ANTHROPIC_API_KEY':'fixture-only-never-sent'});cls.ai_environment.start()
+        cls.addClassCleanup(cls.ai_environment.stop)
         from waitress.server import create_server
         cls.tmp=tempfile.TemporaryDirectory()
         cls.oldStore,cls.oldBooks=server.STORE,server.BOOKS_DIR

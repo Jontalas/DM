@@ -17,7 +17,10 @@ CONTRACT='cronicas-pf-director-1'
 
 def prepare(state,text,refs,check_actors=None,starting=False,source_text=None):
     context=claude_dm.build_context(state,text,refs,check_actors=check_actors,starting=starting,source_text=source_text)
-    request={'contract':CONTRACT,'context':copy.deepcopy(context)}
+    # Distinguish genuinely new turns after the bounded history window repeats,
+    # while a retry against the same uncommitted state keeps the same key.
+    transcript_length=sum(1 for message in state['messages'] if message.get('visibility','public')=='public' and message.get('kind')!='private')
+    request={'contract':CONTRACT,'context':copy.deepcopy(context),'transcriptLength':transcript_length}
     raw=canonical(request).encode('utf-8')
     if len(raw)>300000:raise ValueError('El contexto de esta aventura supera el límite; no se ha llamado a IA')
     return {'request':request,'sha256':hashlib.sha256(raw).hexdigest(),'sourceScheme':SCHEME,
@@ -35,4 +38,11 @@ def restore(prepared,payload,scheme):
         except (TypeError,ValueError):raise ValueError('Captura de respuesta dañada; no se ha repetido IA') from None
     elif payload['kind']=='report':raw=json.dumps({'stop_reason':'end_turn','content':[{'type':'text','text':json.dumps(payload['value'])}]}).encode('utf-8')
     else:raise ValueError('Tipo de captura Pathfinder desconocido')
-    return claude_dm.parse_response(state,raw,rules=False,starting=context['operation']=='startAdventure')
+    result=claude_dm.parse_response(state,raw,rules=False,starting=context['operation']=='startAdventure')
+    if payload['kind']=='report':
+        # Reports already passed through the adapter. Validate their structure,
+        # but preserve the stored narration instead of repairing it twice.
+        narration=payload['value'].get('narration')
+        if not isinstance(narration,str) or not narration.strip() or len(narration)>30000:raise ValueError('Narración guardada inválida')
+        result['narration']=narration
+    return result

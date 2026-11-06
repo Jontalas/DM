@@ -76,6 +76,7 @@ def main():
         cairn_director.ai_reply=cairn_fixture_reply
     # Explicit isolated fixture only; never available in the production startup path.
     if os.environ.get('TEST_ADVENTURE_FIXTURE')=='1':
+        os.environ['ANTHROPIC_API_KEY']='fixture-only-never-sent'
         from test_adventure import reply,memory
         def fixture_reply(state,text,refs,**options):
             if state.get('adventureModule') and state['adventureModule']['title']!='Fixture libre':

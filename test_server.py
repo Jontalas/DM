@@ -1,5 +1,5 @@
 """Pruebas HTTP reales. El adaptador de IA se sustituye solo en esta prueba."""
-import json, secrets, threading, unittest, urllib.request, urllib.error
+import json, os, secrets, threading, unittest, urllib.request, urllib.error
 from pathlib import Path
 import server
 from test_support import make_store
@@ -8,6 +8,8 @@ from unittest.mock import patch
 class IntegrationTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
+        cls.ai_environment=patch.dict(os.environ,{'ANTHROPIC_API_KEY':'fixture-only-never-sent'});cls.ai_environment.start()
+        cls.addClassCleanup(cls.ai_environment.stop)
         cls.oldStore=server.STORE;server.STORE=make_store();server.initialize()
         cls.http=server.ThreadingHTTPServer(('127.0.0.1',0),server.Handler); cls.url='http://127.0.0.1:'+str(cls.http.server_port)
         cls.thread=threading.Thread(target=cls.http.serve_forever,daemon=True);cls.thread.start()
@@ -312,6 +314,50 @@ class IntegrationTests(unittest.TestCase):
             self.action('character',character={'name':'Aria'});self.action('talk',text='Busco a la posadera',director=True)
             self.assertEqual(self.state()['state']['messages'][-1]['kind'],'director')
         finally:server.ai_reply=original
+
+    def test_pathfinder_director_recovers_after_failed_commit_without_another_call(self):
+        self.action('character',character={'name':'Aria'})
+        body={'type':'talk','id':secrets.token_hex(12),'version':self.state()['version'],
+            'text':'Busco información de la posadera.','director':True,'kind':'dialogue'}
+        before=self.state()
+        with patch.object(server,'ai_reply',return_value={'narration':'La posadera responde.','proposals':[]}) as provider:
+            with patch.object(server.STORE,'commit',side_effect=server.Unavailable('Simulated commit failure')):
+                with self.assertRaises(urllib.error.HTTPError) as error:self.request('/api/action',body,self.token)
+                self.assertEqual(error.exception.code,503);error.exception.close()
+            self.assertEqual(self.state()['state'],before['state'])
+            from firebase_store import FirestoreStore
+            from test_support import TestStore
+            import copy
+            original=server.STORE
+            if isinstance(original,FirestoreStore):
+                recovered=FirestoreStore.from_environment();recovered.prefix=original.prefix
+            else:
+                recovered=TestStore()
+                for key,value in vars(original).items():
+                    if key!='lock':setattr(recovered,key,copy.deepcopy(value))
+            with patch.object(server,'STORE',recovered):
+                self.request('/api/action',body,self.token)
+                self.assertTrue(self.request('/api/action',body,self.token)['duplicate'])
+            self.assertEqual(provider.call_count,1)
+        self.assertEqual(self.state()['state']['messages'][-1]['text'],'La posadera responde.')
+
+    def test_private_director_note_is_rejected_before_provider_and_reservation(self):
+        before=self.state()
+        with (patch.object(server,'ai_reply',side_effect=AssertionError('Private note reached provider')),
+              patch.object(server.STORE,'begin_rule_preparation',side_effect=AssertionError('Private note reserved inference'))):
+            with self.assertRaises(urllib.error.HTTPError) as error:self.action('talk',text='Secreto privado.',kind='private',director=True)
+            self.assertEqual(error.exception.code,400);error.exception.close()
+        self.assertEqual(self.state()['state'],before['state'])
+
+    def test_ooc_cannot_create_mechanical_requests(self):
+        self.action('character',character={'name':'Aria'});before=self.state()
+        character=before['state']['characters'][0]['id']
+        answer={'narration':'Una pausa.','proposals':[],
+            'checks':[{'character':character,'kind':'ability','key':'str','dc':10,'reason':'No hay declaración de personaje.'}]}
+        with patch.object(server,'ai_reply',return_value=answer):
+            with self.assertRaises(urllib.error.HTTPError) as error:self.action('talk',text='Una pausa OOC.',kind='ooc',director=True)
+            self.assertEqual(error.exception.code,400);error.exception.close()
+        self.assertEqual(self.state()['state'],before['state'])
 
     def test_historical_director_encoding_preserves_originals_and_player_words(self):
         broken='El salÃ³n huele a pan reciÃ©n horneado. —Sí.'
