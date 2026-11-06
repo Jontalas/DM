@@ -1,5 +1,7 @@
 # Encuentro preparado del módulo Pathfinder
 
+**Nueva versión1.1.0 verificada localmente:** preserva1.0.0 y sus solicitudes antiguas. Añade conducta original de espera de la guardiana consciente y recuperación automática del único PJ inconsciente hasta consciencia o muerte. PG, dados y tiempo se confirman juntos; sin curación ni administración por hora. Varios caídos, descanso curativo y siguiente escena pendientes.592 pruebas completas correctas, navegadores de despertar y muerte desde creador con ataques reales del PNJ y sin PG editados, copia por interfaz/móvil. Fuente y evidencia en RECUPERACION_PATHFINDER.md. Respaldo/despliegue aún a continuación; estados desplegados inferiores son históricos.
+
 **Desplegado y comprobado:**c8b968ba74bf3cd103d57b9c709998ba9c237dae, Render7604614121 success, revisión exacta y salud HTTPS200. Las menciones inferiores a estado local describen el desarrollo anterior al despliegue. La aventura autónoma y sus hitos siguen pendientes.
 
 Estado: encuentro acotado integrado localmente, **todavía sin desplegar**. Incluye acuerdo, combate, primeros auxilios y desenlace; no es un hito de aventura autónoma. El bloque de captura Pathfinder precedente está desplegado en `3168478`, con revisión y salud HTTPS verificadas.

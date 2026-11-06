@@ -6,7 +6,8 @@ function characterChecks(c){
 }
 function sheetChecks(c){
  const allowed=(snapshot.me.host||c.owner===snapshot.me.id)&&characterIsConscious(c);
- return `<section class="sheet-checks">${c.hp<0&&characterIsConscious(c)?'<p class="notice">Consciente, pero incapacitado. Puedes moverte o usar una acción estándar, no ambas. Una acción fatigosa cuesta 1 PG y puede dejarte moribundo.</p>':''}<h3>Tirar desde la ficha</h3><p class="hint">Usa los valores guardados. Guarda primero cualquier edición. Una tirada libre muestra el total; las solicitadas por el maestro comparan también con su CD.</p><div class="toolbar">${characterChecks(c).map(v=>`<button type="button" data-sheet-check="${esc(v.kind)}" data-check-character="${esc(c.id)}" data-check-key="${esc(v.key)}" ${!allowed||c.conditions?.trim()?'disabled':''}>${esc(v.name)} ${Number(v.total)>=0?'+':''}${Number(v.total)}</button>`).join('')}</div>${c.conditions?.trim()?'<p class="notice">Revisa las condiciones mediante resolución asistida antes de tirar automáticamente.</p>':''}</section>`;
+ const health=c.hp<=-c.abilities[2]?'Tu personaje ha muerto. Las tiradas de esta ficha están desactivadas.':c.hp<0&&!characterIsConscious(c)?'Tu personaje está inconsciente y no puede actuar.':c.hp<=0?'Consciente, pero incapacitado. Puedes moverte o usar una acción estándar, no ambas. Una acción fatigosa cuesta 1 PG y puede dejarte moribundo.':'';
+ return `<section class="sheet-checks">${health?`<p class="notice">${esc(health)}</p>`:''}<h3>Tirar desde la ficha</h3><p class="hint">Usa los valores guardados. Guarda primero cualquier edición. Una tirada libre muestra el total; las solicitadas por el maestro comparan también con su CD.</p><div class="toolbar">${characterChecks(c).map(v=>`<button type="button" data-sheet-check="${esc(v.kind)}" data-check-character="${esc(c.id)}" data-check-key="${esc(v.key)}" ${!allowed||c.conditions?.trim()?'disabled':''}>${esc(v.name)} ${Number(v.total)>=0?'+':''}${Number(v.total)}</button>`).join('')}</div>${c.conditions?.trim()?'<p class="notice">Revisa las condiciones mediante resolución asistida antes de tirar automáticamente.</p>':''}</section>`;
 }
 function skillFields(c){
  return `<label>Habilidades preparadas para tirar · una por línea: nombre | total<textarea name="skillTotalsInput" placeholder="Percepción | 6">${esc((c.skillTotals||[]).map(row=>row.name+' | '+row.total).join('\n'))}</textarea></label><p class="hint">Prepara solo habilidades cuyo uso sea legal y sus totales estén verificados: característica, rangos, bonificador de clase y demás modificadores ya incluidos. Las notas antiguas de habilidades se conservan.</p>`;
@@ -16,7 +17,7 @@ function parseSkillTotals(text){
 }
 function renderChecks(){
  const rows=snapshot.state.pending.filter(p=>p.check),me=snapshot.me;
- $('#requestCheck').hidden=!me.host;
+ $('#requestCheck').hidden=!me.host||!snapshot.state.characters.some(c=>!c.enemy&&characterIsConscious(c)&&!c.conditions?.trim());
  $('#checkRequests').innerHTML=rows.map(p=>{
   const c=snapshot.state.characters.find(c=>c.id===p.check.character),allowed=c&&(me.host||c.owner===me.id);
   const name=c&&characterChecks(c).find(v=>v.kind===p.check.kind&&v.key===p.check.key)?.name||p.check.key;

@@ -1,0 +1,17 @@
+{
+  "format": "cronicas-pf-encounter-1",
+  "id": "patio-del-peaje",
+  "version": "1.1.0",
+  "ruleset": "pathfinder-1e",
+  "title": "El patio del peaje",
+  "location": "Patio abierto a plena luz",
+  "description": "Una guardiana goblin espera ante la salida del patio. Te ha visto y tú la has visto; no hay sorpresa. Lleva la espada corta preparada y propone que habléis antes de disputar el paso. Puedes aceptar hablar o decidir entrar en combate. No se eligen palabras ni acciones por tu personaje.",
+  "goal": "Resolver la disputa por el paso",
+  "npc": {"template": "pf1-goblin-warrior-1", "name": "Guardiana del patio"},
+  "conditions": {"lighting": "normal", "surprise": false, "terrain": "open", "players": 1},
+  "agreement": "La guardiana acepta dejarte pasar sin exigir dinero ni objetos. Has obtenido permiso; atravesar la salida sigue siendo una decisión tuya.",
+  "defeatPolicy": "Conducta de esta guardiana en esta escena original: no remata a un personaje que queda inconsciente. Si conserva la consciencia, cesa sus ataques y espera a que el estado de los caídos se determine. No presta curación ni decide por el personaje del jugador.",
+  "recoveryPolicy": "En esta escena original el patio permanece tranquilo después del enfrentamiento. Si la guardiana sigue consciente y el PJ queda estable pero inconsciente, ella espera hasta que recobre la consciencia o muera. No lo ataca, no lo cura y no decide sus acciones. Si despierta, le permite retirarse sin atacarlo. Esta conducta pertenece a la escena, no a las reglas de Pathfinder.",
+  "recoveryScope": "single-unconscious-player-1",
+  "coverage": "Encuentro original de un PJ y un PNJ publicado: acuerdo, combate básico, primeros auxilios y estabilización. Si solo el PJ está inconsciente y la guardiana sigue consciente, el motor resuelve las horas hasta consciencia o muerte, sin curación. Recuperación de varios caídos, descanso curativo, asistencia adicional, recompensas y siguiente escena todavía pendientes."
+}

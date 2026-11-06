@@ -104,6 +104,11 @@ def main():
     engine.secrets.randbelow=lambda sides:0 if os.environ.get('TEST_CAIRN_FIXTURE')=='1' else min(11,sides-1)
     import game_randomness
     game_randomness.draw=lambda sides:1 if os.environ.get('TEST_CAIRN_FIXTURE')=='1' else min(12,sides)
+    if os.environ.get('TEST_PF_RECOVERY_FIXTURE') in ('1','death'):
+        # Explicit browser-only sequence: ordinary NPC hits for3HP, then a
+        # source-backed stabilization/consciousness success. No production hook.
+        recovery_d20=iter([18]*8+[20]+[1]*12) if os.environ['TEST_PF_RECOVERY_FIXTURE']=='death' else None
+        game_randomness.draw=lambda sides:(next(recovery_d20) if recovery_d20 is not None else 18) if sides==20 else 3 if sides==4 else min(12,sides)
     http=create_server(application,host='127.0.0.1',port=0,threads=4)
     print('http://127.0.0.1:'+str(http.effective_port),flush=True)
     http.run()

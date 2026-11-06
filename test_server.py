@@ -447,6 +447,45 @@ class IntegrationTests(unittest.TestCase):
         self.assertEqual(error.exception.code,400);error.exception.close()
         self.assertEqual(self.state()['state'],after)
 
+    def test_automatic_recovery_preserves_dice_clock_and_health_after_failed_commit_and_cold_client(self):
+        import copy
+        import game_randomness
+        from firebase_store import FirestoreStore
+        from test_support import TestStore
+        from test_character_builder import choices
+        self.action('create_character',choices=choices());character=self.state()['state']['characters'][0]['id']
+        self.action('enter_pf_encounter',encounter='patio-del-peaje',encounterVersion='1.1.0',character=character)
+        with patch('game_randomness.draw',side_effect=[20,1]),patch('game_randomness.initiative_tie',return_value=0):
+            self.action('choose_pf_encounter',choice='combat')
+        before=self.state();body={'id':secrets.token_hex(12),'version':before['version'],'type':'manual',
+            'character':character,'hpDelta':-17,'reason':'Fixture de recuperación duradera','resolution':'PJ a -1PG','reference':'Prueba'}
+        observed=[];actual=game_randomness.draw
+        def recording(sides):
+            value=actual(sides);observed.append(value);return value
+        with patch('game_randomness.draw',side_effect=recording),patch.object(server,'ai_reply',side_effect=AssertionError('Recovery called AI')):
+            # This test-only seed produces20,20 through the real durable HMAC stream.
+            with patch('secrets.token_bytes',return_value=(1301).to_bytes(32,'big')),patch.object(server.STORE,'commit',side_effect=server.Unavailable('Failed recovery confirmation')):
+                with self.assertRaises(urllib.error.HTTPError) as error:self.request('/api/action',body,self.token)
+                self.assertEqual(error.exception.code,503);error.exception.close()
+            self.assertEqual(self.state()['state'],before['state'])
+            original=server.STORE
+            if isinstance(original,FirestoreStore):
+                recovered=FirestoreStore.from_environment();recovered.prefix=original.prefix
+            else:
+                recovered=TestStore()
+                for key,value in vars(original).items():
+                    if key!='lock':setattr(recovered,key,copy.deepcopy(value))
+            with patch.object(server,'STORE',recovered):
+                self.request('/api/action',body,self.token)
+                self.assertTrue(self.request('/api/action',body,self.token)['duplicate'])
+        self.assertEqual(observed,[20,20,20,20])
+        after=self.state()['state'];self.assertEqual(after['characters'][0]['hp'],-1)
+        self.assertTrue(after['characters'][0]['recoveryState']['conscious'])
+        self.assertEqual(after['pfEncounter']['recoveryOutcome']['seconds'],3600)
+        self.assertEqual(after['pfEncounter']['recoveryOutcome']['dice'],[20]);self.assertFalse(after['board']['active'])
+        exported=self.request('/api/export',{},self.token);self.action('import',campaign=exported)
+        self.assertEqual(self.state()['state']['pfEncounter'],after['pfEncounter'])
+
     def test_ooc_cannot_create_mechanical_requests(self):
         self.action('character',character={'name':'Aria'});before=self.state()
         character=before['state']['characters'][0]['id']

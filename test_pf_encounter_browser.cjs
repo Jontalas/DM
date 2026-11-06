@@ -21,7 +21,7 @@ const path=require('node:path'),assert=require('node:assert/strict');
    assert.equal(await page.locator('[data-quick-die="20"]').isVisible(),true);
    await page.keyboard.press('Enter');assert.equal(actions.length,diceActions);
    await page.locator('#beginPreparedEncounter').click();await page.locator('#pfEncounterEntry').waitFor();
-   assert.match(await page.locator('#modalContent').textContent(),/horaria.*pendientes/);
+   assert.match(await page.locator('#modalContent').textContent(),/varios caídos.*pendientes/);
    const help=page.locator('#modalContent .encounter-help'),helpActions=actions.length;
    assert.equal(await help.getAttribute('open'),null);
    assert.equal(await help.locator('p').first().isVisible(),false);
@@ -76,7 +76,7 @@ const path=require('node:path'),assert=require('node:assert/strict');
    assert.ok(!actions.some(a=>['character','create_npc','start_adventure'].includes(a.type)));
    assert.deepEqual(errors,[]);await context.close();
   }
-  console.log('PF encounter browser passed: fresh campaign and guided character, catalog NPC, parley/combat, automatic initiative, attack, dying turn, standard-action first aid, stable outcome without HP healing, reload, local consultation and mobile. No AI. Hourly recovery and further continuity remain pending; defeat is verified separately in engine tests.');
+  console.log('PF encounter browser passed: fresh campaign and guided character, catalog NPC, parley/combat, automatic initiative, attack, dying turn, standard-action first aid, stable outcome without HP healing, reload, local consultation and mobile. No AI. Multiple fallen and further continuity remain pending; single-patient recovery is verified in its dedicated browser test.');
  }finally{if(browser)await browser.close();fixture.kill()}
 })().catch(error=>{console.error(error);process.exitCode=1});
 

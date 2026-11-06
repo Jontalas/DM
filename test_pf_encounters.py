@@ -188,3 +188,47 @@ class PreparedPathfinderEncounterTests(unittest.TestCase):
         self.assertTrue(patient['recoveryCare']['assisted'])
         self.assertEqual(self.state['pfEncounter']['phase'],'defeated')
         pf_recovery.validate_restored(self.state);pf_encounters.validate_restored(self.state)
+
+    def recovery_scene(self):
+        engine.apply_action(self.state,{'type':'enter_pf_encounter','encounter':pf_encounters.ID,
+            'encounterVersion':'1.1.0','character':self.actor},self.me)
+        with patch('game_randomness.draw',side_effect=[20,1]):
+            engine.apply_action(self.state,{'type':'choose_pf_encounter','choice':'combat'},self.me)
+        self.state['characters'][0]['hp']=-1
+
+    def test_new_scene_resolves_hours_without_player_administration_and_keeps_real_wounds(self):
+        import pf_recovery
+        self.recovery_scene()
+        with patch('game_randomness.draw',side_effect=[20,1,20]) as rng:self.assertTrue(pf_encounters.resolve_defeat(self.state))
+        self.assertEqual(rng.call_count,3);actor,npc=self.state['characters']
+        self.assertEqual((actor['hp'],npc['hp']),(-2,7));self.assertTrue(pf_recovery.is_conscious(actor))
+        record=self.state['pfEncounter'];self.assertEqual(record['outcome']['hp'],-1)
+        self.assertEqual(record['recoveryOutcome']['dice'],[1,20]);self.assertEqual(record['recoveryOutcome']['seconds'],7200)
+        self.assertIn('2 hora',self.state['worldTime']);self.assertFalse(self.state['board']['active'])
+        pf_encounters.validate_restored(self.state);pf_recovery.validate_restored(self.state)
+        with patch('game_randomness.draw',side_effect=AssertionError('Recovery repeated')):
+            self.assertFalse(pf_encounters.resolve_recovery(self.state))
+        for field,value in (('hours',True),('seconds',3600),('hp',0),('status','dead'),('assisted',True),('dice',[1,20,20])):
+            forged=copy.deepcopy(self.state);forged['pfEncounter']['recoveryOutcome'][field]=value
+            with self.assertRaises(ValueError):pf_encounters.validate_restored(forged)
+
+    def test_unaided_recovery_can_kill_and_does_not_invent_a_rescue(self):
+        self.recovery_scene()
+        with patch('game_randomness.draw',side_effect=[20]+[1]*13) as rng:pf_encounters.resolve_defeat(self.state)
+        self.assertEqual(rng.call_count,14)
+        self.assertEqual(self.state['characters'][0]['hp'],-14)
+        receipt=self.state['pfEncounter']['recoveryOutcome'];self.assertEqual(receipt['status'],'dead')
+        self.assertEqual(receipt['hours'],13);self.assertEqual(receipt['seconds'],46800)
+        audits=[m for m in self.state['messages'] if m.get('recoveryChecks')]
+        self.assertEqual(len(audits),1);self.assertEqual(len(audits[0]['recoveryChecks']),13)
+        self.assertNotIn('recoveryState',self.state['characters'][0]);pf_encounters.validate_restored(self.state)
+
+    def test_multiple_fallen_and_legacy_scene_do_not_skip_unimplemented_hourly_events(self):
+        self.recovery_scene();self.state['characters'][1]['hp']=-3
+        with patch('game_randomness.draw',return_value=20) as rng:pf_encounters.resolve_defeat(self.state)
+        self.assertEqual(rng.call_count,2);self.assertNotIn('recoveryOutcome',self.state['pfEncounter'])
+        pf_encounters.validate_restored(self.state)
+        self.setUp();self.dying_opponent();self.state['characters'][0]['hp']=-1;self.state['characters'][1]['hp']=7
+        with patch('game_randomness.draw',return_value=20) as rng:pf_encounters.resolve_defeat(self.state)
+        self.assertEqual(rng.call_count,1);self.assertNotIn('recoveryOutcome',self.state['pfEncounter'])
+        self.assertEqual(self.state['pfEncounter']['definition']['version'],'1.0.0');pf_encounters.validate_restored(self.state)
