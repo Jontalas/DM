@@ -1,5 +1,17 @@
 # Continuidad del desarrollo autónomo
 
+## Continuación y cierre de cuentas de asistencia — 7 de noviembre de2026
+
+596 pruebas completas correctas sin omisiones (246,092s), `.deps/pf-care-initiative-final-tests.log`, sesión37713 terminada;73 afectadas y navegador correctos. Continúa desarrollo por ratificación del usuario. Care-2 preserva instantes sin alterar la recuperación1.1; respaldo en feature, producción permanecea947d06. Siguiente: descanso natural y eventos simultáneos, con fuentes verificadas y sin ocultar lo pendiente.
+
+## Instantes de asistencia para varios pacientes — 6 de noviembre de2026
+
+Recuperación1.1 desplegada y verificada en **a947d064d306401d668b9f38c2475175288bed91**, Render **7605998467 success**, revisión/salud HTTPS200 y definición1.1.0 exacta. Cero inferencias reales y ninguna campaña personal modificada. Se continúa con el reloj de varios pacientes.
+
+Original Reglas básicas PDF179/folio178 comprobado visualmente: asalto6s y duración de asalto completo desde una cuenta a la misma del siguiente; no repartir segundos uniformemente entre participantes. Nuevo registro care-2 añade cuenta y orden congelado al estabilizar; el auxilio se ancla al turno del auxiliador. Compatibilidad care-1 sin inventar su cuenta. `next_hourly_events` calcula grupo de próximos eventos por ronda/cuenta, preserva simultáneos, rechaza relojes históricos distintos o un moribundo no resuelto, y no tira ni avanza estado. No es todavía el controlador completo: descanso natural8h de un asistido puede coincidir con prueba horaria y no debe saltarse. Búsqueda local no halló una regla general de prioridad que se pueda atribuir al manual; mantener explícito antes de activar el caso.
+
+73 pruebas afectadas correctas, incluidas temporización del auxiliador, eventos simultáneos, cuentas distintas, copias antiguas desconocidas, metadatos inválidos antes de mutar y recuperación duradera HTTP/Waitress. Navegador de recuperación actual correcto con care-2. Suite completa en sesión37713, `.deps/pf-care-initiative-final-tests.log`, comprobar. Bloque local todavía sin respaldo/despliegue; main siguea947d06. Desarrollo continúa; no presentar el planificador como soporte terminado de varios caídos.
+
 ## Recuperación automática en escena versionada — 6 de noviembre de2026
 
 **Cierre final:**592 pruebas completas correctas sin omisiones (261,104s), `.deps/pf-automatic-recovery-grouped-final-tests.log`, sesión43787 terminada. Suite previa592 (253,124s), sesión10021 terminada. Se agrupó el registro de horas en un único resumen con auditoría desplegable y todos los dados; prueba de13h conserva13 entradas dentro de una sola auditoría, sin saturar chat ni contexto IA. Navegadores de despertar y muerte parten del creador y caída por ataques normales:−2PG despierta tras1h; sin ayuda muere a−14 tras12h. Ambos conservan estado/recibo al exportar/importar en interfaz y recargar, móvil sin desbordamiento. Abrir auditoría con teclado no envía acciones. Se aclara estado actual, se desactivan controles imposibles de un muerto y no se pide configuración de IA al jugador. Pruebas de ficha/aventura correctas tras esos ajustes finales de presentación. Sin cambios mecánicos después de iniciar la suite agrupada. Cero inferencias reales. Respaldar/desplegar y comprobar revisión exacta/salud; continuar después con continuidad/siguiente escena y pacientes múltiples, sin prueba personal de hito.

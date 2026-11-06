@@ -16,14 +16,26 @@ def clear_episode(character):
     character.pop('recoveryCare',None);character.pop('recoveryState',None)
 
 
-def record_stabilization(character,*,assisted,round_number):
+def record_stabilization(character,*,assisted,round_number,initiative=None,order=None):
     # Called only when a verified rule actually stabilizes a dying creature.
     consciousness_check({**character,'stable':True},20,assisted=assisted)
     if type(round_number)!=int or not 1<=round_number<=1000000:
         raise ValueError('La asistencia requiere una ronda válida')
+    care={'format':'cronicas-pf-care-1','assisted':assisted,'round':round_number}
+    if initiative is not None or order is not None:
+        care.update(format='cronicas-pf-care-2',initiative=initiative,order=order[:] if isinstance(order,list) else order)
+        _validate_initiative_care(character,care)
     character['stable']=True
     character.pop('recoveryState',None)
-    character['recoveryCare']={'format':'cronicas-pf-care-1','assisted':assisted,'round':round_number}
+    character['recoveryCare']=care
+
+
+def _validate_initiative_care(character,care):
+    order=care['order']
+    if (not isinstance(order,list) or not 1<=len(order)<=400 or any(not isinstance(v,str) or not 1<=len(v)<=80 for v in order)
+        or len(set(order))!=len(order) or not isinstance(care['initiative'],str)
+        or care['initiative'] not in order or character.get('id') not in order):
+        raise ValueError('La asistencia no conserva su cuenta de iniciativa')
 
 
 def validate_restored(state):
@@ -31,10 +43,13 @@ def validate_restored(state):
         if 'recoveryState' in character and 'recoveryCare' not in character:raise ValueError('La recuperación no conserva asistencia conocida')
         if 'recoveryCare' not in character:continue
         care=character['recoveryCare']
+        version=care.get('format') if isinstance(care,dict) else None
+        fields={'format','assisted','round'}|({'initiative','order'} if version=='cronicas-pf-care-2' else set())
         if (state.get('ruleset','pathfinder-1e')!='pathfinder-1e' or not isinstance(care,dict)
-            or set(care)!={'format','assisted','round'} or care['format']!='cronicas-pf-care-1'
+            or set(care)!=fields or version not in ('cronicas-pf-care-1','cronicas-pf-care-2')
             or type(care['assisted'])!=bool or type(care['round'])!=int or not 1<=care['round']<=1000000):
             raise ValueError('Registro de asistencia Pathfinder inválido')
+        if version=='cronicas-pf-care-2':_validate_initiative_care(character,care)
         patient={k:v for k,v in character.items() if k!='recoveryState'}
         consciousness_check(patient,20,assisted=care['assisted'])
         if 'recoveryState' in character:
@@ -87,3 +102,28 @@ def apply_hour(character,raw):
         character['recoveryState']={'format':'cronicas-pf-recovery-state-1','hours':hours,
             'conscious':result['conscious'],'lastCheck':result}
     return result
+
+
+def next_hourly_events(characters):
+    """Read-only next simultaneous checks; not a complete time controller.
+
+    Core PDF179/printed178: a round is6s and a full-round interval ends at
+    the same initiative count.600 rounds are one hour. Do not invent equal
+    fractions of6s for participants. Natural healing/rest must be scheduled
+    separately before this planner can drive multi-patient campaign time.
+    """
+    validate_restored({'characters':characters})
+    events=[];shared_order=None
+    for patient in characters:
+        if patient['hp']>=0 or patient['hp']<=-patient['abilities'][2] or is_conscious(patient):continue
+        if patient.get('stable') is not True:raise ValueError('Resuelve la estabilización por turnos antes de avanzar horas')
+        care=patient.get('recoveryCare',{})
+        if care.get('format')!='cronicas-pf-care-2':raise ValueError('La copia no conserva el instante de asistencia; no se supone una cuenta de iniciativa')
+        if shared_order is None:shared_order=care['order']
+        elif shared_order!=care['order']:raise ValueError('Los pacientes necesitan un reloj común; no se mezclan iniciativas históricas distintas')
+        hours=patient.get('recoveryState',{}).get('hours',0)+1
+        due=(care['round']+600*hours,care['order'].index(care['initiative']))
+        events.append({'character':patient['id'],'round':due[0],'initiative':care['initiative'],'orderIndex':due[1]})
+    if not events:return []
+    earliest=min((e['round'],e['orderIndex']) for e in events)
+    return [e for e in events if (e['round'],e['orderIndex'])==earliest]

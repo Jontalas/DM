@@ -109,3 +109,44 @@ class HourlyRecoveryTests(unittest.TestCase):
         self.assertEqual(actor['hp'],-2);self.assertFalse(actor['stable'])
         self.assertNotIn('recoveryState',actor);self.assertNotIn('recoveryCare',actor)
         self.assertFalse(combat.standing(actor));self.assertEqual(combat.health_status(actor),'moribundo')
+
+    def timed_patient(self,identifier,round_number,initiative,assisted=False,order=None):
+        patient=self.patient();patient['id']=identifier
+        pf_recovery.record_stabilization(patient,assisted=assisted,round_number=round_number,
+            initiative=initiative,order=order or ['player','npc'])
+        return patient
+
+    def test_aid_is_anchored_to_helpers_initiative_and_simultaneous_checks_are_not_lost(self):
+        actor=self.timed_patient('player',7,'player')
+        npc=self.timed_patient('npc',7,'player',assisted=True)
+        before=copy.deepcopy([actor,npc]);events=pf_recovery.next_hourly_events([actor,npc])
+        self.assertEqual([e['character'] for e in events],['player','npc'])
+        self.assertTrue(all(e['round']==607 and e['initiative']=='player' for e in events))
+        self.assertEqual([actor,npc],before)
+
+    def test_same_round_different_counts_and_separate_rounds_keep_real_order(self):
+        actor=self.timed_patient('player',7,'npc')
+        npc=self.timed_patient('npc',7,'player',assisted=True)
+        self.assertEqual(pf_recovery.next_hourly_events([actor,npc])[0]['character'],'npc')
+        pf_recovery.apply_hour(npc,1)
+        events=pf_recovery.next_hourly_events([actor,npc])
+        self.assertEqual([e['character'] for e in events],['player']);self.assertEqual(events[0]['orderIndex'],1)
+        actor=self.timed_patient('player',9,'player')
+        npc=self.timed_patient('npc',7,'npc',assisted=True)
+        self.assertEqual(pf_recovery.next_hourly_events([actor,npc])[0]['round'],607)
+
+    def test_legacy_or_different_clocks_cannot_be_guessed_and_dying_cannot_be_skipped(self):
+        legacy=self.patient();pf_recovery.record_stabilization(legacy,assisted=False,round_number=1)
+        with self.assertRaises(ValueError):pf_recovery.next_hourly_events([legacy])
+        actor=self.timed_patient('player',1,'player');npc=self.timed_patient('npc',1,'npc',order=['npc','player'])
+        with self.assertRaises(ValueError):pf_recovery.next_hourly_events([actor,npc])
+        dying=self.patient();dying['stable']=False
+        with self.assertRaises(ValueError):pf_recovery.next_hourly_events([actor,dying])
+        pf_recovery.apply_hour(actor,20);self.assertEqual(pf_recovery.next_hourly_events([actor]),[])
+
+    def test_invalid_initiative_metadata_rejects_before_stabilization_mutation(self):
+        for initiative,order in ((None,['player']),('missing',['player']),('player',['player','player']),
+                                 ('player',['npc']),('player','player'),('player',[True])):
+            patient=self.patient();patient.update(id='player',stable=False);before=copy.deepcopy(patient)
+            with self.assertRaises(ValueError):pf_recovery.record_stabilization(patient,assisted=True,round_number=1,initiative=initiative,order=order)
+            self.assertEqual(patient,before)
