@@ -5,6 +5,7 @@ import tactics
 import checks
 import character_builder
 import adventure_modules
+import game_randomness
 
 def initial_state(config):
     return {'scene':1,'location':config.get('location','Por decidir'),'worldTime':'Comienzo de la aventura','goal':config.get('goal','Definir el objetivo con el grupo'),'objectives':[], 'allies':[],'enemies':[],'facts':{},'unknowns':[],'consequences':[], 'tokens':0,'threshold':int(config.get('threshold',15)),'turned':False,'voluntaryScene':0,'characters':[],'messages':[],'pending':[],'bookmarks':[],'private':{},'secrets':'','notes':'','tone':config.get('tone','Fantasía aventurera'),'limits':config.get('limits',''),'difficulty':config.get('difficulty','Estándar; encuentros pendientes de validar'),'mode':config.get('mode','solo'),'agreement':'Adaptación multijugador: reserva común de FH; el anfitrión registra el consentimiento unánime antes del gasto. Decisiones colectivas por consenso. No se alteran estadísticas para equilibrar encuentros.','criteria':['TREY p.25: el ejemplo d8=7 dice objetivo en curso; la tabla p.23 indica objetivo final. Se usa la tabla.','TREY p.25: ejemplo d6=5 dice retrasado; se aplica demorado, tabla p.23.','Pathfinder 1e: las ventajas de FH son una adaptación TREY; requieren adjudicación manual y registro.'],'board':{'active':False,'round':1,'turn':0,'order':[],'terrain':{},'spent':{}},'oracleLog':[]}
@@ -21,7 +22,7 @@ def dice(sides,values=None):
     if values is not None:
         if len(values)!=len(sides) or any(type(v)!=int or not 1<=v<=d for v,d in zip(values,sides)): raise ValueError('Dados físicos fuera de rango')
         return values[:]
-    return [secrets.randbelow(d)+1 for d in sides]
+    return [game_randomness.draw(d) for d in sides]
 def oracle(raw,probability):
     a,b,c=raw
     mods={'neutral':0,'probable':math.ceil(c/2),'muy probable':c,'improbable':-math.ceil(c/2),'muy improbable':-c}
@@ -283,7 +284,7 @@ def apply_action(s,b,me):
         if type(automatic)!=bool:raise ValueError('El control automático debe ser verdadero o falso')
         if automatic and not any(not c['enemy'] for c in s['characters']):raise ValueError('Añade al menos un personaje jugador')
         order=[{'id':c['id'],'roll':dice([20])[0],'modifier':c['initiative'],'dex':c['abilities'][1]} for c in s['characters']]
-        order.sort(key=lambda v:(v['roll']+v['modifier'],v['modifier'],secrets.randbits(16)),reverse=True)
+        order.sort(key=lambda v:(v['roll']+v['modifier'],v['modifier'],game_randomness.initiative_tie()),reverse=True)
         s['board'].update(active=True,round=1,turn=0,order=order,spent={},acted=[],autoEnemies=automatic)
         s['board'].pop('autoPaused',None);begin_turn(s)
         log(s,'Iniciativa d20 + modificador declarado: '+str(order)+'. Empates: modificador total y después azar. Reglas básicas: Iniciativa, impresa p.178 / PDF p.179. Sorpresa: resolución excepcional. CA desprevenido automática en ataques básicos con perfil preparado.',refs=[{'book':'reglas','page':179}])

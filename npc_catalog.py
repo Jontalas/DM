@@ -1,7 +1,7 @@
 """Data-backed, source-identified NPC preparation for the existing PF1 adapter.
 
-No spawn API or autonomous encounter is enabled by this factory. Its partial
-melee profile does not certify lighting, cover, conditions or future choices.
+The preparation API uses this factory; no autonomous encounter is enabled by it.
+Its partial melee profile does not certify lighting, cover or future choices.
 """
 import copy
 import hashlib

@@ -32,6 +32,72 @@ class IntegrationTests(unittest.TestCase):
         self.action('talk',text='Secreto',kind='private',director=False)
         self.assertFalse(any(m['text']=='Secreto' for m in self.state(guest)['state']['messages']))
 
+    def test_legacy_roll_recovers_original_dice_after_failed_commit_and_new_client(self):
+        import copy
+        from firebase_store import FirestoreStore,Unavailable
+        before=self.state();body={'id':secrets.token_hex(12),'version':before['version'],'type':'roll','n':3,'sides':20,'modifier':4,'label':'Prueba duradera'};captured=[]
+        def fail(*args,**kwargs):captured.append(copy.deepcopy(args[5]));raise Unavailable('Interrupted legacy dice commit')
+        with patch.object(server.STORE,'commit',side_effect=fail):
+            with self.assertRaises(urllib.error.HTTPError) as error:self.request('/api/action',body,self.token)
+        self.assertEqual(error.exception.code,503);error.exception.close();self.assertEqual(self.state(),before)
+        old=server.STORE
+        if isinstance(old,FirestoreStore):server.STORE=FirestoreStore.from_environment();server.STORE.prefix=old.prefix
+        try:
+            with patch('game_randomness.secrets.randbelow',side_effect=AssertionError('Retry used fresh random dice')):
+                self.request('/api/action',body,self.token)
+                self.assertTrue(self.request('/api/action',body,self.token)['duplicate'])
+            self.assertEqual(self.state()['state']['messages'][-1]['text'],captured[0]['messages'][-1]['text'])
+        finally:server.STORE=old
+
+    def test_legacy_initiative_and_tiebreaks_recover_together(self):
+        import copy
+        from firebase_store import FirestoreStore,Unavailable
+        from test_character_builder import choices
+        self.action('create_character',choices=choices());self.action('create_npc',template='pf1-goblin-warrior-1')
+        before=self.state();body={'id':secrets.token_hex(12),'version':before['version'],'type':'combat'};captured=[]
+        def fail(*args,**kwargs):captured.append(copy.deepcopy(args[5]));raise Unavailable('Interrupted initiative commit')
+        with patch('game_randomness.secrets.randbits',side_effect=AssertionError('Initiative used unreserved tiebreak')):
+            with patch.object(server.STORE,'commit',side_effect=fail):
+                with self.assertRaises(urllib.error.HTTPError) as error:self.request('/api/action',body,self.token)
+            self.assertEqual(error.exception.code,503);error.exception.close()
+        self.assertEqual(self.state(),before);old=server.STORE
+        if isinstance(old,FirestoreStore):server.STORE=FirestoreStore.from_environment();server.STORE.prefix=old.prefix
+        try:
+            with patch('game_randomness.secrets.randbits',side_effect=AssertionError('Retry used a fresh tiebreak')):
+                self.request('/api/action',body,self.token)
+            self.assertEqual(self.state()['state']['board'],captured[0]['board'])
+        finally:server.STORE=old
+
+    def test_legacy_npc_attack_recovers_same_damage_and_spent_action(self):
+        import copy
+        from firebase_store import FirestoreStore,Unavailable
+        from test_character_builder import choices
+        self.action('create_character',choices=choices());self.action('create_npc',template='pf1-goblin-warrior-1')
+        self.action('combat');before=self.state();state=before['state']
+        attacker=state['board']['order'][state['board']['turn']]['id'];target=next(c['id'] for c in state['characters'] if c['id']!=attacker)
+        body={'id':secrets.token_hex(12),'version':before['version'],'type':'attack','character':attacker,'target':target};captured=[]
+        def fail(*args,**kwargs):captured.append(copy.deepcopy(args[5]));raise Unavailable('Interrupted attack commit')
+        with patch('secrets.token_bytes',return_value=bytes(32)):
+            with patch.object(server.STORE,'commit',side_effect=fail):
+                with self.assertRaises(urllib.error.HTTPError) as error:self.request('/api/action',body,self.token)
+        self.assertEqual(error.exception.code,503);error.exception.close();self.assertEqual(self.state(),before)
+        old=server.STORE
+        if isinstance(old,FirestoreStore):server.STORE=FirestoreStore.from_environment();server.STORE.prefix=old.prefix
+        try:
+            self.request('/api/action',body,self.token);self.assertTrue(self.request('/api/action',body,self.token)['duplicate'])
+            result=self.state()['state'];self.assertEqual(result['characters'],captured[0]['characters'])
+            self.assertEqual(result['board'],captured[0]['board'])
+            self.assertEqual(result['messages'][-1]['combat'],captured[0]['messages'][-1]['combat'])
+            self.assertEqual(result['messages'][-1]['combat']['roll'],14)
+            self.assertTrue(result['messages'][-1]['combat']['hit']);self.assertGreater(result['messages'][-1]['combat']['damage'],0)
+        finally:server.STORE=old
+
+    def test_legacy_physical_dice_and_npc_preparation_do_not_reserve_random_streams(self):
+        with patch.object(server.STORE,'action_random_seed',side_effect=AssertionError('Physical/no dice reserved seed')),\
+             patch.object(server.STORE,'check_action_random_seed',side_effect=AssertionError('Legacy physical checked seed')):
+            self.action('roll',n=1,sides=20,physical=[12])
+            self.action('create_npc',template='pf1-goblin-warrior-1')
+
     def test_source_npc_is_deduplicated_host_prepared_and_keeps_director_on_copy(self):
         from test_character_builder import choices
         import copy

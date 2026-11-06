@@ -1,5 +1,7 @@
 # Plantillas de adversarios desde fuentes verificadas
 
+Desplegado y verificado: d4816bd83d802777701f82dd831ce87e4509d1ec, Render7588288003 success y revisión/salud exactas. Preparación aislada de producción sin IA: valores publicados, controlador, duplicado, copia, invitado y avisos correctos; ninguna aventura iniciada. Navegador anfitrión/invitado/copia/móvil correcto, cero acciones por consultar. Los «pendiente/sin API» inferiores corresponden al proceso de construcción previo; sigue pendiente conectar un encuentro autónomo.
+
 ## Integración local posterior
 
 API create_npc integrada y en validación final: anfitrión, datos de catálogo, fuera de combate, colocación libre, propietario director y límite16. No acepta totales del cliente. Procedencia por huella de plantilla; ampliar el catálogo no invalida entradas anteriores. La copia verifica la plantilla y conserva propietario/controlador de PNJ; solo reasigna PJ. PG actuales/posición son estado dinámico validado. Modificar estadísticas mediante el editor avanzado marca explícitamente corrección excepcional, sin transferir el PNJ al jugador.

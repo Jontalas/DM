@@ -227,7 +227,10 @@ def execute_action(body,me):
         elif body['type']=='investigate':
             queue_investigation(state,body,me)
             if body.get('method') is not None:
-                apply_action(state,{'type':'check','request':state['pending'][-1]['check']['id'],'method':body['method']},me)
+                from action_randomness import ActionRandomness
+                from game_randomness import using_random_source
+                randomness=ActionRandomness(store,cid,aid,me['id'],signature,row['version'])
+                with using_random_source(randomness):apply_action(state,{'type':'check','request':state['pending'][-1]['check']['id'],'method':body['method']},me)
         elif body['type']=='continue_adventure' or body['type']=='talk' and body.get('director',True):
             if body['type']=='continue_adventure':
                 text=adventure.continuation_request(state,me);refs=[]
@@ -259,7 +262,11 @@ def execute_action(body,me):
                     state['pending'][-1]['source']='Solicitud de Claude Haiku; CD propuesta por el director para esta situación'
                 except (ValueError,KeyError,TypeError):
                     state['pending'].append({'reason':'Revisar prueba propuesta: '+str(proposal.get('reason','Prueba no válida'))[:500],'source':'El motor no pudo validar la solicitud de Claude; resolución asistida'})
-        else:apply_action(state,body,me)
+        else:
+            from action_randomness import ActionRandomness
+            from game_randomness import using_random_source
+            randomness=ActionRandomness(store,cid,aid,me['id'],signature,row['version'])
+            with using_random_source(randomness):apply_action(state,body,me)
         # Firestore CAS + marker are atomic. A conflict never reruns RNG or the provider.
         if randomness is not None:randomness.verify_if_unused()
         if workspace_readonly:state['authoringWorkspace']=None

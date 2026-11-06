@@ -101,6 +101,8 @@ def main():
     server.READER=fixture_reader()
     # Predictable dice only inside this explicitly isolated test process.
     engine.secrets.randbelow=lambda sides:0 if os.environ.get('TEST_CAIRN_FIXTURE')=='1' else min(11,sides-1)
+    import game_randomness
+    game_randomness.draw=lambda sides:1 if os.environ.get('TEST_CAIRN_FIXTURE')=='1' else min(12,sides)
     http=create_server(application,host='127.0.0.1',port=0,threads=4)
     print('http://127.0.0.1:'+str(http.effective_port),flush=True)
     http.run()

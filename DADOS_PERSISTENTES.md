@@ -1,0 +1,13 @@
+# Dados persistentes del módulo Pathfinder heredado
+
+Integración local en validación/despliegue: la API de Pathfinder utiliza la misma reserva duradera de ActionRandomness que ya protegía el motor de paquetes. game_randomness.py proporciona una fuente por contexto de ejecución, aislada entre hilos y restaurada también ante excepciones. engine.dice utiliza esa fuente únicamente al generar dados; registrar dados físicos conserva su validación y no consume una secuencia del servidor.
+
+Iniciativa y su clave aleatoria de desempate de16bits pertenecen a la misma secuencia de la acción. Se conserva la distribución anterior, las fórmulas y el orden de aplicación. La clave de desempate no vuelve a generarse con entropía nueva al reintentar. También quedan cubiertos ataques/daño, estabilizaciones y acciones automáticas incluidas en el mismo cambio de estado, así como pruebas, dados rápidos y sucesos que pasan por engine.dice.
+
+El servidor reserva una semilla privada antes del primer dado y confirma su barrera en el lote habitual de estado/marcador HTTP. Un cliente nuevo recupera la misma secuencia si falló el commit y la versión de la mesa sigue igual. Las acciones físicas/sin dados no crean reservas ni las consultan. Cuando sí hay dados, se añade una reserva por acción, no por dado ni por cálculo; no se utiliza IA ni una colección nueva. La semilla no entra en contexto, estado público o exportación.
+
+El alcance de recuperación entre versiones distintas sigue siendo el contrato específico de solicitudes rule-pack pending-resolution-v2. Un ataque o iniciativa Pathfinder no adquiere ese permiso de forma implícita: conserva su control de versión y debe rechazar cambios intermedios. El envío ya confirmado se reconoce por su marcador antes de volver a ejecutar.
+
+Pruebas: ContextVar anidado/con excepción y dos hilos simultáneos no mezclan secuencias; valores inválidos rechazados. HTTP/Waitress con Firestore: fallo de commit y cliente nuevo preservan dados rápidos, iniciativa/desempates y daño/PG/acción gastada contra el PNJ preparado. Registrar físicos o preparar PNJ no accede a reservas. Navegadores de creador/ataque y PNJ correctos con datos/dados explícitamente simulados; el doble de navegador adapta la fuente solo en su proceso de pruebas, nunca en producción.
+
+Validación final local: **543 pruebas completas con emulador correctas sin omisiones (236,338s)**, .deps/pf-durable-dice-final-tests.log. Falta respaldo/despliegue y prueba mecánica ordinaria de producción sin inyectar fallos ni llamar a IA. Esto mejora persistencia; no certifica una aventura completa ni aceptación narrativa.
