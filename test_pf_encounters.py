@@ -150,6 +150,7 @@ class PreparedPathfinderEncounterTests(unittest.TestCase):
         self.assertEqual(rng.call_count,2)
         self.assertEqual([c['hp'] for c in self.state['characters']],[-1,-3])
         self.assertTrue(all(c['stable'] for c in self.state['characters']));pf_encounters.validate_restored(self.state)
+        self.assertTrue(all(c['recoveryCare']['assisted'] is False for c in self.state['characters']))
         self.state['pfEncounter']['outcome']['npcStable']=False
         with self.assertRaises(ValueError):pf_encounters.validate_restored(self.state)
 
@@ -166,3 +167,12 @@ class PreparedPathfinderEncounterTests(unittest.TestCase):
         self.assertNotIn('autoPaused',self.state['board'])
         self.assertNotIn('termina su turno',self.state['messages'][-1]['text'])
         pf_encounters.validate_restored(self.state)
+
+    def test_new_injury_clears_previous_episode_care_and_first_aid_records_actual_help(self):
+        self.dying_opponent()
+        engine.apply_action(self.state,{'type':'pf_first_aid','physical':20},self.me)
+        patient=self.state['characters'][1]
+        self.assertTrue(patient['recoveryCare']['assisted'])
+        engine.apply_action(self.state,{'type':'manual','character':patient['id'],'hpDelta':-1,
+            'reason':'Nueva herida del fixture','resolution':'Nuevo episodio','reference':'Prueba'},self.me)
+        self.assertNotIn('recoveryCare',patient);self.assertFalse(patient['stable'])

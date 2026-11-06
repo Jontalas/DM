@@ -1,5 +1,7 @@
 # Encuentro preparado del módulo Pathfinder
 
+**Desplegado y comprobado:**c8b968ba74bf3cd103d57b9c709998ba9c237dae, Render7604614121 success, revisión exacta y salud HTTPS200. Las menciones inferiores a estado local describen el desarrollo anterior al despliegue. La aventura autónoma y sus hitos siguen pendientes.
+
 Estado: encuentro acotado integrado localmente, **todavía sin desplegar**. Incluye acuerdo, combate, primeros auxilios y desenlace; no es un hito de aventura autónoma. El bloque de captura Pathfinder precedente está desplegado en `3168478`, con revisión y salud HTTPS verificadas.
 
 `adventures/pf-patio-del-peaje.json` es una escena original, no ficción del Bestiario. `pf_encounters.py` la enlaza con la plantilla publicada `pf1-goblin-warrior-1`. No acepta estadísticas del jugador ni convierte reglas de otros sistemas. La definición 1.0.0 queda fijada por su hash al entrar y al recuperar una copia; versiones futuras deben conservar esta definición y añadir una nueva, no reinterpretar partidas anteriores.

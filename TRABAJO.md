@@ -1,6 +1,20 @@
 # Continuidad del desarrollo autónomo
 
+## Directiva de sencillez y primera aplicación — 6 de noviembre de2026
+
+El usuario exige máxima sencillez, información clara sin saturación y guía mediante ayudas contextuales o recorridos cuando haga falta; ratifica que el desarrollo continúa sin detenerse. Añadido como premisa permanente de AGENTS.md y criterio transversal de PRODUCTO.md; USABILIDAD.md registra revisión pendiente. Se aplica al encuentro: decisiones primero, cobertura desplegable, auxilio con siguiente paso y riesgos relevantes visibles. Dados libres del compositor bajo ayuda desplegable, sin confundirlos con pruebas del motor. Foco visible de resúmenes, teclado y tacto probados, apertura de ayudas sin acciones/IA. Cuatro navegadores correctos: encuentro, mesa general, aventura y plan-3. No se afirma revisión completa de usabilidad.
+
+La suite del registro de asistencia anterior terminó: **581 pruebas sin omisiones (116,361s)**, `.deps/pf-care-record-final-tests.log`, sesión17128 cerrada. Código del motor sin cambios posteriores; los ajustes siguientes son interfaz/documentación verificados por sus navegadores. Cero inferencias reales. REANUDAR.md consolidado para eliminar pendientes históricos contradictorios; contenido anterior íntegro en HISTORIAL_REANUDAR_2026-11-06.md. Respaldar y desplegar este bloque verificado; seguir después con recuperación y claridad de entrada.
+
+## Recuperación: cálculo y registro de asistencia — 6 de noviembre de 2026
+
+Tras verificar el despliegue c8b968b y la definición pública exacta del encuentro (sin IA ni escrituras de campaña), continúa el desarrollo. Nuevo `pf_recovery.py`: cálculo puro, validado y sin mutación de la prueba horaria de consciencia, CD10, Constitución menos PG negativos,20 natural, pérdida1PG solo al fallar sin ayuda. No cura ni activa tiempo/consciencia en una campaña. Seis pruebas recorren todos los dados y PG legales de varias Constituciones; incluyen1 natural exitoso, muerte sin ayuda, asistencia desconocida y copias inválidas.
+
+El registro `recoveryCare` sí se integra localmente al estabilizar por iniciativa o primeros auxilios. Distingue ayuda efectiva; se invalida por daño y por correcciones excepcionales de PG. Importación valida formato/ayuda/ronda y estado del paciente; partidas antiguas conservan ausencia de dato, no se migran por conjetura. Quince pruebas de encuentro y sus HTTP/Waitress comprueban ambos estados, episodio nuevo, auxilio recuperado tras fallo y copia.38 pruebas afectadas correctas; navegador del encuentro correcto. Suite final en sesión17128, `.deps/pf-care-record-final-tests.log`, aún comprobar resultado. Este bloque no está desplegado. RECUPERACION_PATHFINDER.md describe integración y límites pendientes, incluida consciencia con PG negativos, reloj compartido y descanso, para no ofrecer un botón que el motor aún no soporta.
+
 ## Encuentro Pathfinder preparado y desenlaces — 6 de noviembre de 2026
+
+Despliegue cerrado: **c8b968ba74bf3cd103d57b9c709998ba9c237dae**, feature/main respaldadas, Render **7604614121 success**, revisión exacta y salud HTTPS200 verificadas. No se han ejecutado inferencias reales ni modificado partidas personales. Continuar el siguiente bloque, sin esperar intervención.
 
 Cierre final: **574 pruebas completas con emulador correctas sin omisiones (127,479s)**, `.deps/pf-encounter-release-final-tests.log`. Suite final terminada; las referencias inferiores a ejecución pendiente quedan superadas. Navegador repetido tras mensajes finales, correcto. Respaldar/desplegar este bloque verificado y comprobar revisión exacta/salud; continuar después con la recuperación y continuidad pendientes.
 

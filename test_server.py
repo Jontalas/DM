@@ -402,6 +402,8 @@ class IntegrationTests(unittest.TestCase):
         self.assertEqual(len(observed),2);self.assertEqual(observed[0],observed[1])
         after=self.state()['state'];patient=after['characters'][1]
         self.assertEqual(patient['hp'],-3);self.assertEqual(patient['stable'],observed[0]+1>=15)
+        if patient['stable']:self.assertTrue(patient['recoveryCare']['assisted'])
+        else:self.assertNotIn('recoveryCare',patient)
         self.assertTrue(after['board']['spent'][character]['standard'])
         exported=self.request('/api/export',{},self.token);self.action('import',campaign=exported)
         self.assertEqual(self.state()['state']['pfEncounter'],after['pfEncounter'])
@@ -420,6 +422,7 @@ class IntegrationTests(unittest.TestCase):
         self.assertEqual(record['phase'],'defeated');self.assertEqual(record['outcome']['status'],'unconscious')
         self.assertFalse(state['board']['active']);self.assertNotIn('autoPaused',state['board'])
         self.assertEqual(record['outcome']['round'],state['board']['round'])
+        self.assertFalse(state['characters'][0]['recoveryCare']['assisted'])
         exported=self.request('/api/export',{},self.token);self.action('import',campaign=exported)
         self.assertEqual(self.state()['state']['pfEncounter'],record)
 

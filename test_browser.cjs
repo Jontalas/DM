@@ -87,6 +87,7 @@ const assert=require('node:assert/strict');
   });
   assert.equal(localVersion,afterEnemy.version);
   // Explicit quick dice are saved, without enabling the AI checkbox's behavior.
+  await b.locator('#quickDiceHelp summary').click();
   await b.locator('[data-quick-die="20"]').click();
   await b.getByText('Tirada rápida d20:',{exact:false}).waitFor();
   await a.reload();await a.locator('#app').waitFor({state:'visible'});

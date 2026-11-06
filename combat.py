@@ -100,11 +100,13 @@ def attack(state,body,actor,dice):
         damage=sum(damage_rolls)+bonus*multiplier
     # Mutation begins only after all input and physical dice are validated.
     target['hp']-=damage
-    if damage:target['stable']=False
+    if damage:
+        target['stable']=False;target.pop('recoveryCare',None)
     spent={**spent,'standard':True}
     board['spent'][source['id']]=spent
     if source['hp']==0:
         source['hp']-=1;source['stable']=False  # Strenuous standard action while disabled.
+        source.pop('recoveryCare',None)
     result={'attacker':source['id'],'target':target['id'],'roll':raw,'modifier':modifier,
             'ac':armor,'flatFooted':flat,'flanking':flanking,'hit':hit,'confirmation':confirmation,
             'critical':critical,'damageRolls':damage_rolls,'damage':damage,'targetHp':target['hp'],

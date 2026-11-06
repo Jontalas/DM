@@ -174,6 +174,8 @@ def execute_action(body,me):
                 npc_catalog.validate_restored(state)
                 import pf_encounters
                 pf_encounters.validate_restored(state)
+                import pf_recovery
+                pf_recovery.validate_restored(state)
                 for character in state['characters']:
                     if not character.get('npcCreation'):character['owner']=me['id']
                 adventure_modules.validate_restored(state)

@@ -138,8 +138,11 @@ def aid_or_wait(state,body,me):
         die=body['physical'] if 'physical' in body else game_randomness.draw(20)
         resolved=checks.resolve(helper,'skill','Curar',die,15)
         result['board']['spent'].setdefault(helper['id'],{})['standard']=True
-        if resolved['success']:target['stable']=True
-        if helper['hp']==0:helper['hp']=-1;helper['stable']=False
+        if resolved['success']:
+            import pf_recovery
+            pf_recovery.record_stabilization(target,assisted=True,round_number=result['board']['round'])
+        if helper['hp']==0:
+            helper['hp']=-1;helper['stable']=False;helper.pop('recoveryCare',None)
         log(result,helper['name']+': primeros auxilios, d20 '+str(die)+' '+str(resolved['modifier'])+' = '+str(resolved['total'])+' contra CD15. '+('El paciente queda estable sin recuperar PG.' if resolved['success'] else 'El paciente sigue moribundo; no se aplica daño adicional por fallar.'),
             check=resolved|{'patient':target['id']},refs=[{'book':'reglas','page':93},{'book':'reglas','page':94},{'book':'reglas','page':191}])
     else:

@@ -1,5 +1,16 @@
 # Premisas primordiales de la aplicación
 
+## Sencillez extrema y orientación continua (directiva del usuario, 6 de noviembre de 2026)
+
+La aplicación debe ser extremadamente sencilla de usar. Lo que se muestre en pantalla debe resultar claro y entendible en todo momento, sin abrumar al jugador por cantidad de información u opciones. Esta exigencia es transversal a todo el desarrollo y a la revisión de funciones existentes.
+
+- Mostrar primero la situación actual y las decisiones pertinentes. Desplegar progresivamente explicaciones, opciones secundarias y herramientas avanzadas cuando sean necesarias o solicitadas.
+- Guiar al usuario con instrucciones breves, ayudas contextuales, tooltips accesibles, ejemplos o recorridos guiados según el caso. Ofrecer ayuda también con teclado y pantallas táctiles; no depender exclusivamente del ratón.
+- Explicar qué puede hacer ahora, qué sucederá y cómo continuar. Si una acción no está disponible, indicar la causa y el siguiente paso útil. Mantener las decisiones del personaje en manos del jugador.
+- Usar lenguaje sencillo y consistente; evitar que conceptos técnicos, límites del motor o tareas administrativas dominen la experiencia. Conservar los límites y la trazabilidad accesibles sin ocultarlos ni mostrarlos todos a la vez.
+- Comprobar los recorridos desde una sesión nueva, en escritorio y móvil. Evaluar claridad, cantidad de decisiones simultáneas, posibilidad de encontrar ayuda y recuperación tras errores, además de corrección técnica.
+- La orientación y la presentación se resuelven localmente; no añadir IA ni lecturas/escrituras remotas por abrir ayudas, desplegar detalles o navegar.
+
 ## Objetivo rector y autonomía (actualización del usuario, 4 de noviembre de 2026)
 
 La aplicación debe permitir aventuras y campañas persistentes sin un maestro humano, desde un jugador hasta un grupo manejable. La IA dirige ficción y PNJ; el motor valida reglas y cambios de estado; los jugadores conservan sus decisiones. Se reutilizan Render, Firebase y Anthropic. La especificación y prioridades actuales están en PRODUCTO.md.

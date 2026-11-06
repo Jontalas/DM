@@ -53,7 +53,9 @@ def begin_turn(s):
             log(s,patient['name']+': estabilización pendiente; las condiciones requieren resolución excepcional.')
         else:
             raw=dice([20])[0];modifier=(patient['abilities'][2]-10)//2+patient['hp']
-            if raw==20 or raw+modifier>=10:patient['stable']=True
+            if raw==20 or raw+modifier>=10:
+                import pf_recovery
+                pf_recovery.record_stabilization(patient,assisted=False,round_number=board['round'])
             else:patient['hp']-=1
             log(s,f"{patient['name']}: estabilización d20 {raw} {modifier:+} contra CD 10 → {combat.health_status(patient)}; PG {patient['hp']}.",refs=[{'book':'reglas','page':191}])
 
@@ -364,7 +366,9 @@ def apply_action(s,b,me):
             if 'hpDelta' in b:
                 delta=max(-10000,min(10000,int(b['hpDelta'])))
                 c['hp']+=delta
-                if delta:c['stable']=delta>0
+                if delta:
+                    c['stable']=delta>0
+                    c.pop('recoveryCare',None)  # Exceptional healing has no certified care history.
             if 'conditions' in b: c['conditions']=str(b['conditions'])
             if 'resources' in b: c['resources']=str(b['resources'])
         log(s,'RESOLUCIÓN MANUAL ASISTIDA · '+reason+' · '+resolution+' · Coste de acción: '+str(b.get('actionCost','none'))+' · Referencia: '+str(b.get('reference','Sin verificar; criterio provisional')))

@@ -4,6 +4,8 @@ Dirección acordada el 4 de noviembre de 2026. Este documento describe el objeti
 
 ## Experiencia objetivo
 
+**Directiva adicional del usuario, 6 de noviembre de 2026:** máxima sencillez de uso y orientación continua. Cada pantalla debe comunicar con claridad la situación, las decisiones actuales y el siguiente paso, sin abrumar con información u opciones. Revelar progresivamente lo secundario y avanzado; ofrecer ayuda contextual, tooltips accesibles y recorridos guiados cuando hagan falta. Revisar también las funciones existentes. La claridad forma parte de la aceptación de cada recorrido, en escritorio, teclado y móvil, y no requiere llamadas de IA ni operaciones remotas por consultar ayuda. Criterios y revisión en USABILIDAD.md.
+
 Jugar rol sin maestro humano, con decisiones libres, IA que interprete PNJ y mantenga continuidad, y motor que aplique reglas verificadas. Desde un jugador hasta grupos de tamaño probado. Personajes persistentes reutilizables con compatibilidad y copia explícitas, campañas de varias sesiones y recuperación fiable.
 
 Aventuras generadas bajo demanda e importadas con permiso: lugares, personajes, relaciones, pistas, secretos, encuentros y condiciones de avance. Distinguir preparación de hechos ocurridos; adaptar la aventura a las decisiones del grupo. Documentos importados son datos, nunca instrucciones de sistema.
