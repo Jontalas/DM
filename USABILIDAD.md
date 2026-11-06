@@ -14,6 +14,10 @@ Revisar el encuentro preparado para mostrar primero situación y decisión; sepa
 
 ## Revisión pendiente del resto de la aplicación
 
+Tercer bloque local: mesa con instrucción breve según turno, selección y acciones gastadas; el aviso solo se actualiza cuando cambia. Ataque visible durante combate, con causa concreta si falta perfil, turno, acción o cercanía. Selección de objetivo actualiza la ayuda localmente. Inicio de iniciativa se oculta durante combate y durante la decisión inicial del encuentro preparado; los botones de recorrido aparecen al trazarlo. Correcciones, finalización manual y opción de adversarios bajo la sección de excepciones; avisos de pausa y reintento conservados. No se cambian reglas ni permisos.
+
+Evidencia: encuentro desde creador añade movimiento real fuera de combate, ataque desactivado por distancia, acercamiento mediante recorrido confirmado y ataque habilitado sin cálculos manuales. Después completa auxilio y copia/recarga. Navegadores de mesa de dos jugadores, gestos/permisos/móvil y creador pasan; navegación/medición siguen sin escrituras. Es una adaptación propia a la directiva de claridad, no una equivalencia observada de Roll20.
+
 Segundo bloque local: bienvenida con elecciones básicas, ejemplo de premisa y personalización opcional plegada; límites de contenido accesibles y aviso de cobertura pendiente. Ritmo de TREY explicado como umbral, sin prometer duración temporal. Invitación plegada al inicio y abierta automáticamente al recibir enlace; tras entrar se retira ese parámetro de la URL para que recargar recupere la partida. Estado técnico del servidor bajo demanda. Se preservan opciones/valores y selección de sistema.
 
 La biblioteca vacía queda plegada y una biblioteca con partidas se abre automáticamente. Se conserva el acceso a importar credenciales bajo su sección. Captura móvil revisada sin desbordamiento, con menos contenido previo al formulario y sin la tarjeta técnica vacía inicial. La prueba de biblioteca verifica también restauración desde archivo y el despliegue de partidas existentes.

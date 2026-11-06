@@ -1,5 +1,13 @@
 # Continuidad del desarrollo autónomo
 
+## Guía contextual de mesa — 6 de noviembre de2026
+
+Bienvenida desplegada y verificada en **7f4833cb36dec2c357a2e44d017d527467283163**, Render **7605123263 success**, revisión exacta/salud HTTPS200. Se continúa con la mesa sin esperar confirmación.
+
+Ayuda según turno, selección y acciones disponibles; se evita reanunciar el mismo texto. Ataque solo durante combate, indica acercamiento, estado o acción gastada y comprueba adyacencia local antes de habilitar. Cambiar objetivo, también desde la ficha del tablero, actualiza el botón sin acción remota. Inicio oculto durante combate o decisión inicial preparada; recorrido confirmar/borrar aparece al trazar. Herramientas excepcionales, fin manual y opción automática bajo ayuda de excepciones. Se conserva defecto automático y pausa visible. Motor/reglas/permisos sin cambios desde581 pruebas correctas.
+
+Cuatro navegadores correctos: dos jugadores, encuentro, gestos de mesa y creador. El encuentro ahora prueba moverse antes de combatir, ataque no disponible por distancia, acercamiento confirmado, ataque y auxilio. No hay inferencias reales ni nuevas operaciones por guía. USABILIDAD.md y MESA_VIRTUAL.md reflejan la adaptación propia; no se afirma observación nueva de Roll20. Cerrar respaldo/despliegue del ajuste y seguir con recuperación/continuidad.
+
 ## Bienvenida más sencilla e invitación recuperable — 6 de noviembre de2026
 
 Registro de asistencia y primera guía ya desplegados en **2d2f1ebc53e0ca80e34df4fb00e04afeb4002c97**, Render **7604965260 success**, revisión exacta y salud HTTPS200 verificadas. Continúa el trabajo con la directiva nueva, sin pedir confirmación.

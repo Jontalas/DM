@@ -65,6 +65,8 @@ function renderTabletopTools(){
  const measuring=$('#tool').value==='measure';
  $('.board-scroll').dataset.tool=$('#tool').value;
  $('#confirmMove').disabled=measuring||$('#tool').value==='pan'||!path.length;
+ $('#confirmMove').hidden=!path.length||$('#tool').value!=='move';
+ $('#clearPath').hidden=!path.length;
  if($('#tool').value==='pan')$('#pathInfo').textContent='Arrastra el mapa para desplazar la vista. También puedes usar el botón derecho.';
  if(measuring){
   if(ruler.length===2){const dx=Math.abs(ruler[1][0]-ruler[0][0]),dy=Math.abs(ruler[1][1]-ruler[0][1]);const d=Math.min(dx,dy);$('#pathInfo').textContent=`Distancia geométrica: ${(Math.max(dx,dy)+Math.floor(d/2))*5} pies. No incluye obstáculos ni terreno difícil.`}
@@ -78,10 +80,17 @@ function renderTabletopTools(){
   }
  }
  for(const option of $('#tool').options)option.disabled=!snapshot.me.host&&['wall','difficult','clear'].includes(option.value);
- for(const id of ['startCombat','endCombat','manualBtn'])$('#'+id).hidden=!snapshot.me.host;
+ $('#startCombat').hidden=!snapshot.me.host||board.active||snapshot.state.pfEncounter?.phase==='offered';
+ $('#startCombat').disabled=snapshot.state.characters.length<2;
+ $('#endCombat').hidden=!snapshot.me.host||!board.active;
+ $('#manualBtn').hidden=!snapshot.me.host;
  $('#autoEnemies').closest('label').hidden=!snapshot.me.host;
  const current=board.active&&snapshot.state.characters.find(c=>c.id===board.order[board.turn]?.id);
+ $('#nextTurn').hidden=!board.active;
  $('#nextTurn').disabled=!current||(!snapshot.me.host&&current.owner!==snapshot.me.id);
+ const mine=current&&(snapshot.me.host||current.owner===snapshot.me.id);
+ const guidance=!snapshot.state.characters.length?'Usa «Crear personaje» para empezar.':!board.active?'Puedes consultar el mapa, medir o preparar un recorrido. El combate solo empieza cuando lo decides.':!mine?`Es el turno de ${current?.name||'otro participante'}. Puedes consultar el mapa mientras esperas.`:current.id!==selected?`Es el turno de ${current.name}. Selecciona su ficha para actuar.`:spent.standard&&(spent.move||current.hp===0)?'Ya has usado tus acciones disponibles. Pulsa «Terminar turno» cuando quieras continuar.':spent.standard?'Ya has usado tu acción estándar. Puedes moverte o terminar el turno.':spent.move?'Ya te has movido. Puedes atacar a un objetivo cercano o terminar el turno.':'Es tu turno. Puedes preparar un movimiento, elegir un objetivo para atacar o terminar el turno.';
+ if($('#boardGuidance').textContent!==guidance)$('#boardGuidance').textContent=guidance;
 }
 $('#requestCheck').onclick=requestCheckForm;
 $('#tool').onchange=()=>{path=[];ruler=[];renderBoard()};
@@ -107,9 +116,13 @@ function renderAttack(){
  if(targets.some(c=>c.id===previous))$('#attackTarget').value=previous;
  const current=board.active&&board.order[board.turn]?.id===selected;
  const spent=board.spent[selected]||{};
- $('#attackButton').disabled=!current||!source?.meleeProfile||source.hp<0||spent.standard||!targets.length;
- $('#attackHint').textContent=!board.active?'Inicia la iniciativa para atacar.':!current?'Selecciona el personaje de tu turno.':!source?.meleeProfile?'Prepara el perfil de arma en la ficha fuera del combate.':spent.standard?'Acción estándar gastada.':'Elige un adversario adyacente: el motor tira, resuelve y aplica las consecuencias.';
+ const target=targets.find(c=>c.id===$('#attackTarget').value),adjacent=source&&target&&Math.max(Math.abs(source.x-target.x),Math.abs(source.y-target.y))===1;
+ const disabledMove=source?.hp===0&&spent.move;
+ $('#attackForm').hidden=!board.active;
+ $('#attackButton').disabled=!current||!source?.meleeProfile||source.hp<0||spent.standard||disabledMove||!adjacent;
+ $('#attackHint').textContent=!board.active?'El ataque estará disponible durante un combate.':!current?'Selecciona el personaje de tu turno.':source.hp<0?'Tu personaje no puede atacar mientras está inconsciente.':!source?.meleeProfile?'El arma necesita un perfil preparado antes del combate.':spent.standard?'Ya has atacado o usado tu acción estándar. Puedes terminar el turno.':disabledMove?'Estás a 0 PG y ya te has movido; termina el turno.':!targets.length?'No hay un adversario consciente disponible para este ataque básico.':!adjacent?'Acércate a una casilla junto al objetivo para atacar cuerpo a cuerpo.':'El juego tira, calcula el impacto y aplica el daño. No tienes que calcular modificadores.';
 }
+$('#attackTarget').onchange=renderAttack;
 $('#attackForm').onsubmit=run(async()=>{await act('attack',{character:$('#boardCharacter').value,target:$('#attackTarget').value})});
 function modal(html){$('#modalContent').innerHTML=html;$('#modal').showModal()}
 function npcProvenance(character){
@@ -140,7 +153,7 @@ const npcButton=document.createElement('button');npcButton.type='button';npcButt
 $('#voluntary').onclick=run(async()=>{if(!confirm('Evento voluntario normal: ganas FH iguales al número de escena antes del punto de giro. Solo uno por escena. ¿Confirmar?'))return;await act('voluntary');chooseTab('journal')});
 $('#spend').onclick=()=>{modal(`<h2>Un giro a vuestro favor</h2><form id="spendForm"><label>Beneficio<select name="benefit">${Object.entries({'repetir habilidad':2,'éxito habilidad':4,'acción adicional':2,'éxito combate':4,'evitar muerte':6,'invertir oráculo':6,'reducir excepcional':4,'grado detalle':4,'evento positivo':6,'reducir evento':4,'grado comportamiento':2,'grado capacidad':4,'objeto útil':2,'ayuda':6}).map(([k,v])=>`<option value="${k}">${k} · ${v} FH</option>`).join('')}</select></label><label>Interpretación y alcance<input name="interpretation" required></label><label class="check"><input type="checkbox" name="consent" required> Todo el grupo ha dado su consentimiento.</label><p class="hint">Se descuentan FH y se abre una resolución asistida. Las ventajas de TREY sobre Pathfinder son una adaptación declarada.</p><button class="primary">Registrar gasto</button></form>`);$('#spendForm').onsubmit=run(async e=>{let d=values(e.target);d.consent=!!d.consent;await act('spend',d);$('#modal').close();chooseTab('journal')})};
 $('#startCombat').onclick=run(()=>act('combat',{automateEnemies:$('#autoEnemies').checked}));$('#nextTurn').onclick=run(()=>act('turn'));$('#endCombat').onclick=run(()=>act('endcombat'));$('#expandBoard').onclick=()=>document.body.classList.toggle('expanded');$('#boardCharacter').onchange=()=>{path=[];renderBoard()};
-$('#grid').onclick=run(async e=>{const cell=e.target.closest('[data-x]');if(!cell)return;const x=+cell.dataset.x,y=+cell.dataset.y,tool=$('#tool').value;if(tool==='pan')return;if(tool==='measure'){ruler=ruler.length===1?[ruler[0],[x,y]]:[[x,y]];renderBoard();return}if(tool!=='move'){await act('terrain',{x,y,terrain:tool});return}const clicked=snapshot.state.characters.find(c=>c.x===x&&c.y===y);if(clicked){if(snapshot.me.host||clicked.owner===snapshot.me.id){if($('#boardCharacter').value!==clicked.id||path.length){$('#boardCharacter').value=clicked.id;path=[];renderBoard()}}else{$('#attackTarget').value=clicked.id;toast('Objetivo seleccionado: '+clicked.name)}return}const ch=snapshot.state.characters.find(c=>c.id===$('#boardCharacter').value);if(!ch)throw Error('Crea y selecciona una ficha');let prev=path.length?path[path.length-1]:[ch.x,ch.y];if(Math.max(Math.abs(prev[0]-x),Math.abs(prev[1]-y))!==1)throw Error('Selecciona una casilla adyacente al último punto');path.push([x,y]);renderBoard()});
+$('#grid').onclick=run(async e=>{const cell=e.target.closest('[data-x]');if(!cell)return;const x=+cell.dataset.x,y=+cell.dataset.y,tool=$('#tool').value;if(tool==='pan')return;if(tool==='measure'){ruler=ruler.length===1?[ruler[0],[x,y]]:[[x,y]];renderBoard();return}if(tool!=='move'){await act('terrain',{x,y,terrain:tool});return}const clicked=snapshot.state.characters.find(c=>c.x===x&&c.y===y);if(clicked){if(snapshot.me.host||clicked.owner===snapshot.me.id){if($('#boardCharacter').value!==clicked.id||path.length){$('#boardCharacter').value=clicked.id;path=[];renderBoard()}}else{$('#attackTarget').value=clicked.id;renderAttack();toast('Objetivo seleccionado: '+clicked.name)}return}const ch=snapshot.state.characters.find(c=>c.id===$('#boardCharacter').value);if(!ch)throw Error('Crea y selecciona una ficha');let prev=path.length?path[path.length-1]:[ch.x,ch.y];if(Math.max(Math.abs(prev[0]-x),Math.abs(prev[1]-y))!==1)throw Error('Selecciona una casilla adyacente al último punto');path.push([x,y]);renderBoard()});
 $('#clearPath').onclick=()=>{path=[];renderBoard()};$('#confirmMove').onclick=run(async()=>{if(!path.length)throw Error('Traza un recorrido primero');if(!confirm($('#pathInfo').textContent+'\n¿Has revisado las consecuencias conocidas y las reglas pendientes con la mesa?'))return;await act('move',{character:$('#boardCharacter').value,path,acknowledge:true})});
 $('#openPage').onclick=()=>openBook();$('#book').onchange=()=>openBook($('#book').value,1);$('#bookmark').onclick=run(async()=>{const label=prompt('Nombre del marcador',names[$('#book').value]+' · p.'+$('#page').value);if(label)await act('bookmark',{book:$('#book').value,page:+$('#page').value,label})});
 async function find(q){const data=await api('/api/search?q='+encodeURIComponent(q)+'&book='+$('#book').value);$('#searchResults').innerHTML=data.map(r=>`<div class="result">${ref(r.book,r.page)}<p>${esc(r.text)}</p></div>`).join('')||'<p>No hay coincidencias fiables en el texto extraído. Consulta el original; puede requerir OCR.</p>'}

@@ -8,6 +8,7 @@ const path=require('node:path'),assert=require('node:assert/strict');
   browser=await chromium.launch({headless:true,executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe'});
   for(const choice of ['parley','combat']){
    const context=await browser.newContext({hasTouch:true}),page=await context.newPage(),actions=[],errors=[];
+   page.on('dialog',dialog=>dialog.accept());
    page.on('pageerror',e=>errors.push(e.stack));page.on('request',r=>{if(r.url().endsWith('/api/action'))actions.push(r.postDataJSON())});
    await page.goto(url);await page.locator('#createForm [name=title]').fill('Patio · '+choice);
    await page.locator('#createForm [name=player]').fill('Ana');await page.locator('#createForm [name=goal]').fill('Conseguir permiso para pasar');
@@ -38,8 +39,15 @@ const path=require('node:path'),assert=require('node:assert/strict');
     assert.equal(await page.evaluate(()=>snapshot.state.board.active),false);
     assert.match(await page.locator('#adventureEntry').textContent(),/decisión tuya/);
    }else{
+    await page.locator('#grid [data-x="0"][data-y="1"]').click();
+    await page.locator('#grid [data-x="0"][data-y="2"]').click();
+    await page.locator('#confirmMove').click();await page.waitForFunction(()=>snapshot.state.characters[0].y===2);
     await page.locator('#pfEncounterCombat').click();await page.waitForFunction(()=>snapshot.state.board.active);
     assert.equal(await page.evaluate(()=>snapshot.state.board.autoEnemies),true);
+    assert.equal(await page.locator('#startCombat').isVisible(),false);
+    assert.equal(await page.locator('#attackButton').isEnabled(),false);
+    assert.match(await page.locator('#attackHint').textContent(),/Acércate/);
+    await page.locator('#grid [data-x="0"][data-y="1"]').click();await page.locator('#confirmMove').click();
     await page.waitForFunction(()=>!document.querySelector('#attackButton').disabled);
     await page.locator('#attackButton').click();await page.waitForFunction(()=>snapshot.state.characters[1].hp<0);
     const hp=await page.evaluate(()=>snapshot.state.characters[1].hp),con=await page.evaluate(()=>snapshot.state.characters[1].abilities[2]);
