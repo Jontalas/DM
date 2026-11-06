@@ -30,7 +30,11 @@ function libraryHtml(library,inCampaign=false){
 }
 function renderSavedCampaigns(){
  const target=$('#savedCampaigns');if(!target)return;
- try{target.innerHTML=libraryHtml(CampaignLibrary.read(localStorage))}
+ try{
+  const library=CampaignLibrary.read(localStorage),panel=$('#savedLibraryPanel'),hasEntries=String(library.entries.length>0);
+  target.innerHTML=libraryHtml(library);
+  if(panel.dataset.hasEntries!==hasEntries){panel.open=hasEntries==='true';panel.dataset.hasEntries=hasEntries;}
+ }
  catch{target.textContent='No se puede leer la biblioteca local. Se conservan sus datos; puedes seguir usando el acceso actual.'}
 }
 function openCampaignLibrary(){

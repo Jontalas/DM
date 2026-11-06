@@ -14,6 +14,12 @@ Revisar el encuentro preparado para mostrar primero situación y decisión; sepa
 
 ## Revisión pendiente del resto de la aplicación
 
+Segundo bloque local: bienvenida con elecciones básicas, ejemplo de premisa y personalización opcional plegada; límites de contenido accesibles y aviso de cobertura pendiente. Ritmo de TREY explicado como umbral, sin prometer duración temporal. Invitación plegada al inicio y abierta automáticamente al recibir enlace; tras entrar se retira ese parámetro de la URL para que recargar recupere la partida. Estado técnico del servidor bajo demanda. Se preservan opciones/valores y selección de sistema.
+
+La biblioteca vacía queda plegada y una biblioteca con partidas se abre automáticamente. Se conserva el acceso a importar credenciales bajo su sección. Captura móvil revisada sin desbordamiento, con menos contenido previo al formulario y sin la tarjeta técnica vacía inicial. La prueba de biblioteca verifica también restauración desde archivo y el despliegue de partidas existentes.
+
+Verificación: la prueba de dos jugadores reproduce el enlace de invitación y recarga; detectó y permitió corregir el retorno indebido a bienvenida. Comprueba valores de personalización después de cerrar detalles y ayudas con teclado sin POST. Navegadores de biblioteca, paquete de reglas, Cairn experimental y encuentro pasan con la bienvenida nueva; no son evidencia de soporte completo de esos juegos.
+
 - Bienvenida y entrada: una ruta clara a personaje y partida; evitar opciones técnicas prematuras.
 - Mesa: tablero y conversación accesibles, con herramientas pertinentes al turno y ayuda breve.
 - Ficha y creador: elecciones legales guiadas; cálculos explicables bajo demanda.

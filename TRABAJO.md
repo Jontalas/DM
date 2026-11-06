@@ -1,5 +1,13 @@
 # Continuidad del desarrollo autónomo
 
+## Bienvenida más sencilla e invitación recuperable — 6 de noviembre de2026
+
+Registro de asistencia y primera guía ya desplegados en **2d2f1ebc53e0ca80e34df4fb00e04afeb4002c97**, Render **7604965260 success**, revisión exacta y salud HTTPS200 verificadas. Continúa el trabajo con la directiva nueva, sin pedir confirmación.
+
+Segundo bloque de sencillez: bienvenida con título y siguiente paso claros, premisa con ejemplo, modos comprensibles, límites de contenido accesibles y personalización opcional cerrada. La duración de TREY se describe como umbral de fichas, no como horas garantizadas. Biblioteca vacía plegada; partidas existentes visibles automáticamente, respetando el despliegue hasta que cambia si hay entradas. Invitación y estado del servidor bajo demanda; enlace de invitación abre el formulario. No se borran opciones ni valores ni se añaden operaciones remotas por desplegar ayuda.
+
+La nueva prueba del enlace real detectó que conservar `?invite=` después de entrar impedía reanudar al recargar. Se retira únicamente ese parámetro tras unirse correctamente, conservando resto de URL y credencial. Navegador de dos jugadores correcto, incluye recarga, teclado sin POST, valores de opciones cerradas y móvil sin desbordamiento. Biblioteca comprueba recuperación desde archivo abriendo su sección y campañas existentes desplegadas. Navegadores de biblioteca, paquete importable, encuentro y Cairn experimental correctos; captura móvil .deps/welcome-guided-mobile.png revisada. Motor sin cambios desde581 pruebas correctas; no repetir suite completa por esta presentación. Cero inferencias reales nuevas. Respaldar/desplegar y seguir con recuperación del personaje y guía contextual de mesa.
+
 ## Directiva de sencillez y primera aplicación — 6 de noviembre de2026
 
 El usuario exige máxima sencillez, información clara sin saturación y guía mediante ayudas contextuales o recorridos cuando haga falta; ratifica que el desarrollo continúa sin detenerse. Añadido como premisa permanente de AGENTS.md y criterio transversal de PRODUCTO.md; USABILIDAD.md registra revisión pendiente. Se aplica al encuentro: decisiones primero, cobertura desplegable, auxilio con siguiente paso y riesgos relevantes visibles. Dados libres del compositor bajo ayuda desplegable, sin confundirlos con pruebas del motor. Foco visible de resúmenes, teclado y tacto probados, apertura de ayudas sin acciones/IA. Cuatro navegadores correctos: encuentro, mesa general, aventura y plan-3. No se afirma revisión completa de usabilidad.

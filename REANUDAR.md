@@ -9,12 +9,14 @@ Aplicación extremadamente fácil de usar: pantallas claras, sin abrumar con inf
 ## Repositorio y producción
 
 - Trabajo en `feature/rule-pack-engine`.
-- Feature/main publicadas en **c8b968ba74bf3cd103d57b9c709998ba9c237dae**. Render **7604614121 success**, revisión exacta en /api/status y /healthz HTTPS200 comprobadas. URL https://dm-cronicas.onrender.com.
+- Feature/main publicadas en **2d2f1ebc53e0ca80e34df4fb00e04afeb4002c97**. Render **7604965260 success**, revisión exacta en /api/status y /healthz HTTPS200 comprobadas. URL https://dm-cronicas.onrender.com. Incluye registro de asistencia y primera simplificación del encuentro/compositor; recuperación horaria aún no jugable.
 - Esa revisión incluye El patio del peaje: entrada desde creador, PNJ preparado, acuerdo o combate por decisión propia, iniciativa/ataques automáticos, primeros auxilios, espera y estabilización/muerte, desenlace de derrota y copia. Fuentes/límites en ENCUENTROS_PATHFINDER.md. No es todavía una aventura autónoma completa.
 - Verificación: **574 pruebas completas sin omisiones (127,479s)**, `.deps/pf-encounter-release-final-tests.log`; navegador acuerdo/combate/auxilio/cierre/móvil correcto. Descriptor público exacto comprobado en producción, sin IA ni escrituras de campaña. Ninguna partida personal modificada.
 - Capturador Pathfinder previo incluido:3168478, Render7603193106 success,553 pruebas y siete posteriores. No repetir su integración ni los guiones reales de dados/PNJ anteriores.
 
-## Trabajo posterior local que se debe conservar
+## Último bloque cerrado y verificado
+
+Registro de asistencia y primera simplificación siguientes ya desplegados en2d2f1eb. Sus menciones a estado local describen el desarrollo previo. La implementación horaria sigue pendiente.
 
 **Registro de asistencia y cálculo de recuperación**, aún sin desplegar: `pf_recovery.py`, `test_pf_recovery.py`, RECUPERACION_PATHFINDER.md; modificaciones en engine/combat/pf_encounters/server y pruebas. `recoveryCare` se registra al estabilizar por iniciativa (sin ayuda) o primeros auxilios efectivos (con ayuda). Daño nuevo o corrección excepcional de PG lo retira. Importación valida el registro; copias antiguas conservan dato desconocido. Cálculo puro de consciencia por hora, sin curar PG, sin acción horaria ni reloj integrado todavía.
 
@@ -25,6 +27,10 @@ Fuentes originales vistas: Reglas básicas PDF190/folio189,191/190 y192/191. Con
 **Primera aplicación de la directiva de sencillez**, también local: AGENTS.md/PRODUCTO.md/USABILIDAD.md; encuentro con situación y decisiones primero, límites bajo ayuda desplegable, instrucciones de auxilio claras, riesgos necesarios visibles y motivos de indisponibilidad. Dados rápidos del compositor bajo «Tirar un dado», con explicación de tirada libre. Mantener ids/acciones/permisos y automatización. Navegadores `test_pf_encounter_browser.cjs` y `test_browser.cjs` correctos: ayudas cerradas inicialmente, apertura con teclado y tacto, ninguna acción al consultar, dados rápidos, tablero/chat y móvil. No se ha certificado toda la usabilidad.
 
 ## Próximos pasos concretos
+
+**Nuevo bloque local posterior a2d2f1eb:** bienvenida simplificada en static/index.html/app.js: ajustes opcionales plegados, ejemplo de premisa, límites claros e invitación contextual. El enlace de invitación abre el formulario; después de entrar se elimina ese parámetro para restaurar correctamente al recargar. Prueba de dos jugadores reprodujo el fallo anterior y ahora pasa; comprueba teclado sin POST y valores de opciones preservados. Biblioteca, regla-paquete, Cairn experimental y encuentro correctos con el nuevo inicio. Captura móvil y cierre de documentación antes de respaldar/desplegar esta mejora. No se cambia motor desde las581 pruebas.
+
+Verificación del segundo bloque cerrada: captura móvil revisada sin desbordamiento; biblioteca vacía plegada y existentes abiertas automáticamente, restauración desde archivo correcta tras abrir sección. Navegadores de mesa general/biblioteca/paquetes repetidos tras el último ajuste y correctos. No hay pruebas en curso. Respaldar/desplegar esta bienvenida y verificar revisión/salud; continuar con recuperación y guía de mesa.
 
 Los cuatro navegadores afectados ya han pasado: encuentro (teclado/tacto/ayudas), mesa general (dados rápidos/dos jugadores/tablero-chat/móvil), aventura Pathfinder y plan-3. Código del motor sigue siendo el de las581 pruebas correctas. No hay pruebas en curso. Cerrar respaldo/despliegue del bloque local y continuar con los puntos siguientes.
 
