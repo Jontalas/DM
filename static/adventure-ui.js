@@ -58,6 +58,41 @@ function renderAdventure(){
  continuation.disabled=!model.aiConfigured;
  continuation.onclick=run(()=>act('continue_adventure'));
  renderInvestigation();
+ renderPreparedPathfinderEncounter();
+}
+
+function renderPreparedPathfinderEncounter(){
+ const s=snapshot.state,entry=$('#adventureEntry'),own=s.characters.filter(c=>!c.enemy&&c.owner===snapshot.me.id&&c.creation&&!c.creation.manualOverride);
+ const record=s.pfEncounter;
+ if(record){
+  entry.hidden=false;
+  const mine=own.some(c=>c.id===record.character),definition=record.definition;
+  const actor=s.characters.find(c=>c.id===record.character),patient=s.characters.find(c=>c.id===record.npc);
+  const description=record.phase==='offered'?definition.description:record.phase==='agreement'?definition.agreement:record.phase==='resolved'?`Desenlace registrado: ${record.outcome.status==='stable'?'adversario inconsciente y estable':'muerte del adversario'}, con ${record.outcome.hp} PG. No se recuperan PG ni se mueve tu ficha. Tú decides qué haces después.`:record.phase==='defeated'?`Desenlace del personaje: ${record.outcome.status==='dead'?'muerto':'inconsciente y estable'}, con ${record.outcome.hp} PG. Se conserva la situación para guardar y revisar; no se simulan curación, regreso a la consciencia ni decisiones del personaje.`:'El combate está iniciado. La iniciativa, los ataques y el estado de los participantes se consultan en el tablero y el registro.';
+  entry.innerHTML=`<section class="card"><div class="eyebrow">ENCUENTRO PREPARADO · EXPERIMENTAL</div><h3>${esc(definition.title)}</h3><p>${esc(description)}</p><p class="notice">${esc(definition.coverage)}</p>${record.phase==='offered'?`<div class="toolbar"><button id="pfEncounterParley" ${mine?'':'disabled'}>Hablar y proponer el paso sin combatir</button><button id="pfEncounterCombat" ${mine?'':'disabled'}>Entrar en combate · sin sorpresa</button></div><small>La respuesta voluntaria de este PNJ pertenece a esta escena escrita; no sustituye una prueba general de Diplomacia.</small>`:''}<div id="pfEncounterAid"></div></section>`;
+  if($('#pfEncounterParley'))$('#pfEncounterParley').onclick=run(()=>act('choose_pf_encounter',{choice:'parley'}));
+  if($('#pfEncounterCombat'))$('#pfEncounterCombat').onclick=run(async()=>{await act('choose_pf_encounter',{choice:'combat'});chooseTab('board');});
+  if(record.phase==='combat'&&s.board.active&&patient.hp<0&&!patient.stable&&patient.hp>-patient.abilities[2]){
+   const turn=s.board.order[s.board.turn]?.id===actor.id,spent=s.board.spent[actor.id]||{},conscious=actor.hp>=0;
+   const adjacent=Math.max(Math.abs(actor.x-patient.x),Math.abs(actor.y-patient.y))===1;
+   const canAid=mine&&turn&&conscious&&adjacent&&!spent.standard&&!(actor.hp===0&&spent.move),canWait=mine&&turn&&conscious;
+   $('#pfEncounterAid').innerHTML=`<h4>Adversario moribundo</h4><p>Los primeros auxilios intentan estabilizarlo con Curar CD15 y una acción estándar, sin devolver PG. Puedes esperar sin ayudar; el motor resolverá sus pruebas de estabilización y la posible muerte.</p>${actor.hp===0?'<p class="notice">Estás incapacitado: realizar la acción estándar de auxilio cuesta 1 PG y te deja moribundo.</p>':''}<form id="pfFirstAidForm">${snapshot.me.host?'<details><summary>Usar un d20 físico, opcional</summary><label>Resultado del dado<input name="physical" type="number" min="1" max="20" step="1" placeholder="Vacío: dado del servidor"></label></details>':''}<button ${canAid?'':'disabled'}>Primeros auxilios · tirar d20</button></form><button id="pfWaitStabilization" ${canWait?'':'disabled'}>Esperar sin ayudar hasta estabilización o muerte</button><small>${!turn?'Espera al turno de tu personaje.':spent.standard?'La acción estándar ya está gastada; puedes terminar el turno o decidir esperar.':!adjacent?'El auxilio de este bloque requiere estar adyacente.':'La tirada y sus consecuencias se guardan conjuntamente.'}</small>`;
+   $('#pfFirstAidForm').onsubmit=run(async e=>{const raw=e.target.elements.physical?.value||'';await act('pf_first_aid',raw?{physical:Number(raw)}:{});});
+   $('#pfWaitStabilization').onclick=run(()=>act('pf_wait_stabilization'));
+  }else if(record.phase==='combat'&&actor.hp<0)$('#pfEncounterAid').innerHTML='<p class="notice">Tu personaje ha caído. Las condiciones o correcciones de esta mesa exceden el desenlace automático del encuentro; revisa la limitación registrada. No se simula su recuperación.</p>';
+  return;
+ }
+ if(s.mode!=='solo'||s.adventure||s.adventureModule||s.adventureRoute||s.board.active||s.characters.length!==1||own.length!==1)return;
+ entry.insertAdjacentHTML('beforeend','<section class="card"><h3>Un encuentro preparado</h3><p>Entrar con tu personaje y un adversario del catálogo, sin escribir estadísticas. Encuentro experimental; la recuperación posterior y la siguiente escena siguen pendientes.</p><button id="beginPreparedEncounter">Consultar El patio del peaje</button></section>');
+ $('#beginPreparedEncounter').onclick=run(async()=>{
+  const key=token+':'+snapshot.id,{encounters}=await api('/api/pf-encounters'),definition=encounters[0];
+  if(token+':'+snapshot.id!==key)throw Error('La campaña ha cambiado; vuelve a abrir el encuentro.');
+  modal(`<div class="eyebrow">ESCENA ORIGINAL · PATHFINDER 1E</div><h2>${esc(definition.title)}</h2><p>${esc(definition.description)}</p><p>Un personaje recién creado, luz normal, terreno abierto y participantes conscientes uno del otro. La guardiana usa el perfil parcial publicado de goblin combatiente 1 con espada corta.</p><p class="notice">${esc(definition.coverage)}</p><form id="pfEncounterEntry"><button class="primary">Entrar en el patio con ${esc(own[0].name)}</button></form>`);
+  $('#pfEncounterEntry').onsubmit=run(async()=>{
+   if(token+':'+snapshot.id!==key)throw Error('La campaña ha cambiado.');
+   await act('enter_pf_encounter',{encounter:definition.id,character:own[0].id});$('#modal').close();
+  });
+ });
 }
 
 function renderInvestigation(){

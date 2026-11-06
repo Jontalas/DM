@@ -172,6 +172,8 @@ def execute_action(body,me):
                     if key not in state:raise ValueError('Falta '+key)
                 import npc_catalog
                 npc_catalog.validate_restored(state)
+                import pf_encounters
+                pf_encounters.validate_restored(state)
                 for character in state['characters']:
                     if not character.get('npcCreation'):character['owner']=me['id']
                 adventure_modules.validate_restored(state)
@@ -307,6 +309,9 @@ class Handler(BaseHTTPRequestHandler):
                 self.reply({'aiConfigured':bool(os.environ.get('ANTHROPIC_API_KEY')),'provider':'Anthropic','model':model_name(),'release':os.environ.get('RENDER_GIT_COMMIT','local'),'directorContract':'generated-links-v4','books':repository().counts(),'storage':'Firebase · Cloud Firestore','hosting':'Render' if os.environ.get('RENDER') else 'local con Firebase remoto'});return
             if url.path=='/api/systems':
                 self.reply({'systems':rulesets.catalog()});return
+            if url.path=='/api/pf-encounters':
+                import pf_encounters
+                self.reply({'encounters':[pf_encounters.definition()]});return
             if url.path=='/api/system-resources':
                 selected=rulesets.adapter(query.get('system',[''])[0])
                 if selected is None:raise ValueError('Este sistema usa sus catálogos existentes')

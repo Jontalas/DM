@@ -349,6 +349,80 @@ class IntegrationTests(unittest.TestCase):
             self.assertEqual(error.exception.code,400);error.exception.close()
         self.assertEqual(self.state()['state'],before['state'])
 
+    def test_prepared_pf_encounter_enters_without_manual_stats_and_copies_director_control(self):
+        from test_character_builder import choices
+        self.action('create_character',choices=choices())
+        character=self.state()['state']['characters'][0]['id']
+        with patch.object(server,'ai_reply',side_effect=AssertionError('Prepared scene called provider')):
+            body=self.action('enter_pf_encounter',encounter='patio-del-peaje',character=character)
+            self.assertTrue(self.request('/api/action',body,self.token)['duplicate'])
+            state=self.state()['state'];self.assertEqual(len(state['characters']),2)
+            self.assertEqual(state['characters'][1]['hp'],7);self.assertFalse(state['board']['active'])
+            guest=self.request('/api/join',{'name':'Luis','invite':self.state()['invite']})['token']
+            with self.assertRaises(urllib.error.HTTPError) as error:self.action('choose_pf_encounter',guest,choice='combat')
+            self.assertEqual(error.exception.code,403);error.exception.close()
+            self.action('choose_pf_encounter',choice='parley')
+            exported=self.request('/api/export',{},self.token)
+            self.action('import',campaign=exported)
+            restored=self.state()['state']
+            self.assertEqual(restored['pfEncounter']['phase'],'agreement')
+            self.assertEqual(restored['characters'][1]['owner'],'director')
+
+    def test_pf_first_aid_freezes_die_and_both_states_through_failed_commit_and_cold_client(self):
+        import copy
+        import game_randomness
+        from firebase_store import FirestoreStore
+        from test_support import TestStore
+        from test_character_builder import choices
+        self.action('create_character',choices=choices());character=self.state()['state']['characters'][0]['id']
+        self.action('enter_pf_encounter',encounter='patio-del-peaje',character=character)
+        with patch('game_randomness.draw',side_effect=[20,1]),patch('game_randomness.initiative_tie',return_value=0):
+            self.action('choose_pf_encounter',choice='combat')
+        npc=self.state()['state']['characters'][1]['id']
+        self.action('manual',character=npc,hpDelta=-10,reason='Estado explícito del fixture',resolution='Paciente a -3PG',reference='Fixture de prueba')
+        before=self.state();body={'id':secrets.token_hex(12),'version':before['version'],'type':'pf_first_aid'}
+        observed=[];actual_draw=game_randomness.draw
+        def recording(sides):
+            value=actual_draw(sides);observed.append(value);return value
+        with patch('game_randomness.draw',side_effect=recording),patch.object(server,'ai_reply',side_effect=AssertionError('First aid called AI')):
+            with patch.object(server.STORE,'commit',side_effect=server.Unavailable('Simulated failed aid confirmation')):
+                with self.assertRaises(urllib.error.HTTPError) as error:self.request('/api/action',body,self.token)
+                self.assertEqual(error.exception.code,503);error.exception.close()
+            self.assertEqual(self.state()['state'],before['state'])
+            original=server.STORE
+            if isinstance(original,FirestoreStore):
+                recovered=FirestoreStore.from_environment();recovered.prefix=original.prefix
+            else:
+                recovered=TestStore()
+                for key,value in vars(original).items():
+                    if key!='lock':setattr(recovered,key,copy.deepcopy(value))
+            with patch.object(server,'STORE',recovered):
+                self.request('/api/action',body,self.token)
+                self.assertTrue(self.request('/api/action',body,self.token)['duplicate'])
+        self.assertEqual(len(observed),2);self.assertEqual(observed[0],observed[1])
+        after=self.state()['state'];patient=after['characters'][1]
+        self.assertEqual(patient['hp'],-3);self.assertEqual(patient['stable'],observed[0]+1>=15)
+        self.assertTrue(after['board']['spent'][character]['standard'])
+        exported=self.request('/api/export',{},self.token);self.action('import',campaign=exported)
+        self.assertEqual(self.state()['state']['pfEncounter'],after['pfEncounter'])
+
+    def test_pf_defeat_from_automatic_attack_closes_and_survives_duplicate_and_copy(self):
+        from test_character_builder import choices
+        self.action('create_character',choices=choices());character=self.state()['state']['characters'][0]['id']
+        self.action('enter_pf_encounter',encounter='patio-del-peaje',character=character)
+        with patch('game_randomness.draw',side_effect=[20,1]),patch('game_randomness.initiative_tie',return_value=0):
+            self.action('choose_pf_encounter',choice='combat')
+        self.action('manual',character=character,hpDelta=-15,reason='Fixture de ataque contra PJ herido',resolution='PJ a 1PG',reference='Prueba de desenlace')
+        with patch('game_randomness.draw',side_effect=lambda sides:20 if sides==20 else sides),patch.object(server,'ai_reply',side_effect=AssertionError('Defeat called AI')):
+            body=self.action('turn')
+            self.assertTrue(self.request('/api/action',body,self.token)['duplicate'])
+        state=self.state()['state'];record=state['pfEncounter']
+        self.assertEqual(record['phase'],'defeated');self.assertEqual(record['outcome']['status'],'unconscious')
+        self.assertFalse(state['board']['active']);self.assertNotIn('autoPaused',state['board'])
+        self.assertEqual(record['outcome']['round'],state['board']['round'])
+        exported=self.request('/api/export',{},self.token);self.action('import',campaign=exported)
+        self.assertEqual(self.state()['state']['pfEncounter'],record)
+
     def test_ooc_cannot_create_mechanical_requests(self):
         self.action('character',character={'name':'Aria'});before=self.state()
         character=before['state']['characters'][0]['id']

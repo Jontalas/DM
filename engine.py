@@ -74,6 +74,9 @@ def run_automatic_turns(s):
         log(s,character['name']+': automatización pausada. '+reason)
     # At most one initiative cycle; never loop through an all-unconscious party.
     for _ in range(len(board['order'])):
+        if s.get('pfEncounter'):
+            import pf_encounters
+            if pf_encounters.resolve_defeat(s):return
         current=next(c for c in s['characters'] if c['id']==board['order'][board['turn']]['id'])
         if not any(not c['enemy'] and c['hp']>=0 for c in s['characters']):
             pause(current,'No quedan personajes jugadores conscientes; revisa el desenlace y la asistencia a los caídos.')
@@ -93,6 +96,7 @@ def run_automatic_turns(s):
                     apply_action(s,{'type':'move','character':current['id'],'path':decision['path'],'acknowledge':True},controller)
                 if decision['target']:
                     apply_action(s,{'type':'attack','character':current['id'],'target':decision['target']},controller)
+                    if not board['active']:return
                 elif not decision['path']:log(s,current['name']+': espera; no hay un ataque básico disponible.')
         except ValueError as exc:
             pause(current,str(exc));return
@@ -103,6 +107,12 @@ def run_automatic_turns(s):
 
 def apply_action(s,b,me):
     kind=b['type']
+    if kind in ('enter_pf_encounter','choose_pf_encounter','pf_first_aid','pf_wait_stabilization'):
+        import pf_encounters
+        if kind=='enter_pf_encounter':pf_encounters.enter(s,b,me)
+        elif kind=='choose_pf_encounter':pf_encounters.choose(s,b,me)
+        else:pf_encounters.aid_or_wait(s,b,me)
+        return
     if kind=='talk':
         text=str(b['text']).strip()
         if not text or len(text)>12000: raise ValueError('Escribe entre 1 y 12000 caracteres')
@@ -360,4 +370,10 @@ def apply_action(s,b,me):
         log(s,'RESOLUCIÓN MANUAL ASISTIDA · '+reason+' · '+resolution+' · Coste de acción: '+str(b.get('actionCost','none'))+' · Referencia: '+str(b.get('reference','Sin verificar; criterio provisional')))
         if b.get('pendingIndex') is not None: s['pending'].pop(int(b['pendingIndex']))
     else: raise ValueError('Acción no implementada; usa resolución manual asistida')
+    if kind=='combat' and s.get('pfEncounter'):
+        s['pfEncounter']['phase']='combat';s['pfEncounter'].pop('outcome',None)
     if kind in ('combat','turn','automation'):run_automatic_turns(s)
+    if s.get('pfEncounter'):
+        import pf_encounters
+        pf_encounters.sync_outcome(s)
+        pf_encounters.resolve_defeat(s)

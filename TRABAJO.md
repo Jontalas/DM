@@ -1,5 +1,21 @@
 # Continuidad del desarrollo autónomo
 
+## Encuentro Pathfinder preparado y desenlaces — 6 de noviembre de 2026
+
+Cierre final: **574 pruebas completas con emulador correctas sin omisiones (127,479s)**, `.deps/pf-encounter-release-final-tests.log`. Suite final terminada; las referencias inferiores a ejecución pendiente quedan superadas. Navegador repetido tras mensajes finales, correcto. Respaldar/desplegar este bloque verificado y comprobar revisión exacta/salud; continuar después con la recuperación y continuidad pendientes.
+
+El bloque anterior del capturador está desplegado en31684780348b486524be4d094600bec165a497d1, Render7603193106 success, revisión exacta y salud HTTPS verificadas. No se repiten inferencias ni guiones remotos.
+
+Integración local de El patio del peaje: escena propia con entrada voluntaria desde creador, guardiana del catálogo Bestiario, acuerdo o combate por decisión del propietario, iniciativa y ataques automáticos existentes. Sin estadísticas manuales ni IA para preparar, elegir, combatir, auxiliar o resolver heridas. Se rechaza mezclar otras aventuras/preparaciones, personajes heridos al entrar, terreno o grupos no cubiertos; no se cura ni teletransporta para cumplir requisitos. Copia conserva ficha/director, procedencia y avisos.
+
+Primeros auxilios comprobados en originales Reglas básicas PDF93–94 y191: Curar CD15, acción estándar, reintento y estabilización sin PG. Tabla4-3 PDF90/folio89 usa Sab aunque encabezado de PDF93 dice Int; se conserva el total Sab del creador y se documenta la discrepancia. Dados físicos solo por anfitrión según la política PF existente; virtuales para propietario. El coste de actuar a0PG puede derribar al auxiliador. Esperar sin auxilio es una elección explícita; las pruebas por turno se resuelven en código, sin administración de PG.
+
+PNJ estable o muerto permite cerrar el enfrentamiento;0PG no equivale a muerte. Si cae el PJ, esta guardiana escrita cesa ataques: conducta ficticia explícita, no regla de la especie. El motor procesa ambos moribundos hasta estabilización/muerte sin curación, conserva instantánea de PG/Constitución/ronda y no elige acciones inconscientes. Catorce pruebas del módulo y navegador desde creador/acuerdo/combate/auxilio/cierre/recarga/móvil correctos. HTTP/Waitress verifican reserva del dado tras fallo de commit/cliente nuevo y derrota por ataque automático, duplicado y copia. Las pruebas de derrota HTTP parten de un PJ herido explícitamente por el fixture; la acción que lo derriba es el ataque automático real del motor. No se afirma recorrido de derrota en navegador.
+
+Suite intermedia con derrota:571 pruebas sin omisiones (121,760s). Una revisión posterior detectó avance de turno del PNJ después de que el ataque cerrara el encuentro; corregido retornando al cerrar, probado en motor/HTTP/Waitress. Suite final pendiente de resultado: `.deps/pf-encounter-release-final-tests.log`. No desplegar hasta comprobarla. Fuentes, límites y coste en ENCUENTROS_PATHFINDER.md. Ningún hito personal se considera alcanzado.
+
+Preparación siguiente contrastada visualmente: Reglas básicas PDF191/folio190 y192/folio191. Recuperación de consciencia con ayuda: primera prueba de Constitución CD10 una hora después de estabilizar, penalizador por PG negativos,20 natural éxito, repetir por hora. Sin ayuda, cada fallo resta1PG y no hay curación natural; una vez consciente, el inicio de recuperación natural exige descanso8h y otra prueba diaria. El motor actual equipara PG negativos con inconsciencia; **no añadir un botón de recuperar sin representar consciencia y asistencia explícitamente** ni sustituir estas reglas por PG gratis. Fuentes/imágenes quedan privadas en .deps; todavía no hay implementación de recuperación horaria.
+
 ## Reanudación efectiva y cierre del capturador Pathfinder — 6 de noviembre de 2026
 
 Retomado desde el checkpoint vigente `f8afef0`, no desde las pausas históricas de noviembre 5. Producción consultada por HTTPS sigue `7121c5173d68946e051d6f8e5bcb31933c71f8a1`, saludable y con Anthropic configurado. No se ha realizado ninguna inferencia nueva ni repetido guiones reales. No se crea un goal inferido.
