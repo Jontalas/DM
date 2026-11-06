@@ -150,6 +150,14 @@ def execute_action(body,me):
             workspace_readonly=body['type']=='install_prepared_rule_pack' and state.get('authoringWorkspaceRef') is not None
             state=attach_workspace(state,me)
         title=None;preparation_key=None;randomness=None
+        def legacy_reply(text,refs,**options):
+            nonlocal preparation_key
+            import legacy_director_attempt as legacy
+            import rule_preparation_attempt as attempts
+            prepared=legacy.prepare(state,text,refs,**options)
+            preparation_key=attempts.key(me['id'],prepared['sha256'])
+            def convert(current,response_observer=None):return ai_reply(state,text,refs,**options,response_observer=response_observer)
+            return attempts.run(store,cid,me['id'],prepared,converter=convert,restore=legacy.restore)
         if body['type']=='import':
             if not me['host']:raise PermissionError('Solo el anfitrión importa')
             data=body['campaign']
@@ -211,7 +219,7 @@ def execute_action(body,me):
             if state.get('adventureModule'):premise=state['adventureModule']['premise']
             actors=[c['id'] for c in adventure.ready_characters(state)]
             source_options={'source_text':source} if source is not None else {}
-            result=ai_reply(state,premise,[],check_actors=actors,starting=True,**source_options)
+            result=legacy_reply(premise,[],check_actors=actors,starting=True,**source_options)
             if result.get('checks') or result.get('investigation'):raise ValueError('La apertura no puede resolver ni solicitar acciones de los personajes')
             if result.get('proposals'):raise ValueError('La apertura requiere una situación dentro de la cobertura disponible')
             if (body.get('structured') or source is not None) and not state.get('adventureModule') and result.get('adventureModule') is None:
@@ -240,7 +248,7 @@ def execute_action(body,me):
                 apply_action(state,body,me)
                 text=body['text'];refs=search(text)
             actors=[c['id'] for c in state['characters'] if me['host'] or c['owner']==me['id']]
-            result=ai_reply(state,text,refs,check_actors=actors)
+            result=legacy_reply(text,refs,check_actors=actors)
             if result.get('adventureModule') is not None:raise ValueError('La conversación no puede sustituir la aventura en curso')
             if body['type']=='continue_adventure' and (result.get('checks') or result.get('investigation')):
                 raise ValueError('La continuación debe narrar el resultado confirmado, sin solicitar otra prueba')

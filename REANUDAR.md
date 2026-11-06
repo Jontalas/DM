@@ -1,6 +1,38 @@
 # Reanudar el desarrollo
 
-Estado actualizado el 5 de noviembre de 2026. Este documento contiene el estado vigente. El historial anterior completo se conserva, sin reinterpretarlo, en [HISTORIAL_REANUDAR_2026-11-05.md](HISTORIAL_REANUDAR_2026-11-05.md); sus instrucciones de despliegue, contadores y «pendientes» son históricos.
+Estado actualizado el **6 de noviembre de 2026**, a petición del usuario para continuar en una sesión futura. Este documento contiene el estado vigente. El historial anterior completo se conserva, sin reinterpretarlo, en [HISTORIAL_REANUDAR_2026-11-05.md](HISTORIAL_REANUDAR_2026-11-05.md); sus instrucciones de despliegue, contadores y «pendientes» son históricos.
+
+## Punto exacto de reanudación — prioridad sobre los apartados históricos
+
+El usuario ha solicitado guardar este punto para una sesión futura. Retomar directamente el trabajo descrito aquí, con autonomía y mínima interacción; no reiniciar el proyecto, descartar los cambios parciales ni repetir ensayos remotos terminados.
+
+**Producción verificada:** `7121c5173d68946e051d6f8e5bcb31933c71f8a1`, Render **7588614426 success**, /api/status con revisión exacta y /healthz HTTPS200. Última suite completa de ese bloque: **543 pruebas correctas sin omisiones, 236,338s**, `.deps/pf-durable-dice-final-tests.log`. Creador/ataque y PNJ pasaron en navegador. `.deps/pf-durable-dice-live-session.json` verified: cero inferencias, ninguna aventura iniciada, iniciativa real [19,5], ataque19/impacto/daño4, duplicado y copia del combate activo correctos. Fallos de commit/cliente nuevo se probaron en emulador, no se inyectaron en producción. No repetir su guion. La preparación de PNJ de Bestiario, avisos OGL, plan-3 y recuperación anterior también están incluidos en esa revisión.
+
+**Trabajo parcial actual, todavía NO desplegado:** captura duradera de respuestas del director Pathfinder heredado, reutilizando `rule_preparation_attempt`. Archivos: `claude_dm.py`, `server.py`, `rule_preparation_attempt.py` y nuevo `legacy_director_attempt.py`. Se extrae `claude_dm.parse_response`, se añade `response_observer` antes de validar la respuesta y se define contrato `cronicas-pf-director-1`/esquema `pf-director-v1`. El adaptador conserva el contexto, prompt y presupuesto anteriores; restaura respuesta raw/report sin proveedor. Se ha conectado provisionalmente `server.legacy_reply` a inicio y conversación/continuación PF. No se ha hecho ninguna inferencia real nueva. El checkpoint de esta actualización respalda estos cambios incompletos solo en feature; main debe seguir en7121c51 hasta cerrar pruebas.
+
+Comprobaciones parciales: **18 pruebas** de aventura/transporte/contexto correctas tras extraer el parser; **15 pruebas** de aventura y adaptador Claude correctas después de iniciar la conexión del capturador. **No hay suite completa ni pruebas HTTP del nuevo capturador todavía, ni procesos de pruebas pendientes.** Los543 anteriores son evidencia del bloque desplegado, no de esta integración parcial.
+
+### Primeros pasos concretos
+
+1. Leer AGENTS.md y este punto; revisar `git status`/diff. Conservar el checkpoint parcial. No desplegarlo tal como está.
+2. Corregir el alcance de `attempts` en `server.execute_action`: el helper nuevo `legacy_reply` lo importa localmente, pero al final del método se usa `attempts.forget` tras confirmar. En una acción PF podría quedar sin enlazar en el ámbito exterior y producir503 después del commit. La importación debe quedar disponible en ese ámbito sin afectar a las ramas rule-pack existentes.
+3. Preparar los dobles de pruebas para la nueva reserva: `attempts.run` solo crea intentos cuando hay configuración de IA. Las pruebas HTTP PF que sustituyen `server.ai_reply` actualmente pueden ejecutarse sin ANTHROPIC_API_KEY. Añadir configuración ficticia **solo en los arneses explícitos de pruebas** (`test_server.IntegrationTests`, su variante Waitress y fixture de aventura), con restauración del entorno. No introducir detecciones de mocks ni una vía de IA simulada en producción. Revisar los tests que retiran la clave deliberadamente; deben seguir rechazando sin estado parcial.
+4. Añadir pruebas de captura antes de validación, respuesta inválida/truncada conservada, fallo de commit y cliente Firestore nuevo, resultado desconocido que no autoriza otra llamada, actor/solicitud incompatibles y compatibilidad con capturas existentes. Los casos de proveedor inválido que necesiten respuestas independientes deben usar contextos distintos o salas nuevas: repetir el mismo contexto ahora debe reutilizar el fallo capturado, no consumir otra respuesta simulada ocultando el contrato.
+5. Revisar las ramas OOC/privadas de conversación PF: el guardado privado nunca debe mandar su texto al modelo; cualquier corrección debe probarse en servidor y conservar las decisiones explícitas del usuario. No ampliar el capturador a consultas sin estado de /api/rules sin definir su contrato.
+6. Ejecutar pruebas afectadas, navegadores pertinentes y después una suite completa con emulador/log persistido. Revalidar capturas antiguas localmente sin inferencia si el cambio las afecta. Respaldar feature, desplegar main solo cuando esté cerrado y verificar Render/revisión/salud. No hay motivo para repetir ahora evaluaciones narrativas reales fallidas ni gastar llamadas para obtener un éxito.
+7. Continuar con el encuentro jugable del módulo actual usando el PNJ preparado, no con una sucesión indefinida de ejemplos genéricos. Quedan activación por decisión del jugador, desenlace, consecuencias y reanudación; no hay encuentro autónomo implementado. No asumir muerte de NPC a0PG: la búsqueda en Reglas básicas PDF189–193 no proporcionó esa excepción. El motor actual mantiene heridas/estabilización por iniciativa y terminar el combate sigue siendo una operación manual. Contrastar fuentes antes de resolver tiempo transcurrido, auxilio o desenlace; no introducir reglas caseras silenciosas. CATALOGO_PNJ.md, COMBATE.md y PRODUCTO.md sitúan límites e hitos.
+
+### Método que debe mantenerse
+
+- Continuar desarrollo, análisis, pruebas, documentación y despliegue sin pedir «continúa» ni confirmaciones rutinarias. Pedir intervención únicamente ante una dependencia imprescindible y seguir con lo independiente. No prometer procesos en segundo plano inexistentes.
+- Conservar las campañas personales; las verificaciones remotas usan salas técnicas separadas y guiones que se niegan a repetir una sesión existente. No imprimir tokens, exportaciones completas ni diagnósticos privados. No alterar las evidencias negativas.
+- Reutilizar Render, Firebase y Anthropic; código determinista y cálculo local primero, cero IA por navegación/administración. Documentar operaciones añadidas cuando sean necesarias para consistencia. No servicios ni gastos recurrentes nuevos.
+- Pruebas específicas por impacto antes de la suite completa; repetir comprobaciones solo por cambios/fallos/incertidumbres nuevos. Proveedor simulado y proveedor real se documentan por separado. Una revisión desplegada o muchos tests no constituyen aceptación de una aventura.
+- Solo avisar al usuario de pruebas personales en los grandes hitos de PRODUCTO.md, todos aún pendientes. No detener desarrollo por una invitación opcional.
+- Vista local secundaria: http://127.0.0.1:8765, HTTP200 comprobado al guardar este punto. Lanzador conocido50452, demo plan-3 con director/dados simulados, sin IA/Firebase. No hay herramienta disponible para abrir una pestaña del IDE. No reiniciar ni investigar esa integración si retrasa el desarrollo; comprobar identidad del proceso antes de terminarlo.
+- Skills ya usadas: regression-testing, debug, root-cause-analysis e interface-design. No subagentes sin petición explícita aplicable. No hay goal activo ni se debe crear uno inferido.
+
+Lo que sigue detalla capacidades/evidencias anteriores. En caso de contradicción sobre despliegue o trabajo pendiente, prevalece este punto de reanudación.
 
 ## Continuidad y prioridades
 
@@ -13,8 +45,8 @@ Los cuatro grandes hitos de prueba personal de PRODUCTO.md siguen pendientes. No
 ## Repositorio y producción confirmados
 
 - Rama de trabajo: feature/rule-pack-engine.
-- Último bloque de código desplegado: **d4816bd83d802777701f82dd831ce87e4509d1ec** (main/origin y feature).
-- Producción: https://dm-cronicas.onrender.com, Render **7588288003 success**, revisión exacta en /api/status y /healthz HTTPS 200 confirmados.
+- Último bloque de código desplegado: **7121c5173d68946e051d6f8e5bcb31933c71f8a1** (main/origin; feature incorpora después el checkpoint parcial).
+- Producción: https://dm-cronicas.onrender.com, Render **7588614426 success**, revisión exacta en /api/status y /healthz HTTPS 200 confirmados.
 - Desplegados: perfiles de creación de PJ/PNJ, actores privados, plan-2 importable con PNJ preparados, selector explícito abstracto, resolución atómica de dos fichas, evidencia privada reproducible y proyección pública acotada.
 - Incluye vínculos preparados de objetivos de aventura a PNJ concretos mediante plan-3. No incluye combate espacial/PF, turnos automáticos de PNJ ni interpretación dirigida por texto libre. El preparador automático excluye target-sheets/abstract-scene-targets hasta admitir ejemplos completos de dos fichas.
 

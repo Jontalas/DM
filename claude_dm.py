@@ -2,6 +2,7 @@
 import json
 import copy
 import os
+import time
 import urllib.request
 import urllib.error
 from adventure import MEMORY_SCHEMA, validate_memory
@@ -80,16 +81,10 @@ def build_context(state,text,refs,rules=False,check_actors=None,starting=False,s
     return context
 
 
-def ai_reply(state,text,refs,rules=False,check_actors=None,starting=False,source_text=None):
-    key=os.environ.get('ANTHROPIC_API_KEY')
-    if not key:raise ValueError('Claude Haiku sin configurar: falta ANTHROPIC_API_KEY en el servidor. La acción no se ha guardado')
-    context=build_context(state,text,refs,rules,check_actors,starting,source_text)
-    budget=4500 if starting and not state.get('adventureModule') else 3000
-    body={'model':model_name(),'max_tokens':budget,'system':system_prompt(rules,starting),'messages':[{'role':'user','content':json.dumps(context,ensure_ascii=False)}],'output_config':{'format':{'type':'json_schema','schema':response_schema(state,rules,starting)}}}
-    req=urllib.request.Request('https://api.anthropic.com/v1/messages',data=json.dumps(body).encode(),headers={'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'})
-    stage='transport';stop_reason=None
+def parse_response(state,raw,rules=False,starting=False):
+    stage='json';stop_reason=None
     try:
-        with urllib.request.urlopen(req,timeout=120) as response:output=json.load(response)
+        output=json.loads(raw)
         stage='completion';stop_reason=output.get('stop_reason')
         if output.get('stop_reason')!='end_turn':raise ValueError('Claude no completó la respuesta')
         stage='json'
@@ -129,9 +124,6 @@ def ai_reply(state,text,refs,rules=False,check_actors=None,starting=False,source
                 raise ValueError('Generación de aventura fuera de la operación permitida')
             result['adventureModule']=adventure_modules.from_generated(result.pop('generatedAdventure'))
         return result
-    except urllib.error.HTTPError as exc:
-        code=exc.code;exc.close()
-        raise ValueError(f'Claude Haiku devolvió HTTP {code}. Comprueba clave, permisos, modelo y cuota. La acción no se ha aplicado') from None
     except (OSError,KeyError,TypeError,ValueError,AttributeError) as exc:
         if stage=='completion' and stop_reason=='max_tokens':
             raise ValueError('El director agotó el límite de salida antes de completar la aventura. La acción no se ha aplicado (director:output_limit)') from None
@@ -139,3 +131,22 @@ def ai_reply(state,text,refs,rules=False,check_actors=None,starting=False,source
             # This stage only calls our allowlisted module validator; its errors never quote source prose.
             raise ValueError('El director entregó una aventura incompatible: '+str(exc)+'. La acción no se ha aplicado (director:module)') from None
         raise ValueError('Claude Haiku no entregó una respuesta completa y válida. La acción no se ha aplicado (director:'+stage+')') from None
+
+
+def ai_reply(state,text,refs,rules=False,check_actors=None,starting=False,source_text=None,response_observer=None):
+    key=os.environ.get('ANTHROPIC_API_KEY')
+    if not key:raise ValueError('Claude Haiku sin configurar: falta ANTHROPIC_API_KEY en el servidor. La acción no se ha guardado')
+    context=build_context(state,text,refs,rules,check_actors,starting,source_text)
+    budget=4500 if starting and not state.get('adventureModule') else 3000
+    body={'model':model_name(),'max_tokens':budget,'system':system_prompt(rules,starting),'messages':[{'role':'user','content':json.dumps(context,ensure_ascii=False)}],'output_config':{'format':{'type':'json_schema','schema':response_schema(state,rules,starting)}}}
+    req=urllib.request.Request('https://api.anthropic.com/v1/messages',data=json.dumps(body).encode(),headers={'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'})
+    started=time.monotonic()
+    try:
+        with urllib.request.urlopen(req,timeout=120) as response:raw=response.read()
+    except urllib.error.HTTPError as exc:
+        code=exc.code;exc.close()
+        raise ValueError(f'Claude Haiku devolvió HTTP {code}. Comprueba clave, permisos, modelo y cuota. La acción no se ha aplicado') from None
+    except OSError:
+        raise ValueError('Claude Haiku no entregó una respuesta completa y válida. La acción no se ha aplicado (director:transport)') from None
+    if response_observer is not None:response_observer(raw,int((time.monotonic()-started)*1000))
+    return parse_response(state,raw,rules,starting)

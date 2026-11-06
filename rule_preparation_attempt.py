@@ -40,7 +40,7 @@ def unpack(data):
 
 def check_attempt(attempt,actor,request_sha):
     if attempt.get('actor')!=actor or attempt.get('requestSha256')!=request_sha:raise Conflict('El intento pertenece a otra identidad o solicitud')
-    if attempt.get('sourceScheme') not in (authoring.SOURCE_SCHEME,authoring.LEGACY_SOURCE_SCHEME,'director-v1'):raise RulePackError('Esquema de fuentes del intento desconocido')
+    if attempt.get('sourceScheme') not in (authoring.SOURCE_SCHEME,authoring.LEGACY_SOURCE_SCHEME,'director-v1','pf-director-v1'):raise RulePackError('Esquema de fuentes del intento desconocido')
 
 
 def _remember(store,cid,identifier,payload):

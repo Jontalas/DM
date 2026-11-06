@@ -1,0 +1,38 @@
+"""Durable response capture for the existing Pathfinder director contract.
+
+Reuses the private paid-call store without changing the model prompt, rules,
+output budget or legacy public response shape. No provider call on restore.
+"""
+import base64
+import copy
+import hashlib
+import json
+import claude_dm
+from director_prompt import system_prompt
+from rule_pack_authoring import canonical
+
+SCHEME='pf-director-v1'
+CONTRACT='cronicas-pf-director-1'
+
+
+def prepare(state,text,refs,check_actors=None,starting=False,source_text=None):
+    context=claude_dm.build_context(state,text,refs,check_actors=check_actors,starting=starting,source_text=source_text)
+    request={'contract':CONTRACT,'context':copy.deepcopy(context)}
+    raw=canonical(request).encode('utf-8')
+    if len(raw)>300000:raise ValueError('El contexto de esta aventura supera el límite; no se ha llamado a IA')
+    return {'request':request,'sha256':hashlib.sha256(raw).hexdigest(),'sourceScheme':SCHEME,
+        'promptSha256':hashlib.sha256(system_prompt(False,starting).encode('utf-8')).hexdigest()}
+
+
+def restore(prepared,payload,scheme):
+    if scheme!=SCHEME or prepared['request'].get('contract')!=CONTRACT:raise ValueError('Contrato de captura Pathfinder incompatible')
+    if not isinstance(payload,dict) or set(payload)!={'kind','value','latencyMs'}:raise ValueError('Captura Pathfinder inválida')
+    context=prepared['request']['context'];state=copy.deepcopy(context['state'])
+    module=context.get('directorKnowledge',{}).get('adventureModule')
+    if module is not None:state['adventureModule']=copy.deepcopy(module)
+    if payload['kind']=='raw':
+        try:raw=base64.b64decode(payload['value'],validate=True)
+        except (TypeError,ValueError):raise ValueError('Captura de respuesta dañada; no se ha repetido IA') from None
+    elif payload['kind']=='report':raw=json.dumps({'stop_reason':'end_turn','content':[{'type':'text','text':json.dumps(payload['value'])}]}).encode('utf-8')
+    else:raise ValueError('Tipo de captura Pathfinder desconocido')
+    return claude_dm.parse_response(state,raw,rules=False,starting=context['operation']=='startAdventure')
