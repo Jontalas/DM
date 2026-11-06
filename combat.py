@@ -5,6 +5,7 @@ sin condiciones, cobertura, ocultación, resistencias ni aptitudes especiales.
 Los totales se preparan en la ficha; el motor resuelve cada ataque.
 """
 import re
+import pf_recovery
 
 
 def damage_spec(value):
@@ -30,13 +31,15 @@ def profile(character):
 def health_status(character):
     hp=character['hp'];constitution=character['abilities'][2]
     if hp<=-constitution:return 'muerto'
-    if hp<0:return 'inconsciente estable' if character.get('stable') else 'moribundo'
+    if hp<0:
+        if pf_recovery.is_conscious(character):return 'incapacitado'
+        return 'inconsciente estable' if character.get('stable') else 'moribundo'
     if hp==0:return 'incapacitado'
     return 'consciente'
 
 
 def standing(character):
-    return character['hp']>=0
+    return pf_recovery.is_conscious(character)
 
 
 def adjacent(a,b):
@@ -64,11 +67,11 @@ def attack(state,body,actor,dice):
     if source['owner']!=actor['id'] and not actor['host']:raise PermissionError('No controlas este personaje')
     if board['order'][board['turn']]['id']!=source['id']:raise ValueError('No es tu turno')
     if source['id']==target['id'] or source['enemy']==target['enemy']:raise ValueError('Selecciona un adversario')
-    if source['hp']<0:raise ValueError('Un personaje inconsciente o muerto no puede atacar')
+    if not standing(source):raise ValueError('Un personaje inconsciente o muerto no puede atacar')
     if target['hp']<=0:raise ValueError('Atacar a un adversario caído requiere una resolución excepcional')
     source_profile,target_profile=basic_pair(source,target,board)
     spent=board['spent'].get(source['id'],{})
-    if spent.get('standard') or (source['hp']==0 and spent.get('move')):
+    if spent.get('standard') or (source['hp']<=0 and spent.get('move')):
         raise ValueError('La acción necesaria ya está gastada')
     # Old saved combats lack acted tracking: do not guess flat-footed status.
     if 'acted' not in board:raise ValueError('Reinicia este combate antiguo para activar el ataque automático')
@@ -101,12 +104,12 @@ def attack(state,body,actor,dice):
     # Mutation begins only after all input and physical dice are validated.
     target['hp']-=damage
     if damage:
-        target['stable']=False;target.pop('recoveryCare',None)
+        target['stable']=False;pf_recovery.clear_episode(target)
     spent={**spent,'standard':True}
     board['spent'][source['id']]=spent
-    if source['hp']==0:
+    if source['hp']<=0:
         source['hp']-=1;source['stable']=False  # Strenuous standard action while disabled.
-        source.pop('recoveryCare',None)
+        pf_recovery.clear_episode(source)
     result={'attacker':source['id'],'target':target['id'],'roll':raw,'modifier':modifier,
             'ac':armor,'flatFooted':flat,'flanking':flanking,'hit':hit,'confirmation':confirmation,
             'critical':critical,'damageRolls':damage_rolls,'damage':damage,'targetHp':target['hp'],

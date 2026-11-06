@@ -24,7 +24,9 @@ def skill_totals(value):
 
 
 def modifier(character,kind,key):
-    if character.get('hp',1)<0:raise ValueError('El estado del personaje requiere una resolución asistida para esta prueba')
+    if character.get('hp',1)<0:
+        import pf_recovery
+        if not pf_recovery.is_conscious(character):raise ValueError('El estado del personaje requiere una resolución asistida para esta prueba')
     if character.get('conditions','').strip():raise ValueError('Las condiciones anotadas requieren revisar la prueba mediante resolución asistida')
     if kind=='ability' and key in ABILITY_KEYS:
         i=ABILITY_KEYS.index(key);score=integer(character['abilities'][i],1,60)

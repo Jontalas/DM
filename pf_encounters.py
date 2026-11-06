@@ -71,7 +71,7 @@ def sync_outcome(state):
     if not record or record['phase']!='combat' or not state['board']['active']:return
     actor=next(c for c in state['characters'] if c['id']==record['character'])
     npc=next(c for c in state['characters'] if c['id']==record['npc'])
-    if (len(state['characters'])!=2 or actor['hp']<0 or actor.get('conditions','').strip() or npc.get('conditions','').strip()
+    if (len(state['characters'])!=2 or not combat.standing(actor) or actor.get('conditions','').strip() or npc.get('conditions','').strip()
         or actor.get('creation',{}).get('manualOverride') or npc.get('npcCreation',{}).get('manualOverride')):return
     status=combat.health_status(npc)
     if status not in ('muerto','inconsciente estable'):return
@@ -88,10 +88,10 @@ def resolve_defeat(state):
     if not record or record['phase']!='combat' or not state['board']['active'] or len(state['characters'])!=2:return False
     actor=next(c for c in state['characters'] if c['id']==record['character'])
     npc=next(c for c in state['characters'] if c['id']==record['npc'])
-    if (actor['hp']>=0 or any(c.get('conditions','').strip() for c in (actor,npc)) or state['board']['terrain']
+    if (combat.standing(actor) or any(c.get('conditions','').strip() for c in (actor,npc)) or state['board']['terrain']
         or actor['creation'].get('manualOverride') or npc['npcCreation'].get('manualOverride')):return False
     from engine import log,advance_turn
-    if npc['hp']>=0:log(state,record['definition']['defeatPolicy'])
+    if combat.standing(npc):log(state,record['definition']['defeatPolicy'])
     else:log(state,'No quedan participantes conscientes; se resuelven únicamente sus pruebas de estabilización, sin elegir acciones por el PJ.')
     # No one chooses a player's action. Each failure loses HP; the total bound
     # is below one hour for these prepared participants, so hourly recovery is
@@ -118,7 +118,7 @@ def aid_or_wait(state,body,me):
     actor=next(c for c in state['characters'] if c['id']==record['character'])
     patient=next(c for c in state['characters'] if c['id']==record['npc'])
     if actor['owner']!=me['id']:raise PermissionError('Solo el jugador decide si presta auxilio o espera')
-    if (len(state['characters'])!=2 or actor['hp']<0 or any(c.get('conditions','').strip() for c in (actor,patient))
+    if (len(state['characters'])!=2 or not combat.standing(actor) or any(c.get('conditions','').strip() for c in (actor,patient))
         or state['board']['terrain'] or actor['creation'].get('manualOverride') or patient['npcCreation'].get('manualOverride')):
         raise ValueError('Este auxilio solo cubre los participantes preparados y conscientes, sin condiciones ni terreno especial')
     if state['board']['order'][state['board']['turn']]['id']!=actor['id']:raise ValueError('Espera al turno de tu personaje')
@@ -131,7 +131,7 @@ def aid_or_wait(state,body,me):
         if 'physical' in body and not me['host']:raise PermissionError('En esta mesa el anfitrión registra los dados físicos, como en las demás pruebas Pathfinder')
         if max(abs(helper['x']-target['x']),abs(helper['y']-target['y']))!=1:raise ValueError('Este bloque de primeros auxilios requiere un paciente adyacente')
         spent=result['board']['spent'].get(helper['id'],{})
-        if spent.get('standard') or helper['hp']==0 and spent.get('move'):raise ValueError('No queda la acción estándar necesaria para primeros auxilios')
+        if spent.get('standard') or helper['hp']<=0 and spent.get('move'):raise ValueError('No queda la acción estándar necesaria para primeros auxilios')
         # Validate the prepared skill and physical die before any RNG.
         checks.modifier(helper,'skill','Curar')
         if 'physical' in body:checks.integer(body['physical'],1,20)
@@ -141,8 +141,9 @@ def aid_or_wait(state,body,me):
         if resolved['success']:
             import pf_recovery
             pf_recovery.record_stabilization(target,assisted=True,round_number=result['board']['round'])
-        if helper['hp']==0:
-            helper['hp']=-1;helper['stable']=False;helper.pop('recoveryCare',None)
+        if helper['hp']<=0:
+            import pf_recovery
+            helper['hp']-=1;helper['stable']=False;pf_recovery.clear_episode(helper)
         log(result,helper['name']+': primeros auxilios, d20 '+str(die)+' '+str(resolved['modifier'])+' = '+str(resolved['total'])+' contra CD15. '+('El paciente queda estable sin recuperar PG.' if resolved['success'] else 'El paciente sigue moribundo; no se aplica daño adicional por fallar.'),
             check=resolved|{'patient':target['id']},refs=[{'book':'reglas','page':93},{'book':'reglas','page':94},{'book':'reglas','page':191}])
     else:

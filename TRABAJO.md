@@ -1,5 +1,15 @@
 # Continuidad del desarrollo autónomo
 
+## Consciencia independiente de PG — 6 de noviembre de2026
+
+Verificación final cerrada: **587 pruebas completas correctas sin omisiones (209,027s)**, `.deps/pf-conscious-state-final-tests.log`, sesión4781 terminada. Tres navegadores correctos. Se respalda como base de la próxima integración, no como interfaz horaria terminada. Main/producción siguen7768270; siguiente escena versionada debe autorizar explícitamente la conducta del PNJ durante la espera y resolver mecánica/tiempo sin administración del jugador inconsciente.
+
+Guía de mesa desplegada en **7768270ae82d82022dee1f9f54575f9e662fe32c**, Render **7605270484 success**, revisión exacta/salud HTTPS200. Continúa recuperación sin pedir intervención.
+
+`pf_recovery.apply_hour` interno actualiza un paciente con asistencia conocida; no es una acción expuesta ni reloj compartido. `recoveryState` separado conserva horas, consciencia y última prueba; copia valida el resultado recalculado y mantiene `recoveryCare`v1 compatible. Nuevas heridas/correcciones retiran ambos. Un consciente negativo se considera incapacitado, puede mover o atacar y conserva la restricción de una acción; ataque/auxilio fatigoso pierde1PG y lo derriba, sin reiniciar sus heridas a−1. Se ajustan turnos, auxilio, pruebas preparadas y presentación. Las tácticas pausan ante el único objetivo negativo consciente, fuera de su perfil de ataque básico, en lugar de ignorarlo silenciosamente.
+
+66 pruebas afectadas correctas: todos los dados del cálculo anterior, secuencia de fallo/éxito sin curación, muerte sin ayuda, rechazo a repetir consciencia, copia alterada, movimiento o ataque, auxilio del consciente negativo y dos HTTP/Waitress con estado de recuperación preparado explícitamente como fixture. Navegadores de encuentro, pruebas de ficha y mesa correctos; no hay navegador de una acción horaria porque aún no existe. Suite completa en sesión4781, `.deps/pf-conscious-state-final-tests.log`, comprobar antes de respaldo. Falta controlador del reloj, conducta de PNJ y confirmación duradera de todos los afectados. No modificar la definición desplegada1.0.0 para añadir conducta nueva; versionarla conservando copias anteriores.
+
 ## Guía contextual de mesa — 6 de noviembre de2026
 
 Bienvenida desplegada y verificada en **7f4833cb36dec2c357a2e44d017d527467283163**, Render **7605123263 success**, revisión exacta/salud HTTPS200. Se continúa con la mesa sin esperar confirmación.

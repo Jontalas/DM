@@ -176,3 +176,15 @@ class PreparedPathfinderEncounterTests(unittest.TestCase):
         engine.apply_action(self.state,{'type':'manual','character':patient['id'],'hpDelta':-1,
             'reason':'Nueva herida del fixture','resolution':'Nuevo episodio','reference':'Prueba'},self.me)
         self.assertNotIn('recoveryCare',patient);self.assertFalse(patient['stable'])
+
+    def test_awakened_negative_hp_helper_loses_one_hp_not_a_reset_to_minus_one(self):
+        import pf_recovery
+        self.dying_opponent();actor=self.state['characters'][0];actor['hp']=-1
+        pf_recovery.record_stabilization(actor,assisted=False,round_number=1);pf_recovery.apply_hour(actor,20)
+        with patch('game_randomness.draw',return_value=20):engine.apply_action(self.state,{'type':'pf_first_aid','physical':20},self.me)
+        actor,patient=self.state['characters']
+        self.assertEqual(actor['hp'],-2);self.assertEqual(patient['hp'],-3)
+        self.assertNotIn('recoveryState',actor);self.assertFalse(actor['recoveryCare']['assisted'])
+        self.assertTrue(patient['recoveryCare']['assisted'])
+        self.assertEqual(self.state['pfEncounter']['phase'],'defeated')
+        pf_recovery.validate_restored(self.state);pf_encounters.validate_restored(self.state)

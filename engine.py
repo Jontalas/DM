@@ -80,10 +80,10 @@ def run_automatic_turns(s):
             import pf_encounters
             if pf_encounters.resolve_defeat(s):return
         current=next(c for c in s['characters'] if c['id']==board['order'][board['turn']]['id'])
-        if not any(not c['enemy'] and c['hp']>=0 for c in s['characters']):
+        if not any(not c['enemy'] and combat.standing(c) for c in s['characters']):
             pause(current,'No quedan personajes jugadores conscientes; revisa el desenlace y la asistencia a los caídos.')
             return
-        if current['hp']<0:
+        if not combat.standing(current):
             if combat.health_status(current)=='moribundo' and (not current.get('meleeProfile') or current.get('conditions','').strip()):
                 pause(current,'La estabilización requiere una resolución excepcional.');return
             log(s,current['name']+': sin acciones por su estado; se conserva su iniciativa.')
@@ -323,7 +323,7 @@ def apply_action(s,b,me):
         s['board']['terrain'][f'{x},{y}']=t; log(s,f'Terreno {t} en {x},{y}; adjudicación de escenario manual')
     elif kind=='move':
         c=char(s,b['character'],me); board=s['board']; path=b['path']
-        if c['hp']<0:raise ValueError('Un personaje inconsciente o muerto no puede moverse')
+        if not combat.standing(c):raise ValueError('Un personaje inconsciente o muerto no puede moverse')
         if not 1<=len(path)<=100: raise ValueError('Recorrido inválido')
         if not b.get('acknowledge'): raise ValueError('Confirma las consecuencias y las reglas pendientes')
         if board['active'] and board['order'][board['turn']]['id']!=c['id']: raise ValueError('No es tu turno')
@@ -341,7 +341,7 @@ def apply_action(s,b,me):
             cost+=(3 if dx and dy else 2) if tile=='difficult' else step; x,y=nx,ny
         if board['active']:
             used=board['spent'].get(c['id'],{})
-            if c['hp']==0 and used.get('standard'):raise ValueError('Incapacitado: solo una acción estándar o de movimiento')
+            if c['hp']<=0 and used.get('standard'):raise ValueError('Incapacitado: solo una acción estándar o de movimiento')
             if used.get('move'): raise ValueError('Acción de movimiento gastada. Más movimiento requiere resolución asistida')
             if cost>c['speed']: raise ValueError('El recorrido supera una acción de movimiento')
             used['move']=True; board['spent'][c['id']]=used
@@ -368,7 +368,8 @@ def apply_action(s,b,me):
                 c['hp']+=delta
                 if delta:
                     c['stable']=delta>0
-                    c.pop('recoveryCare',None)  # Exceptional healing has no certified care history.
+                    import pf_recovery
+                    pf_recovery.clear_episode(c)  # Exceptional healing has no certified care history.
             if 'conditions' in b: c['conditions']=str(b['conditions'])
             if 'resources' in b: c['resources']=str(b['resources'])
         log(s,'RESOLUCIÓN MANUAL ASISTIDA · '+reason+' · '+resolution+' · Coste de acción: '+str(b.get('actionCost','none'))+' · Referencia: '+str(b.get('reference','Sin verificar; criterio provisional')))

@@ -426,6 +426,27 @@ class IntegrationTests(unittest.TestCase):
         exported=self.request('/api/export',{},self.token);self.action('import',campaign=exported)
         self.assertEqual(self.state()['state']['pfEncounter'],record)
 
+    def test_conscious_negative_hp_import_preserves_health_and_rejects_forged_receipt(self):
+        import copy
+        import pf_recovery
+        from test_character_builder import choices
+        self.action('create_character',choices=choices());character=self.state()['state']['characters'][0]['id']
+        self.action('enter_pf_encounter',encounter='patio-del-peaje',character=character)
+        with patch('game_randomness.draw',side_effect=[20,1]),patch('game_randomness.initiative_tie',return_value=0):
+            self.action('choose_pf_encounter',choice='combat')
+        with patch('game_randomness.draw',return_value=20):
+            self.action('manual',character=character,hpDelta=-17,reason='Fixture de recuperación',resolution='PJ a -1PG',reference='Prueba')
+        exported=self.request('/api/export',{},self.token)
+        # Internal fixture calculation, not a claim of an exposed hourly action.
+        patient=exported['state']['characters'][0];pf_recovery.apply_hour(patient,20)
+        self.action('import',campaign=exported)
+        after=self.state()['state'];self.assertEqual(after['characters'][0]['hp'],-1)
+        self.assertTrue(after['characters'][0]['recoveryState']['conscious'])
+        bad=copy.deepcopy(exported);bad['state']['characters'][0]['recoveryState']['lastCheck']['hpAfter']=0
+        with self.assertRaises(urllib.error.HTTPError) as error:self.action('import',campaign=bad)
+        self.assertEqual(error.exception.code,400);error.exception.close()
+        self.assertEqual(self.state()['state'],after)
+
     def test_ooc_cannot_create_mechanical_requests(self):
         self.action('character',character={'name':'Aria'});before=self.state()
         character=before['state']['characters'][0]['id']

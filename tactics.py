@@ -7,10 +7,13 @@ def plan(state,source,allow_move=True):
     combat.profile(source)
     if source.get('conditions','').strip():raise ValueError('El adversario tiene condiciones fuera del perfil automático')
     targets=[c for c in state['characters'] if not c['enemy'] and c['hp']>0]
-    if not targets:return {'path':[],'target':None}
+    if not targets:
+        if any(not c['enemy'] and c['hp']<0 and combat.standing(c) for c in state['characters']):
+            raise ValueError('El adversario consciente con PG negativos requiere una resolución excepcional como objetivo del ataque básico')
+        return {'path':[],'target':None}
     board=state['board'];terrain=board['terrain']
     occupied={(c['x'],c['y']) for c in state['characters'] if c['id']!=source['id']}
-    opponents=[c for c in state['characters'] if not c['enemy'] and c['hp']>=0]
+    opponents=[c for c in state['characters'] if not c['enemy'] and combat.standing(c)]
     def target_at(x,y):
         position={**source,'x':x,'y':y}
         for target in targets:  # Stable campaign order breaks equivalent tactical ties.
@@ -21,7 +24,7 @@ def plan(state,source,allow_move=True):
         return None
     immediate=target_at(source['x'],source['y'])
     if immediate:return {'path':[],'target':immediate}
-    if source['hp']==0 or not allow_move:return {'path':[],'target':None}  # Wait rather than overexert.
+    if source['hp']<=0 or not allow_move:return {'path':[],'target':None}  # Wait rather than overexert.
     start=(source['x'],source['y'],0)
     queue=[(0,start)];distance={start:0};previous={};goal=None
     while queue:
