@@ -15,7 +15,7 @@ def builtin():
 
 
 def validate(raw):
-    if (not isinstance(raw,dict) or set(raw)!={'format','title','start','scenes'}
+    if (not isinstance(raw,dict) or set(raw) not in ({'format','title','start','scenes'},{'format','title','start','scenes','completion'})
         or raw['format']!='cronicas-route-1'):
         raise ValueError('Formato de ruta incompatible: utiliza cronicas-route-1')
     if len(json.dumps(raw,ensure_ascii=False).encode('utf-8'))>192000:
@@ -49,7 +49,20 @@ def validate(raw):
         if updated==reached:break
         reached=updated
     if reached!=ids:raise ValueError('La ruta contiene escenas inaccesibles')
-    terminals={s['id'] for s in result['scenes'] if not s['exits']}
+    if 'completion' in raw:
+        completion=raw['completion']
+        if (not isinstance(completion,dict) or set(completion)!={'scene','requires'}
+            or not isinstance(completion['scene'],str) or completion['scene'] not in ids
+            or not isinstance(completion['requires'],list) or not 1<=len(completion['requires'])<=8):
+            raise ValueError('Objetivo de ruta inválido')
+        target=next(s for s in result['scenes'] if s['id']==completion['scene'])
+        clues={v['id'] for v in target['module']['opportunities']}
+        required=completion['requires']
+        if any(not isinstance(v,str) or v not in clues for v in required) or len(set(required))!=len(required):
+            raise ValueError('El objetivo de ruta requiere hallazgos existentes y distintos')
+        result['completion']={'scene':completion['scene'],'requires':list(required)}
+        terminals={completion['scene']}
+    else:terminals={s['id'] for s in result['scenes'] if not s['exits']}
     can_finish=set(terminals)
     while True:
         updated=can_finish|{s['id'] for s in result['scenes'] if any(e['to'] in can_finish for e in s['exits'])}
@@ -72,6 +85,8 @@ def install(state,raw):
     for entry in route['scenes']:
         probe=copy.deepcopy(state);module=copy.deepcopy(entry['module'])
         required=list({v for e in entry['exits'] for v in e['requires']})
+        if route.get('completion',{}).get('scene')==entry['id']:
+            required=list(set(required)|set(route['completion']['requires']))
         if required:module['objectives']=[{'id':'route-check','text':'Validar acceso','requires':required}]
         modules.install(probe,module)
         modules.install(probe,entry['module'])
@@ -83,9 +98,14 @@ def install(state,raw):
 def public_view(state):
     if not state.get('adventureRoute'):return None
     current=scene(state);known={v['id'] for v in state['moduleProgress']['discoveries']}
+    completion=state['adventureRoute'].get('completion')
+    if completion:
+        target=state['moduleProgress'] if completion['scene']==current['id'] else state['routeProgress']['saved'].get(completion['scene'])
+        completed=bool(target and set(completion['requires'])<={v['id'] for v in target['discoveries']})
+    else:completed=not current['exits'] and state['moduleProgress']['completed']
     result={'title':state['adventureRoute']['title'],'current':current['id'],
         'visits':len(state['routeProgress']['history']),
-        'completed':not current['exits'] and state['moduleProgress']['completed'],
+        'completed':completed,
         'exits':[{'id':e['id'],'label':e['label']} for e in current['exits'] if set(e['requires'])<=known]}
     if state.get('boardScenes'):
         all_progress={**state['routeProgress']['saved'],current['id']:state['moduleProgress']}

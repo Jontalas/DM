@@ -40,10 +40,10 @@ class NightRestHTTPTests(unittest.TestCase):
 
     def setUp(self):self.token=self.request('/api/create',{'title':'Noche técnica','player':'Ana'})['token']
 
-    def prepare(self,token=None,wounded=False):
+    def prepare(self,token=None,wounded=False,version='1.5.0'):
         self.action('create_character',token,choices=choices())
         actor=self.state(token)['state']['characters'][0]['id']
-        self.action('enter_pf_encounter',token,encounter='patio-del-peaje',encounterVersion='1.5.0',character=actor)
+        self.action('enter_pf_encounter',token,encounter='patio-del-peaje',encounterVersion=version,character=actor)
         if wounded:
             with patch('game_randomness.draw',side_effect=[1,20,18,3]),patch('game_randomness.initiative_tie',return_value=0):
                 self.action('choose_pf_encounter',token,choice='combat')
@@ -92,3 +92,21 @@ class NightRestHTTPTests(unittest.TestCase):
             before=self.state()
             with self.assertRaises(urllib.error.HTTPError) as error:self.action('import',campaign=changed)
             self.assertEqual(error.exception.code,400);error.exception.close();self.assertEqual(self.state(),before)
+
+    def test_global_goal_sleep_and_revisits_survive_copy_and_duplicate_return(self):
+        self.prepare(version='1.6.0');self.action('rest_pf_night');self.action('continue_pf_encounter')
+        actor=self.state()['state']['characters'][0]['id']
+        for clue in ('registro','recibo'):self.action('investigate',character=actor,opportunity=clue,method='take20')
+        self.action('travel_scene',exit='almacen')
+        for clue in ('bulto','recepcion'):self.action('investigate',character=actor,opportunity=clue,method='take20')
+        body=self.action('travel_scene',exit='patio');returned=self.state()
+        self.assertTrue(returned['state']['adventureRouteView']['completed'])
+        self.assertEqual(returned['state']['boardScenes']['current'],'patio')
+        self.assertTrue(self.request('/api/action',body)['duplicate']);self.assertEqual(self.state(),returned)
+        exported=self.request('/api/export',{});self.action('import',campaign=exported)
+        self.assertEqual(self.state()['state']['worldTime'],returned['state']['worldTime'])
+        self.assertTrue(self.state()['state']['adventureRouteView']['completed'])
+        altered=copy.deepcopy(exported);altered['state']['adventureRoute']['completion']={'scene':'patio','requires':['recibo']}
+        before=self.state()
+        with self.assertRaises(urllib.error.HTTPError) as error:self.action('import',campaign=altered)
+        self.assertEqual(error.exception.code,400);error.exception.close();self.assertEqual(self.state(),before)

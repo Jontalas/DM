@@ -2,8 +2,9 @@ const {chromium}=require('./.deps/browser-tests/node_modules/playwright');
 const {spawn}=require('node:child_process'),{createInterface}=require('node:readline');
 const path=require('node:path'),assert=require('node:assert/strict');
 (async()=>{
+ const returning=process.env.TEST_PF_ROUTE_RETURN==='1',encounterVersion=returning?'1.6.0':'1.4.0';
  const fixture=spawn(path.resolve('.venv/Scripts/python.exe'),['test_browser_fixture.py'],
-  {env:{...process.env,TEST_PF_ENCOUNTER_VERSION:'1.4.0'},stdio:['ignore','pipe','inherit']});let browser;
+  {env:{...process.env,TEST_PF_ENCOUNTER_VERSION:encounterVersion},stdio:['ignore','pipe','inherit']});let browser;
  try{
   const url=await new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(Error('Fixture timeout')),15000);createInterface({input:fixture.stdout}).once('line',line=>{clearTimeout(timer);resolve(line)});fixture.once('exit',()=>reject(Error('Fixture exited')))});
   browser=await chromium.launch({headless:true,executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe'});
@@ -18,7 +19,7 @@ const path=require('node:path'),assert=require('node:assert/strict');
    await page.locator('#creatorFinish').click();await page.locator('.sheet-checks').waitFor();await page.locator('#closeModal').click();
    await page.locator('#beginPreparedEncounter').click();await page.locator('#pfEncounterEntry button').click();
    await page.waitForFunction(()=>snapshot.state.pfEncounter&&!busy);
-   assert.equal(await page.evaluate(()=>snapshot.state.pfEncounter.definition.version),'1.4.0');
+   assert.equal(await page.evaluate(()=>snapshot.state.pfEncounter.definition.version),encounterVersion);
    if(choice==='parley'){
     await page.locator('#pfEncounterParley').click();await page.waitForFunction(()=>snapshot.state.pfEncounter.phase==='agreement'&&!busy);
    }else{
@@ -55,17 +56,42 @@ const path=require('node:path'),assert=require('node:assert/strict');
     const version=await page.evaluate(()=>snapshot.version);await page.locator(`#investigationForm button[value=${method}]`).click();
     await page.waitForFunction(v=>snapshot.version>v&&!busy,version);
    }
-   const final=await page.evaluate(()=>snapshot.state);assert.equal(final.adventureRouteView.completed,true);
-   assert.match(await page.locator('#playGuidanceText').textContent(),/Has completado la ruta preparada/);
-   assert.match(await page.locator('#playGuidanceText').textContent(),/otros viajes aún no están disponibles/);
-   assert.equal(await page.locator('[data-route-exit]').count(),0);
+   let final=await page.evaluate(()=>snapshot.state);assert.equal(final.adventureRouteView.completed,true);
+   if(returning){
+    assert.match(await page.locator('#playGuidanceText').textContent(),/Has resuelto el objetivo/);
+    const localActions=actions.length;
+    await page.locator('#playGuidanceAction').focus();await page.keyboard.press('Enter');
+    assert.equal(actions.length,localActions);
+    await page.locator('[data-route-exit=patio]').click();await page.waitForFunction(()=>snapshot.state.boardScenes.current==='patio'&&!busy);
+    assert.equal(await page.evaluate(()=>snapshot.state.adventureRouteView.completed),true);
+    assert.equal(await page.locator('#grid .token').count(),2);
+    assert.equal(await page.evaluate(()=>snapshot.state.moduleProgress.discoveries.length),2);
+    await page.locator('[data-route-exit=cobertizo]').click();await page.waitForFunction(()=>snapshot.state.boardScenes.current==='cobertizo'&&!busy);
+    assert.equal(await page.evaluate(()=>snapshot.state.adventureRouteView.completed),true);
+    if(choice==='combat'){
+     assert.equal(await page.evaluate(()=>snapshot.state.moduleProgress.completed),false);
+     await page.locator('#investigationForm button[value=take10]').click();await page.waitForFunction(()=>snapshot.state.moduleProgress.completed&&!busy);
+    }
+    await page.locator('[data-route-exit=almacen]').click();await page.waitForFunction(()=>snapshot.state.boardScenes.current==='almacen'&&!busy);
+    assert.equal(await page.evaluate(()=>snapshot.state.moduleProgress.discoveries.length),2);
+    assert.equal(await page.evaluate(()=>snapshot.state.adventureRouteView.completed),true);
+    assert.deepEqual(await page.evaluate(()=>snapshot.state.characters),final.characters);
+    final=await page.evaluate(()=>snapshot.state);
+   }else{
+    assert.match(await page.locator('#playGuidanceText').textContent(),/Has completado la ruta preparada/);
+    assert.match(await page.locator('#playGuidanceText').textContent(),/otros viajes aún no están disponibles/);
+    assert.equal(await page.locator('[data-route-exit]').count(),0);
+   }
    assert.deepEqual(final.characters.map(c=>c.hp),before.characters.map(c=>c.hp));assert.equal(final.characters[1].sceneId,'patio');
    assert.equal(final.worldTime,before.worldTime);assert.deepEqual(final.pfEncounter,before.pfEncounter);
    const count=actions.length;
-   await page.locator('#playGuidanceAction').focus();await page.keyboard.press('Enter');
+   if(returning)await page.locator('[data-tab=journal]').click();
+   else{await page.locator('#playGuidanceAction').focus();await page.keyboard.press('Enter')}
    assert.equal(await page.locator('#journal').isVisible(),true);
    assert.match(await page.locator('#journalOverview').textContent(),/Ruta completada/);
    assert.match(await page.locator('#journalOverview').textContent(),/Hora no registrada/);
+   await page.locator('.clock-reference > summary').focus();await page.keyboard.press('Enter');
+   assert.match(await page.locator('.clock-reference').textContent(),returning?/Inicio de la noche/:/Comienzo de la aventura/);
    await page.locator('.visited-scene-notes > summary').focus();await page.keyboard.press('Enter');
    assert.match(await page.locator('.visited-scene-notes').textContent(),/última línea|último envío|mismo sello/);
    assert.equal(actions.length,count);
@@ -77,12 +103,13 @@ const path=require('node:path'),assert=require('node:assert/strict');
    await page.setViewportSize({width:390,height:1000});await page.locator('[data-tab=board]').click();
    assert.match(await page.locator('#board h2').textContent(),/Almacén/);assert.equal(await page.locator('#grid .token').count(),1);
    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
-   await page.screenshot({path:'.deps/pf-route-'+choice+'-board-mobile.png',fullPage:true});
+   await page.screenshot({path:'.deps/pf-route-'+(returning?'return-':'')+choice+'-board-mobile.png',fullPage:true});
    await page.locator('[data-tab=journal]').click();await page.locator('.visited-scene-notes > summary').click();
-   await page.screenshot({path:'.deps/pf-route-'+choice+'-journal-mobile.png',fullPage:true});
+   await page.screenshot({path:'.deps/pf-route-'+(returning?'return-':'')+choice+'-journal-mobile.png',fullPage:true});
    assert.ok(!actions.some(a=>['manual','character','create_npc','start_adventure'].includes(a.type)));
    assert.deepEqual(errors,[]);await context.close();
   }
   console.log('PF route browser passed: guided character, parley/combat, direct/optional route, return preserves clues/positions, guard stays in courtyard, local board filters, journal history, UI copy/reload/mobile. No AI.');
+  if(returning)console.log('Global route goal stays resolved on courtyard/shed revisits; optional local investigation remains available, no repeat discoveries or rewards.');
  }finally{if(browser)await browser.close();fixture.kill()}
 })().catch(e=>{console.error(e);process.exitCode=1});

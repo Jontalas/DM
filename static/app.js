@@ -61,8 +61,8 @@ function renderPlayGuidance(s){
  }else if(s.pending.length){
   message=snapshot.me.host?'Hay una situación pendiente de resolución excepcional. Puedes revisarla en el diario.':'El anfitrión tiene una situación pendiente de resolución excepcional.';
   label='Ver pendientes';open=()=>{chooseTab('journal');$('#journalPending').scrollIntoView({block:'center'})};
- }else if(s.adventureModuleView?.completed&&s.adventureRouteView&&!s.adventureRouteView.completed){
-  message='La investigación de este lugar está resuelta. Puedes consultar las salidas de la ruta.';
+ }else if(s.adventureRouteView?.exits.length&&(s.adventureModuleView?.completed||s.adventureRouteView.completed)){
+  message=s.adventureRouteView.completed?'Has resuelto el objetivo de la ruta. Puedes volver a los lugares conocidos; tus hallazgos se conservan.':'La investigación de este lugar está resuelta. Puedes consultar las salidas de la ruta.';
   label='Ver salidas';open=()=>{const exits=$$('[data-route-exit]');$('#investigationPanel').scrollIntoView({block:'start'});exits.find(b=>!b.disabled)?.focus({preventScroll:true})};
  }else if(s.adventureRouteView?.completed){
   message='Has completado la ruta preparada. Puedes revisar los hallazgos en el diario; otros viajes aún no están disponibles.';
@@ -78,10 +78,14 @@ function renderPlayGuidance(s){
 }
 function renderJournalOverview(s){
  const lists=[['Aliados',s.allies],['Enemigos',s.enemies],['Incógnitas',s.unknowns]].filter(([,items])=>items?.length);
- const timeLabel=s.boardScenes&&s.adventureRouteView?.visits>1&&s.worldTime==='Comienzo de la aventura'?'Hora no registrada':s.worldTime;
+ const unmeasuredActivity=s.adventureRouteView?.visits>1||s.adventureModuleView?.searchActions>0;
+ const knownAnchor=['Comienzo de la aventura','Inicio de la noche del patio'].includes(s.worldTime)||(s.pfNightRestView?.completed&&s.worldTime==='8 horas desde el comienzo del descanso en el patio');
+ const unknownCurrentTime=s.boardScenes&&unmeasuredActivity&&knownAnchor;
+ const timeLabel=unknownCurrentTime?'Hora no registrada':s.worldTime;
  const resolved=s.adventureRouteView?.completed?'Ruta completada':!s.adventureRouteView&&s.adventureModuleView?.completed?'Investigación resuelta':'';
  $('#journalOverview').innerHTML=`<h3>Situación actual</h3><p><strong>${esc(s.location)}</strong> · ${esc(timeLabel)}</p><p>${esc(s.goal)}</p>${resolved?`<p class="notice">${esc(resolved)}. Los hallazgos confirmados quedan guardados.</p>`:''}${!s.adventure&&s.objectives.length?`<ul>${s.objectives.map(v=>`<li>${esc(v)}</li>`).join('')}</ul>`:''}${s.notes?`<h4>Notas confirmadas</h4><p>${esc(s.notes)}</p>`:''}${s.adventureRouteView?.visitedScenes?.length>1?`<details class="visited-scene-notes"><summary>Lugares visitados y hallazgos</summary>${s.adventureRouteView.visitedScenes.map(v=>`<h4>${esc(v.location)}</h4>${v.discoveries.length?v.discoveries.map(d=>`<p>${esc(d.text)}</p>`).join(''):'<p>Sin hallazgos confirmados todavía.</p>'}`).join('')}</details>`:''}${lists.length?`<details><summary>Personas e incógnitas</summary>${lists.map(([title,items])=>`<h4>${title}</h4><ul>${items.map(v=>`<li>${esc(v)}</li>`).join('')}</ul>`).join('')}</details>`:''}`;
  $('#journalFacts').hidden=!Object.keys(s.facts).length;
+ if(unknownCurrentTime)$('#journalOverview').insertAdjacentHTML('beforeend',`<details class="clock-reference"><summary>Última referencia de tiempo</summary><p>${esc(s.worldTime)}</p><p>La duración de las búsquedas y los trayectos todavía no se calcula. Se conserva esta referencia sin inventar una hora actual.</p></details>`);
  $('#journalConsequences').hidden=!s.consequences.length;
  $('#journalPending').hidden=!s.pending.length;
 }

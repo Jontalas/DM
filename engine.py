@@ -238,15 +238,22 @@ def apply_action(s,b,me):
         die_label='valor fijo' if method!='roll' else 'd20'
         log(s,f"{c['name']} · {result['name']}: {die_label} {raw} {result['modifier']:+} = {result['total']}{outcome}{reason}. {result['basis']}. Origen: {origin}. No aplica efectos ni coste de acción por sí sola.",check=result,refs=[{'book':'reglas','page':182 if spec['kind']=='save' else 87 if spec['kind']=='skill' else 17}])
         if pending and pending.get('investigation'):
+            route_was_complete=False
+            if s.get('adventureRoute'):
+                import adventure_routes
+                route_was_complete=adventure_routes.public_view(s)['completed']
             discovery=adventure_modules.resolve(s,pending,result)
             log(s,discovery+' Se registra una acción de movimiento de búsqueda fuera de combate; sin conversión automática a tiempo transcurrido.',
                 discovery={'opportunity':pending['investigation'],'success':result['success']},refs=[{'book':'reglas','page':101}])
+            route_now_complete=False
+            if s.get('adventureRoute'):route_now_complete=adventure_routes.public_view(s)['completed']
             if s['moduleProgress']['completed']:
                 if s.get('adventureRoute'):
-                    import adventure_routes
                     log(s,s['adventureModule']['conclusion'],sceneInvestigationComplete=True,
-                        adventureComplete=adventure_routes.public_view(s)['completed'])
+                        adventureComplete=route_now_complete and not route_was_complete)
                 else:log(s,s['adventureModule']['conclusion'],adventureComplete=True)
+            elif route_now_complete and not route_was_complete:
+                log(s,'Has resuelto el objetivo de la ruta. Los demás hallazgos disponibles siguen siendo opcionales.',adventureComplete=True)
     elif kind=='roll':
         n=int(b.get('n',1)); sides=int(b.get('sides',20)); mod=int(b.get('modifier',0))
         if not 1<=n<=30 or sides not in [2,3,4,6,8,10,12,20,100] or abs(mod)>1000: raise ValueError('Tirada inválida')

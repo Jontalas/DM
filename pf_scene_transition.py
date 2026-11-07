@@ -12,10 +12,11 @@ from rule_pack_authoring import canonical
 LINK={'id':'recibo-del-patio','version':'1.0.0'}
 ROUTE_LINK={'id':'envio-del-peaje','version':'1.0.0'}
 NIGHT_ROUTE_LINK={'id':'envio-del-peaje','version':'1.1.0'}
+RETURN_ROUTE_LINK={'id':'envio-del-peaje','version':'1.2.0'}
 
 
 def is_route(link):
-    return link in (ROUTE_LINK,NIGHT_ROUTE_LINK)
+    return link in (ROUTE_LINK,NIGHT_ROUTE_LINK,RETURN_ROUTE_LINK)
 
 
 def module():
@@ -34,7 +35,7 @@ def route(link=None):
 
 def limitation(state,*,active=False):
     record=state.get('pfEncounter')
-    if not record or record['definition'].get('continuation') not in (LINK,ROUTE_LINK,NIGHT_ROUTE_LINK):return 'Esta versión no incluye la siguiente escena.'
+    if not record or record['definition'].get('continuation') not in (LINK,ROUTE_LINK,NIGHT_ROUTE_LINK,RETURN_ROUTE_LINK):return 'Esta versión no incluye la siguiente escena.'
     routed=is_route(record['definition'].get('continuation'))
     if state.get('pfContinuation') and not active:return 'La investigación del patio ya está iniciada.'
     if record['phase'] not in ('agreement','resolved','defeated') or state['board']['active']:return 'Resuelve primero el encuentro.'
@@ -90,7 +91,7 @@ def enter(state,body,me):
 def validate_restored(state):
     receipt=state.get('pfContinuation')
     if receipt is None:
-        if state.get('pfEncounter',{}).get('definition',{}).get('continuation') in (LINK,ROUTE_LINK,NIGHT_ROUTE_LINK) and any(state.get(k) for k in ('adventure','adventureModule','adventureRoute')):
+        if state.get('pfEncounter',{}).get('definition',{}).get('continuation') in (LINK,ROUTE_LINK,NIGHT_ROUTE_LINK,RETURN_ROUTE_LINK) and any(state.get(k) for k in ('adventure','adventureModule','adventureRoute')):
             raise ValueError('La escena enlazada necesita su registro de continuidad')
         return
     record=state.get('pfEncounter')

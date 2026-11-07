@@ -1,5 +1,17 @@
 # Continuidad del desarrollo autónomo
 
+## Regreso tras resolver el objetivo1.6 — 8 de noviembre de2026
+
+Trabajo continuado después de verificar producción1.5, sin esperar intervención. Objetivo de ruta opcional definido por escena/hallazgos, independiente de la localización actual; grafos con regreso y sin escena terminal válidos solo con objetivo alcanzable. Datos1.6/ruta1.2 nuevos; versiones anteriores conservadas. Permite dejar el almacén sin acabar, volver, descubrir y regresar al patio/cobertizo sin perder objetivo, memoria, salud ni reloj. El objetivo se registra una sola vez; tareas opcionales posteriores no duplican finalización ni FH. Importación rechaza sustitución del objetivo; pacientes remotos siguen bloqueando.
+
+679 pruebas completas correctas con emulador/reglas (237,812s), .deps/pf-return-route-final-tests.log, sesión37025 terminada;32 afectadas y HTTP/Waitress de continuidad/noche/regreso/duplicado/copia correctos. Navegador acuerdo/combate, regreso, búsqueda opcional, diario, copia/recarga/móvil correctos; rutas genéricas/1.4 y noche1.5 conservadas. Guion ajustó su instantánea al nuevo lugar visitado, sin cambiar persistencia. Se corrigió solo presentación de reloj tras búsquedas/viajes: hora actual desconocida, referencia original accesible por teclado; no cambia datos ni calcula duración. Capturas revisadas. Guion técnico1.6 sin IA preparado/compilado y no ejecutado; sigue respaldo/despliegue/verificación y desarrollo siguiente, sin esperar al usuario.
+
+## Noche1.5 en producción y continuidad siguiente — 8 de noviembre de2026
+
+6da0a523db54160abcc16cfd42c8fc02c58eeeb1, feature/main y Render7628572059 success.671 pruebas completas correctas y33 selectivas por textos/vistas. Ensayo técnico separado pf-night-live-session.json verified, cero solicitudes del director, noche8h/PG máximos/NPC intacto/duplicados/copia/continuación conservados. No partidas personales modificadas ni sesiones anteriores repetidas. Navegador real de la misma sesión: revisión exacta/salud HTTPS200, recarga/teclado/móvil y cero nuevas acciones/inferencias; captura revisada. La primera comprobación Node requería CA del sistema, corregida con --use-system-ca sin desactivar HTTPS. Campaña1.4 anterior también correcta en navegador de solo lectura.
+
+El desarrollo continúa sin esperar otra orden: siguiente continuidad tras objetivo y regreso a lugares conocidos. Objetivo global de ruta como datos independiente de la escena actual, versión nueva con regreso; fuentes de transición ya contrastadas, sin añadir duraciones ni reglas. Mantener1.0–1.5 y sesiones reales intactas; descanso avanzado aún requiere planificador conjunto, no aproximarlo. No hay dependencia del usuario.
+
 ## Primera noche jugable en verificación — 8 de noviembre de2026
 
 Ratificación del usuario: no detener desarrollo por cerrar entregas, solo por dependencia imprescindible. Implementación local noche1.5 y ruta nocturna1.1; originales Reglas PDF151/150 y192/191 revisados visualmente. Descanso voluntario del propietario antes de investigar: PJ positivo/armadura ligera, sin pacientes o eventos médicos pendientes de ningún participante. Guardiana sana/despierta o muerta; una noche8h,1PG/nivel hasta máximo, sin recursos/fatiga inventados ni IA. Primer encuentro hasta100 asaltos es cobertura del motor, no regla. Recibo histórico reproduce cálculo/tiempo y liga auditoría a versión original; importación rechaza alteraciones/huérfanos. Director recibe resultado compacto.
