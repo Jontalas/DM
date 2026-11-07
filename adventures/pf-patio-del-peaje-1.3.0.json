@@ -1,0 +1,29 @@
+{
+  "format": "cronicas-pf-encounter-1",
+  "id": "patio-del-peaje",
+  "version": "1.3.0",
+  "ruleset": "pathfinder-1e",
+  "title": "El patio del peaje",
+  "location": "Patio abierto a plena luz",
+  "description": "Una guardiana goblin espera ante la salida del patio. Te ha visto y tú la has visto; no hay sorpresa. Lleva la espada corta preparada y propone que habléis antes de disputar el paso. Puedes aceptar hablar o decidir entrar en combate. No se eligen palabras ni acciones por tu personaje.",
+  "goal": "Resolver la disputa por el paso",
+  "npc": {
+    "template": "pf1-goblin-warrior-1",
+    "name": "Guardiana del patio"
+  },
+  "conditions": {
+    "lighting": "normal",
+    "surprise": false,
+    "terrain": "open",
+    "players": 1
+  },
+  "agreement": "La guardiana acepta dejarte pasar sin exigir dinero ni objetos. Has obtenido permiso; atravesar la salida sigue siendo una decisión tuya.",
+  "defeatPolicy": "Conducta de esta guardiana en esta escena original: no remata a un personaje que queda inconsciente. Si conserva la consciencia, cesa sus ataques y espera a que el estado de los caídos se determine. No presta curación ni decide por el personaje del jugador.",
+  "recoveryPolicy": "El patio permanece tranquilo después del enfrentamiento. Si ambos quedan inconscientes, se resuelven sus comprobaciones cubiertas sin elegir acciones por el PJ. Si la guardiana despierta antes, observa sin acciones fatigosas, sin atacar, curar ni dormir; espera a que el PJ despierte o muera. Si ella está consciente cuando él despierta, le permite retirarse. Esta conducta pertenece a la escena original, no a las reglas de Pathfinder.",
+  "recoveryScope": "shared-patients-1",
+  "coverage": "Acuerdo, combate básico, primeros auxilios y recuperación compartida acotada, sin curación inventada. Se respeta el instante de cada paciente y se detiene al despertar o morir el PJ. Con un PNJ asistido todavía inconsciente, el reloj se detiene a las seis horas antes de un descanso no cubierto; ese límite es del motor, no una regla del juego. Descanso curativo de varios caídos, fatiga con armadura intermedia y recompensas todavía pendientes. Tras resolver el encuentro puedes investigar el registro sin salir del patio si tu PJ tiene PG positivos y no queda un PNJ negativo vivo con recuperación pendiente. No se curan heridas ni se eligen tus acciones al continuar.",
+  "continuation": {
+    "id": "recibo-del-patio",
+    "version": "1.0.0"
+  }
+}

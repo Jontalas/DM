@@ -109,6 +109,10 @@ def run_automatic_turns(s):
 
 def apply_action(s,b,me):
     kind=b['type']
+    if kind=='continue_pf_encounter':
+        import pf_scene_transition
+        pf_scene_transition.enter(s,b,me)
+        return
     if kind in ('enter_pf_encounter','choose_pf_encounter','pf_first_aid','pf_wait_stabilization'):
         import pf_encounters
         if kind=='enter_pf_encounter':pf_encounters.enter(s,b,me)

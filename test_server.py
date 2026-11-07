@@ -508,6 +508,43 @@ class IntegrationTests(unittest.TestCase):
         exported=self.request('/api/export',{},self.token);self.action('import',campaign=exported)
         self.assertEqual(self.state()['state']['pfEncounter'],after['pfEncounter'])
 
+    def test_prepared_encounter_continues_into_investigation_without_provider_or_state_reset(self):
+        from test_character_builder import choices
+        self.action('create_character',choices=choices());character=self.state()['state']['characters'][0]['id']
+        self.action('enter_pf_encounter',encounter='patio-del-peaje',encounterVersion='1.3.0',character=character)
+        self.action('choose_pf_encounter',choice='parley');before=self.state()['state']
+        with patch.object(server,'ai_reply',side_effect=AssertionError('Prepared transition called AI')):
+            body=self.action('continue_pf_encounter')
+            self.assertTrue(self.request('/api/action',body,self.token)['duplicate'])
+            after=self.state()['state']
+            for key in ('characters','board','worldTime','pfEncounter'):self.assertEqual(after[key],before[key])
+            self.action('investigate',character=character,opportunity='registro',method='take10')
+            self.action('investigate',character=character,opportunity='recibo',method='take20')
+        final=self.state()['state'];self.assertTrue(final['moduleProgress']['completed'])
+        self.assertEqual(final['characters'],before['characters'])
+        self.assertEqual(final['pfContinuation'],after['pfContinuation'])
+        exported=self.request('/api/export',{},self.token);self.action('import',campaign=exported)
+        self.assertEqual(self.state()['state']['moduleProgress'],final['moduleProgress'])
+        guest=self.request('/api/join',{'name':'Luis','invite':self.state()['invite']})['token']
+        public=self.state(guest)['state']
+        self.assertNotIn('adventureModule',public);self.assertNotIn('directorMemory',public)
+        self.assertTrue(public['adventureModuleView']['completed'])
+
+    def test_later_patient_injury_blocks_pending_courtyard_search_before_rng(self):
+        from test_character_builder import choices
+        self.action('create_character',choices=choices());character=self.state()['state']['characters'][0]['id']
+        self.action('enter_pf_encounter',encounter='patio-del-peaje',encounterVersion='1.3.0',character=character)
+        self.action('choose_pf_encounter',choice='parley');self.action('continue_pf_encounter')
+        self.action('investigate',character=character,opportunity='registro')
+        request=self.state()['state']['pending'][0]['check']['id']
+        npc=self.state()['state']['characters'][1]['id']
+        self.action('manual',character=npc,hpDelta=-10,reason='Nueva herida explícita del fixture',resolution='PNJ a -3PG',reference='Prueba')
+        before=self.state()['state']
+        with patch('game_randomness.draw',side_effect=AssertionError('Uncovered patient search rolled')):
+            with self.assertRaises(urllib.error.HTTPError) as error:self.action('check',request=request,method='roll')
+        self.assertEqual(error.exception.code,400);error.exception.close()
+        self.assertEqual(self.state()['state'],before)
+
     def test_positive_hp_correction_keeps_consciousness_original_recovery_and_copy(self):
         from test_character_builder import choices
         self.action('create_character',choices=choices());character=self.state()['state']['characters'][0]['id']

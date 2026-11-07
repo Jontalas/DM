@@ -175,6 +175,10 @@ def public_view(state):
 
 def investigation(state,body,me):
     if not state.get('adventure') or not state.get('adventureModule'):raise ValueError('No hay una investigación estructurada activa')
+    if state.get('pfContinuation'):
+        import pf_scene_transition
+        reason=pf_scene_transition.limitation(state,active=True)
+        if reason:raise ValueError(reason)
     if state['board']['active']:raise ValueError('Este bloque de investigación no admite combate activo')
     if any(not p.get('investigation') for p in state['pending']):raise ValueError('Resuelve primero las pruebas o excepciones pendientes antes de buscar en condiciones tranquilas')
     if state['moduleProgress']['completed']:raise ValueError('La investigación ya está completada')

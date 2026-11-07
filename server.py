@@ -179,6 +179,8 @@ def execute_action(body,me):
                 for character in state['characters']:
                     if not character.get('npcCreation'):character['owner']=me['id']
                 adventure_modules.validate_restored(state)
+                import pf_scene_transition
+                pf_scene_transition.validate_restored(state)
                 adventure_routes.validate_restored(state)
                 state['private']={}
             title=str(data['title'])[:120]

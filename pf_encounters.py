@@ -17,8 +17,8 @@ from rule_pack_authoring import canonical
 ID='patio-del-peaje'
 
 
-def definition(version='1.2.0'):
-    files={'1.0.0':'pf-patio-del-peaje.json','1.1.0':'pf-patio-del-peaje-1.1.0.json','1.2.0':'pf-patio-del-peaje-1.2.0.json'}
+def definition(version='1.3.0'):
+    files={'1.0.0':'pf-patio-del-peaje.json','1.1.0':'pf-patio-del-peaje-1.1.0.json','1.2.0':'pf-patio-del-peaje-1.2.0.json','1.3.0':'pf-patio-del-peaje-1.3.0.json'}
     if not isinstance(version,str) or version not in files:raise ValueError('Revisión de encuentro no disponible')
     return json.loads((Path(__file__).parent/'adventures'/files[version]).read_text(encoding='utf-8'))
 
