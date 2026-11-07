@@ -83,6 +83,9 @@ const path=require('node:path'),assert=require('node:assert/strict');
     assert.equal(await page.locator('[data-route-exit]').count(),0);
    }
    assert.deepEqual(final.characters.map(c=>c.hp),before.characters.map(c=>c.hp));assert.equal(final.characters[1].sceneId,'patio');
+   const npcRow=page.locator(`.party-person[data-character="${final.characters[1].id}"]`);
+   if(choice==='combat')assert.match(await npcRow.textContent(),/Ha muerto/);
+   else assert.doesNotMatch(await npcRow.textContent(),/Ha muerto|Inconsciente|Moribundo/);
    assert.equal(final.worldTime,before.worldTime);assert.deepEqual(final.pfEncounter,before.pfEncounter);
    const count=actions.length;
    if(returning)await page.locator('[data-tab=journal]').click();

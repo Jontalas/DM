@@ -34,6 +34,7 @@ const path=require('node:path'),assert=require('node:assert/strict');
   }
   if(shared){
    assert.equal(await page.evaluate(()=>snapshot.state.characters[0].hp),0);
+   assert.match(await page.locator('#party [data-character]').first().textContent(),/Incapacitado/);
    await page.locator('#attackButton').click();
    await page.waitForFunction(()=>snapshot.state.pfEncounter.recoveryOutcome&&!busy);
   }
@@ -43,6 +44,7 @@ const path=require('node:path'),assert=require('node:assert/strict');
    assert.equal(recovered.pfEncounter.recoveryLimit,'armor-rest');assert.equal(recovered.pfEncounter.recoveryOutcome,undefined);
    assert.equal(recovered.worldTime,'Comienzo de la aventura');assert.equal(recovered.board.active,false);
    assert.match(await page.locator('#adventureEntry').textContent(),/No se han avanzado horas/);
+   assert.match(await page.locator('#party [data-character]').first().textContent(),/Inconsciente y estable/);
    await page.locator('[data-tab=journal]').click();
    const [download]=await Promise.all([page.waitForEvent('download'),page.locator('#exportBtn').click()]);
    const version=await page.evaluate(()=>snapshot.version);await page.locator('#importFile').setInputFiles(await download.path());
@@ -60,6 +62,7 @@ const path=require('node:path'),assert=require('node:assert/strict');
   assert.equal(recovered.characters[0].recoveryState?.conscious,fatal?undefined:true);
   assert.equal(recovered.pfEncounter.recoveryOutcome.hours,fatal?12:1);assert.equal(recovered.pfEncounter.recoveryOutcome.seconds,(fatal?12:1)*3600);
   assert.equal(recovered.pfEncounter.recoveryOutcome.status,fatal?'dead':'conscious');assert.equal(recovered.board.active,false);
+  assert.match(await page.locator('#party [data-character]').first().textContent(),fatal?/Ha muerto/:/Incapacitado/);
   assert.equal(await page.locator('#nextTurn').isVisible(),false);
   assert.equal(await page.locator('#requestCheck').isVisible(),!fatal);
   assert.equal(await page.locator('#useAI').isChecked(),false);assert.equal(await page.locator('#useAI').isEnabled(),false);

@@ -1,5 +1,9 @@
 # Sencillez y orientación
 
+Actualización local8 de noviembre: lista de personajes con estado clínico en texto cuando sus PG no son positivos: Ha muerto, Moribundo, Inconsciente y estable o Incapacitado. Reutiliza los datos de salud/consciencia ya calculados, sin escrituras ni inferencias por mostrarlo; positivos no añaden otro rótulo. La ficha sigue abriéndose localmente para revisar las consecuencias. Navegadores orgánicos de auxilio/muerte, recuperación compartida a0PG y negativos, armadura estable y regreso con PNJ muerto correctos en copia/recarga/móvil. No cambia reglas ni certifica condiciones anotadas fuera de cobertura.
+
+Diario1.6 desplegado: tras búsquedas o trayectos sin duración calculada muestra «Hora no registrada» y conserva «Última referencia de tiempo» en detalle accesible por teclado. No altera el reloj original ni inventa horas. Objetivo resuelto con regreso disponible ofrece «Ver salidas», conservando hallazgos; la pista local opcional no se presenta como un reinicio del objetivo global.679 pruebas del motor y navegadores locales/reales correctos; no supone revisión de toda la aplicación.
+
 Límite de armadura comunicado antes de jugar y después de caer: la recuperación prolongada con cota de escamas requiere efectos aún pendientes. El estado se conserva y no se presenta como error que el jugador deba depurar. La prueba desde creador verifica advertencia, caída, ausencia de salto horario, copia/recarga y móvil. La aplicación distingue límite de implementación de regla del juego.
 
 Directiva permanente del usuario del6 de noviembre de2026, incorporada a AGENTS.md y PRODUCTO.md. Es un requisito transversal del producto; no una declaración de que la interfaz actual ya lo cumple.

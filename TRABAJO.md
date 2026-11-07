@@ -1,5 +1,11 @@
 # Continuidad del desarrollo autónomo
 
+## Continuidad1.6 verificada y claridad clínica local — 8 de noviembre de2026
+
+40e3dc0fb82395719367406a713a78dd87871fce en main/producción, Render7628758418 success; descriptor1.6/revisión/salud HTTPS200. Ensayo técnico separado pf-return-live-session.json verified con cero IA, resultado global conservado en cobertizo mientras sigue pendiente su pista opcional, guardiana en patio, PG16/7/tiempo/duplicado/copia intactos. Ninguna partida personal modificada. Navegador real de esa sesión correcto: recarga, salida/diario/referencia temporal con teclado, móvil, cero nuevas acciones/inferencias. No repetir sesiones anteriores.
+
+Desarrollo continuado con presentación clínica en lista de personajes: Ha muerto, Moribundo, Inconsciente y estable o Incapacitado cuando corresponde a los datos ya cargados; positivos sin rótulo adicional. No añade reglas ni modifica fichas/IA/Firebase. Navegadores orgánicos de regreso por paz/combate, auxilio, recuperación compartida a0 y negativos, armadura e inconsciencia, muerte/copia/recarga/móvil correctos. Capturas revisadas; ajuste todavía local sin publicar. No repetir679 por este cambio de presentación. Después seguir con recuperación avanzada/planificador conjunto y fuentes originales, sin detenerse por el checkpoint.
+
 ## Regreso tras resolver el objetivo1.6 — 8 de noviembre de2026
 
 Trabajo continuado después de verificar producción1.5, sin esperar intervención. Objetivo de ruta opcional definido por escena/hallazgos, independiente de la localización actual; grafos con regreso y sin escena terminal válidos solo con objetivo alcanzable. Datos1.6/ruta1.2 nuevos; versiones anteriores conservadas. Permite dejar el almacén sin acabar, volver, descubrir y regresar al patio/cobertizo sin perder objetivo, memoria, salud ni reloj. El objetivo se registra una sola vez; tareas opcionales posteriores no duplican finalización ni FH. Importación rechaza sustitución del objetivo; pacientes remotos siguen bloqueando.
