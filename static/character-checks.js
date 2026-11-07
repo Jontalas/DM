@@ -7,8 +7,21 @@ function characterChecks(c){
 function sheetChecks(c){
  const allowed=(snapshot.me.host||c.owner===snapshot.me.id)&&characterIsConscious(c);
  const health=c.hp<=-c.abilities[2]?'Tu personaje ha muerto. Las tiradas de esta ficha están desactivadas.':c.hp<0&&!characterIsConscious(c)?'Tu personaje está inconsciente y no puede actuar.':c.hp<=0?'Consciente, pero incapacitado. Puedes moverte o usar una acción estándar, no ambas. Una acción fatigosa cuesta 1 PG y puede dejarte moribundo.':'';
- return `<section class="sheet-checks">${health?`<p class="notice">${esc(health)}</p>`:''}<h3>Tirar desde la ficha</h3><p class="hint">Usa los valores guardados. Guarda primero cualquier edición. Una tirada libre muestra el total; las solicitadas por el maestro comparan también con su CD.</p><div class="toolbar">${characterChecks(c).map(v=>`<button type="button" data-sheet-check="${esc(v.kind)}" data-check-character="${esc(c.id)}" data-check-key="${esc(v.key)}" ${!allowed||c.conditions?.trim()?'disabled':''}>${esc(v.name)} ${Number(v.total)>=0?'+':''}${Number(v.total)}</button>`).join('')}</div>${c.conditions?.trim()?'<p class="notice">Revisa las condiciones mediante resolución asistida antes de tirar automáticamente.</p>':''}</section>`;
+ const checks=characterChecks(c),canRoll=allowed&&!c.conditions?.trim();
+ const groups=[['skill','Habilidades'],['save','Salvaciones'],['ability','Características']];
+ return `<section class="sheet-checks" data-roll-allowed="${canRoll?'1':'0'}">${health?`<p class="notice">${esc(health)}</p>`:''}${c.conditions?.trim()?'<p class="notice">Revisa las condiciones mediante resolución asistida antes de tirar automáticamente.</p>':''}<details class="sheet-free-roll"><summary>Hacer una tirada libre</summary><p class="hint">Elige qué quieres comprobar; el juego suma tu modificador guardado. Las tiradas solicitadas se resuelven directamente en la conversación. Guarda cualquier edición antes de tirar.</p><label>Qué quieres comprobar<select data-sheet-selection="${esc(c.id)}"><option value="" selected>Elige una opción</option>${groups.map(([kind,label])=>`<optgroup label="${label}">${checks.map((v,i)=>v.kind===kind?`<option value="${i}">${esc(v.name)} ${v.total>=0?'+':''}${Number(v.total)}</option>`:'').join('')}</optgroup>`).join('')}</select></label><button type="button" data-sheet-check="" data-check-character="${esc(c.id)}" data-check-key="" disabled>Tirar d20</button></details></section>`;
 }
+document.addEventListener('change',e=>{
+ const select=e.target.closest('[data-sheet-selection]');if(!select)return;
+ const sheet=select.closest('.sheet-checks'),button=sheet.querySelector('[data-sheet-check]');
+ const character=snapshot.state.characters.find(c=>c.id===select.dataset.sheetSelection);
+ if(!character){button.disabled=true;button.textContent='Vuelve a abrir la ficha';return;}
+ sheet.dataset.rollAllowed=((snapshot.me.host||character.owner===snapshot.me.id)&&characterIsConscious(character)&&!character.conditions?.trim())?'1':'0';
+ const check=select.value===''?null:characterChecks(character)[Number(select.value)];
+ button.disabled=!check||sheet.dataset.rollAllowed!=='1';
+ button.dataset.sheetCheck=check?.kind||'';button.dataset.checkKey=check?.key||'';
+ button.textContent=check?`Tirar ${check.name} (${check.total>=0?'+':''}${check.total})`:'Tirar d20';
+});
 function skillFields(c){
  return `<label>Habilidades preparadas para tirar · una por línea: nombre | total<textarea name="skillTotalsInput" placeholder="Percepción | 6">${esc((c.skillTotals||[]).map(row=>row.name+' | '+row.total).join('\n'))}</textarea></label><p class="hint">Prepara solo habilidades cuyo uso sea legal y sus totales estén verificados: característica, rangos, bonificador de clase y demás modificadores ya incluidos. Las notas antiguas de habilidades se conservan.</p>`;
 }

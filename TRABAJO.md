@@ -1,5 +1,9 @@
 # Continuidad del desarrollo autónomo
 
+## Ficha con una elección de tirada libre — 7 de noviembre de2026
+
+Diario desplegado ed99e1046731d4b0ba3515647db0d77a736bd17f, Render7615058537 success, revisión exacta y salud HTTPS correctas. Continúa ficha: tiradas libres plegadas, selección agrupada y un botón; elegir es local y no modifica versión. Salud/condiciones visibles, muerte desactiva y actor retirado pide reabrir. Navegadores de pruebas de ficha/dos clientes, creador con ataque real y recuperación/muerte correctos. Captura móvil de ficha revisada. Solo presentación, motor intacto; no repetir635 ni ensayo pagado. Cerrar respaldo/despliegue/verificación y continuar recorrido pendiente. Adaptación propia documentada, sin afirmar observación nueva de Roll20.
+
 ## Diario de lectura y correcciones bajo demanda — 7 de noviembre de2026
 
 Ajuste de estilo publicado y confirmado677aa38cc23a0deb64cb4e06c7deb050a232dc26, Render7615003439 success, revisión exacta/salud HTTPS correctas; sin nuevas inferencias. Continúa simplificación del diario: resumen público claro, formulario/cambio de escena bajo detalles solo anfitrión y secciones vacías ocultas. No cambian reglas ni permisos. Navegador nuevo de diario pasa teclado sin escrituras, guardado explícito único, texto escapado, invitado sin secretos/edición, recarga y móvil. Mesa de dos jugadores, investigaciones y continuidad1.3 por acuerdo/combate también correctas. Prueba de recursos desplegables correcta. Motor635 y13 afectadas previas; no repetir por presentación. Cerrar respaldo/despliegue del diario y verificar revisión/salud, después seguir trabajo pendiente. Cero solicitudes IA adicionales tras las dos del ensayo1.3 ya conservado.

@@ -8,6 +8,8 @@ Se aplica ingeniería inversa funcional: contratos documentados, implementación
 
 ## Primer recorrido disponible
 
+Adaptación propia de claridad: diario de lectura con correcciones plegadas y tiradas libres de ficha bajo demanda, con selector agrupado y un único botón. Avisos de salud y solicitudes de la conversación siguen visibles. Elegir o consultar no persiste ni llama IA. No se atribuye este diseño a observación directa de Roll20; responde a la directiva de sencillez. Navegadores de diario, creador, pruebas de ficha, dos jugadores y recuperación/muerte verifican los recorridos afectados.
+
 La directiva de sencillez de AGENTS.md se aplica también a la mesa: ayuda breve según selección/turno/acciones, ataque explicado cuando falta cercanía o acción, y controles de recorrido solo al prepararlo. Corrección excepcional, finalización manual y opción de automatización se consultan bajo «Reglas cubiertas y excepciones». Las decisiones básicas y los avisos de automatización pausada siguen visibles. No cambia reglas ni permisos; la presentación y las ayudas son locales. Evidencia de esta adaptación propia en USABILIDAD.md; no se atribuye al comportamiento observado de Roll20.
 
 En escritorio desde 1100 píxeles, el tablero permanece visible junto al panel derecho de conversación, diario, documentos o dados. El grupo se muestra a la izquierda. En pantallas pequeñas, los paneles se alternan mediante pestañas para conservar espacio y acceso táctil. No se duplica el historial ni se abren suscripciones remotas para la vista dividida.

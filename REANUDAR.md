@@ -11,7 +11,7 @@ Objetivo: aventuras persistentes sin maestro humano; IA para ficción/intencione
 ## Producción y verificación
 
 - Rama feature/rule-pack-engine.
-- Feature/main/producción: **677aa38cc23a0deb64cb4e06c7deb050a232dc26**. Render **7615003439 success**, revisión exacta en /api/status release, /healthz HTTPS200 y descriptor1.3.0 comprobados. https://dm-cronicas.onrender.com.
+- Feature/main/producción: **ed99e1046731d4b0ba3515647db0d77a736bd17f**. Render **7615058537 success**, revisión exacta en /api/status release, /healthz HTTPS200 y descriptor1.3.0 comprobados. https://dm-cronicas.onrender.com.
 - Suite final **635 pruebas completas correctas sin omisiones (259,956s)**, .deps/pf-scene-continuity-guard-final-tests.log, sesión50419 terminada. Primera suite632 (291,689s) precedía guardas posteriores. Ninguna suite en curso.
 - Navegadores correctos: creador/encuentro, recuperación compartida, continuidad por acuerdo/combate, investigaciones/rutas anteriores, copias/recarga/móvil. Detalles en CONTINUIDAD_PATHFINDER.md/RECUPERACION_PATHFINDER.md.
 - Producción anterior98b1452 (Render7614727297) incluía recuperación1.2 con624 pruebas;0cdc5ba anterior tenía continuidad médica611. Son históricos.
@@ -36,9 +36,11 @@ Navegador real .deps/verify_pf_continuity_browser.cjs correcto: campaña reanuda
 
 Ajuste narrativo ya publicado677aa38: pauta de estilo natural, sin cambiar reglas/contexto/esquema ni reescribir textos.13 afectadas correctas (8,138s), incluida recuperación de la misma captura con otra huella de prompt sin proveedor. No repetir ensayo real por estilo.
 
-**Diario local verificado, aún sin commit:** static/index.html/static/app.js y test_journal_browser.cjs. Resumen legible de lugar/objetivo/notas; personas e incógnitas bajo demanda. Formulario/cambio manual de escena en detalles solo anfitrión. Se ocultan secciones vacías; pendientes reales visibles. Datos escapados y secretos fuera del resumen. Navegador nuevo correcto: teclado sin escrituras, una corrección explícita, HTML literal, invitado sin edición/secretos, recarga/móvil. Captura journal-guided-mobile.png revisada. Mesa de dos jugadores, módulos y continuidad1.3 por acuerdo/combate correctos. Prueba AssetTests correcta; no suites/navegadores en curso. Motor sin cambios: no repetir suite635.
+Diario ya publicado ed99e10: lectura de lugar/objetivo/notas; personas/incógnitas bajo demanda. Correcciones y escena manual plegadas solo anfitrión; vacíos ocultos y pendientes reales visibles. Navegadores de diario, mesa, módulos y continuidad correctos; móvil revisado.
 
-1. Revisar y respaldar/publicar diario probado. Verificar Render/revisión/salud sin IA ni campañas personales.
+**Ficha local verificada, aún sin commit:** static/character-checks.js y navegadores de creador/pruebas/recuperación. Tirada libre bajo detalles, selector agrupado y un botón con modificador. Elegir no cambia versión ni llama IA; se revalida salud/permiso actual y actor retirado no causa error. Salud/condiciones permanecen visibles; muerto no tira. Pruebas de dos clientes y creador/ataque real correctas; muerte/copia/recarga/móvil correctas. Captura character-sheet-guided-mobile.png revisada. Motor intacto, no repetir635. No hay pruebas en curso.
+
+1. Respaldar/publicar ficha probada y verificar Render/revisión/salud sin IA ni campañas personales.
 2. Seguir recorrido y sencillez: revisión de ficha, decisiones pertinentes y orientación. No parar tras publicación.
 3. Continuidad pendiente: consecuencias/hallazgos hacia siguiente localización y campaña, sin perder participantes ni relojes. Investigación actual registra acciones pero no calendario exacto; nunca usarla para omitir recuperación.
 4. Descanso completo pendiente: noche8h, fatiga/armadura, asistencia y curación diaria sin ayuda. pf_rest.py es cálculo aislado, no acción. No hay prioridad general verificada de efectos coincidentes; no inventarla ni saltarla.

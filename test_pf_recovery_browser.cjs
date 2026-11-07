@@ -73,6 +73,8 @@ const path=require('node:path'),assert=require('node:assert/strict');
   await page.keyboard.press('Enter');assert.equal(actions.length,beforeAudit);
   await page.locator('#party [data-character]').first().click();await page.locator('.sheet-checks').waitFor();
   assert.match(await page.locator('.sheet-checks .notice').textContent(),fatal?/ha muerto/:/incapacitado/);
+  assert.equal(await page.locator('.sheet-free-roll').getAttribute('open'),null);
+  if(fatal)assert.equal(await page.locator('[data-sheet-check]').isEnabled(),false);
   await page.locator('#closeModal').click();
   if(corrected){
    await page.locator('#board .board-help > summary').click();await page.locator('#manualBtn').click();

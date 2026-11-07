@@ -27,9 +27,15 @@ const path=require('node:path'),assert=require('node:assert/strict');
   assert.equal(actions.length,1);assert.equal(actions[0].type,'create_character');assert.equal(await b.locator('#characterForm').count(),0);
   let state=await (await guest.request.get(url+'/api/state',{headers:{Authorization:'Bearer '+player}})).json();
   const character=state.state.characters[0];assert.equal(character.damage,'2d6+6');assert.equal(character.ac,16);assert.equal(character.maxHp,16);assert.ok(character.creation);
+  await b.locator('.sheet-free-roll > summary').click();await b.locator('[data-sheet-selection]').selectOption('0');
   await b.locator('[data-check-key=str]').click();await b.waitForFunction(()=>snapshot.state.messages.at(-1).check?.total===16);
   await b.locator('#closeModal').click();await b.reload();await b.locator('.party-person').click();await b.locator('.sheet-checks').waitFor();
-  assert.equal(await b.locator('#advancedCharacterEdit').count(),1);await b.locator('#closeModal').click();
+  assert.equal(await b.locator('#advancedCharacterEdit').count(),1);
+  assert.equal(await b.locator('[data-sheet-check]').isVisible(),false);
+  await b.setViewportSize({width:390,height:900});
+  assert.equal(await b.locator('#modal').evaluate(el=>el.scrollWidth<=el.clientWidth),true);
+  await b.screenshot({path:'.deps/character-sheet-guided-mobile.png',fullPage:true});
+  await b.locator('#closeModal').click();await b.setViewportSize({width:1280,height:900});
   // A host can create a usable opposing fighter through the same wizard.
   await a.goto(url);await a.locator('#app').waitFor({state:'visible'});await a.locator('#addCharacter').click();
   await a.locator('#creatorName').fill('Bandido');await a.locator('#creatorEnemy').check();
