@@ -11,6 +11,11 @@ from rule_pack_authoring import canonical
 
 LINK={'id':'recibo-del-patio','version':'1.0.0'}
 ROUTE_LINK={'id':'envio-del-peaje','version':'1.0.0'}
+NIGHT_ROUTE_LINK={'id':'envio-del-peaje','version':'1.1.0'}
+
+
+def is_route(link):
+    return link in (ROUTE_LINK,NIGHT_ROUTE_LINK)
 
 
 def module():
@@ -19,16 +24,18 @@ def module():
     return adventure_modules.validate_module(raw)
 
 
-def route():
+def route(link=None):
     import adventure_routes
-    raw=json.loads((Path(__file__).parent/'adventures'/'pf-envio-del-peaje-1.0.0.json').read_text(encoding='utf-8'))
+    link=ROUTE_LINK if link is None else link
+    if not is_route(link):raise ValueError('Ruta de continuidad no disponible')
+    raw=json.loads((Path(__file__).parent/'adventures'/('pf-envio-del-peaje-'+link['version']+'.json')).read_text(encoding='utf-8'))
     return adventure_routes.validate(raw)
 
 
 def limitation(state,*,active=False):
     record=state.get('pfEncounter')
-    if not record or record['definition'].get('continuation') not in (LINK,ROUTE_LINK):return 'Esta versión no incluye la siguiente escena.'
-    routed=record['definition'].get('continuation')==ROUTE_LINK
+    if not record or record['definition'].get('continuation') not in (LINK,ROUTE_LINK,NIGHT_ROUTE_LINK):return 'Esta versión no incluye la siguiente escena.'
+    routed=is_route(record['definition'].get('continuation'))
     if state.get('pfContinuation') and not active:return 'La investigación del patio ya está iniciada.'
     if record['phase'] not in ('agreement','resolved','defeated') or state['board']['active']:return 'Resuelve primero el encuentro.'
     if not active and any(state.get(k) for k in ('adventure','adventureModule','adventureRoute')):return 'Ya hay otra aventura iniciada.'
@@ -60,8 +67,8 @@ def enter(state,body,me):
     import adventure_modules
     import adventure
     from engine import log
-    routed=record['definition'].get('continuation')==ROUTE_LINK
-    itinerary=route() if routed else None
+    routed=is_route(record['definition'].get('continuation'))
+    itinerary=route(record['definition']['continuation']) if routed else None
     content=next(v['module'] for v in itinerary['scenes'] if v['id']==itinerary['start']) if routed else module()
     if content['location']!=state['location']:raise ValueError('El enlace no puede cambiar la localización')
     result=copy.deepcopy(state)
@@ -83,16 +90,16 @@ def enter(state,body,me):
 def validate_restored(state):
     receipt=state.get('pfContinuation')
     if receipt is None:
-        if state.get('pfEncounter',{}).get('definition',{}).get('continuation') in (LINK,ROUTE_LINK) and any(state.get(k) for k in ('adventure','adventureModule','adventureRoute')):
+        if state.get('pfEncounter',{}).get('definition',{}).get('continuation') in (LINK,ROUTE_LINK,NIGHT_ROUTE_LINK) and any(state.get(k) for k in ('adventure','adventureModule','adventureRoute')):
             raise ValueError('La escena enlazada necesita su registro de continuidad')
         return
     record=state.get('pfEncounter')
     if isinstance(receipt,dict) and receipt.get('format')=='cronicas-pf-continuation-2':
         import adventure_routes
         import board_scenes
-        original=route()
+        original=route(record['definition'].get('continuation')) if record else route()
         if (set(receipt)!={'format','encounterSha256','routeSha256','entryPhase'} or not record
-            or record['definition'].get('continuation')!=ROUTE_LINK or receipt['encounterSha256']!=record['sha256']
+            or not is_route(record['definition'].get('continuation')) or receipt['encounterSha256']!=record['sha256']
             or receipt['entryPhase'] not in ('agreement','resolved','defeated')
             or receipt['routeSha256']!=hashlib.sha256(canonical(original).encode()).hexdigest()
             or canonical(state.get('adventureRoute'))!=canonical(original) or not state.get('adventure') or not state.get('boardScenes')):

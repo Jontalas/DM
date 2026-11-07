@@ -1,8 +1,12 @@
 # Reanudar el desarrollo
 
-Estado vigente: **7 de noviembre de2026**. Desarrollo activo; no hay bloqueo imprescindible ni prueba personal que solicitar. Continuar análisis, código, pruebas, documentación y despliegue sin esperar otra orden tras una entrega. No crear goal inferido ni subagentes sin instrucción aplicable.
+Estado vigente: **8 de noviembre de2026**. Desarrollo activo; no hay bloqueo imprescindible ni prueba personal que solicitar. Continuar análisis, código, pruebas, documentación y despliegue sin esperar otra orden tras una entrega. No crear goal inferido ni subagentes sin instrucción aplicable.
+
+**Trabajo local que prevalece sobre siguientes inferiores:** descanso1.5 integrado y probado en motor/HTTP/Waitress/navegador. Detalle en DESCANSO_PATHFINDER.md.101 afectadas correctas; navegador de noche por acuerdo/combate orgánico y bloqueo de armadura, copias/teclado/móvil, ruta1.4 y recuperación individual/compartida/armadura correctos. Suite completa en curso84808, .deps/pf-safe-night-final-tests.log. Verificar resultado; no publicar sin cierre. Ninguna inferencia nueva; guion .deps/verify_pf_night_live.py preparado/compilado, aún no ejecutado, solo acciones permitidas sin IA y sesión única. Después de publicar/verificar continuar trabajo pendiente, sin cerrar el turno por el mero checkpoint: el usuario lo ha vuelto a ratificar expresamente. No hay dependencia del usuario.
 
 ## Directivas y prioridades
+
+**Cierre local vigente del descanso1.5:**671 pruebas completas correctas sin omisiones (218,501s), .deps/pf-safe-night-final-tests.log; sesión84808 terminada, no hay suite activa.33 afectadas posteriores correctas por ajustes de texto/vistas derivadas, sin cambios de reglas/cálculo. Navegadores nuevos y regresiones anteriores correctos. Siguiente respaldar/publicar1.5 y verificar Render/revisión/salud; ejecutar una única campaña técnica sin IA con .deps/verify_pf_night_live.py, después navegador de esa misma sesión. Seguir con la siguiente limitación útil sin cerrar trabajo por checkpoint. Los avisos anteriores de suite en curso quedan superados.
 
 Aplicación extremadamente sencilla y orientada: situación y decisiones actuales primero, detalles bajo demanda y ayuda con teclado/táctil. La IA dirige ficción/PNJ; el motor valida reglas/estado; los jugadores deciden por sus personajes. Referencias permanentes: AGENTS.md, PRODUCTO.md y USABILIDAD.md. Roll20 guía interacción, originales Pathfinder1e/Bestiario/TREY fundamentan el módulo actual; otros sistemas por paquetes, sin prometer cobertura inexistente.
 

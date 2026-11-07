@@ -111,6 +111,10 @@ def run_automatic_turns(s):
 
 def apply_action(s,b,me):
     kind=b['type']
+    if kind=='rest_pf_night':
+        import pf_night_rest
+        pf_night_rest.rest(s,b,me)
+        return
     if kind in ('move','attack','combat','turn','automation'):board_scenes.require_no_remote_events(s)
     if kind=='continue_pf_encounter':
         import pf_scene_transition

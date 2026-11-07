@@ -109,6 +109,10 @@ def main():
     engine.secrets.randbelow=lambda sides:0 if os.environ.get('TEST_CAIRN_FIXTURE')=='1' else min(11,sides-1)
     import game_randomness
     game_randomness.draw=lambda sides:1 if os.environ.get('TEST_CAIRN_FIXTURE')=='1' else min(12,sides)
+    if os.environ.get('TEST_PF_NIGHT_FIXTURE')=='1':
+        night_dice=iter([1,20,18,3,20,20,8,8])
+        game_randomness.draw=lambda sides:next(night_dice)
+        game_randomness.initiative_tie=lambda:0
     if os.environ.get('TEST_PF_RECOVERY_FIXTURE')=='shared':
         game_randomness.draw=lambda sides:18 if sides==20 else 4 if sides==4 else min(12,sides)
     if os.environ.get('TEST_PF_RECOVERY_FIXTURE') in ('1','death'):

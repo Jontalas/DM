@@ -111,6 +111,11 @@ def view(row,state,me,known_workspace=None):
         state.pop('adventureModule',None)
         state.pop('adventureRoute',None)
         state.pop('routeProgress',None)
+    import pf_night_rest
+    state.pop('pfNightRestView',None)
+    rest_view=pf_night_rest.public_view(state)
+    state.pop('pfNightRest',None)
+    if rest_view:state['pfNightRestView']=rest_view
     if module_view:state['adventureModuleView']=module_view
     if route_view:state['adventureRouteView']=route_view
     state['private']={k:v for k,v in state.get('private',{}).items() if k==me['id'] or me['host']}
@@ -176,6 +181,8 @@ def execute_action(body,me):
                 board_scenes.validate_restored(state)
                 import pf_encounters
                 pf_encounters.validate_restored(state)
+                import pf_night_rest
+                pf_night_rest.validate_restored(state)
                 import pf_recovery
                 pf_recovery.validate_restored(state)
                 for character in state['characters']:

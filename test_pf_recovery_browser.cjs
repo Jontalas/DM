@@ -7,7 +7,7 @@ const path=require('node:path'),assert=require('node:assert/strict');
  const corrected=process.env.TEST_PF_RECOVERY_CASE==='correction';
  const shared=process.env.TEST_PF_RECOVERY_CASE==='shared';
  const fixture=spawn(path.resolve('.venv/Scripts/python.exe'),['test_browser_fixture.py'],
-  {env:{...process.env,TEST_PF_RECOVERY_FIXTURE:shared?'shared':fatal?'death':'1'},stdio:['ignore','pipe','inherit']});let browser;
+  {env:{...process.env,TEST_PF_ENCOUNTER_VERSION:'1.4.0',TEST_PF_RECOVERY_FIXTURE:shared?'shared':fatal?'death':'1'},stdio:['ignore','pipe','inherit']});let browser;
  try{
   const url=await new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(Error('Fixture timeout')),15000);createInterface({input:fixture.stdout}).once('line',line=>{clearTimeout(timer);resolve(line)});fixture.once('exit',()=>reject(Error('Fixture exited')))});
   browser=await chromium.launch({headless:true,executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe'});
