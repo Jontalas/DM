@@ -11,7 +11,7 @@ Objetivo: aventuras persistentes sin maestro humano; IA para ficción/intencione
 ## Producción y verificación
 
 - Rama feature/rule-pack-engine.
-- Feature/main/producción: **ed99e1046731d4b0ba3515647db0d77a736bd17f**. Render **7615058537 success**, revisión exacta en /api/status release, /healthz HTTPS200 y descriptor1.3.0 comprobados. https://dm-cronicas.onrender.com.
+- Feature/main/producción: **8077467855a6d1003b5baf9fe43220cb72880d2a**. Render **7615116746 success**, revisión exacta en /api/status release, /healthz HTTPS200 y descriptor1.3.0 comprobados. https://dm-cronicas.onrender.com.
 - Suite final **635 pruebas completas correctas sin omisiones (259,956s)**, .deps/pf-scene-continuity-guard-final-tests.log, sesión50419 terminada. Primera suite632 (291,689s) precedía guardas posteriores. Ninguna suite en curso.
 - Navegadores correctos: creador/encuentro, recuperación compartida, continuidad por acuerdo/combate, investigaciones/rutas anteriores, copias/recarga/móvil. Detalles en CONTINUIDAD_PATHFINDER.md/RECUPERACION_PATHFINDER.md.
 - Producción anterior98b1452 (Render7614727297) incluía recuperación1.2 con624 pruebas;0cdc5ba anterior tenía continuidad médica611. Son históricos.
@@ -38,9 +38,11 @@ Ajuste narrativo ya publicado677aa38: pauta de estilo natural, sin cambiar regla
 
 Diario ya publicado ed99e10: lectura de lugar/objetivo/notas; personas/incógnitas bajo demanda. Correcciones y escena manual plegadas solo anfitrión; vacíos ocultos y pendientes reales visibles. Navegadores de diario, mesa, módulos y continuidad correctos; móvil revisado.
 
-**Ficha local verificada, aún sin commit:** static/character-checks.js y navegadores de creador/pruebas/recuperación. Tirada libre bajo detalles, selector agrupado y un botón con modificador. Elegir no cambia versión ni llama IA; se revalida salud/permiso actual y actor retirado no causa error. Salud/condiciones permanecen visibles; muerto no tira. Pruebas de dos clientes y creador/ataque real correctas; muerte/copia/recarga/móvil correctas. Captura character-sheet-guided-mobile.png revisada. Motor intacto, no repetir635. No hay pruebas en curso.
+Ficha simplificada ya publicada8077467: tirada libre plegada, selector agrupado y un botón. Salud visible y muerto no tira. Navegadores de pruebas, creador/ataque y muerte correctos, móvil revisado.
 
-1. Respaldar/publicar ficha probada y verificar Render/revisión/salud sin IA ni campañas personales.
+**Trabajo local probado, sin commit:** guía de pendiente/turno/excepción/investigación resuelta, botón de foco/navegación local; resultados libres/éxito/fallo con total/CD/natural ya comprometidos y cálculo original desplegable. No modifica historia ni recomputa reglas. Estado incompatible desactiva pendientes con motivo. Navegadores de pruebas/dos clientes, creador/ataque, continuidad por dos caminos, diario, mesa y módulos correctos. Sondas locales sin escritura prueban incapacidad y fallo natural1 con total alto. Captura play-guidance-pending-mobile.png revisada. No hay pruebas en curso. Solo presentación, sin nuevas inferencias; no repetir635.
+
+1. Respaldar/publicar guía/registro probados y verificar Render/revisión/salud sin IA ni campañas personales.
 2. Seguir recorrido y sencillez: revisión de ficha, decisiones pertinentes y orientación. No parar tras publicación.
 3. Continuidad pendiente: consecuencias/hallazgos hacia siguiente localización y campaña, sin perder participantes ni relojes. Investigación actual registra acciones pero no calendario exacto; nunca usarla para omitir recuperación.
 4. Descanso completo pendiente: noche8h, fatiga/armadura, asistencia y curación diaria sin ayuda. pf_rest.py es cálculo aislado, no acción. No hay prioridad general verificada de efectos coincidentes; no inventarla ni saltarla.

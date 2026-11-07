@@ -38,12 +38,49 @@ async function refresh(force=false){
 }
 function chooseTab(id,loadDocument=true){if(id==='board'&&window.matchMedia('(min-width:1100px)').matches)id='story';$$('.tab').forEach(x=>x.classList.toggle('active',x.id===id));$$('[data-tab]').forEach(x=>x.classList.toggle('active',x.dataset.tab===id));document.body.classList.toggle('reader-wide',id==='books'&&readerExpanded);if(id==='books'&&loadDocument)openBook();}
 function ref(book,page,label){return `<button type="button" class="rule-link" data-book="${esc(book)}" data-page="${Number(page)}">${esc(label||names[book]+' · PDF p.'+page)} ↗</button>`}
+function renderPlayGuidance(s){
+ const panel=$('#playGuidance'),text=$('#playGuidanceText'),button=$('#playGuidanceAction');
+ const checks=s.pending.filter(p=>p.check),mine=checks.filter(p=>s.characters.some(c=>c.id===p.check.character&&c.owner===snapshot.me.id)),own=mine.filter(p=>!pendingCheckUnavailable(p,s.characters.find(c=>c.id===p.check.character)));
+ let message='',label='',open;
+ if(own.length){
+  message=own.length===1?'Tienes una tirada pendiente. Resuélvela para continuar.':`Tienes ${own.length} tiradas pendientes. Puedes resolverlas en la conversación.`;
+  label='Ver mi tirada';
+  open=()=>{const target=$$('[data-resolve-check]').find(b=>b.dataset.resolveCheck===own[0].check.id);if(target){target.scrollIntoView({block:'center'});target.focus({preventScroll:true})}};
+ }else if(mine.length){
+  message='Una tirada pendiente requiere revisar el estado de tu personaje.';
+  label='Revisar mi personaje';open=()=>characterForm(mine[0].check.character);
+ }else if(checks.length){
+  message='Hay tiradas pendientes. Cada jugador puede revisar las que corresponden a su personaje.';
+  label='Ver tiradas';open=()=>$('#checkRequests').scrollIntoView({block:'center'});
+ }else if(s.board.active){
+  const current=s.characters.find(c=>c.id===s.board.order[s.board.turn]?.id);
+  message=s.board.autoPaused?'Un turno automático necesita revisión. Consulta el aviso de la mesa.':current?.owner===snapshot.me.id?(characterIsConscious(current)?'Es tu turno. Elige tu acción en el tablero.':'Tu personaje no puede actuar. Revisa su estado en la mesa.'):`Es el turno de ${current?.name||'otro participante'}. Puedes consultar la mesa mientras tanto.`;
+  label='Ver el tablero';open=()=>{chooseTab('board');if(current?.owner===snapshot.me.id){$('#boardCharacter').value=current.id;path=[];renderBoard()}$('#board').scrollIntoView({block:'start'});$('#boardCharacter').focus({preventScroll:true})};
+ }else if(s.pending.length){
+  message=snapshot.me.host?'Hay una situación pendiente de resolución excepcional. Puedes revisarla en el diario.':'El anfitrión tiene una situación pendiente de resolución excepcional.';
+  label='Ver pendientes';open=()=>{chooseTab('journal');$('#journalPending').scrollIntoView({block:'center'})};
+ }else if(s.adventureModuleView?.completed){
+  message='La investigación está resuelta. Puedes revisar lo descubierto y decidir tu siguiente acción.';
+  label='Revisar el diario';open=()=>chooseTab('journal');
+ }
+ panel.hidden=!message;
+ if(text.textContent!==message)text.textContent=message;
+ if(button.textContent!==label)button.textContent=label;
+ button.onclick=open||null;
+}
 function renderJournalOverview(s){
  const lists=[['Aliados',s.allies],['Enemigos',s.enemies],['Incógnitas',s.unknowns]].filter(([,items])=>items?.length);
  $('#journalOverview').innerHTML=`<h3>Situación actual</h3><p><strong>${esc(s.location)}</strong> · ${esc(s.worldTime)}</p><p>${esc(s.goal)}</p>${!s.adventure&&s.objectives.length?`<ul>${s.objectives.map(v=>`<li>${esc(v)}</li>`).join('')}</ul>`:''}${s.notes?`<h4>Notas confirmadas</h4><p>${esc(s.notes)}</p>`:''}${lists.length?`<details><summary>Personas e incógnitas</summary>${lists.map(([title,items])=>`<h4>${title}</h4><ul>${items.map(v=>`<li>${esc(v)}</li>`).join('')}</ul>`).join('')}</details>`:''}`;
  $('#journalFacts').hidden=!Object.keys(s.facts).length;
  $('#journalConsequences').hidden=!s.consequences.length;
  $('#journalPending').hidden=!s.pending.length;
+}
+function checkMessage(message){
+ const c=message.check;
+ if(message.kind!=='rules'||!c||!['ability','save','skill'].includes(c.kind)||typeof c.name!=='string'||!Number.isFinite(c.total)||!Number.isFinite(c.modifier)||!Number.isFinite(c.die))return esc(message.text);
+ const character=snapshot.state.characters.find(v=>v.id===c.character),hasDc=Number.isFinite(c.dc)&&typeof c.success==='boolean';
+ const outcome=hasDc?(c.success?'Éxito':'Fallo'):'Tirada libre';
+ return `<p class="check-result"><strong>${esc(outcome)} · ${esc(character?.name||'Personaje')} · ${esc(c.name)}</strong><br>Total ${esc(c.total)}${hasDc?` contra CD ${esc(c.dc)}`:''}${c.natural?` · ${esc(c.natural)}`:''}</p><details class="check-audit"><summary>Ver cálculo y resultado</summary><p>${esc(message.text)}</p></details>`;
 }
 function recoveryAudit(message){
  if(!Array.isArray(message.recoveryChecks)||!message.recoveryChecks.length||message.recoveryChecks.length>20||message.recoveryChecks.some(check=>!check||typeof check!=='object'))return '';
@@ -55,9 +92,9 @@ function render(){if(snapshot.state.ruleset==='rule-pack'){RulePackUI.render();r
  $('#speaker').innerHTML='<option value="">'+esc(me.name)+'</option>'+available.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('');if(available.some(c=>c.id===prev))$('#speaker').value=prev;
  $('#boardCharacter').innerHTML=available.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('');if(available.some(c=>c.id===boardPrev))$('#boardCharacter').value=boardPrev;
  const area=$('#story'), near=area.scrollHeight-area.scrollTop-area.clientHeight<150;
- $('#messages').innerHTML=s.messages.map(m=>`<article class="message ${esc(m.kind)}"><div class="speaker">${esc(m.speaker)} · ${esc({rules:'Resolución',director:'Director de IA',action:'Acción',dialogue:'Diálogo',ooc:'Fuera de personaje',private:'Privado'}[m.kind]||m.kind)}</div>${esc(m.text)}${recoveryAudit(m)}${m.refs?'<div>'+m.refs.map(r=>ref(r.book,r.page)).join('')+'</div>':''}</article>`).join('')||`<div class="empty"><div class="icon">✧</div><h3>Una página todavía en blanco</h3><p>Crea un personaje y presenta la situación inicial.<br>${model.aiConfigured?'El director está configurado; su disponibilidad se comprobará al enviar.':'Puedes crear tu personaje, consultar libros y usar el tablero. El director no está disponible en esta mesa.'}</p></div>`;
+ $('#messages').innerHTML=s.messages.map(m=>`<article class="message ${esc(m.kind)}"><div class="speaker">${esc(m.speaker)} · ${esc({rules:'Resolución',director:'Director de IA',action:'Acción',dialogue:'Diálogo',ooc:'Fuera de personaje',private:'Privado'}[m.kind]||m.kind)}</div>${checkMessage(m)}${recoveryAudit(m)}${m.refs?'<div>'+m.refs.map(r=>ref(r.book,r.page)).join('')+'</div>':''}</article>`).join('')||`<div class="empty"><div class="icon">✧</div><h3>Una página todavía en blanco</h3><p>Crea un personaje y presenta la situación inicial.<br>${model.aiConfigured?'El director está configurado; su disponibilidad se comprobará al enviar.':'Puedes crear tu personaje, consultar libros y usar el tablero. El director no está disponible en esta mesa.'}</p></div>`;
  if(!available.length)$('#messages').insertAdjacentHTML('afterbegin','<div class="card"><h3>Tu personaje es el primer paso</h3><p>Elige sus opciones; el creador calcula la ficha y la deja lista para jugar.</p><button class="primary" data-create-hero>Crear mi personaje</button></div>');
- renderAdventure();renderChecks();if(near)area.scrollTop=area.scrollHeight;
+ renderAdventure();renderChecks();renderPlayGuidance(s);if(near)area.scrollTop=area.scrollHeight;
  renderJournalOverview(s);
  const jf=$('#journalForm');for(const key of ['location','worldTime','goal','notes','secrets','directorNotes','objectives','allies','enemies','unknowns']){const el=jf.elements[key];if(document.activeElement!==el)el.value=Array.isArray(s[key])?s[key].join('\n'):s[key]||'';el.disabled=!me.host}
  $$('.host-only').forEach(x=>x.hidden=!me.host);$('#inviteBtn').hidden=!me.host;$('#exportBtn').disabled=!me.host;

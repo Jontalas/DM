@@ -36,6 +36,12 @@ const path=require('node:path'),assert=require('node:assert/strict');
   await b.locator('[data-check-key="Percepción"]').click();
   await b.waitForFunction(()=>snapshot.state.messages.at(-1).check?.total===20);
   await b.locator('#closeModal').click();
+  assert.match(await b.locator('#messages .check-result').textContent(),/Tirada libre.*Percepción/);
+  const audit=b.locator('#messages .check-audit').first(),beforeAudit=await b.evaluate(()=>snapshot.version);
+  assert.equal(await audit.locator('p').isVisible(),false);
+  await audit.locator('summary').focus();await b.keyboard.press('Enter');
+  assert.match(await audit.locator('p').textContent(),/d20 12.*\+8 = 20/);
+  await b.keyboard.press('Enter');assert.equal(await b.evaluate(()=>snapshot.version),beforeAudit);
   await a.reload();await a.locator('#app').waitFor({state:'visible'});
   await a.locator('#requestCheck').click();
   await a.locator('#requestCheckForm [name=selection]').selectOption('6');
@@ -43,9 +49,30 @@ const path=require('node:path'),assert=require('node:assert/strict');
   await a.locator('#requestCheckForm [name=reason]').fill('Resistir el peligro');
   await a.locator('#requestCheckForm button').click();await a.locator('.check-request').waitFor();
   await b.reload();await b.locator('.check-request').waitFor();
+  assert.match(await b.locator('#playGuidanceText').textContent(),/tirada pendiente/);
+  const beforeGuide=await b.evaluate(()=>snapshot.version);
+  await b.locator('#playGuidanceAction').click();
+  assert.equal(await b.locator('[data-resolve-check]').evaluate(el=>el===document.activeElement),true);
+  assert.equal(await b.evaluate(()=>snapshot.version),beforeGuide);
+  await b.setViewportSize({width:390,height:1000});
+  await b.locator('#playGuidance').scrollIntoViewIfNeeded();
+  assert.ok(await b.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+  await b.screenshot({path:'.deps/play-guidance-pending-mobile.png',fullPage:true});
+  await b.setViewportSize({width:1280,height:900});
+  // Local rendering probe; no injury is written to the campaign.
+  await b.evaluate(()=>{window.savedCheckActor=structuredClone(snapshot.state.characters[0]);snapshot.state.characters[0].hp=-1;snapshot.state.characters[0].stable=false;renderChecks();renderPlayGuidance(snapshot.state)});
+  assert.equal(await b.locator('[data-resolve-check]').isEnabled(),false);
+  assert.match(await b.locator('#playGuidanceText').textContent(),/revisar el estado/);
+  await b.evaluate(()=>{snapshot.state.characters[0]=window.savedCheckActor;delete window.savedCheckActor;renderChecks();renderPlayGuidance(snapshot.state)});
   await b.locator('[data-resolve-check]').click();await b.locator('.check-request').waitFor({state:'detached'});
   await b.waitForFunction(()=>snapshot.state.messages.at(-1).check?.success===true);
   assert.match(await b.locator('#messages').textContent(),/contra CD 16: éxito/);
+  assert.match(await b.locator('#messages .check-result').last().textContent(),/Éxito.*Fortaleza/);
+  // A saved natural1 result remains a failure even if its total beats the DC.
+  // This is a rendering probe; it does not roll or write to the campaign.
+  await b.evaluate(()=>{const m=structuredClone(snapshot.state.messages.findLast(m=>m.check?.kind==='save'));m.check.die=1;m.check.modifier=20;m.check.total=21;m.check.dc=10;m.check.success=false;m.check.natural='fallo automático';snapshot.state.messages.push(m);render()});
+  assert.match(await b.locator('#messages .check-result').last().textContent(),/Fallo.*Total 21 contra CD 10.*fallo automático/s);
+  await b.evaluate(()=>{snapshot.state.messages.pop();render()});
   await a.reload();await a.locator('#app').waitFor({state:'visible'});assert.equal(await a.locator('.check-request').count(),0);
   // Saving a legacy-style sheet retains the new prepared skill totals.
   await b.locator('.party-person').click();

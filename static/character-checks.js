@@ -28,13 +28,24 @@ function skillFields(c){
 function parseSkillTotals(text){
  return String(text||'').split('\n').filter(line=>line.trim()).map(line=>{const match=line.match(/^([^|]+)\|\s*([+-]?\d+)\s*$/);if(!match)throw Error('Usa una habilidad por línea: nombre | total');return {name:match[1].trim(),total:Number(match[2])}});
 }
+function pendingCheckUnavailable(p,c){
+ if(!c)return 'El personaje ya no está disponible en esta mesa.';
+ if(!characterIsConscious(c))return 'El personaje no puede tirar mientras esté inconsciente o muerto.';
+ if(c.conditions?.trim())return 'Hay condiciones que requieren revisar esta prueba antes de resolverla.';
+ if(p.investigation&&(c.hp<=0||snapshot.state.board.active))return 'La investigación requiere PG positivos y estar fuera de combate.';
+ if(p.investigation&&snapshot.state.pfContinuation){
+  const npc=snapshot.state.characters.find(v=>v.id===snapshot.state.pfEncounter.npc);
+  if(npc&&((npc.hp<0&&npc.hp>-npc.abilities[2])||npc.conditions?.trim()))return 'La guardiana necesita resolver su estado antes de continuar investigando.';
+ }
+ return '';
+}
 function renderChecks(){
  const rows=snapshot.state.pending.filter(p=>p.check),me=snapshot.me;
  $('#requestCheck').hidden=!me.host||!snapshot.state.characters.some(c=>!c.enemy&&characterIsConscious(c)&&!c.conditions?.trim());
  $('#checkRequests').innerHTML=rows.map(p=>{
-  const c=snapshot.state.characters.find(c=>c.id===p.check.character),allowed=c&&(me.host||c.owner===me.id);
+  const c=snapshot.state.characters.find(c=>c.id===p.check.character),blocked=pendingCheckUnavailable(p,c),allowed=c&&(me.host||c.owner===me.id)&&!blocked;
   const name=c&&characterChecks(c).find(v=>v.kind===p.check.kind&&v.key===p.check.key)?.name||p.check.key;
-  return `<article class="check-request"><strong>${esc(c?.name||'Personaje')} · ${esc(name)} · CD ${p.check.dc}</strong><p>${esc(p.reason)}</p><small>${esc(p.source)}</small><div class="toolbar"><button class="primary" data-resolve-check="${esc(p.check.id)}" ${!allowed?'disabled':''}>Tirar d20 y resolver</button>${p.investigation?`<button data-resolve-check="${esc(p.check.id)}" data-check-method="take10" ${!allowed?'disabled':''}>Elegir 10</button><button data-resolve-check="${esc(p.check.id)}" data-check-method="take20" ${!allowed?'disabled':''}>Elegir 20 · veinte búsquedas</button>`:''}${me.host?`<button data-cancel-check="${esc(p.check.id)}">Cancelar</button>`:''}</div></article>`;
+  return `<article class="check-request"><strong>${esc(c?.name||'Personaje')} · ${esc(name)} · CD ${p.check.dc}</strong><p>${esc(p.reason)}</p><small>${esc(p.source)}</small>${blocked?`<p class="notice">${esc(blocked)}</p>`:''}<div class="toolbar"><button class="primary" data-resolve-check="${esc(p.check.id)}" ${!allowed?'disabled':''}>Tirar d20 y resolver</button>${p.investigation?`<button data-resolve-check="${esc(p.check.id)}" data-check-method="take10" ${!allowed?'disabled':''}>Elegir 10</button><button data-resolve-check="${esc(p.check.id)}" data-check-method="take20" ${!allowed?'disabled':''}>Elegir 20 · veinte búsquedas</button>`:''}${me.host?`<button data-cancel-check="${esc(p.check.id)}">Cancelar</button>`:''}</div></article>`;
  }).join('');
 }
 function requestCheckForm(){

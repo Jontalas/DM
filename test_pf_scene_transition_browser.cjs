@@ -40,6 +40,9 @@ const path=require('node:path'),assert=require('node:assert/strict');
     await page.waitForFunction(v=>snapshot.version>v&&!busy,version);
    }
    const final=await page.evaluate(()=>snapshot.state);assert.equal(final.adventureModuleView.completed,true);
+   assert.match(await page.locator('#playGuidanceText').textContent(),/investigación está resuelta/);
+   const beforeJournalGuide=actions.length;await page.locator('#playGuidanceAction').click();
+   assert.equal(await page.locator('#journalOverview').isVisible(),true);assert.equal(actions.length,beforeJournalGuide);
    assert.deepEqual(final.characters,before.characters);assert.equal(final.adventureModuleView.discoveries.length,2);
    await page.locator('[data-tab=journal]').click();
    const [download]=await Promise.all([page.waitForEvent('download'),page.locator('#exportBtn').click()]);
