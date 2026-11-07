@@ -5,8 +5,9 @@ const path=require('node:path'),assert=require('node:assert/strict');
  const fatal=process.env.TEST_PF_RECOVERY_CASE==='death';
  const armored=process.env.TEST_PF_RECOVERY_CASE==='armor';
  const corrected=process.env.TEST_PF_RECOVERY_CASE==='correction';
+ const shared=process.env.TEST_PF_RECOVERY_CASE==='shared';
  const fixture=spawn(path.resolve('.venv/Scripts/python.exe'),['test_browser_fixture.py'],
-  {env:{...process.env,TEST_PF_RECOVERY_FIXTURE:fatal?'death':'1'},stdio:['ignore','pipe','inherit']});let browser;
+  {env:{...process.env,TEST_PF_RECOVERY_FIXTURE:shared?'shared':fatal?'death':'1'},stdio:['ignore','pipe','inherit']});let browser;
  try{
   const url=await new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(Error('Fixture timeout')),15000);createInterface({input:fixture.stdout}).once('line',line=>{clearTimeout(timer);resolve(line)});fixture.once('exit',()=>reject(Error('Fixture exited')))});
   browser=await chromium.launch({headless:true,executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe'});
@@ -24,12 +25,17 @@ const path=require('node:path'),assert=require('node:assert/strict');
   if(armored)assert.match(await page.locator('#modalContent .recovery-limit').textContent(),/cota de escamas/);
   await page.locator('#pfEncounterEntry button').click();
   await page.locator('#pfEncounterCombat').click();await page.waitForFunction(()=>snapshot.state.board.active&&!busy);
-  assert.equal(await page.evaluate(()=>snapshot.state.pfEncounter.definition.version),'1.1.0');
+  assert.equal(await page.evaluate(()=>snapshot.state.pfEncounter.definition.version),'1.2.0');
   // The player explicitly waits each turn. Real NPC attacks cause the fall;
   // no manual HP edits, imported statistics or hourly confirmations.
-  for(let n=0;n<6;n++){
+  for(let n=0;n<(shared?4:6);n++){
    const version=await page.evaluate(()=>snapshot.version);await page.locator('#nextTurn').click();
    await page.waitForFunction(v=>snapshot.version>v&&!busy,version);
+  }
+  if(shared){
+   assert.equal(await page.evaluate(()=>snapshot.state.characters[0].hp),0);
+   await page.locator('#attackButton').click();
+   await page.waitForFunction(()=>snapshot.state.pfEncounter.recoveryOutcome&&!busy);
   }
   const recovered=await page.evaluate(()=>snapshot.state);
   if(armored){
@@ -49,7 +55,8 @@ const path=require('node:path'),assert=require('node:assert/strict');
    console.log('PF recovery armor browser passed: legal scale armor, advance warning, real NPC attacks, stable fall without skipped fatigue or hourly advancement, preserved copy/reload and mobile. No AI.');
    return;
   }
-  assert.equal(recovered.characters[0].hp,fatal?-14:-2);assert.equal(recovered.characters[1].hp,7);
+  assert.equal(recovered.characters[0].hp,shared?-1:fatal?-14:-2);assert.equal(recovered.characters[1].hp,shared?-5:7);
+  if(shared)assert.equal(recovered.characters[1].recoveryState.conscious,true);
   assert.equal(recovered.characters[0].recoveryState?.conscious,fatal?undefined:true);
   assert.equal(recovered.pfEncounter.recoveryOutcome.hours,fatal?12:1);assert.equal(recovered.pfEncounter.recoveryOutcome.seconds,(fatal?12:1)*3600);
   assert.equal(recovered.pfEncounter.recoveryOutcome.status,fatal?'dead':'conscious');assert.equal(recovered.board.active,false);
@@ -58,9 +65,9 @@ const path=require('node:path'),assert=require('node:assert/strict');
   assert.equal(await page.locator('#useAI').isChecked(),false);assert.equal(await page.locator('#useAI').isEnabled(),false);
   assert.match(await page.locator('#adventureEntry').textContent(),fatal?/ha muerto por sus heridas/:/Ahora estás consciente/);
   if(!fatal)assert.match(await page.locator('#adventureEntry').textContent(),/No has recuperado PG/);
-  assert.deepEqual(actions.map(a=>a.type),['create_character','enter_pf_encounter','choose_pf_encounter',...Array(6).fill('turn')]);
+  assert.deepEqual(actions.map(a=>a.type),['create_character','enter_pf_encounter','choose_pf_encounter',...Array(shared?4:6).fill('turn'),...(shared?['attack']:[])]);
   const audit=page.locator('.recovery-audit'),beforeAudit=actions.length;
-  assert.equal(await audit.count(),1);assert.equal(await audit.locator('p').count(),fatal?12:1);assert.equal(await audit.locator('p').first().isVisible(),false);
+  assert.equal(await audit.count(),1);assert.equal(await audit.locator('p').count(),shared?2:fatal?12:1);assert.equal(await audit.locator('p').first().isVisible(),false);
   await audit.locator('summary').focus();await page.keyboard.press('Enter');
   assert.match(await audit.textContent(),fatal?/d20 1,/:/d20 18/);assert.equal(await audit.locator('p').first().isVisible(),true);
   await page.keyboard.press('Enter');assert.equal(actions.length,beforeAudit);
@@ -95,8 +102,8 @@ const path=require('node:path'),assert=require('node:assert/strict');
   await page.reload();await page.waitForFunction(status=>snapshot?.state.pfEncounter.recoveryOutcome?.status===status,fatal?'dead':'conscious');
   await page.setViewportSize({width:390,height:1000});await page.locator('[data-tab=story]').click();
   await page.locator('#adventureEntry').scrollIntoViewIfNeeded();assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
-  await page.screenshot({path:corrected?'.deps/pf-recovery-correction-mobile.png':fatal?'.deps/pf-recovery-death-mobile.png':'.deps/pf-recovery-automatic-mobile.png',fullPage:true});
+  await page.screenshot({path:shared?'.deps/pf-recovery-shared-mobile.png':corrected?'.deps/pf-recovery-correction-mobile.png':fatal?'.deps/pf-recovery-death-mobile.png':'.deps/pf-recovery-automatic-mobile.png',fullPage:true});
   assert.deepEqual(errors,[]);
-  console.log(corrected?'PF health correction browser passed: explicit HP correction and advanced note edit preserve consciousness and the original check; UI copy/reload/mobile remain valid. No AI.':'PF recovery browser passed: guided character, genuine NPC attacks, automatic stabilization and hourly consciousness without healing or per-hour administration, clear disabled-state notice, UI export/import, reload and mobile. No AI. Multiple fallen and later continuity remain pending.');
+  console.log(shared?'PF shared recovery browser passed: both fall through real attacks and disabled action cost, recover on their own initiative counts without healing, preserve copy/reload/mobile. No AI. Full rest and later continuity remain pending.':corrected?'PF health correction browser passed: explicit HP correction and advanced note edit preserve consciousness and the original check; UI copy/reload/mobile remain valid. No AI.':'PF recovery browser passed: guided character, genuine NPC attacks, automatic stabilization and hourly consciousness without healing or per-hour administration, clear disabled-state notice, UI export/import, reload and mobile. No AI. Full rest and later continuity remain pending.');
  }finally{if(browser)await browser.close();fixture.kill()}
 })().catch(error=>{console.error(error);process.exitCode=1});

@@ -6,33 +6,31 @@ Estado vigente: **7 de noviembre de 2026**. Desarrollo activo por instrucción e
 
 Aplicación extremadamente fácil de usar, pantallas claras sin saturación y guía contextual cuando sea necesaria. Mostrar primero situación y decisiones pertinentes; ayudas y herramientas secundarias bajo demanda, también con teclado y tacto. Requisito incorporado a AGENTS.md, PRODUCTO.md y USABILIDAD.md. Abrir ayudas/navegar no llama a IA ni escribe en Firebase. Aplicar también al revisar funciones existentes.
 
-## Producción y respaldo
+## Producción y trabajo actual
 
-- Rama: feature/rule-pack-engine.
-- Main/producción: **bf9389e677f09909737dedb9535e51b813debe52**, Render **7613620635 success**. Revisión exacta en /api/status y /healthz HTTPS200 verificadas. https://dm-cronicas.onrender.com.
-- El aviso de armadura publicado coincide exactamente con el blob Git. Diferencia inicial frente al archivo local era CRLF, no un despliegue incorrecto.
-- Producción incluye bienvenida simplificada, ayudas locales, dados bajo demanda y guía de mesa. El patio del peaje1.1.0: creador, PNJ de catálogo, acuerdo/combate por decisión propia, ataques/turnos automáticos, auxilio, estabilización, recuperación del único PJ hasta consciencia o muerte sin curar ni administrar horas, copia y recarga.
-- Recuperación automática acotada a armaduras ligeras. Con cota de escamas conserva heridas/estabilidad y registra armor-rest, sin saltar descanso/fatiga. Aviso previo y motivo claros. Es límite del motor, no prohibición de Pathfinder. Definiciones1.0.0 y1.1.0 intactas; solicitudes antiguas sin encounterVersion conservan1.0.
-- Última suite desplegada: **597 pruebas sin omisiones (214,397s)**, .deps/pf-recovery-armor-boundary-final-tests.log. Navegadores de recuperación, muerte, cota de escamas, copias y móvil correctos. Cero inferencias reales nuevas; ninguna partida personal modificada.
-- Feature/origin posterior: **05e53e6**, aún no en main. Añade combatSerial/care-3 para no mezclar combates con las mismas fichas/orden, conserva care-1/2, planificador puro de eventos simultáneos y pf_rest.py (cálculo aislado de noche). **605 pruebas correctas sin omisiones (218,023s)**, .deps/pf-care-epoch-rest-final-tests.log;82 afectadas y navegador correctos. No es todavía controlador de recuperación de varios caídos ni descanso expuesto.
+- Rama feature/rule-pack-engine. Producción y main comprobados: **0cdc5ba5462c76709eb4ff0182742079b3efcff8**, Render **7614328587 success**, revisión exacta y salud HTTPS verificadas. https://dm-cronicas.onrender.com.
+- Incluye sencillez/guía contextual, encuentro1.1, armaduras ligeras, care-3 con época de combate, cálculo aislado de noche y correcciones médicas que preservan consciencia/prueba originales.611 pruebas completas correctas sin omisiones (225,071s), .deps/pf-manual-health-continuity-final-tests.log.
+- No hay bloqueo. Cero inferencias reales nuevas y ninguna partida personal modificada.
 
-## Trabajo local actual: conservar y cerrar
+## Bloque local1.2.0: cerrar y continuar
 
-Corrección de continuidad médica en engine.py/pf_recovery.py y pruebas. Una corrección positiva de PG negativos o una edición de notas no debe hacer perder consciencia ni borrar el dado original. recovery-state-2 conserva prueba/asistencia históricas y cadena de correcciones explícitas; no certifica ayuda actual tras una edición manual. Daño nuevo o alcanzar0 retiran el episodio negativo. Anotaciones posteriores de condiciones no invalidan una prueba pasada, pero bloquean nuevas resoluciones fuera del perfil. Cambiar Constitución con recuperación negativa no cubierta devuelve error claro sin modificar ficha.
+pf_shared_recovery.py, nueva definición adventures/pf-patio-del-peaje-1.2.0.json y conexiones en pf_encounters.py/engine.py. Reloj de ambos caídos con cuentas reales, simultáneos completos y recibo2 reproducible por paciente/dado. No adelanta pruebas del PNJ cuando despierta el PJ. Guarda/reintenta sin dados nuevos; copias validan secuencia, resultado y tiempo. Definiciones1.0/1.1 intactas; solicitudes sin versión siguen1.0, descriptor actual ofrece1.2.
 
-94 pruebas afectadas correctas, incluidas dos HTTP/Waitress de corrección positiva, duplicado, condiciones y copia. Navegador TEST_PF_RECOVERY_CASE=correction correcto: corrección explícita, notas avanzadas, consciencia/dado original y copia por interfaz/recarga/móvil. Creador, pruebas de ficha, recuperación ligera y cota de escamas correctos después del cambio.
+Perfil compartido acotado: asistencia conocida care-3 misma época, PJ sin ayuda de Constitución legal y armadura ligera. Para ambos negativos, primer combate de menos600 asaltos. PNJ asistido que sigue inconsciente obliga a parar a las6h desde estabilización del PJ, antes del descanso curativo aún pendiente. Es límite conservador del motor, no regla del juego. PNJ que despierta permanece quieto según política propia de escena. No curación ni decisiones del PJ inventadas.
 
-**Cierre verificado:**611 pruebas completas correctas sin omisiones (225,071s), .deps/pf-manual-health-continuity-final-tests.log. Sesión69362 terminada; tampoco quedan navegadores en curso. Desde el inicio de la suite solo se ajustó redacción del error de Constitución, sin cambios mecánicos. Respaldar y desplegar esta corrección verificada, comprobar Render y continuar con lo pendiente.
+Pruebas:7 de reloj puro y nuevas de integración sobre ambos caídos, primeros auxilios con PJ0PG, límite6h y copias alteradas. HTTP real con emulador verifica fallo de commit, cliente nuevo, duplicado y copia usando stream HMAC original. Navegador compartido correcto desde creador y ataques reales, sin editar PG: cuatro ataques hasta0, ataque elegido que cuesta1PG, ambos negativos, recuperación automática, copia/recarga/móvil. Navegadores de acuerdo/combate/auxilio, recuperación individual, muerte, armadura y corrección también correctos.
+
+**Cierre verificado:**624 pruebas completas correctas sin omisiones (270,033s), .deps/pf-shared-recovery-final-tests.log; sesión27700 terminada. Navegadores compartido, individual, muerte, armadura, corrección y encuentro correctos; captura móvil compartida revisada. Documentación actualizada. Respaldar/publicar este bloque probado y verificar revisión/salud; seguir con continuidad de escena sin detenerse.
 
 ## Siguientes pasos
 
-1. Suite69362 ya cerrada. Revisar diff y conservar corrección médica; respaldar feature y avanzar main con código probado. Verificar Render/revisión/salud. No repetir inferencias reales para cambios deterministas.
-2. Continuar controlador de tiempo de varios pacientes: care-3 conserva época, ronda y cuenta; no inventar cuenta/época de datos antiguos ni mezclar combates. Los simultáneos deben resolverse juntos, sin omitir al PNJ cuando termina la espera del PJ.
-3. Coordinar descanso natural8h, fatiga/armadura, consciencia y asistencia antes de aplicar pf_rest.py. El cálculo aislado no es una acción de descanso ni completa recursos/condiciones. No hay prioridad general de efectos coincidentes verificada atribuible al manual; no afirmar una ni saltar el evento.
-4. Avanzar el recorrido del módulo: consecuencias, exploración/diálogo integrados, siguiente escena y reanudación. No convertirlo en sucesión indefinida de infraestructuras o ejemplos genéricos. adventure.validate_start actualmente impide mezclar pfEncounter e investigación tranquila; no quitar la barrera sin contrato, estado/tiempo compartido y pruebas.
-5. Seguir revisión de claridad de USABILIDAD.md: entrada, ficha y diario, orientación pertinente y administración avanzada bajo demanda. No ocultar riesgos necesarios para decidir.
+1. Cerrar suite, revisar diff y respaldar feature; publicar main solo con pruebas correctas. Verificar Render/revisión/salud sin repetir inferencias ni tocar campañas personales. Actualizar este punto.
+2. Continuar recorrido del módulo: consecuencias, exploración/diálogo integrados, siguiente escena y reanudación. No detenerse tras publicar ni convertir avance en sucesión indefinida de infraestructuras médicas.
+3. Descanso completo sigue pendiente: coordinar noche8h, fatiga/armadura, consciencia y asistencia antes de exponer pf_rest.py. No hay prioridad general verificada de descanso/prueba coincidentes. Negativos sin ayuda requieren regla diaria pendiente.
+4. adventure.validate_start impide mezclar pfEncounter e investigación tranquila. No retirar barrera sin contrato, estado/tiempo compartido y pruebas. Continuidad debe preservar heridas, PNJ, decisiones y fuentes.
+5. Seguir claridad de USABILIDAD.md: información y decisión actuales primero, detalles bajo demanda, ayudas locales accesibles sin IA/escrituras.
 
-Los cuatro hitos personales de PRODUCTO.md siguen pendientes. No invitar por contadores de pruebas, despliegues o funciones parciales. Una invitación opcional futura tampoco detiene el desarrollo.
+Los cuatro hitos personales de PRODUCTO.md siguen pendientes. No invitar por pruebas/despliegues parciales; una invitación opcional futura tampoco detiene el desarrollo.
 
 ## Fuentes y límites
 

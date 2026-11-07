@@ -1,5 +1,9 @@
 # Continuidad del desarrollo autónomo
 
+## Recuperación compartida1.2 en verificación — 7 de noviembre de2026
+
+Producción anterior confirmada0cdc5ba5462c76709eb4ff0182742079b3efcff8, Render7614328587 success,611 pruebas; incluye corrección médica descrita debajo. Nuevo bloque local: reloj de ambos caídos, cuenta real de iniciativa, simultáneos completos, registro reproducible al copiar y frontera conservadora antes del descanso asistido pendiente. Versiones anteriores intactas.49 pruebas afectadas pasaban antes de añadir la protección de asistencia del PJ1.1; HTTP confirma reintento con cliente nuevo y mismos dados después de fallo de commit. Navegador compartido orgánico correcto, sin editar PG: ambos despiertan negativos; exportación/importación, recarga y móvil conservan resultado. Cierre:624 pruebas completas correctas sin omisiones (270,033s), .deps/pf-shared-recovery-final-tests.log. Navegadores compartido, individual, muerte, armadura, corrección y encuentro correctos; captura móvil compartida revisada. Cero inferencias reales, ninguna partida personal modificada. Continuar validación, respaldo/despliegue verificado y siguiente recorrido pendiente.
+
 ## Consciencia y prueba originales tras correcciones — 7 de noviembre de2026
 
 Corregido que modificar PG positivamente o editar notas pudiera borrar la consciencia recuperada. La nueva cadena recovery-state-2 separa asistencia/prueba históricas de las correcciones posteriores y deja desconocida la asistencia actual de una edición manual. No reescribe el d20 ni concede consciencia a un inconsciente con PG todavía negativos; alcanzar0 devuelve funcionalidad y daño nuevo retira prueba/cuidado. Notas conservan salud; el cambio de Constitución negativa aún no cubierto informa sin escribir. Condiciones posteriores preservan historia y bloquean nuevas resoluciones sin cobertura.

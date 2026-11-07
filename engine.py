@@ -384,7 +384,8 @@ def apply_action(s,b,me):
         if b.get('pendingIndex') is not None: s['pending'].pop(int(b['pendingIndex']))
     else: raise ValueError('Acción no implementada; usa resolución manual asistida')
     if kind=='combat' and s.get('pfEncounter'):
-        s['pfEncounter']['phase']='combat';s['pfEncounter'].pop('outcome',None);s['pfEncounter'].pop('recoveryOutcome',None);s['pfEncounter'].pop('recoveryLimit',None)
+        s['pfEncounter']['phase']='combat'
+        for key in ('outcome','recoveryOutcome','recoveryLimit','recoveryStart'):s['pfEncounter'].pop(key,None)
     if kind in ('combat','turn','automation'):run_automatic_turns(s)
     if s.get('pfEncounter'):
         import pf_encounters

@@ -62,15 +62,19 @@ function renderAdventure(){
 }
 
 function preparedEncounterHelp(definition,actor){
- const limited=definition.recoveryScope==='single-unconscious-player-1'&&actor?.hp>=0&&actor?.creation?.choices?.armor==='scale';
+ const limited=['single-unconscious-player-1','shared-patients-1'].includes(definition.recoveryScope)&&actor?.hp>=0&&actor?.creation?.choices?.armor==='scale';
  return `${limited?'<p class="notice recovery-limit">Si caes inconsciente con tu cota de escamas, la recuperación posterior necesitará una resolución excepcional. El juego conservará tu estado.</p>':''}<details class="encounter-help"><summary>Qué incluye este encuentro</summary><p>${esc(definition.coverage)}</p><p>Una persona juega con su personaje. Luz normal, patio abierto y sin sorpresa. La guardiana tiene su ficha preparada.</p><p>Su disposición a negociar pertenece a esta escena; otras conversaciones pueden necesitar una prueba de Diplomacia.</p></details>`;
 }
 
-function preparedEncounterHealthDescription(record,actor){
+function preparedEncounterHealthDescription(record,actor,npc){
  if(record.phase!=='defeated')return '';
- if(characterIsConscious(actor))return record.definition.recoveryScope==='single-unconscious-player-1'?'Has recuperado la consciencia. La guardiana te permite retirarte; tú decides qué haces a continuación.':'Estás consciente. Consulta tus heridas en la ficha; tú decides qué haces a continuación.';
+ if(characterIsConscious(actor)){
+  if(record.definition.recoveryScope==='shared-patients-1'&&npc&&!characterIsConscious(npc))return npc.hp<=-npc.abilities[2]?'Has recuperado la consciencia. La guardiana ha muerto; tú decides qué haces a continuación.':'Has recuperado la consciencia. La guardiana sigue inconsciente; tú decides qué haces a continuación.';
+  return ['single-unconscious-player-1','shared-patients-1'].includes(record.definition.recoveryScope)?'Has recuperado la consciencia. La guardiana te permite retirarte; tú decides qué haces a continuación.':'Estás consciente. Consulta tus heridas en la ficha; tú decides qué haces a continuación.';
+ }
  if(actor.hp<=-actor.abilities[2])return 'Tu personaje ha muerto por sus heridas. Puedes revisar lo ocurrido en el registro. Para empezar otra campaña, vuelve al inicio con «Salir».';
  if(record.recoveryLimit==='armor-rest')return 'Tu personaje está inconsciente y estable. La recuperación prolongada con su armadura requiere efectos de descanso aún pendientes. No se han avanzado horas de juego.';
+ if(record.recoveryLimit==='shared-rest-boundary')return 'Tu personaje sigue inconsciente y estable. El reloj se ha detenido antes de un descanso que todavía no está cubierto. Se conservan las heridas y todas las comprobaciones resueltas.';
  return actor.stable?'Tu personaje sigue inconsciente y estable. La asistencia o recuperación de esta situación aún no está cubierta; no se inventan decisiones ni curación.':'Tu personaje sigue moribundo. Esta situación requiere una resolución excepcional; consulta la limitación en el registro.';
 }
 
@@ -81,7 +85,7 @@ function renderPreparedPathfinderEncounter(){
   entry.hidden=false;
   const mine=own.some(c=>c.id===record.character),definition=record.definition;
   const actor=s.characters.find(c=>c.id===record.character),patient=s.characters.find(c=>c.id===record.npc);
-  const description=preparedEncounterHealthDescription(record,actor)|| (record.phase==='offered'?definition.description:record.phase==='agreement'?definition.agreement:record.phase==='resolved'?`Desenlace registrado: ${record.outcome.status==='stable'?'adversario inconsciente y estable':'muerte del adversario'}, con ${record.outcome.hp} PG. No se recuperan PG ni se mueve tu ficha. Tú decides qué haces después.`:record.phase==='defeated'?`Desenlace registrado del personaje: ${record.outcome.status==='dead'?'muerto':'inconsciente y estable'}, con ${record.outcome.hp} PG. Se conservan las heridas. Consulta el estado actual en tu ficha.`:'El combate está iniciado. La iniciativa, los ataques y el estado de los participantes se consultan en el tablero y el registro.');
+  const description=preparedEncounterHealthDescription(record,actor,patient)|| (record.phase==='offered'?definition.description:record.phase==='agreement'?definition.agreement:record.phase==='resolved'?`Desenlace registrado: ${record.outcome.status==='stable'?'adversario inconsciente y estable':'muerte del adversario'}, con ${record.outcome.hp} PG. No se recuperan PG ni se mueve tu ficha. Tú decides qué haces después.`:record.phase==='defeated'?`Desenlace registrado del personaje: ${record.outcome.status==='dead'?'muerto':'inconsciente y estable'}, con ${record.outcome.hp} PG. Se conservan las heridas. Consulta el estado actual en tu ficha.`:'El combate está iniciado. La iniciativa, los ataques y el estado de los participantes se consultan en el tablero y el registro.');
   entry.innerHTML=`<section class="card"><div class="eyebrow">ENCUENTRO PREPARADO · EXPERIMENTAL</div><h3>${esc(definition.title)}</h3><p>${esc(description)}</p>${record.phase==='offered'?`<p><strong>${mine?'Decide cómo responder.':'El propietario del personaje decide cómo responder.'}</strong></p><div class="toolbar"><button id="pfEncounterParley" ${mine?'':'disabled'}>Proponer el paso sin combatir</button><button id="pfEncounterCombat" ${mine?'':'disabled'}>Entrar en combate</button></div>`:''}${actor.hp<0&&characterIsConscious(actor)?'<p class="notice">Ahora estás consciente, con PG negativos. Puedes moverte o realizar una acción estándar, pero no ambas; una acción fatigosa cuesta 1 PG y puede hacerte caer de nuevo. No has recuperado PG.</p>':''}${record.recoveryOutcome?`<p>Tiempo transcurrido: ${record.recoveryOutcome.hours} ${record.recoveryOutcome.hours===1?'hora':'horas'}. Consulta las tiradas en el registro.</p>`:''}<div id="pfEncounterAid"></div>${preparedEncounterHelp(definition,actor)}</section>`;
   if($('#pfEncounterParley'))$('#pfEncounterParley').onclick=run(()=>act('choose_pf_encounter',{choice:'parley'}));
   if($('#pfEncounterCombat'))$('#pfEncounterCombat').onclick=run(async()=>{await act('choose_pf_encounter',{choice:'combat'});chooseTab('board');});

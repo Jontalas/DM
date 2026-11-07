@@ -17,8 +17,8 @@ from rule_pack_authoring import canonical
 ID='patio-del-peaje'
 
 
-def definition(version='1.1.0'):
-    files={'1.0.0':'pf-patio-del-peaje.json','1.1.0':'pf-patio-del-peaje-1.1.0.json'}
+def definition(version='1.2.0'):
+    files={'1.0.0':'pf-patio-del-peaje.json','1.1.0':'pf-patio-del-peaje-1.1.0.json','1.2.0':'pf-patio-del-peaje-1.2.0.json'}
     if not isinstance(version,str) or version not in files:raise ValueError('Revisión de encuentro no disponible')
     return json.loads((Path(__file__).parent/'adventures'/files[version]).read_text(encoding='utf-8'))
 
@@ -117,6 +117,9 @@ def resolve_defeat(state):
 def resolve_recovery(state):
     """Quiet authored scene, one unconscious patient; no player decisions."""
     record=state.get('pfEncounter')
+    if record and record['definition'].get('recoveryScope')=='shared-patients-1':
+        import pf_shared_recovery
+        return pf_shared_recovery.apply(state)
     if (not record or record['phase']!='defeated' or state['board']['active'] or record.get('recoveryOutcome') or record.get('recoveryLimit')
         or record['definition'].get('recoveryScope')!='single-unconscious-player-1' or len(state['characters'])!=2
         or state['board']['terrain'] or state['pending'] or any(not e.get('interpreted') for e in state['consequences'])):return False
@@ -133,6 +136,11 @@ def resolve_recovery(state):
     original,_=character_builder.build(actor['creation']['choices'])
     constitution=original['abilities'][2]
     if actor['abilities'][2]!=constitution or constitution>20:return False
+    if record['outcome']['assisted']:
+        record['recoveryLimit']='assisted-rest'
+        from engine import log
+        log(state,'No se avanzan horas: la recuperación de este PJ asistido necesita coordinar su descanso y todavía no está cubierta. Se conserva su estado.',refs=[{'book':'reglas','page':192}])
+        return False
     if actor['creation']['choices']['armor'] not in ('leather','studded','chainshirt'):
         record['recoveryLimit']='armor-rest'
         from engine import log
@@ -215,6 +223,7 @@ def validate_restored(state):
     if isinstance(record,dict) and record.get('phase') in ('resolved','defeated'):fields.add('outcome')
     if isinstance(record,dict) and 'recoveryOutcome' in record:fields.add('recoveryOutcome')
     if isinstance(record,dict) and 'recoveryLimit' in record:fields.add('recoveryLimit')
+    if isinstance(record,dict) and 'recoveryStart' in record:fields.add('recoveryStart')
     if (state.get('ruleset','pathfinder-1e')!='pathfinder-1e' or not isinstance(record,dict)
         or set(record)!=fields
         or record['format']!='cronicas-pf-encounter-state-1' or record['phase'] not in ('offered','agreement','combat','resolved','defeated')):
@@ -260,10 +269,16 @@ def validate_restored(state):
         if outcome['npcConstitution']!=original_npc['abilities'][2]:raise ValueError('La derrota requiere la Constitución verificada del PNJ')
         if -outcome['npcConstitution']<outcome['npcHp']<0 and not outcome['npcStable']:raise ValueError('No se omite un PNJ todavía moribundo')
         if state['board']['active']:raise ValueError('La derrota registrada no conserva combate activo')
+    if record['definition'].get('recoveryScope')=='shared-patients-1':
+        import pf_shared_recovery
+        if record.get('recoveryLimit')=='armor-rest' and actor['creation']['choices']['armor']!='scale':raise ValueError('El límite de armadura no corresponde al PJ')
+        pf_shared_recovery.validate_record(record);return
+    if 'recoveryStart' in record:raise ValueError('Este encuentro no admite reloj compartido')
     if 'recoveryLimit' in record:
         if (record['phase']!='defeated' or record['definition'].get('recoveryScope')!='single-unconscious-player-1'
-            or record['recoveryLimit']!='armor-rest' or 'recoveryOutcome' in record
-            or actor['creation']['choices']['armor']!='scale'):
+            or record['recoveryLimit'] not in ('armor-rest','assisted-rest') or 'recoveryOutcome' in record
+            or record['recoveryLimit']=='armor-rest' and actor['creation']['choices']['armor']!='scale'
+            or record['recoveryLimit']=='assisted-rest' and record['outcome']['assisted'] is not True):
             raise ValueError('Límite de recuperación inválido')
     if 'recoveryOutcome' in record:
         import pf_recovery

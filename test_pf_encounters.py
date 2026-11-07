@@ -192,6 +192,56 @@ class PreparedPathfinderEncounterTests(unittest.TestCase):
         self.assertEqual(self.state['pfEncounter']['phase'],'defeated')
         pf_recovery.validate_restored(self.state);pf_encounters.validate_restored(self.state)
 
+    def shared_scene(self):
+        engine.apply_action(self.state,{'type':'enter_pf_encounter','encounter':pf_encounters.ID,
+            'encounterVersion':'1.2.0','character':self.actor},self.me)
+        with patch('game_randomness.draw',side_effect=[20,1]):
+            engine.apply_action(self.state,{'type':'choose_pf_encounter','choice':'combat'},self.me)
+        self.state['characters'][0]['hp']=0
+        self.state['characters'][1]['hp']=-3
+        self.state['characters'][1]['stable']=False
+
+    def test_shared_first_aid_fall_recovers_both_on_their_actual_hourly_counts(self):
+        import pf_recovery
+        self.shared_scene()
+        with patch('game_randomness.draw',return_value=20) as rng:
+            engine.apply_action(self.state,{'type':'pf_first_aid','physical':20},self.me)
+        self.assertEqual(rng.call_count,3)
+        self.assertEqual([c['hp'] for c in self.state['characters']],[-1,-3])
+        self.assertTrue(all(pf_recovery.is_conscious(c) for c in self.state['characters']))
+        receipt=self.state['pfEncounter']['recoveryOutcome']
+        self.assertEqual(receipt['format'],'cronicas-pf-recovery-outcome-2')
+        self.assertEqual(receipt['rolls'],[[1,20],[0,20]])
+        self.assertEqual(receipt['seconds'],3600)
+        pf_encounters.validate_restored(copy.deepcopy(self.state))
+        pf_recovery.validate_restored(copy.deepcopy(self.state))
+        before=copy.deepcopy(self.state)
+        with patch('game_randomness.draw',side_effect=AssertionError('Repeated shared recovery')):
+            self.assertFalse(pf_encounters.resolve_recovery(self.state))
+        self.assertEqual(self.state,before)
+
+    def test_shared_copy_rejects_forged_patient_order_dice_and_elapsed_time(self):
+        self.shared_scene()
+        with patch('game_randomness.draw',return_value=20):
+            engine.apply_action(self.state,{'type':'pf_first_aid','physical':20},self.me)
+        for field,value in (('rolls',[[0,20],[1,20]]),('rolls',[[1,21],[0,20]]),
+            ('rolls',[[1,20]]),('rolls',[[1,20],[0,20],[1,20]]),
+            ('seconds',7200),('npcHp',0),('status','dead')):
+            forged=copy.deepcopy(self.state)
+            forged['pfEncounter']['recoveryOutcome'][field]=value
+            with self.assertRaises(ValueError):pf_encounters.validate_restored(forged)
+
+    def test_shared_assisted_npc_pauses_before_unimplemented_rest_without_healing(self):
+        self.shared_scene()
+        with patch('game_randomness.draw',side_effect=[20]+[1]*12) as rng:
+            engine.apply_action(self.state,{'type':'pf_first_aid','physical':20},self.me)
+        self.assertEqual(rng.call_count,13)
+        self.assertEqual([c['hp'] for c in self.state['characters']],[-7,-3])
+        record=self.state['pfEncounter']
+        self.assertEqual(record['recoveryOutcome']['hours'],6)
+        self.assertEqual(record['recoveryLimit'],'shared-rest-boundary')
+        pf_encounters.validate_restored(copy.deepcopy(self.state))
+
     def recovery_scene(self,armor=None):
         if armor:
             data=choices();data['armor']=armor;self.state=engine.initial_state({})
@@ -228,6 +278,17 @@ class PreparedPathfinderEncounterTests(unittest.TestCase):
         audits=[m for m in self.state['messages'] if m.get('recoveryChecks')]
         self.assertEqual(len(audits),1);self.assertEqual(len(audits[0]['recoveryChecks']),13)
         self.assertNotIn('recoveryState',self.state['characters'][0]);pf_encounters.validate_restored(self.state)
+
+    def test_legacy_assisted_player_does_not_enter_unbounded_unaided_loop(self):
+        import pf_recovery
+        self.recovery_scene()
+        actor=self.state['characters'][0]
+        pf_recovery.record_stabilization(actor,assisted=True,round_number=1)
+        with patch('game_randomness.draw',side_effect=AssertionError('Assisted rest rolled')):
+            pf_encounters.resolve_defeat(self.state)
+        self.assertEqual(self.state['pfEncounter']['recoveryLimit'],'assisted-rest')
+        self.assertNotIn('recoveryOutcome',self.state['pfEncounter'])
+        pf_encounters.validate_restored(self.state)
 
     def test_multiple_fallen_and_legacy_scene_do_not_skip_unimplemented_hourly_events(self):
         self.recovery_scene();self.state['characters'][1]['hp']=-3

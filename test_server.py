@@ -447,18 +447,29 @@ class IntegrationTests(unittest.TestCase):
         self.assertEqual(error.exception.code,400);error.exception.close()
         self.assertEqual(self.state()['state'],after)
 
+    def test_shared_recovery_survives_failed_commit_cold_client_and_copy(self):
+        self._recovery_commit_retry(shared=True)
+
     def test_automatic_recovery_preserves_dice_clock_and_health_after_failed_commit_and_cold_client(self):
+        self._recovery_commit_retry(shared=False)
+
+    def _recovery_commit_retry(self,shared):
         import copy
         import game_randomness
         from firebase_store import FirestoreStore
         from test_support import TestStore
         from test_character_builder import choices
         self.action('create_character',choices=choices());character=self.state()['state']['characters'][0]['id']
-        self.action('enter_pf_encounter',encounter='patio-del-peaje',encounterVersion='1.1.0',character=character)
+        self.action('enter_pf_encounter',encounter='patio-del-peaje',encounterVersion='1.2.0' if shared else '1.1.0',character=character)
         with patch('game_randomness.draw',side_effect=[20,1]),patch('game_randomness.initiative_tie',return_value=0):
             self.action('choose_pf_encounter',choice='combat')
+        if shared:
+            npc=self.state()['state']['characters'][1]['id']
+            self.action('manual',character=npc,hpDelta=-10,reason='Fixture de ambos caídos',resolution='PNJ a -3PG',reference='Prueba')
+            self.action('manual',character=character,hpDelta=-16,reason='Fixture de auxilio',resolution='PJ a0PG',reference='Prueba')
         before=self.state();body={'id':secrets.token_hex(12),'version':before['version'],'type':'manual',
             'character':character,'hpDelta':-17,'reason':'Fixture de recuperación duradera','resolution':'PJ a -1PG','reference':'Prueba'}
+        if shared:body={'id':body['id'],'version':body['version'],'type':'pf_first_aid','physical':20}
         observed=[];actual=game_randomness.draw
         def recording(sides):
             value=actual(sides);observed.append(value);return value
@@ -478,11 +489,22 @@ class IntegrationTests(unittest.TestCase):
             with patch.object(server,'STORE',recovered):
                 self.request('/api/action',body,self.token)
                 self.assertTrue(self.request('/api/action',body,self.token)['duplicate'])
-        self.assertEqual(observed,[20,20,20,20])
-        after=self.state()['state'];self.assertEqual(after['characters'][0]['hp'],-1)
+        if shared:
+            self.assertGreaterEqual(len(observed),6)
+            half=len(observed)//2;self.assertEqual(observed[:half],observed[half:])
+        else:self.assertEqual(observed,[20,20,20,20])
+        after=self.state()['state'];self.assertLess(after['characters'][0]['hp'],0)
+        if not shared:self.assertEqual(after['characters'][0]['hp'],-1)
         self.assertTrue(after['characters'][0]['recoveryState']['conscious'])
-        self.assertEqual(after['pfEncounter']['recoveryOutcome']['seconds'],3600)
-        self.assertEqual(after['pfEncounter']['recoveryOutcome']['dice'],[20]);self.assertFalse(after['board']['active'])
+        receipt=after['pfEncounter']['recoveryOutcome']
+        self.assertEqual(receipt['seconds'],receipt['hours']*3600)
+        if not shared:self.assertEqual(receipt['dice'],[20])
+        self.assertFalse(after['board']['active'])
+        if shared:
+            self.assertEqual(after['characters'][1]['hp'],-3)
+            self.assertTrue(after['characters'][1]['recoveryState']['conscious'])
+            self.assertEqual(receipt['rolls'][0],[1,20])
+            self.assertEqual(receipt['dice'],[raw for role,raw in receipt['rolls'] if role==0])
         exported=self.request('/api/export',{},self.token);self.action('import',campaign=exported)
         self.assertEqual(self.state()['state']['pfEncounter'],after['pfEncounter'])
 
