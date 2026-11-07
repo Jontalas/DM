@@ -16,14 +16,15 @@ def clear_episode(character):
     character.pop('recoveryCare',None);character.pop('recoveryState',None)
 
 
-def record_stabilization(character,*,assisted,round_number,initiative=None,order=None):
+def record_stabilization(character,*,assisted,round_number,initiative=None,order=None,epoch=None):
     # Called only when a verified rule actually stabilizes a dying creature.
     consciousness_check({**character,'stable':True},20,assisted=assisted)
     if type(round_number)!=int or not 1<=round_number<=1000000:
         raise ValueError('La asistencia requiere una ronda válida')
     care={'format':'cronicas-pf-care-1','assisted':assisted,'round':round_number}
-    if initiative is not None or order is not None:
+    if initiative is not None or order is not None or epoch is not None:
         care.update(format='cronicas-pf-care-2',initiative=initiative,order=order[:] if isinstance(order,list) else order)
+        if epoch is not None:care.update(format='cronicas-pf-care-3',epoch=epoch)
         _validate_initiative_care(character,care)
     character['stable']=True
     character.pop('recoveryState',None)
@@ -36,20 +37,28 @@ def _validate_initiative_care(character,care):
         or len(set(order))!=len(order) or not isinstance(care['initiative'],str)
         or care['initiative'] not in order or character.get('id') not in order):
         raise ValueError('La asistencia no conserva su cuenta de iniciativa')
+    if care['format']=='cronicas-pf-care-3' and (type(care['epoch'])!=int or not 1<=care['epoch']<=1000000):
+        raise ValueError('La asistencia no conserva el episodio de combate')
 
 
 def validate_restored(state):
+    board=state.get('board',{})
+    if not isinstance(board,dict):raise ValueError('Tablero temporal inválido')
+    if 'combatSerial' in board and (type(board['combatSerial'])!=int or not 0<=board['combatSerial']<=1000000):
+        raise ValueError('Historial temporal de combate inválido')
     for character in state.get('characters',[]):
         if 'recoveryState' in character and 'recoveryCare' not in character:raise ValueError('La recuperación no conserva asistencia conocida')
         if 'recoveryCare' not in character:continue
         care=character['recoveryCare']
         version=care.get('format') if isinstance(care,dict) else None
-        fields={'format','assisted','round'}|({'initiative','order'} if version=='cronicas-pf-care-2' else set())
+        fields={'format','assisted','round'}|({'initiative','order'} if version in ('cronicas-pf-care-2','cronicas-pf-care-3') else set())|({'epoch'} if version=='cronicas-pf-care-3' else set())
         if (state.get('ruleset','pathfinder-1e')!='pathfinder-1e' or not isinstance(care,dict)
-            or set(care)!=fields or version not in ('cronicas-pf-care-1','cronicas-pf-care-2')
+            or set(care)!=fields or version not in ('cronicas-pf-care-1','cronicas-pf-care-2','cronicas-pf-care-3')
             or type(care['assisted'])!=bool or type(care['round'])!=int or not 1<=care['round']<=1000000):
             raise ValueError('Registro de asistencia Pathfinder inválido')
-        if version=='cronicas-pf-care-2':_validate_initiative_care(character,care)
+        if version in ('cronicas-pf-care-2','cronicas-pf-care-3'):_validate_initiative_care(character,care)
+        if version=='cronicas-pf-care-3' and 'board' in state and care['epoch']>board.get('combatSerial',0):
+            raise ValueError('La asistencia pertenece a un combate posterior al reloj de esta copia')
         patient={k:v for k,v in character.items() if k!='recoveryState'}
         consciousness_check(patient,20,assisted=care['assisted'])
         if 'recoveryState' in character:
@@ -113,17 +122,19 @@ def next_hourly_events(characters):
     separately before this planner can drive multi-patient campaign time.
     """
     validate_restored({'characters':characters})
-    events=[];shared_order=None
+    events=[];shared_order=None;shared_epoch=None
     for patient in characters:
         if patient['hp']>=0 or patient['hp']<=-patient['abilities'][2] or is_conscious(patient):continue
         if patient.get('stable') is not True:raise ValueError('Resuelve la estabilización por turnos antes de avanzar horas')
         care=patient.get('recoveryCare',{})
-        if care.get('format')!='cronicas-pf-care-2':raise ValueError('La copia no conserva el instante de asistencia; no se supone una cuenta de iniciativa')
+        if care.get('format')!='cronicas-pf-care-3':raise ValueError('La copia no conserva el episodio e instante de asistencia; no se supone un reloj')
+        if shared_epoch is None:shared_epoch=care['epoch']
+        elif shared_epoch!=care['epoch']:raise ValueError('Los pacientes pertenecen a combates distintos; hace falta un reloj común verificado')
         if shared_order is None:shared_order=care['order']
         elif shared_order!=care['order']:raise ValueError('Los pacientes necesitan un reloj común; no se mezclan iniciativas históricas distintas')
         hours=patient.get('recoveryState',{}).get('hours',0)+1
         due=(care['round']+600*hours,care['order'].index(care['initiative']))
-        events.append({'character':patient['id'],'round':due[0],'initiative':care['initiative'],'orderIndex':due[1]})
+        events.append({'character':patient['id'],'epoch':care['epoch'],'round':due[0],'initiative':care['initiative'],'orderIndex':due[1]})
     if not events:return []
     earliest=min((e['round'],e['orderIndex']) for e in events)
     return [e for e in events if (e['round'],e['orderIndex'])==earliest]

@@ -1,5 +1,11 @@
 # Continuidad del desarrollo autónomo
 
+## Épocas de combate y cálculo de noche verificados — 7 de noviembre de2026
+
+605 pruebas completas correctas sin omisiones (218,023s), `.deps/pf-care-epoch-rest-final-tests.log`;82 afectadas y navegador correctos. `combatSerial` determinista separa care-3 de combates distintos sin alterar dados ni añadir operaciones remotas; care-1/2 conservados sin suponer época. Calculador puro de PG de noche con seis pruebas, aún sin acción de descanso ni aplicación de otros efectos. Respaldo en feature y continuación del trabajo independiente.
+
+Producción bf9389e677f09909737dedb9535e51b813debe52, Render7613620635 success, revisión/salud HTTPS200. El hash JS inicialmente distinto correspondía a finales CRLF locales: recurso remoto coincide exactamente con blob Git y contiene aviso/límite de armadura. Sin inferencias reales ni modificaciones de partidas personales.
+
 ## Descanso con armadura: límite explícito y cálculo aislado — 7 de noviembre de2026
 
 Detectado al contrastar originales PDF151/150 y152/151: dormir con armadura intermedia puede causar fatiga. La recuperación prolongada existente no coordina noche/fatiga; se limita el avance automático a las armaduras ligeras verificadas, conservando PG/estabilización con cota de escamas y motivo `armor-rest`. No se equipara toda inconsciencia a sueño ni se fija fatiga a una hora inventada. Aviso previo y explicación del estado presente; copias antiguas/outcomes ya comprometidos no se reinterpretan. Reiniciar combate retira el límite anterior junto a los demás recibos de episodio.

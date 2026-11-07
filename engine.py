@@ -55,7 +55,7 @@ def begin_turn(s):
             raw=dice([20])[0];modifier=(patient['abilities'][2]-10)//2+patient['hp']
             if raw==20 or raw+modifier>=10:
                 import pf_recovery
-                pf_recovery.record_stabilization(patient,assisted=False,round_number=board['round'],initiative=upcoming,order=[entry['id'] for entry in board['order']])
+                pf_recovery.record_stabilization(patient,assisted=False,round_number=board['round'],initiative=upcoming,order=[entry['id'] for entry in board['order']],epoch=board.get('combatSerial'))
             else:patient['hp']-=1
             log(s,f"{patient['name']}: estabilización d20 {raw} {modifier:+} contra CD 10 → {combat.health_status(patient)}; PG {patient['hp']}.",refs=[{'book':'reglas','page':191}])
 
@@ -295,9 +295,11 @@ def apply_action(s,b,me):
         automatic=b.get('automateEnemies',False)
         if type(automatic)!=bool:raise ValueError('El control automático debe ser verdadero o falso')
         if automatic and not any(not c['enemy'] for c in s['characters']):raise ValueError('Añade al menos un personaje jugador')
+        serial=s['board'].get('combatSerial',0)
+        if type(serial)!=int or not 0<=serial<1000000:raise ValueError('El historial temporal de combate necesita una revisión; no se han tirado dados')
         order=[{'id':c['id'],'roll':dice([20])[0],'modifier':c['initiative'],'dex':c['abilities'][1]} for c in s['characters']]
         order.sort(key=lambda v:(v['roll']+v['modifier'],v['modifier'],game_randomness.initiative_tie()),reverse=True)
-        s['board'].update(active=True,round=1,turn=0,order=order,spent={},acted=[],autoEnemies=automatic)
+        s['board'].update(active=True,round=1,turn=0,order=order,spent={},acted=[],autoEnemies=automatic,combatSerial=serial+1)
         s['board'].pop('autoPaused',None);begin_turn(s)
         log(s,'Iniciativa d20 + modificador declarado: '+str(order)+'. Empates: modificador total y después azar. Reglas básicas: Iniciativa, impresa p.178 / PDF p.179. Sorpresa: resolución excepcional. CA desprevenido automática en ataques básicos con perfil preparado.',refs=[{'book':'reglas','page':179}])
     elif kind=='endcombat':

@@ -110,10 +110,10 @@ class HourlyRecoveryTests(unittest.TestCase):
         self.assertNotIn('recoveryState',actor);self.assertNotIn('recoveryCare',actor)
         self.assertFalse(combat.standing(actor));self.assertEqual(combat.health_status(actor),'moribundo')
 
-    def timed_patient(self,identifier,round_number,initiative,assisted=False,order=None):
+    def timed_patient(self,identifier,round_number,initiative,assisted=False,order=None,epoch=1):
         patient=self.patient();patient['id']=identifier
         pf_recovery.record_stabilization(patient,assisted=assisted,round_number=round_number,
-            initiative=initiative,order=order or ['player','npc'])
+            initiative=initiative,order=order or ['player','npc'],epoch=epoch)
         return patient
 
     def test_aid_is_anchored_to_helpers_initiative_and_simultaneous_checks_are_not_lost(self):
@@ -150,3 +150,29 @@ class HourlyRecoveryTests(unittest.TestCase):
             patient=self.patient();patient.update(id='player',stable=False);before=copy.deepcopy(patient)
             with self.assertRaises(ValueError):pf_recovery.record_stabilization(patient,assisted=True,round_number=1,initiative=initiative,order=order)
             self.assertEqual(patient,before)
+
+    def test_matching_orders_from_different_combats_are_not_treated_as_one_clock(self):
+        actor=self.timed_patient('player',1,'player',epoch=1)
+        npc=self.timed_patient('npc',1,'player',assisted=True,epoch=2)
+        with self.assertRaises(ValueError):pf_recovery.next_hourly_events([actor,npc])
+        with self.assertRaises(ValueError):pf_recovery.validate_restored({'characters':[npc],'board':{'combatSerial':1}})
+        pf_recovery.validate_restored({'characters':[actor,npc],'board':{'combatSerial':2}})
+        legacy=self.timed_patient('npc',1,'player',assisted=True,epoch=None)
+        self.assertEqual(legacy['recoveryCare']['format'],'cronicas-pf-care-2')
+        pf_recovery.validate_restored({'characters':[legacy]})
+        with self.assertRaises(ValueError):pf_recovery.next_hourly_events([actor,legacy])
+
+    def test_new_combat_epoch_advances_without_extra_dice_and_rejects_invalid_serial_first(self):
+        import engine
+        me={'id':'host','name':'Ana','host':True};state=engine.initial_state({})
+        engine.apply_action(state,{'type':'character','character':{'name':'Aria'}},me)
+        for expected in (1,2):
+            with patch('game_randomness.draw',return_value=12) as rng:
+                engine.apply_action(state,{'type':'combat'},me)
+            self.assertEqual(rng.call_count,1);self.assertEqual(state['board']['combatSerial'],expected)
+            engine.apply_action(state,{'type':'endcombat'},me)
+        for invalid in (True,-1,1000000,'2'):
+            state['board']['combatSerial']=invalid;before=copy.deepcopy(state)
+            with patch('game_randomness.draw',side_effect=AssertionError('Bad epoch rolled dice')):
+                with self.assertRaises(ValueError):engine.apply_action(state,{'type':'combat'},me)
+            self.assertEqual(state,before)

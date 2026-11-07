@@ -152,6 +152,7 @@ class PreparedPathfinderEncounterTests(unittest.TestCase):
         self.assertTrue(all(c['stable'] for c in self.state['characters']));pf_encounters.validate_restored(self.state)
         self.assertTrue(all(c['recoveryCare']['assisted'] is False for c in self.state['characters']))
         self.assertTrue(all(c['recoveryCare']['initiative']==c['id'] for c in self.state['characters']))
+        self.assertTrue(all(c['recoveryCare']['epoch']==self.state['board']['combatSerial'] for c in self.state['characters']))
         self.state['pfEncounter']['outcome']['npcStable']=False
         with self.assertRaises(ValueError):pf_encounters.validate_restored(self.state)
 

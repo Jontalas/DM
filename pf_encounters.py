@@ -191,7 +191,7 @@ def aid_or_wait(state,body,me):
         result['board']['spent'].setdefault(helper['id'],{})['standard']=True
         if resolved['success']:
             import pf_recovery
-            pf_recovery.record_stabilization(target,assisted=True,round_number=result['board']['round'],initiative=helper['id'],order=[entry['id'] for entry in result['board']['order']])
+            pf_recovery.record_stabilization(target,assisted=True,round_number=result['board']['round'],initiative=helper['id'],order=[entry['id'] for entry in result['board']['order']],epoch=result['board'].get('combatSerial'))
         if helper['hp']<=0:
             import pf_recovery
             helper['hp']-=1;helper['stable']=False;pf_recovery.clear_episode(helper)
