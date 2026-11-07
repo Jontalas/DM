@@ -1,5 +1,13 @@
 # Continuidad del desarrollo autónomo
 
+## Descanso con armadura: límite explícito y cálculo aislado — 7 de noviembre de2026
+
+Detectado al contrastar originales PDF151/150 y152/151: dormir con armadura intermedia puede causar fatiga. La recuperación prolongada existente no coordina noche/fatiga; se limita el avance automático a las armaduras ligeras verificadas, conservando PG/estabilización con cota de escamas y motivo `armor-rest`. No se equipara toda inconsciencia a sueño ni se fija fatiga a una hora inventada. Aviso previo y explicación del estado presente; copias antiguas/outcomes ya comprometidos no se reinterpretan. Reiniciar combate retira el límite anterior junto a los demás recibos de episodio.
+
+597 pruebas completas correctas sin omisiones (214,397s), `.deps/pf-recovery-armor-boundary-final-tests.log`, sesión49367 terminada.35 afectadas, dos HTTP/Waitress y navegadores de armadura ligera/cota de escamas correctos. Una selección inicial del arnés apuntaba al paso de elecciones en vez de equipo; corregida y vuelto a ejecutar. La prueba de cota usa creador legal y seis ataques normales del PNJ, termina−2PG estable sin horas transcurridas y conserva copia/importación/recarga/móvil. Respaldo/despliegue de la corrección a continuación; cero inferencias reales.
+
+Trabajo independiente aún local: `pf_rest.py` y `test_pf_rest.py`, seis pruebas del cálculo de una noche completa, nivel/máximo, interrupción, asistencia y umbral0. Es puro, sin acción expuesta ni mutación del paciente, y no completa fatiga/recursos/descanso diario. No incluirlo como descanso jugable ni en el despliegue urgente del límite; seguir con controlador y precedencia documentada. Consulta complementaria a FAQ oficial1e fue rechazada403; resultados de2e descartados. No hay regla de prioridad verificada que se atribuya a esos resultados.
+
 ## Continuación y cierre de cuentas de asistencia — 7 de noviembre de2026
 
 596 pruebas completas correctas sin omisiones (246,092s), `.deps/pf-care-initiative-final-tests.log`, sesión37713 terminada;73 afectadas y navegador correctos. Continúa desarrollo por ratificación del usuario. Care-2 preserva instantes sin alterar la recuperación1.1; respaldo en feature, producción permanecea947d06. Siguiente: descanso natural y eventos simultáneos, con fuentes verificadas y sin ocultar lo pendiente.

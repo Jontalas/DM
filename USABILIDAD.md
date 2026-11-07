@@ -1,5 +1,7 @@
 # Sencillez y orientación
 
+Límite de armadura comunicado antes de jugar y después de caer: la recuperación prolongada con cota de escamas requiere efectos aún pendientes. El estado se conserva y no se presenta como error que el jugador deba depurar. La prueba desde creador verifica advertencia, caída, ausencia de salto horario, copia/recarga y móvil. La aplicación distingue límite de implementación de regla del juego.
+
 Directiva permanente del usuario del6 de noviembre de2026, incorporada a AGENTS.md y PRODUCTO.md. Es un requisito transversal del producto; no una declaración de que la interfaz actual ya lo cumple.
 
 Cada pantalla debe responder, con pocas palabras: qué está pasando, qué puedo decidir ahora y cómo continúo. Mostrar las opciones pertinentes al momento y al permiso del jugador. Explicaciones extensas, comprobaciones reglamentarias y herramientas avanzadas quedan disponibles mediante despliegue progresivo. Las ayudas funcionan con teclado y tacto, sin depender solo de hover. Nunca ocultar una consecuencia necesaria para decidir.

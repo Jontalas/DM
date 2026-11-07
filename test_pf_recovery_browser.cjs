@@ -3,6 +3,7 @@ const {spawn}=require('node:child_process'),{createInterface}=require('node:read
 const path=require('node:path'),assert=require('node:assert/strict');
 (async()=>{
  const fatal=process.env.TEST_PF_RECOVERY_CASE==='death';
+ const armored=process.env.TEST_PF_RECOVERY_CASE==='armor';
  const fixture=spawn(path.resolve('.venv/Scripts/python.exe'),['test_browser_fixture.py'],
   {env:{...process.env,TEST_PF_RECOVERY_FIXTURE:fatal?'death':'1'},stdio:['ignore','pipe','inherit']});let browser;
  try{
@@ -14,9 +15,13 @@ const path=require('node:path'),assert=require('node:assert/strict');
   await page.goto(url);await page.locator('#createForm [name=player]').fill('Ana');
   await page.locator('#createForm [name=goal]').fill('Disputar el paso por el patio');await page.locator('#createForm button').click();
   await page.locator('[data-create-hero]').click();await page.locator('[data-creator-preset=guardian]').click();
-  await page.locator('#creatorName').fill('Aria');await page.locator('[data-creator-step="3"]').click();
+  await page.locator('#creatorName').fill('Aria');
+  await page.locator('[data-creator-step="3"]').click();
+  if(armored)await page.locator('[data-creator-field=armor]').selectOption('scale');
   await page.locator('#creatorFinish').click();await page.locator('.sheet-checks').waitFor();await page.locator('#closeModal').click();
-  await page.locator('#beginPreparedEncounter').click();await page.locator('#pfEncounterEntry button').click();
+  await page.locator('#beginPreparedEncounter').click();
+  if(armored)assert.match(await page.locator('#modalContent .recovery-limit').textContent(),/cota de escamas/);
+  await page.locator('#pfEncounterEntry button').click();
   await page.locator('#pfEncounterCombat').click();await page.waitForFunction(()=>snapshot.state.board.active&&!busy);
   assert.equal(await page.evaluate(()=>snapshot.state.pfEncounter.definition.version),'1.1.0');
   // The player explicitly waits each turn. Real NPC attacks cause the fall;
@@ -26,6 +31,23 @@ const path=require('node:path'),assert=require('node:assert/strict');
    await page.waitForFunction(v=>snapshot.version>v&&!busy,version);
   }
   const recovered=await page.evaluate(()=>snapshot.state);
+  if(armored){
+   assert.equal(recovered.characters[0].hp,-2);assert.equal(recovered.characters[0].stable,true);
+   assert.equal(recovered.pfEncounter.recoveryLimit,'armor-rest');assert.equal(recovered.pfEncounter.recoveryOutcome,undefined);
+   assert.equal(recovered.worldTime,'Comienzo de la aventura');assert.equal(recovered.board.active,false);
+   assert.match(await page.locator('#adventureEntry').textContent(),/No se han avanzado horas/);
+   await page.locator('[data-tab=journal]').click();
+   const [download]=await Promise.all([page.waitForEvent('download'),page.locator('#exportBtn').click()]);
+   const version=await page.evaluate(()=>snapshot.version);await page.locator('#importFile').setInputFiles(await download.path());
+   await page.waitForFunction(v=>snapshot.version>v&&!busy,version);
+   assert.deepEqual(await page.evaluate(()=>snapshot.state.pfEncounter),recovered.pfEncounter);
+   await page.reload();await page.waitForFunction(()=>snapshot?.state.pfEncounter.recoveryLimit==='armor-rest');
+   await page.setViewportSize({width:390,height:1000});await page.locator('[data-tab=story]').click();
+   await page.locator('#adventureEntry').scrollIntoViewIfNeeded();assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+   await page.screenshot({path:'.deps/pf-recovery-armor-mobile.png',fullPage:true});assert.deepEqual(errors,[]);
+   console.log('PF recovery armor browser passed: legal scale armor, advance warning, real NPC attacks, stable fall without skipped fatigue or hourly advancement, preserved copy/reload and mobile. No AI.');
+   return;
+  }
   assert.equal(recovered.characters[0].hp,fatal?-14:-2);assert.equal(recovered.characters[1].hp,7);
   assert.equal(recovered.characters[0].recoveryState?.conscious,fatal?undefined:true);
   assert.equal(recovered.pfEncounter.recoveryOutcome.hours,fatal?12:1);assert.equal(recovered.pfEncounter.recoveryOutcome.seconds,(fatal?12:1)*3600);

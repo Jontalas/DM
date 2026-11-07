@@ -117,7 +117,7 @@ def resolve_defeat(state):
 def resolve_recovery(state):
     """Quiet authored scene, one unconscious patient; no player decisions."""
     record=state.get('pfEncounter')
-    if (not record or record['phase']!='defeated' or state['board']['active'] or record.get('recoveryOutcome')
+    if (not record or record['phase']!='defeated' or state['board']['active'] or record.get('recoveryOutcome') or record.get('recoveryLimit')
         or record['definition'].get('recoveryScope')!='single-unconscious-player-1' or len(state['characters'])!=2
         or state['board']['terrain'] or state['pending'] or any(not e.get('interpreted') for e in state['consequences'])):return False
     actor=next(c for c in state['characters'] if c['id']==record['character'])
@@ -133,6 +133,12 @@ def resolve_recovery(state):
     original,_=character_builder.build(actor['creation']['choices'])
     constitution=original['abilities'][2]
     if actor['abilities'][2]!=constitution or constitution>20:return False
+    if actor['creation']['choices']['armor'] not in ('leather','studded','chainshirt'):
+        record['recoveryLimit']='armor-rest'
+        from engine import log
+        log(state,'No se avanzan horas de recuperación: dormir con armadura intermedia puede causar fatiga y ese descanso todavía requiere una resolución excepcional. Se conservan las heridas y la consciencia actuales.',
+            refs=[{'book':'reglas','page':151},{'book':'reglas','page':152}])
+        return False
     pf_recovery.validate_restored(state)
     result=copy.deepcopy(state);patient=next(c for c in result['characters'] if c['id']==actor['id'])
     care=patient['recoveryCare']['assisted'];raws=[];hourly=[];before=patient['hp']
@@ -208,6 +214,7 @@ def validate_restored(state):
     fields={'format','definition','sha256','character','npc','phase'}
     if isinstance(record,dict) and record.get('phase') in ('resolved','defeated'):fields.add('outcome')
     if isinstance(record,dict) and 'recoveryOutcome' in record:fields.add('recoveryOutcome')
+    if isinstance(record,dict) and 'recoveryLimit' in record:fields.add('recoveryLimit')
     if (state.get('ruleset','pathfinder-1e')!='pathfinder-1e' or not isinstance(record,dict)
         or set(record)!=fields
         or record['format']!='cronicas-pf-encounter-state-1' or record['phase'] not in ('offered','agreement','combat','resolved','defeated')):
@@ -253,6 +260,11 @@ def validate_restored(state):
         if outcome['npcConstitution']!=original_npc['abilities'][2]:raise ValueError('La derrota requiere la Constitución verificada del PNJ')
         if -outcome['npcConstitution']<outcome['npcHp']<0 and not outcome['npcStable']:raise ValueError('No se omite un PNJ todavía moribundo')
         if state['board']['active']:raise ValueError('La derrota registrada no conserva combate activo')
+    if 'recoveryLimit' in record:
+        if (record['phase']!='defeated' or record['definition'].get('recoveryScope')!='single-unconscious-player-1'
+            or record['recoveryLimit']!='armor-rest' or 'recoveryOutcome' in record
+            or actor['creation']['choices']['armor']!='scale'):
+            raise ValueError('Límite de recuperación inválido')
     if 'recoveryOutcome' in record:
         import pf_recovery
         receipt=record['recoveryOutcome']

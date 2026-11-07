@@ -191,7 +191,10 @@ class PreparedPathfinderEncounterTests(unittest.TestCase):
         self.assertEqual(self.state['pfEncounter']['phase'],'defeated')
         pf_recovery.validate_restored(self.state);pf_encounters.validate_restored(self.state)
 
-    def recovery_scene(self):
+    def recovery_scene(self,armor=None):
+        if armor:
+            data=choices();data['armor']=armor;self.state=engine.initial_state({})
+            engine.apply_action(self.state,{'type':'create_character','choices':data},self.me);self.actor=self.state['characters'][0]['id']
         engine.apply_action(self.state,{'type':'enter_pf_encounter','encounter':pf_encounters.ID,
             'encounterVersion':'1.1.0','character':self.actor},self.me)
         with patch('game_randomness.draw',side_effect=[20,1]):
@@ -234,3 +237,23 @@ class PreparedPathfinderEncounterTests(unittest.TestCase):
         with patch('game_randomness.draw',return_value=20) as rng:pf_encounters.resolve_defeat(self.state)
         self.assertEqual(rng.call_count,1);self.assertNotIn('recoveryOutcome',self.state['pfEncounter'])
         self.assertEqual(self.state['pfEncounter']['definition']['version'],'1.0.0');pf_encounters.validate_restored(self.state)
+
+    def test_medium_armor_does_not_silently_skip_sleep_fatigue_or_advance_hours(self):
+        self.recovery_scene('scale');before=self.state['worldTime']
+        with patch('game_randomness.draw',return_value=20) as rng:pf_encounters.resolve_defeat(self.state)
+        self.assertEqual(rng.call_count,1);self.assertEqual(self.state['characters'][0]['hp'],-1)
+        self.assertEqual(self.state['worldTime'],before);self.assertNotIn('recoveryOutcome',self.state['pfEncounter'])
+        self.assertEqual(self.state['pfEncounter']['recoveryLimit'],'armor-rest')
+        pf_encounters.validate_restored(copy.deepcopy(self.state))
+        before=copy.deepcopy(self.state)
+        with patch('game_randomness.draw',side_effect=AssertionError('Repeated limited recovery')):
+            self.assertFalse(pf_encounters.resolve_recovery(self.state))
+        self.assertEqual(self.state,before)
+        engine.apply_action(self.state,{'type':'manual','character':self.actor,'hpDelta':2,
+            'reason':'Fixture de nuevo enfrentamiento','resolution':'PJ a1PG','reference':'Prueba'},self.me)
+        with patch('game_randomness.draw',side_effect=[20,1]):engine.apply_action(self.state,{'type':'combat'},self.me)
+        self.assertNotIn('recoveryLimit',self.state['pfEncounter']);pf_encounters.validate_restored(self.state)
+        for armor in ('leather','studded','chainshirt'):
+            self.recovery_scene(armor)
+            with patch('game_randomness.draw',return_value=20) as rng:pf_encounters.resolve_defeat(self.state)
+            self.assertEqual(rng.call_count,2);self.assertEqual(self.state['pfEncounter']['recoveryOutcome']['status'],'conscious')
