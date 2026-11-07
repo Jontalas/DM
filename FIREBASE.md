@@ -1,5 +1,11 @@
 # Firebase y Claude Haiku
 
+## Emulador local para regresión
+
+Con el JAR y Java ya preparados en `.deps`, ejecutar `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/test_emulator.ps1` desde otra terminal. La opción de ejecución se aplica solo a ese proceso, sin cambiar la configuración del sistema. Carga siempre `firestore.rules` y usa el proyecto de demostración `demo-cronicas-tests`, sin credenciales ni acceso a producción. Si8181 está ocupado, pasar `-Port 8182`; no detener procesos desconocidos ni arrancar el JAR sin reglas. El lanzador rechaza un puerto ocupado antes de iniciar Java.
+
+En la terminal de pruebas establecer `FIRESTORE_EMULATOR_HOST=127.0.0.1:8181` (o el puerto elegido) y `FIREBASE_PROJECT_ID=demo-cronicas-tests`. Antes de la suite comprobar `python -m unittest test_firebase.FirestoreEmulatorTests.test_direct_client_read_denied_by_firestore_rules -q`; debe pasar y confirmar rechazo HTTP403 a lecturas sin autorización. Después ejecutar `python -m unittest discover -q`. Esto verifica el entorno de prueba; no despliega ni cambia las reglas remotas.
+
 Esta es la configuración vigente. Las partidas y los índices se guardan en **Cloud Firestore**; los PDF originales en **Firebase Storage**; el director usa la **API Messages de Anthropic con Claude Haiku**. Render aloja el servidor y la interfaz. No hay una base SQLite activa ni un proveedor Ollama alternativo.
 
 ## Crear el proyecto y dar acceso al servidor

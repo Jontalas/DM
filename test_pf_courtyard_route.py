@@ -51,10 +51,12 @@ class PreparedCourtyardRouteTests(unittest.TestCase):
         with patch('game_randomness.draw',side_effect=AssertionError('Locked exit rolled')):
             with self.assertRaises(ValueError):self.travel('almacen')
         self.assertEqual(self.state,before)
+        for host in (False,True):
+            with self.assertRaises(PermissionError):adventure_modules.investigation(self.state,{'character':self.actor,'opportunity':'registro'},{'id':'other','host':host})
+        self.assertEqual(self.state,before)
         self.open_exits();before=copy.deepcopy(self.state)
         for host in (False,True):
             with self.assertRaises(PermissionError):adventure_routes.travel(self.state,{'exit':'almacen'},{'id':'other','host':host})
-            with self.assertRaises(PermissionError):adventure_modules.investigation(self.state,{'character':self.actor,'opportunity':'registro'},{'id':'other','host':host})
         self.assertEqual(self.state,before)
 
     def test_optional_path_return_keeps_guard_in_patio_and_all_confirmed_discoveries(self):
@@ -101,4 +103,18 @@ class PreparedCourtyardRouteTests(unittest.TestCase):
         before=copy.deepcopy(self.state)
         with self.assertRaises(ValueError):self.search('marca')
         with self.assertRaises(ValueError):self.travel('patio')
+        self.assertEqual(self.state,before)
+
+    def test_completed_route_context_distinguishes_visited_places_from_available_exits(self):
+        import claude_dm
+        self.open_exits();self.travel('cobertizo');self.search('marca');self.travel('patio')
+        self.travel('almacen');self.search('bulto');self.search('recepcion')
+        before=copy.deepcopy(self.state)
+        context=claude_dm.build_context(self.state,'Narra los resultados confirmados',[],check_actors=[self.actor])
+        route=context['state']['adventureRouteView']
+        self.assertTrue(route['completed']);self.assertEqual(route['exits'],[])
+        self.assertEqual([s['id'] for s in route['visitedScenes']],['patio','cobertizo','almacen'])
+        with patch('game_randomness.draw',side_effect=AssertionError('Unavailable return rolled dice')):
+            for destination in ('patio','cobertizo'):
+                with self.assertRaises(ValueError):self.travel(destination)
         self.assertEqual(self.state,before)

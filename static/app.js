@@ -64,6 +64,9 @@ function renderPlayGuidance(s){
  }else if(s.adventureModuleView?.completed&&s.adventureRouteView&&!s.adventureRouteView.completed){
   message='La investigación de este lugar está resuelta. Puedes consultar las salidas de la ruta.';
   label='Ver salidas';open=()=>{const exits=$$('[data-route-exit]');$('#investigationPanel').scrollIntoView({block:'start'});exits.find(b=>!b.disabled)?.focus({preventScroll:true})};
+ }else if(s.adventureRouteView?.completed){
+  message='Has completado la ruta preparada. Puedes revisar los hallazgos en el diario; otros viajes aún no están disponibles.';
+  label='Revisar el diario';open=()=>chooseTab('journal');
  }else if(s.adventureModuleView?.completed){
   message='La investigación está resuelta. Puedes revisar lo descubierto y decidir tu siguiente acción.';
   label='Revisar el diario';open=()=>chooseTab('journal');

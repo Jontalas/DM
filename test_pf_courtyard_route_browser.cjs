@@ -56,9 +56,14 @@ const path=require('node:path'),assert=require('node:assert/strict');
     await page.waitForFunction(v=>snapshot.version>v&&!busy,version);
    }
    const final=await page.evaluate(()=>snapshot.state);assert.equal(final.adventureRouteView.completed,true);
+   assert.match(await page.locator('#playGuidanceText').textContent(),/Has completado la ruta preparada/);
+   assert.match(await page.locator('#playGuidanceText').textContent(),/otros viajes aún no están disponibles/);
+   assert.equal(await page.locator('[data-route-exit]').count(),0);
    assert.deepEqual(final.characters.map(c=>c.hp),before.characters.map(c=>c.hp));assert.equal(final.characters[1].sceneId,'patio');
    assert.equal(final.worldTime,before.worldTime);assert.deepEqual(final.pfEncounter,before.pfEncounter);
-   await page.locator('[data-tab=journal]').click();const count=actions.length;
+   const count=actions.length;
+   await page.locator('#playGuidanceAction').focus();await page.keyboard.press('Enter');
+   assert.equal(await page.locator('#journal').isVisible(),true);
    assert.match(await page.locator('#journalOverview').textContent(),/Ruta completada/);
    assert.match(await page.locator('#journalOverview').textContent(),/Hora no registrada/);
    await page.locator('.visited-scene-notes > summary').focus();await page.keyboard.press('Enter');
