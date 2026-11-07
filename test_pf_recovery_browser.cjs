@@ -4,6 +4,7 @@ const path=require('node:path'),assert=require('node:assert/strict');
 (async()=>{
  const fatal=process.env.TEST_PF_RECOVERY_CASE==='death';
  const armored=process.env.TEST_PF_RECOVERY_CASE==='armor';
+ const corrected=process.env.TEST_PF_RECOVERY_CASE==='correction';
  const fixture=spawn(path.resolve('.venv/Scripts/python.exe'),['test_browser_fixture.py'],
   {env:{...process.env,TEST_PF_RECOVERY_FIXTURE:fatal?'death':'1'},stdio:['ignore','pipe','inherit']});let browser;
  try{
@@ -65,7 +66,28 @@ const path=require('node:path'),assert=require('node:assert/strict');
   await page.keyboard.press('Enter');assert.equal(actions.length,beforeAudit);
   await page.locator('#party [data-character]').first().click();await page.locator('.sheet-checks').waitFor();
   assert.match(await page.locator('.sheet-checks .notice').textContent(),fatal?/ha muerto/:/incapacitado/);
-  await page.locator('#closeModal').click();await page.locator('[data-tab=journal]').click();
+  await page.locator('#closeModal').click();
+  if(corrected){
+   await page.locator('#board .board-help > summary').click();await page.locator('#manualBtn').click();
+   await page.locator('#manualForm [name=reason]').fill('Corrección excepcional del fixture');
+   await page.locator('#manualForm [name=reference]').fill('Prueba de preservación del estado');
+   await page.locator('#manualForm [name=resolution]').fill('Se corrige1PG sin repetir la recuperación');
+   await page.locator('#manualForm [name=character]').selectOption(recovered.characters[0].id);
+   await page.locator('#manualForm [name=hpDelta]').fill('1');
+   let version=await page.evaluate(()=>snapshot.version);await page.locator('#manualForm button').click();
+   await page.waitForFunction(v=>snapshot.version>v&&!busy,version);
+   assert.equal(await page.evaluate(()=>snapshot.state.characters[0].hp),-1);
+   assert.equal(await page.evaluate(()=>snapshot.state.characters[0].recoveryState.conscious),true);
+   assert.deepEqual(await page.evaluate(()=>snapshot.state.characters[0].recoveryState.lastCheck),recovered.characters[0].recoveryState.lastCheck);
+   await page.locator('#party [data-character]').first().click();await page.locator('#advancedCharacterEdit').click();
+   await page.locator('#characterForm [name=notes]').fill('Una nota posterior sin cambiar la salud');
+   version=await page.evaluate(()=>snapshot.version);await page.locator('#characterForm button.primary').click();
+   await page.waitForFunction(v=>snapshot.version>v&&!busy,version);
+   assert.equal(await page.evaluate(()=>snapshot.state.characters[0].hp),-1);
+   assert.equal(await page.evaluate(()=>snapshot.state.characters[0].recoveryState.conscious),true);
+   assert.deepEqual(await page.evaluate(()=>snapshot.state.characters[0].recoveryState.lastCheck),recovered.characters[0].recoveryState.lastCheck);
+  }
+  await page.locator('[data-tab=journal]').click();
   const [download]=await Promise.all([page.waitForEvent('download'),page.locator('#exportBtn').click()]);
   const version=await page.evaluate(()=>snapshot.version);await page.locator('#importFile').setInputFiles(await download.path());
   await page.waitForFunction(v=>snapshot.version>v&&!busy,version);
@@ -73,8 +95,8 @@ const path=require('node:path'),assert=require('node:assert/strict');
   await page.reload();await page.waitForFunction(status=>snapshot?.state.pfEncounter.recoveryOutcome?.status===status,fatal?'dead':'conscious');
   await page.setViewportSize({width:390,height:1000});await page.locator('[data-tab=story]').click();
   await page.locator('#adventureEntry').scrollIntoViewIfNeeded();assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
-  await page.screenshot({path:fatal?'.deps/pf-recovery-death-mobile.png':'.deps/pf-recovery-automatic-mobile.png',fullPage:true});
+  await page.screenshot({path:corrected?'.deps/pf-recovery-correction-mobile.png':fatal?'.deps/pf-recovery-death-mobile.png':'.deps/pf-recovery-automatic-mobile.png',fullPage:true});
   assert.deepEqual(errors,[]);
-  console.log('PF recovery browser passed: guided character, genuine NPC attacks, automatic stabilization and hourly consciousness without healing or per-hour administration, clear disabled-state notice, UI export/import, reload and mobile. No AI. Multiple fallen and later continuity remain pending.');
+  console.log(corrected?'PF health correction browser passed: explicit HP correction and advanced note edit preserve consciousness and the original check; UI copy/reload/mobile remain valid. No AI.':'PF recovery browser passed: guided character, genuine NPC attacks, automatic stabilization and hourly consciousness without healing or per-hour administration, clear disabled-state notice, UI export/import, reload and mobile. No AI. Multiple fallen and later continuity remain pending.');
  }finally{if(browser)await browser.close();fixture.kill()}
 })().catch(error=>{console.error(error);process.exitCode=1});

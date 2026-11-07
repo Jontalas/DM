@@ -167,6 +167,15 @@ def apply_action(s,b,me):
         if old and old.get('npcCreation'):data['npcCreation']={**copy.deepcopy(old['npcCreation']),'manualOverride':True}
         if d.get('meleeProfile') is not None:
             data['meleeProfile']=copy.deepcopy(d['meleeProfile']);combat.profile(data)
+        if old:
+            import pf_recovery
+            if attrs[2]!=old['abilities'][2] and data['hp']<0 and old.get('recoveryState'):
+                raise ValueError('Cambiar Constitución durante una recuperación con PG negativos todavía no está cubierto. Conserva su valor para guardar los demás cambios; la ficha no se ha modificado')
+            health=copy.deepcopy(old)
+            if data['hp']!=old['hp']:pf_recovery.manual_hp_change(health,data['hp']-old['hp'],reason='Edición manual avanzada de PG')
+            if attrs[2]!=old['abilities'][2]:pf_recovery.clear_episode(health)
+            for key in ('stable','recoveryCare','recoveryState'):
+                if key in health:data[key]=copy.deepcopy(health[key])
         if data.get('npcCreation'):
             import npc_catalog
             npc_catalog.validate_character(data,s.get('ruleset','pathfinder-1e'))
@@ -367,11 +376,8 @@ def apply_action(s,b,me):
                 board['spent'][cid]=spent
             if 'hpDelta' in b:
                 delta=max(-10000,min(10000,int(b['hpDelta'])))
-                c['hp']+=delta
-                if delta:
-                    c['stable']=delta>0
-                    import pf_recovery
-                    pf_recovery.clear_episode(c)  # Exceptional healing has no certified care history.
+                import pf_recovery
+                pf_recovery.manual_hp_change(c,delta,reason=reason)
             if 'conditions' in b: c['conditions']=str(b['conditions'])
             if 'resources' in b: c['resources']=str(b['resources'])
         log(s,'RESOLUCIÓN MANUAL ASISTIDA · '+reason+' · '+resolution+' · Coste de acción: '+str(b.get('actionCost','none'))+' · Referencia: '+str(b.get('reference','Sin verificar; criterio provisional')))

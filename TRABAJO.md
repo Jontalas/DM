@@ -1,5 +1,11 @@
 # Continuidad del desarrollo autónomo
 
+## Consciencia y prueba originales tras correcciones — 7 de noviembre de2026
+
+Corregido que modificar PG positivamente o editar notas pudiera borrar la consciencia recuperada. La nueva cadena recovery-state-2 separa asistencia/prueba históricas de las correcciones posteriores y deja desconocida la asistencia actual de una edición manual. No reescribe el d20 ni concede consciencia a un inconsciente con PG todavía negativos; alcanzar0 devuelve funcionalidad y daño nuevo retira prueba/cuidado. Notas conservan salud; el cambio de Constitución negativa aún no cubierto informa sin escribir. Condiciones posteriores preservan historia y bloquean nuevas resoluciones sin cobertura.
+
+611 pruebas completas correctas sin omisiones (225,071s), `.deps/pf-manual-health-continuity-final-tests.log`, sesión69362 terminada.94 afectadas correctas, incluidas dos HTTP/Waitress que comprueban duplicado, anotación y copia sin dados nuevos. Navegador correction pasa por controles reales de excepción y notas avanzadas, conserva estado/recibo en exportación/importación/recarga y móvil. Creador, pruebas de ficha, recuperación ligera y cota de escamas también correctos. Después de iniciar suite solo cambió redacción de error, sin mecánicas. No hay pruebas en curso ni inferencias reales. Respaldar/desplegar/verificar; seguir con tiempo compartido y continuidad. REANUDAR consolidado, historial íntegro en HISTORIAL_REANUDAR_2026-11-07.md.
+
 ## Épocas de combate y cálculo de noche verificados — 7 de noviembre de2026
 
 605 pruebas completas correctas sin omisiones (218,023s), `.deps/pf-care-epoch-rest-final-tests.log`;82 afectadas y navegador correctos. `combatSerial` determinista separa care-3 de combates distintos sin alterar dados ni añadir operaciones remotas; care-1/2 conservados sin suponer época. Calculador puro de PG de noche con seis pruebas, aún sin acción de descanso ni aplicación de otros efectos. Respaldo en feature y continuación del trabajo independiente.

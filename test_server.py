@@ -486,6 +486,26 @@ class IntegrationTests(unittest.TestCase):
         exported=self.request('/api/export',{},self.token);self.action('import',campaign=exported)
         self.assertEqual(self.state()['state']['pfEncounter'],after['pfEncounter'])
 
+    def test_positive_hp_correction_keeps_consciousness_original_recovery_and_copy(self):
+        from test_character_builder import choices
+        self.action('create_character',choices=choices());character=self.state()['state']['characters'][0]['id']
+        self.action('enter_pf_encounter',encounter='patio-del-peaje',encounterVersion='1.1.0',character=character)
+        with patch('game_randomness.draw',side_effect=[20,1]),patch('game_randomness.initiative_tie',return_value=0):
+            self.action('choose_pf_encounter',choice='combat')
+        with patch('game_randomness.draw',return_value=20):
+            self.action('manual',character=character,hpDelta=-19,reason='Fixture de heridas',resolution='PJ a -3PG',reference='Prueba')
+        before=self.state()['state'];original=before['characters'][0]['recoveryState']['lastCheck']
+        with patch('game_randomness.draw',side_effect=AssertionError('Correction rolled new dice')):
+            body=self.action('manual',character=character,hpDelta=1,reason='Corrección confirmada',resolution='Recupera1PG',reference='Excepción explícita')
+            self.assertTrue(self.request('/api/action',body,self.token)['duplicate'])
+        self.action('manual',character=character,conditions='Fatigado',reason='Anotación posterior',resolution='Condición pendiente de aplicar',reference='Excepción explícita')
+        after=self.state()['state'];patient=after['characters'][0]
+        self.assertEqual(patient['hp'],-2);self.assertTrue(patient['recoveryState']['conscious'])
+        self.assertEqual(patient['recoveryState']['lastCheck'],original);self.assertNotIn('recoveryCare',patient)
+        self.assertEqual(after['pfEncounter']['recoveryOutcome'],before['pfEncounter']['recoveryOutcome'])
+        exported=self.request('/api/export',{},self.token);self.action('import',campaign=exported)
+        self.assertEqual(self.state()['state']['characters'][0]['recoveryState'],patient['recoveryState'])
+
     def test_ooc_cannot_create_mechanical_requests(self):
         self.action('character',character={'name':'Aria'});before=self.state()
         character=before['state']['characters'][0]['id']

@@ -176,3 +176,50 @@ class HourlyRecoveryTests(unittest.TestCase):
             with patch('game_randomness.draw',side_effect=AssertionError('Bad epoch rolled dice')):
                 with self.assertRaises(ValueError):engine.apply_action(state,{'type':'combat'},me)
             self.assertEqual(state,before)
+
+    def test_positive_manual_corrections_preserve_old_check_and_current_awareness_without_certifying_help(self):
+        for die in (1,20):
+            patient=self.patient(hp=-5);pf_recovery.record_stabilization(patient,assisted=False,round_number=1)
+            pf_recovery.apply_hour(patient,die);original=copy.deepcopy(patient['recoveryState']['lastCheck'])
+            before_hp=patient['hp']
+            pf_recovery.manual_hp_change(patient,1,reason='Corrección excepcional confirmada')
+            pf_recovery.manual_hp_change(patient,1,reason='Segunda corrección confirmada')
+            self.assertEqual(patient['hp'],before_hp+2);self.assertEqual(patient['recoveryState']['lastCheck'],original)
+            self.assertEqual(pf_recovery.is_conscious(patient),die==20);self.assertNotIn('recoveryCare',patient)
+            self.assertEqual(len(patient['recoveryState']['adjustments']),2)
+            pf_recovery.validate_restored({'characters':[copy.deepcopy(patient)]})
+            with self.assertRaises(ValueError):pf_recovery.apply_hour(patient,20)
+            for changes in ({'hp':0},{'fromHp':True},{'reason':''},{'kind':'certified-healing'}):
+                forged=copy.deepcopy(patient);forged['recoveryState']['adjustments'][0].update(changes)
+                with self.assertRaises(ValueError):pf_recovery.validate_restored({'characters':[forged]})
+
+    def test_damage_clears_medical_proof_and_reaching_zero_preserves_consciousness_without_negative_record(self):
+        for delta in (-1,3):
+            patient=self.patient();pf_recovery.record_stabilization(patient,assisted=False,round_number=1);pf_recovery.apply_hour(patient,20)
+            pf_recovery.manual_hp_change(patient,delta,reason='Corrección explícita')
+            self.assertEqual(patient['hp'],-3+delta);self.assertNotIn('recoveryState',patient);self.assertNotIn('recoveryCare',patient)
+            self.assertEqual(pf_recovery.is_conscious(patient),delta>0)
+
+    def test_advanced_note_edits_keep_medical_state_and_guard_unresolved_negative_constitution_change(self):
+        import engine
+        from test_character_builder import choices
+        me={'id':'host','name':'Ana','host':True};state=engine.initial_state({})
+        engine.apply_action(state,{'type':'create_character','choices':choices()},me)
+        actor=state['characters'][0];actor['hp']=-3
+        pf_recovery.record_stabilization(actor,assisted=False,round_number=1);pf_recovery.apply_hour(actor,20)
+        proof=copy.deepcopy(actor['recoveryState']);data=copy.deepcopy(actor);data['notes']='Una nota nueva'
+        engine.apply_action(state,{'type':'character','character':data},me);actor=state['characters'][0]
+        self.assertEqual(actor['recoveryState'],proof);self.assertTrue(pf_recovery.is_conscious(actor));self.assertTrue(actor['creation']['manualOverride'])
+        before=copy.deepcopy(state);data=copy.deepcopy(actor);data['abilities'][2]+=2
+        with self.assertRaises(ValueError):engine.apply_action(state,{'type':'character','character':data},me)
+        self.assertEqual(state,before)
+        data=copy.deepcopy(actor);data['hp']=-2;engine.apply_action(state,{'type':'character','character':data},me)
+        self.assertTrue(pf_recovery.is_conscious(state['characters'][0]));pf_recovery.validate_restored(state)
+
+    def test_new_conditions_do_not_rewrite_old_check_but_block_new_hourly_resolution(self):
+        patient=self.timed_patient('player',1,'player');pf_recovery.apply_hour(patient,1)
+        proof=copy.deepcopy(patient['recoveryState']);patient['conditions']='Fatigado'
+        pf_recovery.validate_restored({'characters':[patient],'board':{'combatSerial':1}})
+        self.assertEqual(patient['recoveryState'],proof)
+        with self.assertRaises(ValueError):pf_recovery.apply_hour(patient,20)
+        with self.assertRaises(ValueError):pf_recovery.next_hourly_events([patient])
