@@ -135,8 +135,8 @@ function renderInvestigation(){
  });
  const route=s.adventureRouteView;
  if(route){
-  const blocked=!available.length||s.board.active||s.pending.length>0||s.characters.filter(c=>!c.enemy).length!==1;
-  panel.insertAdjacentHTML('beforeend',`<div class="card"><div class="eyebrow">RUTA INDIVIDUAL</div><h4>${esc(route.title)}</h4><p>${route.completed?'Ruta completada. Tú decides qué hace tu personaje después.':'Elige dónde continuar. Los hallazgos se conservan al regresar.'}</p><div class="toolbar">${route.exits.map(e=>`<button data-route-exit="${esc(e.id)}" ${blocked?'disabled':''}>${esc(e.label)}</button>`).join('')}</div><small>${route.visits} visitas registradas. Cambiar de escena no calcula tiempo ni movimiento táctico; no admite peligros o combate durante el trayecto.</small></div>`);
+  const blocked=!available.length||s.board.active||s.pending.length>0||s.characters.filter(c=>!c.enemy).length!==1||!!linkedLimit;
+  panel.insertAdjacentHTML('beforeend',`<div class="card"><div class="eyebrow">RUTA INDIVIDUAL</div><h4>${esc(route.title)}</h4><p>${route.completed?'Ruta completada. Tú decides qué hace tu personaje después.':'Elige dónde continuar. Los hallazgos se conservan al regresar.'}</p><div class="toolbar">${route.exits.map(e=>`<button data-route-exit="${esc(e.id)}" ${blocked?'disabled':''}>${esc(e.label)}</button>`).join('')}</div><small>${linkedLimit?'La guardiana necesita resolver su estado antes de cambiar de lugar. ':!available.length?'No hay un personaje disponible que puedas controlar. ':''}${route.visits} visitas registradas. Cambiar de escena no calcula tiempo ni movimiento táctico; no admite peligros o combate durante el trayecto.</small></div>`);
   $$('[data-route-exit]').forEach(button=>button.onclick=run(()=>act('travel_scene',{exit:button.dataset.routeExit})));
  }
 }

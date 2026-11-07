@@ -1,0 +1,164 @@
+{
+  "format": "cronicas-route-1",
+  "title": "El envío del peaje",
+  "start": "patio",
+  "scenes": [
+    {
+      "id": "patio",
+      "module": {
+        "format": "cronicas-adventure-1",
+        "ruleset": "pathfinder-1e",
+        "scope": "single-scene-neutral-perception",
+        "title": "El recibo del patio",
+        "premise": "Después de resolver el encuentro del patio, el personaje decide si examina unos papeles de peaje abandonados. No se supone que se marche ni que recoja nada.",
+        "location": "Patio abierto a plena luz",
+        "description": "El patio está tranquilo y bien iluminado. Sobre el banco de cobro hay un registro abierto y, a su lado, una caja vacía. Puedes examinar esos objetos de cerca o conversar antes de decidir qué hacer.",
+        "goal": "Averiguar qué ocurrió con el último envío del peaje",
+        "preparation": "Escena original. El último recaudador dejó un recibo debajo de la tapa del registro. El sello identifica un envío que nunca llegó al almacén. No hay trampas, ladrones ocultos, límite de tiempo ni amenaza durante esta investigación. La guardiana, si está viva y consciente, mantiene voluntariamente la tregua. Su estado real y lo ocurrido en el encuentro siguen siendo autoridad: no resucitarla, curarla ni fingir su presencia consciente. Los descubrimientos solo se confirman mediante el motor. El jugador conserva sus palabras y decisiones; encontrar el recibo no obliga a tomarlo ni a salir del patio.",
+        "conclusion": "Has localizado el recibo: identifica un envío dirigido al almacén que no figura como entregado. Sigue sin saberse qué ocurrió con él. Puedes decidir qué hacer con esa información; todavía no se ofrece un viaje automático ni una recompensa.",
+        "opportunities": [
+          {
+            "id": "registro",
+            "label": "Examinar de cerca el registro del banco",
+            "dc": 10,
+            "discovery": "La última línea del registro menciona un envío al almacén. Una esquina de papel asoma bajo la tapa.",
+            "failure": "No distingues nada concluyente. El registro sigue accesible y puedes volver a examinarlo.",
+            "requires": []
+          },
+          {
+            "id": "recibo",
+            "label": "Examinar de cerca el papel bajo la tapa",
+            "dc": 10,
+            "discovery": "Localizas un recibo sellado del último envío. El destino es el almacén, pero falta la marca de entrega. No lo recoges ni lo abres automáticamente.",
+            "failure": "No logras leer el detalle que buscas. Puedes volver a examinarlo sin penalización por el fallo.",
+            "requires": [
+              "registro"
+            ]
+          }
+        ],
+        "objectives": [
+          {
+            "id": "envio",
+            "text": "Localizar el recibo del último envío",
+            "requires": [
+              "recibo"
+            ]
+          }
+        ]
+      },
+      "exits": [
+        {
+          "id": "almacen",
+          "label": "Ir al almacén del recinto",
+          "to": "almacen",
+          "requires": [
+            "recibo"
+          ]
+        },
+        {
+          "id": "cobertizo",
+          "label": "Examinar el cobertizo contiguo",
+          "to": "cobertizo",
+          "requires": [
+            "recibo"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cobertizo",
+      "module": {
+        "format": "cronicas-adventure-1",
+        "ruleset": "pathfinder-1e",
+        "scope": "single-scene-neutral-perception",
+        "title": "El cobertizo contiguo",
+        "premise": "Seguir los documentos del envío dentro del recinto del peaje.",
+        "location": "Cobertizo del peaje",
+        "description": "El cobertizo está vacío, tranquilo y bien iluminado. Un tablón de descarga conserva marcas de varios sellos. Desde aquí puedes regresar al patio o consultar el acceso al almacén.",
+        "goal": "Encontrar una referencia al destino del envío",
+        "preparation": "Escena original, sin amenazas, distracciones, límite temporal, pruebas enfrentadas ni penalización por fallo. La guardiana permanece en el patio, viva o muerta según el estado confirmado; no está aquí ni sigue al PJ. Una anotación del tablón remite al almacén. Las búsquedas confirmadas son autoridad; leer no obliga a recoger, entrar ni elegir palabras del jugador.",
+        "conclusion": "La anotación sitúa el envío en el almacén del recinto. Puedes decidir si sigues esa referencia o regresas al patio.",
+        "opportunities": [
+          {
+            "id": "marca",
+            "label": "Examinar de cerca las anotaciones del tablón",
+            "dc": 10,
+            "discovery": "El mismo sello del recibo figura junto a una anotación de descarga en el almacén. No hay indicación de que el envío saliera del recinto.",
+            "failure": "No distingues aún la anotación pertinente. El tablón sigue disponible y puedes volver a examinarlo.",
+            "requires": []
+          }
+        ],
+        "objectives": [
+          {
+            "id": "destino",
+            "text": "Localizar la anotación del envío",
+            "requires": [
+              "marca"
+            ]
+          }
+        ]
+      },
+      "exits": [
+        {
+          "id": "patio",
+          "label": "Regresar al patio",
+          "to": "patio",
+          "requires": []
+        },
+        {
+          "id": "almacen",
+          "label": "Seguir la anotación hasta el almacén",
+          "to": "almacen",
+          "requires": [
+            "marca"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "almacen",
+      "module": {
+        "format": "cronicas-adventure-1",
+        "ruleset": "pathfinder-1e",
+        "scope": "single-scene-neutral-perception",
+        "title": "El envío localizado",
+        "premise": "Comprobar el destino del último envío sin decidir por el personaje qué hacer con él.",
+        "location": "Almacén del peaje",
+        "description": "El almacén está tranquilo y bien iluminado. Hay varios bultos etiquetados y una tabla con los avisos de recepción. No hay personas dentro; la guardiana permanece en el patio.",
+        "goal": "Localizar el envío y comprobar su recepción",
+        "preparation": "Escena original, sin amenazas, distracciones, límite temporal ni penalización por fallo. El envío sigue en el almacén: una nota explica que se recibió después del cierre del registro del patio y todavía no se había trasladado la marca de entrega. La guardiana conserva en el patio su estado real; no se la trae, cura ni resucita. Revelar solo hallazgos confirmados. El PJ decide si toma, abre o entrega algo; localizar el bulto no concede posesión, recompensa ni acción automática.",
+        "conclusion": "El envío está localizado y su recepción consta en la nota del almacén. La marca faltaba porque el registro del patio ya estaba cerrado. El bulto permanece donde está: tú decides qué haces con esa información. No se entrega ni se concede una recompensa automáticamente.",
+        "opportunities": [
+          {
+            "id": "bulto",
+            "label": "Examinar de cerca los sellos de los bultos",
+            "dc": 10,
+            "discovery": "Localizas un bulto con el mismo sello del recibo. Sigue cerrado y permanece en su lugar; no lo recoges ni lo abres automáticamente.",
+            "failure": "Los sellos no te dan todavía una coincidencia clara. Puedes seguir examinándolos sin penalización por fallo.",
+            "requires": []
+          },
+          {
+            "id": "recepcion",
+            "label": "Examinar de cerca la nota junto al bulto",
+            "dc": 10,
+            "discovery": "La nota confirma la recepción del envío después del cierre del registro del patio. La casilla de entrega seguía en blanco por ese desfase; el envío no se había perdido.",
+            "failure": "No logras identificar todavía la nota de ese bulto. Puedes volver a examinarla.",
+            "requires": [
+              "bulto"
+            ]
+          }
+        ],
+        "objectives": [
+          {
+            "id": "localizar-envio",
+            "text": "Localizar el envío y la nota de recepción",
+            "requires": [
+              "recepcion"
+            ]
+          }
+        ]
+      },
+      "exits": []
+    }
+  ]
+}

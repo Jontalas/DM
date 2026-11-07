@@ -100,6 +100,11 @@ def main():
         server.ai_reply=fixture_reply
     from test_reader_support import fixture_reader
     server.READER=fixture_reader()
+    if os.environ.get('TEST_PF_ENCOUNTER_VERSION'):
+        import pf_encounters
+        fixture_version=os.environ['TEST_PF_ENCOUNTER_VERSION'];original_definition=pf_encounters.definition
+        def fixture_definition(version=fixture_version):return original_definition(version)
+        pf_encounters.definition=fixture_definition
     # Predictable dice only inside this explicitly isolated test process.
     engine.secrets.randbelow=lambda sides:0 if os.environ.get('TEST_CAIRN_FIXTURE')=='1' else min(11,sides-1)
     import game_randomness

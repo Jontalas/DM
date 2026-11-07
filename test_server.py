@@ -545,6 +545,93 @@ class IntegrationTests(unittest.TestCase):
         self.assertEqual(error.exception.code,400);error.exception.close()
         self.assertEqual(self.state()['state'],before)
 
+    def test_courtyard_route_travel_recovers_after_failed_commit_and_keeps_guard_at_origin(self):
+        import copy
+        from firebase_store import FirestoreStore
+        from test_support import TestStore
+        from test_character_builder import choices
+        self.action('create_character',choices=choices());character=self.state()['state']['characters'][0]['id']
+        self.action('enter_pf_encounter',encounter='patio-del-peaje',encounterVersion='1.4.0',character=character)
+        self.action('choose_pf_encounter',choice='parley');self.action('continue_pf_encounter')
+        self.action('investigate',character=character,opportunity='registro',method='take10')
+        self.action('investigate',character=character,opportunity='recibo',method='take20')
+        self.action('move',character=character,path=[[0,1]],acknowledge=True)
+        before=self.state();body={'id':secrets.token_hex(12),'version':before['version'],'type':'travel_scene','exit':'cobertizo'}
+        with patch.object(server,'ai_reply',side_effect=AssertionError('Travel called AI')):
+            with patch.object(server.STORE,'commit',side_effect=server.Unavailable('Interrupted scene confirmation')):
+                with self.assertRaises(urllib.error.HTTPError) as error:self.request('/api/action',body,self.token)
+                self.assertEqual(error.exception.code,503);error.exception.close()
+            self.assertEqual(self.state()['state'],before['state'])
+            original=server.STORE
+            if isinstance(original,FirestoreStore):
+                recovered=FirestoreStore.from_environment();recovered.prefix=original.prefix
+            else:
+                recovered=TestStore()
+                for key,value in vars(original).items():
+                    if key!='lock':setattr(recovered,key,copy.deepcopy(value))
+            with patch.object(server,'STORE',recovered):
+                self.request('/api/action',body,self.token)
+                self.assertTrue(self.request('/api/action',body,self.token)['duplicate'])
+                after=self.state()['state'];self.assertEqual(after['boardScenes']['current'],'cobertizo')
+                self.assertEqual(after['characters'][1]['sceneId'],'patio')
+                self.assertEqual(after['boardScenes']['saved']['patio']['positions'][character],[0,1])
+                self.action('investigate',character=character,opportunity='marca',method='take10')
+                self.action('travel_scene',exit='patio');returned=self.state()['state']
+                self.assertEqual(returned['characters'][0]['y'],1)
+                self.assertEqual(len(returned['moduleProgress']['discoveries']),2)
+                self.action('travel_scene',exit='almacen')
+                self.action('investigate',character=character,opportunity='bulto',method='take10')
+                self.action('investigate',character=character,opportunity='recepcion',method='take20')
+                final=self.state()['state'];self.assertTrue(final['adventureRouteView']['completed'])
+                self.assertEqual([c['hp'] for c in final['characters']],[16,7])
+                self.assertEqual(final['worldTime'],before['state']['worldTime'])
+                self.assertEqual(final['pfEncounter'],before['state']['pfEncounter'])
+                exported=self.request('/api/export',{},self.token);self.action('import',campaign=exported)
+                self.assertEqual(self.state()['state']['boardScenes'],final['boardScenes'])
+                guest=self.request('/api/join',{'name':'Luis','invite':self.state()['invite']})['token']
+                public=self.state(guest)['state'];self.assertNotIn('adventureRoute',public);self.assertNotIn('directorMemory',public)
+                self.assertEqual([v['id'] for v in public['adventureRouteView']['visitedScenes']],['patio','cobertizo','almacen'])
+
+    def test_courtyard_director_only_requests_current_scene_actors_and_copy_rejects_moved_guard(self):
+        import copy
+        from test_character_builder import choices
+        self.action('create_character',choices=choices());character=self.state()['state']['characters'][0]['id']
+        self.action('enter_pf_encounter',encounter='patio-del-peaje',encounterVersion='1.4.0',character=character)
+        self.action('choose_pf_encounter',choice='parley');self.action('continue_pf_encounter')
+        self.action('investigate',character=character,opportunity='registro',method='take10')
+        self.action('investigate',character=character,opportunity='recibo',method='take20');self.action('travel_scene',exit='almacen')
+        current=self.state()['state']
+        def director(state,text,refs,**options):
+            self.assertEqual(options['check_actors'],[character])
+            self.assertEqual(state['characters'][1]['sceneId'],'patio')
+            return {'narration':'El almacén permanece tranquilo. La guardiana sigue en el patio.','proposals':[],
+                'memory':{'summary':'El personaje está en el almacén; aún puede examinar los bultos.','location':current['location'],
+                    'goal':current['goal'],'objectives':current['objectives'],'preparation':current['directorMemory']}}
+        with patch.object(server,'ai_reply',side_effect=director) as provider:
+            self.action('talk',character=character,text='Observo el almacén sin tocar nada.',kind='dialogue',director=True)
+            self.assertEqual(provider.call_count,1)
+        before=self.state()['state'];exported=self.request('/api/export',{},self.token)
+        forged=copy.deepcopy(exported);forged['state']['characters'][1]['sceneId']='almacen'
+        with self.assertRaises(urllib.error.HTTPError) as error:self.action('import',campaign=forged)
+        self.assertEqual(error.exception.code,400);error.exception.close();self.assertEqual(self.state()['state'],before)
+
+    def test_courtyard_host_cannot_choose_investigation_or_exit_for_the_player_owner(self):
+        from test_character_builder import choices
+        player=self.request('/api/join',{'name':'Luis','invite':self.state()['invite']})['token']
+        self.action('create_character',token=player,choices=choices());character=self.state()['state']['characters'][0]['id']
+        self.action('enter_pf_encounter',token=player,encounter='patio-del-peaje',encounterVersion='1.4.0',character=character)
+        self.action('choose_pf_encounter',token=player,choice='parley');self.action('continue_pf_encounter',token=player)
+        before=self.state()['state']
+        with patch('game_randomness.draw',side_effect=AssertionError('Non-owner investigation rolled')):
+            with self.assertRaises(urllib.error.HTTPError) as error:self.action('investigate',character=character,opportunity='registro',method='take10')
+        self.assertEqual(error.exception.code,403);error.exception.close();self.assertEqual(self.state()['state'],before)
+        self.action('investigate',token=player,character=character,opportunity='registro',method='take10')
+        self.action('investigate',token=player,character=character,opportunity='recibo',method='take20');before=self.state()['state']
+        with self.assertRaises(urllib.error.HTTPError) as error:self.action('travel_scene',exit='almacen')
+        self.assertEqual(error.exception.code,403);error.exception.close();self.assertEqual(self.state()['state'],before)
+        self.action('travel_scene',token=player,exit='almacen')
+        self.assertEqual(self.state()['state']['characters'][0]['sceneId'],'almacen')
+
     def test_positive_hp_correction_keeps_consciousness_original_recovery_and_copy(self):
         from test_character_builder import choices
         self.action('create_character',choices=choices());character=self.state()['state']['characters'][0]['id']

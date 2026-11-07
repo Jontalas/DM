@@ -25,7 +25,7 @@ const path=require('node:path'),assert=require('node:assert/strict');
   if(armored)assert.match(await page.locator('#modalContent .recovery-limit').textContent(),/cota de escamas/);
   await page.locator('#pfEncounterEntry button').click();
   await page.locator('#pfEncounterCombat').click();await page.waitForFunction(()=>snapshot.state.board.active&&!busy);
-  assert.equal(await page.evaluate(()=>snapshot.state.pfEncounter.definition.version),'1.3.0');
+  assert.equal(await page.evaluate(()=>snapshot.state.pfEncounter.definition.version),'1.4.0');
   // The player explicitly waits each turn. Real NPC attacks cause the fall;
   // no manual HP edits, imported statistics or hourly confirmations.
   for(let n=0;n<(shared?4:6);n++){

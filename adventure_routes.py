@@ -83,26 +83,45 @@ def install(state,raw):
 def public_view(state):
     if not state.get('adventureRoute'):return None
     current=scene(state);known={v['id'] for v in state['moduleProgress']['discoveries']}
-    return {'title':state['adventureRoute']['title'],'current':current['id'],
+    result={'title':state['adventureRoute']['title'],'current':current['id'],
         'visits':len(state['routeProgress']['history']),
         'completed':not current['exits'] and state['moduleProgress']['completed'],
         'exits':[{'id':e['id'],'label':e['label']} for e in current['exits'] if set(e['requires'])<=known]}
+    if state.get('boardScenes'):
+        all_progress={**state['routeProgress']['saved'],current['id']:state['moduleProgress']}
+        result['visitedScenes']=[{'id':key,'title':scene(state,key)['module']['title'],
+            'location':scene(state,key)['module']['location'],'completed':all_progress[key]['completed'],
+            'discoveries':copy.deepcopy(all_progress[key]['discoveries'])}
+            for key in dict.fromkeys(state['routeProgress']['history'])]
+    return result
 
 
 def travel(state,body,me):
     if not state.get('adventure') or not state.get('adventureRoute'):raise ValueError('No hay una ruta activa')
+    if state.get('pfContinuation',{}).get('format')=='cronicas-pf-continuation-2':
+        import pf_scene_transition
+        reason=pf_scene_transition.limitation(state,active=True)
+        if reason:raise ValueError(reason)
     if state['board']['active'] or state['pending']:raise ValueError('Resuelve el combate o las pruebas pendientes antes de cambiar de escena')
     pcs=[c for c in state['characters'] if not c.get('enemy')]
     if len(pcs)!=1:raise ValueError('El cambio de escena solo admite un personaje jugador')
     actor=pcs[0]
     if not me['host'] and actor['owner']!=me['id']:raise PermissionError('No controlas al personaje de esta ruta')
+    if state.get('pfContinuation',{}).get('format')=='cronicas-pf-continuation-2' and actor['owner']!=me['id']:
+        raise PermissionError('Solo el propietario decide la salida de su personaje')
     if actor.get('hp',0)<=0 or actor.get('conditions','').strip():raise ValueError('El estado del personaje requiere una resolución excepcional')
     if body.get('exit') not in {v['id'] for v in public_view(state)['exits']}:raise ValueError('Salida no disponible')
     progress=state['routeProgress']
     if len(progress['history'])>=1000:raise ValueError('Límite de 1.000 visitas por ruta alcanzado; conserva una exportación')
     exit=next(v for v in scene(state)['exits'] if v['id']==body['exit'])
     target=scene(state,exit['to']);probe=copy.deepcopy(state)
+    if state.get('boardScenes'):
+        import board_scenes
+        if state['boardScenes']['current']!=progress['current']:raise ValueError('El tablero no coincide con la ruta actual')
+        board_scenes.move_player(probe,target['id'],actor['id'],target['module']['location'])
     modules.install(probe,target['module'])  # Current sheet must still support the destination.
+    if state.get('boardScenes'):
+        for key in ('boardScenes','board','characters'):state[key]=probe[key]
     progress['saved'][progress['current']]=copy.deepcopy(state['moduleProgress'])
     restored=progress['saved'].pop(target['id'],None)
     progress['current']=target['id'];progress['history'].append(target['id'])
@@ -110,6 +129,9 @@ def travel(state,body,me):
     if restored is not None:
         state['moduleProgress']=restored;modules.validate_restored(state)
     state['scene']+=1
+    if state.get('boardScenes'):
+        state['adventure'].update(summary=target['module']['description'],revision=state['adventure']['revision']+1,
+            updatedAt=time.time(),source='Cambio de lugar confirmado; las búsquedas y reglas conservan su registro')
     state['messages'].append({'kind':'rules','speaker':'Motor de aventura','text':actor['name']+' elige: '+exit['label']+'. '+target['module']['description'],
         'time':time.time(),'routeTransition':{'from':progress['history'][-2],'to':target['id']},'refs':[{'book':'trey','page':12}]})
 
@@ -137,3 +159,7 @@ def validate_restored(state):
         if not any(e['to']==target and set(e['requires'])<=known for e in scene(state,origin)['exits']):
             raise ValueError('El historial contiene una transición no disponible')
     state['adventureRoute']=route
+    if state.get('boardScenes'):
+        scope=state['boardScenes']
+        if scope['current']!=progress['current'] or set(scope['saved'])!=set(progress['saved']):
+            raise ValueError('Los tableros no coinciden con las escenas visitadas')

@@ -6,6 +6,7 @@ import checks
 import character_builder
 import adventure_modules
 import game_randomness
+import board_scenes
 
 def initial_state(config):
     return {'scene':1,'location':config.get('location','Por decidir'),'worldTime':'Comienzo de la aventura','goal':config.get('goal','Definir el objetivo con el grupo'),'objectives':[], 'allies':[],'enemies':[],'facts':{},'unknowns':[],'consequences':[], 'tokens':0,'threshold':int(config.get('threshold',15)),'turned':False,'voluntaryScene':0,'characters':[],'messages':[],'pending':[],'bookmarks':[],'private':{},'secrets':'','notes':'','tone':config.get('tone','Fantasía aventurera'),'limits':config.get('limits',''),'difficulty':config.get('difficulty','Estándar; encuentros pendientes de validar'),'mode':config.get('mode','solo'),'agreement':'Adaptación multijugador: reserva común de FH; el anfitrión registra el consentimiento unánime antes del gasto. Decisiones colectivas por consenso. No se alteran estadísticas para equilibrar encuentros.','criteria':['TREY p.25: el ejemplo d8=7 dice objetivo en curso; la tabla p.23 indica objetivo final. Se usa la tabla.','TREY p.25: ejemplo d6=5 dice retrasado; se aplica demorado, tabla p.23.','Pathfinder 1e: las ventajas de FH son una adaptación TREY; requieren adjudicación manual y registro.'],'board':{'active':False,'round':1,'turn':0,'order':[],'terrain':{},'spent':{}},'oracleLog':[]}
@@ -61,6 +62,7 @@ def begin_turn(s):
 
 
 def advance_turn(s):
+    board_scenes.require_no_remote_events(s)
     board=s['board'];board['turn']+=1
     if board['turn']>=len(board['order']):board['turn']=0;board['round']+=1
     begin_turn(s)
@@ -80,7 +82,7 @@ def run_automatic_turns(s):
             import pf_encounters
             if pf_encounters.resolve_defeat(s):return
         current=next(c for c in s['characters'] if c['id']==board['order'][board['turn']]['id'])
-        if not any(not c['enemy'] and combat.standing(c) for c in s['characters']):
+        if not any(not c['enemy'] and combat.standing(c) for c in board_scenes.characters(s)):
             pause(current,'No quedan personajes jugadores conscientes; revisa el desenlace y la asistencia a los caídos.')
             return
         if not combat.standing(current):
@@ -109,6 +111,7 @@ def run_automatic_turns(s):
 
 def apply_action(s,b,me):
     kind=b['type']
+    if kind in ('move','attack','combat','turn','automation'):board_scenes.require_no_remote_events(s)
     if kind=='continue_pf_encounter':
         import pf_scene_transition
         pf_scene_transition.enter(s,b,me)
@@ -183,9 +186,10 @@ def apply_action(s,b,me):
         if data.get('npcCreation'):
             import npc_catalog
             npc_catalog.validate_character(data,s.get('ruleset','pathfinder-1e'))
+        if s.get('boardScenes'):data['sceneId']=old['sceneId'] if old else s['boardScenes']['current']
         if old: s['characters'][s['characters'].index(old)]=data
         else:
-            occupied={(v['x'],v['y']) for v in s['characters']}
+            occupied={(v['x'],v['y']) for v in board_scenes.characters(s)}
             free=next(((x,y) for y in range(20) for x in range(20) if (x,y) not in occupied and s['board']['terrain'].get(f'{x},{y}')!='wall'),None)
             if free is None: raise ValueError('Tablero de 20×20 lleno; libera una casilla antes de incorporar otra ficha')
             data['x'],data['y']=free; s['characters'].append(data)
@@ -304,13 +308,14 @@ def apply_action(s,b,me):
     elif kind=='combat':
         host(me)
         if s['board']['active']: raise ValueError('Ya hay combate activo')
-        if not s['characters']: raise ValueError('Añade participantes en la ficha')
+        participants=board_scenes.characters(s)
+        if not participants: raise ValueError('Añade participantes en este tablero')
         automatic=b.get('automateEnemies',False)
         if type(automatic)!=bool:raise ValueError('El control automático debe ser verdadero o falso')
-        if automatic and not any(not c['enemy'] for c in s['characters']):raise ValueError('Añade al menos un personaje jugador')
+        if automatic and not any(not c['enemy'] for c in participants):raise ValueError('Añade al menos un personaje jugador en este tablero')
         serial=s['board'].get('combatSerial',0)
         if type(serial)!=int or not 0<=serial<1000000:raise ValueError('El historial temporal de combate necesita una revisión; no se han tirado dados')
-        order=[{'id':c['id'],'roll':dice([20])[0],'modifier':c['initiative'],'dex':c['abilities'][1]} for c in s['characters']]
+        order=[{'id':c['id'],'roll':dice([20])[0],'modifier':c['initiative'],'dex':c['abilities'][1]} for c in participants]
         order.sort(key=lambda v:(v['roll']+v['modifier'],v['modifier'],game_randomness.initiative_tie()),reverse=True)
         s['board'].update(active=True,round=1,turn=0,order=order,spent={},acted=[],autoEnemies=automatic,combatSerial=serial+1)
         s['board'].pop('autoPaused',None);begin_turn(s)
@@ -334,10 +339,11 @@ def apply_action(s,b,me):
         host(me)
         x,y=int(b['x']),int(b['y']); t=b['terrain']
         if not 0<=x<20 or not 0<=y<20 or t not in ['wall','difficult','clear']: raise ValueError('Terreno inválido')
-        if t=='wall' and any(c['x']==x and c['y']==y for c in s['characters']): raise ValueError('Hay una ficha en esa casilla')
+        if t=='wall' and any(c['x']==x and c['y']==y for c in board_scenes.characters(s)): raise ValueError('Hay una ficha en esa casilla')
         s['board']['terrain'][f'{x},{y}']=t; log(s,f'Terreno {t} en {x},{y}; adjudicación de escenario manual')
     elif kind=='move':
         c=char(s,b['character'],me); board=s['board']; path=b['path']
+        board_scenes.require_present(s,c)
         if not combat.standing(c):raise ValueError('Un personaje inconsciente o muerto no puede moverse')
         if not 1<=len(path)<=100: raise ValueError('Recorrido inválido')
         if not b.get('acknowledge'): raise ValueError('Confirma las consecuencias y las reglas pendientes')
@@ -352,7 +358,7 @@ def apply_action(s,b,me):
                 if board['terrain'].get(f'{x},{ny}')=='wall' or board['terrain'].get(f'{nx},{y}')=='wall': raise ValueError('No puedes cortar la esquina de un muro')
                 diagonals+=1; step=2 if diagonals%2==0 else 1
             else: step=1
-            if any(o['id']!=c['id'] and o['x']==nx and o['y']==ny for o in s['characters']): raise ValueError('Casilla ocupada; cruce de aliados requiere resolución manual')
+            if any(o['id']!=c['id'] and o['x']==nx and o['y']==ny for o in board_scenes.characters(s)): raise ValueError('Casilla ocupada; cruce de aliados requiere resolución manual')
             cost+=(3 if dx and dy else 2) if tile=='difficult' else step; x,y=nx,ny
         if board['active']:
             used=board['spent'].get(c['id'],{})
@@ -387,7 +393,7 @@ def apply_action(s,b,me):
         log(s,'RESOLUCIÓN MANUAL ASISTIDA · '+reason+' · '+resolution+' · Coste de acción: '+str(b.get('actionCost','none'))+' · Referencia: '+str(b.get('reference','Sin verificar; criterio provisional')))
         if b.get('pendingIndex') is not None: s['pending'].pop(int(b['pendingIndex']))
     else: raise ValueError('Acción no implementada; usa resolución manual asistida')
-    if kind=='combat' and s.get('pfEncounter'):
+    if kind=='combat' and s.get('pfEncounter') and all(board_scenes.present(s,c) for c in s['characters'] if c['id'] in (s['pfEncounter']['character'],s['pfEncounter']['npc'])):
         s['pfEncounter']['phase']='combat'
         for key in ('outcome','recoveryOutcome','recoveryLimit','recoveryStart'):s['pfEncounter'].pop(key,None)
     if kind in ('combat','turn','automation'):run_automatic_turns(s)

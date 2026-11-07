@@ -29,7 +29,8 @@ def validate_memory(value):
 
 
 def ready_characters(state):
-    return [c for c in state['characters'] if not c.get('enemy') and c.get('creation')
+    import board_scenes
+    return [c for c in board_scenes.characters(state) if not c.get('enemy') and c.get('creation')
             and not c['creation'].get('manualOverride') and c.get('hp',0)>0
             and not c.get('conditions','').strip()]
 

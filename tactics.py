@@ -1,19 +1,22 @@
 """Decisiones locales de adversarios básicos. No controla personajes jugadores."""
 import heapq
 import combat
+import board_scenes
 
 
 def plan(state,source,allow_move=True):
+    board_scenes.require_present(state,source)
     combat.profile(source)
     if source.get('conditions','').strip():raise ValueError('El adversario tiene condiciones fuera del perfil automático')
-    targets=[c for c in state['characters'] if not c['enemy'] and c['hp']>0]
+    participants=board_scenes.characters(state)
+    targets=[c for c in participants if not c['enemy'] and c['hp']>0]
     if not targets:
-        if any(not c['enemy'] and c['hp']<0 and combat.standing(c) for c in state['characters']):
+        if any(not c['enemy'] and c['hp']<0 and combat.standing(c) for c in participants):
             raise ValueError('El adversario consciente con PG negativos requiere una resolución excepcional como objetivo del ataque básico')
         return {'path':[],'target':None}
     board=state['board'];terrain=board['terrain']
-    occupied={(c['x'],c['y']) for c in state['characters'] if c['id']!=source['id']}
-    opponents=[c for c in state['characters'] if not c['enemy'] and combat.standing(c)]
+    occupied={(c['x'],c['y']) for c in participants if c['id']!=source['id']}
+    opponents=[c for c in participants if not c['enemy'] and combat.standing(c)]
     def target_at(x,y):
         position={**source,'x':x,'y':y}
         for target in targets:  # Stable campaign order breaks equivalent tactical ties.

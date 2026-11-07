@@ -1,5 +1,11 @@
 # Continuidad del desarrollo autónomo
 
+## Ruta1.4 y tableros por lugar en regresión — 7 de noviembre de2026
+
+Producción44e59e7bd28da9f57c7a9aa87d01c930a0cab45d, Render7615269069 success, revisión/salud HTTPS correctas; guía/registro publicado. Continúa recorrido real: nueva definición1.4 conserva1.0–1.3 y enlaza patio/cobertizo opcional/almacén. NPC en patio, PJ cambia por salida declarada; mapas recuerdan terreno/posiciones y épocas globales, con movimiento/ataque/ocupación/flanqueo/tácticas/iniciativa filtrados por escena. Pacientes remotos bloquean antes de dados. Recibo2 verifica ruta y ámbitos; fuentes/documentación y diferencias Roll20 en ESCENAS_TABLERO.md, observación documental oficial, no partida directa. TREY12 revisado visualmente para numeración.
+
+55 afectadas y cuatro HTTP/Waitress correctos: commit fallido y cliente nuevo, duplicado, ida/vuelta, hallazgos/final, copia/invitado y actor remoto fuera de solicitudes IA. Navegador nuevo pasa acuerdo/ruta opcional/regreso y combate/ruta directa hasta final, copia por interfaz/recarga/móvil, sin PG editados ni IA real. Se corrigió espera del arnés tras entrar antes de leer snapshot; no era fallo de estado del producto. Capturas revisadas, diario de lugares/estado y hora desconocida claros. Regresión de encuentro, continuidad1.3, rutas anteriores, recuperación compartida y corrección médica correcta. Suite64716 en curso, .deps/pf-scene-boards-route-final-tests.log; esperar cierre. Guion privado de nuevo ensayo1.4 preparado y no ejecutado, máximo una inferencia, sesión reservada/no repetible. No repetir ensayo1.3 ya verified. No hay bloqueo del usuario.
+
 ## Orientación y resultados claros en conversación — 7 de noviembre de2026
 
 Ficha publicada8077467855a6d1003b5baf9fe43220cb72880d2a, Render7615116746 success, revisión exacta/salud verificadas. Bloque local siguiente: guía local de pendiente/turno/excepción/final de investigación y foco al control, sin acciones; estado incompatible desactiva tirada con motivo. Resultados básicos resumen datos comprometidos y guardan cálculo original bajo detalles, sin recomputar éxito ni tocar historia. Una conexión de render inicialmente faltante fue detectada por navegador y corregida; prueba repetida correcta.

@@ -17,6 +17,8 @@ Posteriormente se consultó la [documentación oficial completa de Pathfinder by
 
 ## Fuentes de referencia
 
+- [Page Menu & Folders](https://help.roll20.net/hc/en-us/articles/360039675413-Page-Menu-Folders), consulta documental7 de noviembre de2026. Separación de página del grupo y copia de fichas; acceso/gestión del GM. Base local de escenas en desarrollo en ESCENAS_TABLERO.md, todavía sin recorrido desplegado. Sin observación directa de partida.
+
 - [Mesa y navegación](https://help.roll20.net/hc/en-us/articles/360039734913-Tabletop-Overview).
 - [Zoom](https://help.roll20.net/hc/es/articles/360043082213-Herramienta-de-Zoom).
 - [Fichas, permisos y ajustes](https://help.roll20.net/hc/en-us/articles/360039674573-Token-Features).

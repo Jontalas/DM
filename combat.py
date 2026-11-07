@@ -6,6 +6,7 @@ Los totales se preparan en la ficha; el motor resuelve cada ataque.
 """
 import re
 import pf_recovery
+import board_scenes
 
 
 def damage_spec(value):
@@ -43,7 +44,7 @@ def standing(character):
 
 
 def adjacent(a,b):
-    return max(abs(a['x']-b['x']),abs(a['y']-b['y']))==1
+    return a.get('sceneId')==b.get('sceneId') and max(abs(a['x']-b['x']),abs(a['y']-b['y']))==1
 
 
 def basic_pair(source,target,board):
@@ -64,6 +65,7 @@ def attack(state,body,actor,dice):
     source=next((c for c in state['characters'] if c['id']==body.get('character')),None)
     target=next((c for c in state['characters'] if c['id']==body.get('target')),None)
     if source is None or target is None:raise ValueError('Selecciona atacante y objetivo')
+    board_scenes.require_present(state,source,target)
     if source['owner']!=actor['id'] and not actor['host']:raise PermissionError('No controlas este personaje')
     if board['order'][board['turn']]['id']!=source['id']:raise ValueError('No es tu turno')
     if source['id']==target['id'] or source['enemy']==target['enemy']:raise ValueError('Selecciona un adversario')
@@ -79,7 +81,7 @@ def attack(state,body,actor,dice):
     armor=target_profile['flatAc'] if flat else target['ac']
     # Flanking for same-size, 5-foot-reach combatants: opposite adjacent squares.
     flanking=False
-    for ally in state['characters']:
+    for ally in board_scenes.characters(state):
         if ally['id']==source['id'] or ally['enemy']!=source['enemy'] or ally['hp']<=0 or ally.get('conditions','').strip():continue
         if not ally.get('meleeProfile') or not adjacent(ally,target):continue
         if (ally['x']-target['x'],ally['y']-target['y'])==(-(source['x']-target['x']),-(source['y']-target['y'])):

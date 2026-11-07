@@ -172,6 +172,8 @@ def execute_action(body,me):
                     if key not in state:raise ValueError('Falta '+key)
                 import npc_catalog
                 npc_catalog.validate_restored(state)
+                import board_scenes
+                board_scenes.validate_restored(state)
                 import pf_encounters
                 pf_encounters.validate_restored(state)
                 import pf_recovery
@@ -254,7 +256,8 @@ def execute_action(body,me):
                 # Validate speaker, ownership and content before making a billable call.
                 apply_action(state,body,me)
                 text=body['text'];refs=search(text)
-            actors=[c['id'] for c in state['characters'] if me['host'] or c['owner']==me['id']]
+            import board_scenes
+            actors=[c['id'] for c in board_scenes.characters(state) if me['host'] or c['owner']==me['id']]
             result=legacy_reply(text,refs,check_actors=actors)
             if body.get('kind')=='ooc' and (result.get('checks') or result.get('investigation')):
                 raise ValueError('Una intervención fuera de personaje no solicita pruebas ni investigaciones')

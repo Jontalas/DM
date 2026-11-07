@@ -112,7 +112,8 @@ def install(state,module):
     rulesets.require(state.get('ruleset',rulesets.DEFAULT))
     module=validate_module(module)
     bonuses=[]
-    for character in state['characters']:
+    import board_scenes
+    for character in board_scenes.characters(state):
         if character.get('enemy') or character.get('hp',0)<=0:continue
         try:bonuses.append(checks.modifier(character,'skill','Percepción')[0])
         except (ValueError,KeyError,TypeError):continue
@@ -175,6 +176,8 @@ def public_view(state):
 
 def investigation(state,body,me):
     if not state.get('adventure') or not state.get('adventureModule'):raise ValueError('No hay una investigación estructurada activa')
+    import board_scenes
+    board_scenes.require_no_remote_events(state)
     if state.get('pfContinuation'):
         import pf_scene_transition
         reason=pf_scene_transition.limitation(state,active=True)
@@ -184,7 +187,10 @@ def investigation(state,body,me):
     if state['moduleProgress']['completed']:raise ValueError('La investigación ya está completada')
     character=next((c for c in state['characters'] if c['id']==body.get('character')),None)
     if not character or character.get('enemy'):raise ValueError('Selecciona un personaje jugador')
+    board_scenes.require_present(state,character)
     if not me['host'] and character['owner']!=me['id']:raise PermissionError('No controlas este personaje')
+    if state.get('pfContinuation',{}).get('format')=='cronicas-pf-continuation-2' and character['owner']!=me.get('id'):
+        raise PermissionError('Solo el propietario elige qué investiga su personaje en esta ruta')
     if character['hp']<=0:raise ValueError('El estado del personaje requiere una resolución excepcional')
     checks.modifier(character,'skill','Percepción')
     item=next((v for v in state['adventureModule']['opportunities'] if v['id']==body.get('opportunity')),None)
@@ -200,7 +206,8 @@ def validate_pending(state,pending):
     if not pending.get('investigation'):return
     spec=pending['check']
     # Revalidate before RNG: stale imports, scene changes or edited pending records cannot grant clues.
-    expected=investigation({**state,'pending':[]},{'character':spec['character'],'opportunity':pending['investigation']},{'host':True})
+    owner=next((c['owner'] for c in state['characters'] if c['id']==spec['character']),None)
+    expected=investigation({**state,'pending':[]},{'character':spec['character'],'opportunity':pending['investigation']},{'host':True,'id':owner})
     if spec['kind']!='skill' or spec['key']!='Percepción' or spec['dc']!=expected['dc']:
         raise ValueError('La investigación pendiente no coincide con la aventura')
 

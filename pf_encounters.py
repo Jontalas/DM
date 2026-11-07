@@ -12,13 +12,19 @@ import npc_catalog
 import combat
 import checks
 import game_randomness
+import board_scenes
 from rule_pack_authoring import canonical
 
 ID='patio-del-peaje'
 
 
-def definition(version='1.3.0'):
-    files={'1.0.0':'pf-patio-del-peaje.json','1.1.0':'pf-patio-del-peaje-1.1.0.json','1.2.0':'pf-patio-del-peaje-1.2.0.json','1.3.0':'pf-patio-del-peaje-1.3.0.json'}
+def participants_present(state,record):
+    return all(any(c['id']==identifier and board_scenes.present(state,c) for c in state['characters'])
+        for identifier in (record['character'],record['npc']))
+
+
+def definition(version='1.4.0'):
+    files={'1.0.0':'pf-patio-del-peaje.json','1.1.0':'pf-patio-del-peaje-1.1.0.json','1.2.0':'pf-patio-del-peaje-1.2.0.json','1.3.0':'pf-patio-del-peaje-1.3.0.json','1.4.0':'pf-patio-del-peaje-1.4.0.json'}
     if not isinstance(version,str) or version not in files:raise ValueError('Revisión de encuentro no disponible')
     return json.loads((Path(__file__).parent/'adventures'/files[version]).read_text(encoding='utf-8'))
 
@@ -52,6 +58,7 @@ def choose(state,body,me):
     if body.get('type')!='choose_pf_encounter' or set(body)-{'type','choice','id','version'} or body.get('choice') not in ('parley','combat'):raise ValueError('Decisión de encuentro no disponible')
     record=state.get('pfEncounter')
     if record is None or record['phase']!='offered' or state['board']['active']:raise ValueError('La elección inicial ya no está disponible')
+    if not participants_present(state,record):raise ValueError('La elección corresponde al patio y sus participantes presentes')
     actor=next((c for c in state['characters'] if c['id']==record['character']),None)
     if actor is None or actor['owner']!=me['id']:raise PermissionError('Solo el jugador decide cómo responde su personaje')
     validate_restored(state)
@@ -71,6 +78,7 @@ def choose(state,body,me):
 def sync_outcome(state):
     record=state.get('pfEncounter')
     if not record or record['phase']!='combat' or not state['board']['active']:return
+    if not participants_present(state,record):return
     actor=next(c for c in state['characters'] if c['id']==record['character'])
     npc=next(c for c in state['characters'] if c['id']==record['npc'])
     if (len(state['characters'])!=2 or not combat.standing(actor) or actor.get('conditions','').strip() or npc.get('conditions','').strip()
@@ -88,6 +96,7 @@ def resolve_defeat(state):
     """Only this authored NPC ceases violence; dying checks remain PF rules."""
     record=state.get('pfEncounter')
     if not record or record['phase']!='combat' or not state['board']['active'] or len(state['characters'])!=2:return False
+    if not participants_present(state,record):return False
     actor=next(c for c in state['characters'] if c['id']==record['character'])
     npc=next(c for c in state['characters'] if c['id']==record['npc'])
     if (combat.standing(actor) or any(c.get('conditions','').strip() for c in (actor,npc)) or state['board']['terrain']
@@ -117,6 +126,7 @@ def resolve_defeat(state):
 def resolve_recovery(state):
     """Quiet authored scene, one unconscious patient; no player decisions."""
     record=state.get('pfEncounter')
+    if record and not participants_present(state,record):return False
     if record and record['definition'].get('recoveryScope')=='shared-patients-1':
         import pf_shared_recovery
         return pf_shared_recovery.apply(state)
@@ -176,6 +186,7 @@ def aid_or_wait(state,body,me):
     validate_restored(state)
     actor=next(c for c in state['characters'] if c['id']==record['character'])
     patient=next(c for c in state['characters'] if c['id']==record['npc'])
+    board_scenes.require_present(state,actor,patient)
     if actor['owner']!=me['id']:raise PermissionError('Solo el jugador decide si presta auxilio o espera')
     if (len(state['characters'])!=2 or not combat.standing(actor) or any(c.get('conditions','').strip() for c in (actor,patient))
         or state['board']['terrain'] or actor['creation'].get('manualOverride') or patient['npcCreation'].get('manualOverride')):
@@ -237,7 +248,9 @@ def validate_restored(state):
     if actor is None or actor.get('enemy') or not actor.get('creation') or npc is None or npc.get('npcCreation',{}).get('template')!=record['definition']['npc']['template']:
         raise ValueError('El encuentro no está vinculado a sus participantes preparados')
     npc_catalog.validate_character(npc,'pathfinder-1e')
-    if record['phase'] in ('offered','agreement') and state['board']['active']:raise ValueError('La fase del encuentro contradice el combate activo')
+    here=participants_present(state,record)
+    if record['phase']=='offered' and not here:raise ValueError('La escena ofrecida requiere sus participantes presentes')
+    if record['phase'] in ('offered','agreement') and state['board']['active'] and here:raise ValueError('La fase del encuentro contradice el combate activo')
     if record['phase']=='resolved':
         outcome=record['outcome']
         if (not isinstance(outcome,dict) or set(outcome)!={'status','hp','stable','constitution','round'}
@@ -248,7 +261,7 @@ def validate_restored(state):
         if outcome['constitution']!=original['abilities'][2]:raise ValueError('El desenlace requiere su Constitución original verificada')
         dead=outcome['hp']<=-outcome['constitution']
         if outcome['status']!=('dead' if dead else 'stable') or not dead and not outcome['stable']:raise ValueError('El desenlace no corresponde a muerte o estabilización verificables')
-        if state['board']['active']:raise ValueError('Un encuentro resuelto no conserva combate activo')
+        if state['board']['active'] and here:raise ValueError('Un encuentro resuelto no conserva combate activo')
     if record['phase']=='defeated':
         outcome=record['outcome']
         outcome_fields={'status','hp','stable','constitution','npcHp','npcStable','npcConstitution','round'}
@@ -268,7 +281,7 @@ def validate_restored(state):
         original_npc,_=npc_catalog.prepare(record['definition']['npc']['template'],'pathfinder-1e')
         if outcome['npcConstitution']!=original_npc['abilities'][2]:raise ValueError('La derrota requiere la Constitución verificada del PNJ')
         if -outcome['npcConstitution']<outcome['npcHp']<0 and not outcome['npcStable']:raise ValueError('No se omite un PNJ todavía moribundo')
-        if state['board']['active']:raise ValueError('La derrota registrada no conserva combate activo')
+        if state['board']['active'] and here:raise ValueError('La derrota registrada no conserva combate activo')
     if record['definition'].get('recoveryScope')=='shared-patients-1':
         import pf_shared_recovery
         if record.get('recoveryLimit')=='armor-rest' and actor['creation']['choices']['armor']!='scale':raise ValueError('El límite de armadura no corresponde al PJ')
