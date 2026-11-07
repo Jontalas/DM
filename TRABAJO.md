@@ -1,5 +1,9 @@
 # Continuidad del desarrollo autónomo
 
+## Diario de lectura y correcciones bajo demanda — 7 de noviembre de2026
+
+Ajuste de estilo publicado y confirmado677aa38cc23a0deb64cb4e06c7deb050a232dc26, Render7615003439 success, revisión exacta/salud HTTPS correctas; sin nuevas inferencias. Continúa simplificación del diario: resumen público claro, formulario/cambio de escena bajo detalles solo anfitrión y secciones vacías ocultas. No cambian reglas ni permisos. Navegador nuevo de diario pasa teclado sin escrituras, guardado explícito único, texto escapado, invitado sin secretos/edición, recarga y móvil. Mesa de dos jugadores, investigaciones y continuidad1.3 por acuerdo/combate también correctas. Prueba de recursos desplegables correcta. Motor635 y13 afectadas previas; no repetir por presentación. Cerrar respaldo/despliegue del diario y verificar revisión/salud, después seguir trabajo pendiente. Cero solicitudes IA adicionales tras las dos del ensayo1.3 ya conservado.
+
 ## Producción1.3 y diálogo real verificados — 7 de noviembre de2026
 
 e94874bb6b79c1229e0f9489d6e6f611dfa42c24 en feature/main y Render7614913966 success; revisión exacta/salud/descriptor1.3 HTTPS correctos. Ensayo técnico completa creador/acuerdo, transición, diálogo, dos búsquedas y continuación, duplicados y copia sin reiniciar personajes. Dos solicitudes reales, latencias cliente12.995/8.459ms; tokens/precio no expuestos. Sesión privada pf-continuity-live-session.json verified: no repetir. Primer TypeError del guion anterior a IA fue corregido y reanudado con cero solicitudes previas y mismo estado; no es fallo del producto ni segunda campaña. Navegador real de recarga/móvil correcto, cero acciones nuevas al consultar.

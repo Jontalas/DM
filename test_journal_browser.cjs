@@ -1,0 +1,48 @@
+const {chromium}=require('./.deps/browser-tests/node_modules/playwright');
+const {spawn}=require('node:child_process'),{createInterface}=require('node:readline');
+const path=require('node:path'),assert=require('node:assert/strict');
+(async()=>{
+ const fixture=spawn(path.resolve('.venv/Scripts/python.exe'),['test_browser_fixture.py'],{stdio:['ignore','pipe','inherit']});let browser;
+ try{
+  const url=await new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(Error('Fixture timeout')),15000);createInterface({input:fixture.stdout}).once('line',line=>{clearTimeout(timer);resolve(line)});fixture.once('exit',()=>reject(Error('Fixture exited')))});
+  browser=await chromium.launch({headless:true,executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe'});
+  const host=await browser.newContext(),page=await host.newPage(),actions=[],errors=[];
+  page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>{if(r.url().endsWith('/api/action'))actions.push(r.postDataJSON())});
+  await page.goto(url);await page.locator('#createForm [name=player]').fill('Ana');
+  await page.locator('#createForm [name=goal]').fill('Encontrar el paso seguro');await page.locator('#createForm button').click();
+  await page.locator('[data-tab=journal]').click();
+  assert.match(await page.locator('#journalOverview').textContent(),/Encontrar el paso seguro/);
+  assert.equal(await page.locator('#journalForm [name=location]').isVisible(),false);
+  assert.equal(await page.locator('#nextScene').isVisible(),false);
+  for(const id of ['journalFacts','journalConsequences','journalPending'])assert.equal(await page.locator('#'+id).isVisible(),false);
+  const initialCount=actions.length;
+  await page.locator('#journalEdit > summary').focus();await page.keyboard.press('Enter');
+  assert.equal(await page.locator('#journalForm [name=location]').isVisible(),true);
+  assert.equal(actions.length,initialCount);
+  await page.locator('#journalForm [name=location]').fill('El patio');
+  await page.locator('#journalForm [name=notes]').fill('Mapa <img src=x onerror=alert(1)> confirmado');
+  await page.locator('#journalForm [name=allies]').fill('La mensajera');
+  await page.locator('#journalForm [name=secrets]').fill('PRIVATE-JOURNAL-MARKER');
+  const version=await page.evaluate(()=>snapshot.version);await page.locator('#journalForm button.primary').click();
+  await page.waitForFunction(v=>snapshot.version>v&&!busy,version);
+  assert.equal(actions.length,initialCount+1);assert.equal(actions.at(-1).type,'journal');
+  assert.match(await page.locator('#journalOverview').textContent(),/Mapa <img/);
+  assert.equal(await page.locator('#journalOverview img').count(),0);
+  await page.locator('#journalEdit > summary').focus();await page.keyboard.press('Enter');
+  const count=actions.length;await page.locator('#journalOverview details > summary').focus();await page.keyboard.press('Enter');
+  assert.match(await page.locator('#journalOverview').textContent(),/La mensajera/);assert.equal(actions.length,count);
+  const invite=await page.evaluate(()=>snapshot.invite),guest=await browser.newContext(),other=await guest.newPage();
+  other.on('pageerror',e=>errors.push(e.message));await other.goto(url+'?invite='+encodeURIComponent(invite));
+  await other.locator('#joinForm [name=name]').fill('Luis');await other.locator('#joinForm button').click();
+  await other.locator('[data-tab=journal]').click();
+  assert.match(await other.locator('#journalOverview').textContent(),/El patio/);
+  assert.equal(await other.locator('#journalEdit').isVisible(),false);
+  assert.ok(!(await other.locator('body').textContent()).includes('PRIVATE-JOURNAL-MARKER'));
+  await page.reload();await page.waitForFunction(()=>snapshot?.state.location==='El patio');
+  await page.locator('[data-tab=journal]').click();assert.equal(await page.locator('#journalForm').isVisible(),false);
+  await page.setViewportSize({width:390,height:1000});await page.locator('#journalOverview').scrollIntoViewIfNeeded();
+  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+  await page.screenshot({path:'.deps/journal-guided-mobile.png',fullPage:true});assert.deepEqual(errors,[]);
+  console.log('Journal browser passed: concise read view, explicit keyboard-accessible correction, no writes while consulting, safe text, guest privacy, reload and mobile.');
+ }finally{if(browser)await browser.close();fixture.kill()}
+})().catch(e=>{console.error(e);process.exitCode=1});
