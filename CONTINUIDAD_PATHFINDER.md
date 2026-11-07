@@ -1,5 +1,15 @@
 # Continuidad del patio: encuentro e investigación
 
+## Producción y ensayo real confirmados
+
+Publicado e94874bb6b79c1229e0f9489d6e6f611dfa42c24, Render7614913966 success, revisión exacta/salud/descriptor1.3.0 HTTPS correctos.635 pruebas completas correctas sin omisiones (259,956s). Los estados locales/en curso inferiores son históricos.
+
+Ensayo de producción completado una sola vez en campaña técnica: creador, acuerdo, transición, diálogo real, dos búsquedas, continuación real, duplicados y copia/importación. Dos solicitudes de director; latencias cliente12.995ms y8.459ms. Personajes conservan16/7PG y posiciones, sin pendientes ni hallazgos anticipados; dos pistas confirmadas al terminar. Sin cambios en campañas personales. Tokens/precio no expuestos por la respuesta confirmada actual: no se estiman. El primer intento del guion falló antes de IA por argumento Python duplicado; su reanudación limitada comprobó cero solicitudes previas y el mismo punto, sin crear otra campaña ni repetir preparación.
+
+Sesión privada .deps/pf-continuity-live-session.json en verified, no volver a ejecutar ni usar --resume-before-provider. Nunca publicar tokens, exportación ni diagnósticos. Navegador real posterior correcto: recarga, copia ya recuperada, móvil sin desbordamiento y cero POST de acción/IA por navegar. Captura privada pf-continuation-production-mobile.png revisada.
+
+Revisión cualitativa: el diálogo respeta el saludo/pregunta declarados, no adelanta pistas; continuación narra hallazgos confirmados y deja recoger/abrir/actuar al jugador. Presenta vocabulario interno innecesario («fase de acuerdo», fichas/reloj). Mejora local de director_prompt.py centra futuras narraciones en ficción y limita explicaciones técnicas a decisiones necesarias. No reescribe las respuestas originales ni se repite el ensayo pagado para esta pauta de estilo.13 pruebas afectadas correctas (8,138s), con HTTP/Waitress de captura fría; nueva prueba demuestra que cambiar estilo conserva la clave de solicitud, registra otra huella de prompt y recupera texto original sin proveedor. Base completa635 sigue siendo la evidencia de mecánicas; no se vuelve a ejecutar por esta única pauta de presentación.
+
 Bloque local1.3 en verificación,7 de noviembre de2026. Producción1.2 continúa en98b14523dfc12f52b1a04d1f195c11328c0cdd5f, Render7614727297 success. No constituye todavía una aventura autónoma completa ni invitación a prueba personal.
 
 **Cierre verificado:**635 pruebas completas correctas sin omisiones (259,956s), .deps/pf-scene-continuity-guard-final-tests.log. Sesión50419 terminada, código final intacto desde su inicio. Navegadores de continuidad, recuperación compartida, encuentro, módulos y rutas correctos; móvil revisado. Las referencias inferiores a suite en curso son históricas. Siguiente: respaldo/publicación, verificar revisión exacta/salud/descriptor y ensayo real acotado una sola vez. Todavía no se ha ejecutado ese guion ni se afirma validación de proveedor real.

@@ -8,6 +8,8 @@ Cada pantalla debe responder, con pocas palabras: qué está pasando, qué puedo
 
 ## Aplicación inmediata
 
+Ensayo real1.3 comprobado: dos solicitudes de diálogo/continuación, copia y navegador de producción con recarga/móvil sin acciones por consulta. La narración incluyó términos internos («fase de acuerdo», fichas/reloj); se añade pauta para futuras respuestas naturales, dejando detalle mecánico a la interfaz y explicando solo límites necesarios. Textos originales conservados; no se repite inferencia para corregir su estilo.13 pruebas de contexto/capturas/HTTP/Waitress correctas, incluida recuperación del texto original al cambiar prompt.
+
 Continuidad1.3 local: después del acuerdo o desenlace, una sola decisión contextual permite investigar el banco. Si un participante necesita recuperación, explica el motivo y desactiva la opción. Al confirmar se oculta la tarjeta inicial y se muestra la investigación, conservando ficha y conversación. No exige iniciar otra campaña ni preparar estadísticas. Dos caminos de navegador, copia/recarga y móvil correctos; no equivale a aventura autónoma completa. Contrato en CONTINUIDAD_PATHFINDER.md.
 
 Recuperación compartida1.2: la pantalla explica el estado actual del PJ y de la guardiana, sin atribuir permiso para retirarse a un PNJ inconsciente. Un resumen conserva horas transcurridas; la auditoría plegada identifica paciente y hora de cada tirada. La frontera de descanso pendiente conserva heridas y se explica como limitación actual. Navegador de ambos caídos verificado desde creador, ataques reales y decisión de atacar a0PG: copia, recarga y móvil correctos; consulta de auditoría no envía acciones. No equivale todavía a descanso ni siguiente escena implementados.

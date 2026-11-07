@@ -1,5 +1,11 @@
 # Continuidad del desarrollo autónomo
 
+## Producción1.3 y diálogo real verificados — 7 de noviembre de2026
+
+e94874bb6b79c1229e0f9489d6e6f611dfa42c24 en feature/main y Render7614913966 success; revisión exacta/salud/descriptor1.3 HTTPS correctos. Ensayo técnico completa creador/acuerdo, transición, diálogo, dos búsquedas y continuación, duplicados y copia sin reiniciar personajes. Dos solicitudes reales, latencias cliente12.995/8.459ms; tokens/precio no expuestos. Sesión privada pf-continuity-live-session.json verified: no repetir. Primer TypeError del guion anterior a IA fue corregido y reanudado con cero solicitudes previas y mismo estado; no es fallo del producto ni segunda campaña. Navegador real de recarga/móvil correcto, cero acciones nuevas al consultar.
+
+Revisión de textos identifica vocabulario interno sobrante. Ajuste local de estilo para futuras narraciones, sin reescribir historia ni repetir ensayo pagado.13 pruebas afectadas correctas (8,138s), incluida captura fría HTTP/Waitress y recuperación original tras variar huella de prompt sin volver al proveedor. Mecánicas siguen cubiertas por635 completas (259,956s). Respaldar/publicar ajuste de presentación, verificar y continuar con recorrido/sencillez pendientes. No invitar aún por hito.
+
 ## Cierre de continuidad1.3 — 7 de noviembre de2026
 
 635 pruebas completas correctas sin omisiones (259,956s), .deps/pf-scene-continuity-guard-final-tests.log; sesión50419 terminada. Primera suite632 (291,689s) precedió guardas posteriores, verificadas además por11 afectadas (10,809s). Navegadores de dos caminos de continuidad, recuperación compartida, encuentro, investigación y rutas anteriores correctos. Código sin cambios posteriores a la suite final. Publicar1.3 y verificar revisión/salud/descriptor. Guion privado de proveedor real preparado, compilado y no ejecutado: máximo dos solicitudes nuevas en una campaña técnica con archivo de sesión reservado, sin repetir sesión. Documentación en CONTINUIDAD_PATHFINDER.md; no hay prueba personal ni hito pendiente de intervención. Ninguna inferencia real nueva hasta este cierre.

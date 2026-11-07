@@ -47,6 +47,19 @@ class LegacyDirectorAttemptTests(unittest.TestCase):
                 self.assertEqual(base64.b64decode(payload['value']),raw)
                 with self.assertRaises(ValueError):attempts.run(self.store,'room','ana',self.prepared,converter=lambda *a,**k:self.fail('Invalid capture retried provider'),restore=legacy.restore)
 
+    def test_style_prompt_update_recovers_original_capture_without_another_inference(self):
+        import director_prompt
+        expected=self.run_capture(self.envelope())
+        cold=TestStore();cold.preparations=copy.deepcopy(self.store.preparations)
+        with patch.object(director_prompt,'BASE',director_prompt.BASE+'\nNueva pauta de estilo.'):
+            updated=legacy.prepare(self.state,'Una declaración.',[])
+        self.assertEqual(updated['sha256'],self.prepared['sha256'])
+        self.assertNotEqual(updated['promptSha256'],self.prepared['promptSha256'])
+        with patch.dict(os.environ,{'ANTHROPIC_API_KEY':''}):
+            restored=attempts.run(cold,'room','ana',updated,
+                converter=lambda *a,**k:self.fail('Style update repeated a paid call'),restore=legacy.restore)
+        self.assertEqual(restored,expected)
+
     def test_unknown_outcome_never_authorizes_another_call(self):
         with patch.dict(os.environ,{'ANTHROPIC_API_KEY':'fixture-never-sent'}):
             with self.assertRaises(OSError):attempts.run(self.store,'room','ana',self.prepared,converter=lambda *a,**k:(_ for _ in ()).throw(OSError('Interrupted')),restore=legacy.restore)
