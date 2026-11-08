@@ -6,7 +6,16 @@ const characterIsConscious=c=>!!c&&(c.hp>=0||(c.hp>-c.abilities[2]&&c.stable===t
 const characterHealthLabel=c=>c.hp<=-c.abilities[2]?'Ha muerto':c.hp>0?'':characterIsConscious(c)?'Incapacitado':c.stable===true?'Inconsciente y estable':'Moribundo';
 const boardCharacters=s=>s.boardScenes?s.characters.filter(c=>c.sceneId===s.boardScenes.current):s.characters;
 function toast(s){$('#toast').textContent=s;$('#toast').hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('#toast').hidden=true,7000)}
-async function api(url,body){let r=await fetch(url,{method:body?'POST':'GET',headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},body:body?JSON.stringify(body):undefined});let d=await r.json();if(!r.ok){const err=Error(d.error||'Error del servidor');err.confirmed=r.status>=400&&r.status<500;err.status=r.status;throw err}return d}
+async function api(url,body){
+ let response;
+ try{response=await fetch(url,{method:body?'POST':'GET',headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},body:body?JSON.stringify(body):undefined})}
+ catch{throw Error('No se pudo conectar con la mesa. Vuelve a intentarlo cuando tengas conexión.')}
+ let data;
+ try{data=await response.json()}
+ catch{throw Error('La mesa no devolvió una respuesta válida. Vuelve a intentarlo.')}
+ if(!response.ok){const error=Error(data?.error||'Error del servidor');error.confirmed=response.status>=400&&response.status<500;error.status=response.status;throw error}
+ return data;
+}
 function values(form){return Object.fromEntries(new FormData(form))}
 function physical(d){if(d.physical?.trim())d.physical=d.physical.split(',').map(Number);else delete d.physical;return d}
 async function recoverSubmission(saved){

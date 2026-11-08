@@ -1,5 +1,9 @@
 # Continuidad del desarrollo autónomo
 
+## Recuperación guiada publicada y errores claros — 8 de noviembre de2026
+
+94b4b23f0a2ec1c274077f5744ce204863676950/Render7635802684 success. Siguiente ajuste de api muestra mensajes sencillos en español para conexión fallida y respuesta ilegible, conservando pendientes y contrato JSON400/403/409. Navegadores conexión/HTML502/borrador, recuperación409 tras acción en otra pestaña, permisos y Cairn correctos. Sin cambios de motor desde751 completas ni inferencias reales nuevas. Verificar/publicar este ajuste y continuar recorrido integrado; sin intervención del usuario.
+
 ## Captura publicada y recuperación guiada verificada — 8 de noviembre de2026
 
 a6b2291f71b84f5fbe1d9df3de7d9e199ca397b3/Render7635760550 success;751 completas y lectores Common/viaje exactos, cero POST/IA. Continúa recuperación guiada desde conversación: aviso y botón para repetir mismo envío sin recarga, bloqueo hasta refrescar, conservación tras nuevo fallo, limpieza de texto original/preservación de borrador distinto. Pendientes de otro acceso no aparecen. Navegadores móvil/teclado/tacto de ambas variantes y contrato histórico/tiradas/tregua correctos; captura visual revisada. Solo interfaz, sin cambios de motor desde751 completas: comprobaciones específicas suficientes. Publicar/verificar y continuar trabajo autorizado; sin dependencia del usuario.
