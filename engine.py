@@ -145,6 +145,10 @@ def apply_action(s,b,me):
             if k in ('action','dialogue') and not speaking.get('enemy') and speaking['owner']!=me['id']:
                 raise PermissionError('Solo el propietario declara acciones y palabras de su personaje')
             speaker=speaking['name']+' · '+me['name']
+        if k in ('action','dialogue') and s.get('ruleset','pathfinder-1e')=='pathfinder-1e':
+            actors=[speaking] if cid else [c for c in s['characters'] if c['owner']==me['id'] and not c.get('enemy')]
+            if actors and not any(combat.standing(c) for c in actors):
+                raise ValueError('La ficha está inconsciente o muerta y no puede actuar ni hablar. Puedes escribir fuera de personaje o guardar una nota privada.')
         log(s,text,k,speaker=speaker,owner=me['id'],visibility='private' if k=='private' else 'public')
     elif kind=='create_npc':
         host(me)

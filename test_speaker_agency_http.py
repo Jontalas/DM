@@ -28,3 +28,19 @@ class SpeakerAgencyHTTPTests(unittest.TestCase):
         self.assertEqual(self.state()['state']['messages'][-1]['speaker'],'Aria · Luis')
         self.action('talk',character=actor,text='Nota administrativa explícita',kind='ooc',director=False)
         self.assertEqual(self.state()['state']['messages'][-1]['kind'],'ooc')
+
+    def test_unconscious_and_dead_speech_rejects_before_search_paid_reservation_or_commit(self):
+        self.action('create_character',choices=choices());actor=self.state()['state']['characters'][0]['id']
+        for hp in (-1,-14):
+            current=self.state()['state']['characters'][0]['hp']
+            self.action('manual',character=actor,hpDelta=hp-current,reason='Estado clínico técnico',resolution='Comprobar conversación sin acciones de la ficha')
+            before=self.state()
+            with patch.object(server,'ai_reply',side_effect=AssertionError('Unconscious speech reached provider')),patch.object(server,'search',side_effect=AssertionError('Unconscious speech searched sources')),patch.object(server.STORE,'begin_rule_preparation',side_effect=AssertionError('Unconscious speech reserved inference')),patch.object(server.STORE,'commit',wraps=server.STORE.commit) as commit:
+                for kind in ('action','dialogue'):
+                    for character in (actor,None):
+                        for director in (False,True):
+                            with self.subTest(hp=hp,kind=kind,character=character,director=director),self.assertRaises(urllib.error.HTTPError) as error:self.action('talk',character=character,text='Hablo con la guardiana',kind=kind,director=director)
+                            self.assertEqual(error.exception.code,400);error.exception.close();self.assertEqual(self.state(),before)
+                commit.assert_not_called()
+        for kind in ('ooc','private'):self.action('talk',character=actor,text='Comentario del jugador',kind=kind,director=False)
+        self.assertEqual(self.state()['state']['characters'],before['state']['characters'])

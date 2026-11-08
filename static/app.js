@@ -30,7 +30,7 @@ async function recoverSubmission(saved){
   await api('/api/action',body);
  }
 }
-async function act(type,data={}){if(JSON.parse(localStorage.getItem('cronicas-pending')||'null')?.token===token)throw Error('Recarga la mesa para recuperar el envio pendiente antes de otra accion');if(busy)throw Error('Hay una acción en curso');busy=true;$('#send').disabled=true;$('#sync').textContent='Resolviendo…';const body={...data,type,id:crypto.randomUUID(),version:snapshot.version};if((!snapshot.state.ruleset||snapshot.state.ruleset==='pathfinder-1e')&&['talk','start_adventure','continue_adventure'].includes(type))body.captureContract='pf-director-action-1';try{localStorage.setItem('cronicas-pending',JSON.stringify({token,body}));await api('/api/action',body);localStorage.removeItem('cronicas-pending');path=[];await refresh(true)}catch(e){if(e.name==='QuotaExceededError')throw Error('No hay espacio en el navegador para conservar este envio. No se ha enviado al servidor; libera espacio o importa una copia mas pequena.');if(e.confirmed)localStorage.removeItem('cronicas-pending');try{await refresh(true)}catch{}throw e}finally{busy=false;$('#send').disabled=false}}
+async function act(type,data={}){if(JSON.parse(localStorage.getItem('cronicas-pending')||'null')?.token===token)throw Error('Recarga la mesa para recuperar el envio pendiente antes de otra accion');if(busy)throw Error('Hay una acción en curso');busy=true;$('#send').disabled=true;$('#sync').textContent='Resolviendo…';const body={...data,type,id:crypto.randomUUID(),version:snapshot.version};if((!snapshot.state.ruleset||snapshot.state.ruleset==='pathfinder-1e')&&['talk','start_adventure','continue_adventure'].includes(type))body.captureContract='pf-director-action-1';try{localStorage.setItem('cronicas-pending',JSON.stringify({token,body}));await api('/api/action',body);localStorage.removeItem('cronicas-pending');path=[];await refresh(true)}catch(e){if(e.name==='QuotaExceededError')throw Error('No hay espacio en el navegador para conservar este envio. No se ha enviado al servidor; libera espacio o importa una copia mas pequena.');if(e.confirmed)localStorage.removeItem('cronicas-pending');try{await refresh(true)}catch{}throw e}finally{busy=false;renderComposerAvailability()}}
 function run(fn){return async e=>{e?.preventDefault();try{await fn(e)}catch(err){toast(err.message)}}}
 async function refresh(force=false){
  if(!token)return;
@@ -57,6 +57,18 @@ function renderSpeakerChoices(){
  const choices=snapshot.state.characters.filter(c=>c.owner===me.id||(me.host&&(c.enemy||['ooc','private'].includes(kind))));
  $('#speaker').innerHTML='<option value="">'+esc(me.name)+'</option>'+choices.map(c=>`<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('');
  if(choices.some(c=>c.id===previous))$('#speaker').value=previous;
+ renderComposerAvailability();
+}
+function conversationUnavailable(){
+ if(!snapshot||!['action','dialogue'].includes($('#messageKind').value)||(snapshot.state.ruleset&&snapshot.state.ruleset!=='pathfinder-1e'))return '';
+ const cid=$('#speaker').value,actors=cid?snapshot.state.characters.filter(c=>c.id===cid):snapshot.state.characters.filter(c=>c.owner===snapshot.me.id&&!c.enemy);
+ return actors.length&&!actors.some(characterIsConscious)?'La ficha está inconsciente o muerta y no puede actuar ni hablar. Puedes elegir «Fuera de personaje» o «Nota privada».':'';
+}
+function renderComposerAvailability(){
+ if(!snapshot)return;
+ const reason=conversationUnavailable();$('#send').disabled=busy||!!reason;
+ $('#message').setAttribute('aria-describedby','aiHint');
+ $('#aiHint').textContent=reason||(model.aiConfigured?'El director responderá si activas «Responder con IA». Las tiradas y herramientas funcionan sin IA.':'El director no está disponible en esta mesa. Puedes usar las fichas, los dados y el tablero sin IA.');
 }
 async function recoverPendingSubmission(){
  if(busy)throw Error('Hay una acción en curso');
@@ -65,7 +77,7 @@ async function recoverPendingSubmission(){
  busy=true;$('#send').disabled=true;$('#playGuidanceAction').disabled=true;$('#sync').textContent='Recuperando envío…';
  try{await recoverSubmission(saved);localStorage.removeItem('cronicas-pending');if(saved.body.type==='talk'&&$('#message').value===saved.body.text)$('#message').value='';toast('Envío recuperado')}
  catch(error){if(error.confirmed)localStorage.removeItem('cronicas-pending');throw error}
- finally{try{await refresh(true)}catch{}busy=false;$('#send').disabled=false;$('#playGuidanceAction').disabled=false}
+ finally{try{await refresh(true)}catch{}busy=false;renderComposerAvailability();$('#playGuidanceAction').disabled=false}
 }
 function renderPlayGuidance(s){
  const panel=$('#playGuidance'),text=$('#playGuidanceText'),button=$('#playGuidanceAction');
@@ -251,8 +263,9 @@ $('#joinForm').onsubmit=run(async e=>{ensureCampaignCanChange();let r=await api(
 $('#libraryBtn').onclick=run(()=>openCampaignLibrary());$('#manageAccesses').onclick=run(()=>openCampaignLibrary());$('#resume').onclick=run(()=>refresh(true));$('#exitBtn').onclick=run(async()=>{ensureCampaignCanChange();bookReader.reset();document.body.classList.remove('reader-wide');$('#app').hidden=true;$('#welcome').hidden=false;$('#resume').hidden=!token;$('#savedLibraryPanel').hidden=false;renderSavedCampaigns()});
 $('#inviteBtn').onclick=run(async()=>{const link=location.origin+'/?invite='+encodeURIComponent(snapshot.invite);modal('<h2>Reunir al grupo</h2><p>Comparte este código con quienes tengan acceso al servidor. El nombre de jugador no sustituye la credencial de reconexión guardada en su navegador.</p><label>Código<input readonly value="'+esc(snapshot.invite)+'"></label><label>Enlace<input readonly value="'+esc(link)+'"></label><p class="hint">127.0.0.1 solo abre en este ordenador. Para red local inicia con HOST=0.0.0.0 y usa la dirección del servidor. Para Internet se requiere alojamiento, HTTPS y configuración de acceso.</p>')});
 $('#addCharacter').onclick=()=>characterForm();$('#manualBtn').onclick=()=>manualForm();
-$('#composer').onsubmit=run(async()=>{let text=$('#message').value;await act('talk',{text,character:$('#speaker').value||null,kind:$('#messageKind').value,director:$('#useAI').checked&&$('#messageKind').value!=='private'});$('#message').value='';$('#story').scrollTop=$('#story').scrollHeight});
+$('#composer').onsubmit=run(async()=>{const reason=conversationUnavailable();if(reason)throw Error(reason);let text=$('#message').value;await act('talk',{text,character:$('#speaker').value||null,kind:$('#messageKind').value,director:$('#useAI').checked&&$('#messageKind').value!=='private'});$('#message').value='';$('#story').scrollTop=$('#story').scrollHeight});
 $('#message').onkeydown=e=>{if(e.ctrlKey&&e.key==='Enter')$('#composer').requestSubmit()};
+$('#speaker').addEventListener('change',renderComposerAvailability);
 $('#messageKind').onchange=()=>{if($('#messageKind').value==='private')$('#useAI').checked=false;renderSpeakerChoices()};
 $('#journalForm').onsubmit=run(async e=>{const d=values(e.target);for(const key of ['objectives','allies','enemies','unknowns'])d[key]=d[key].split('\n').filter(Boolean);await act('journal',d);toast('Diario guardado')});
 $('#nextScene').onclick=run(async()=>{let location=prompt('Lugar de la siguiente escena',snapshot.state.location);if(location!==null)await act('scene',{location})});
