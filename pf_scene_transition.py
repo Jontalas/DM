@@ -46,7 +46,8 @@ def limitation(state,*,active=False):
     actors={c['id']:c for c in state['characters']}
     actor=actors.get(record['character']);npc=actors.get(record['npc'])
     if not actor or not npc:return 'Falta un participante del encuentro.'
-    if actor['hp']<=0:return 'La investigación requiere un personaje con PG positivos; no se simula su descanso.'
+    import pf_light_exploration
+    if actor['hp']<=0 and not pf_light_exploration.eligible(state,actor):return 'Esta investigación aún no cubre el estado de tu personaje; no se simula su descanso.'
     if -npc['abilities'][2]<npc['hp']<0:
         import pf_npc_wait
         if not pf_npc_wait.can_remain_awake(state,npc):return 'La guardiana aún necesita seguimiento de recuperación; no se omiten sus pruebas.'

@@ -129,7 +129,8 @@ def travel(state,body,me):
     if not me['host'] and actor['owner']!=me['id']:raise PermissionError('No controlas al personaje de esta ruta')
     if state.get('pfContinuation',{}).get('format')=='cronicas-pf-continuation-2' and actor['owner']!=me['id']:
         raise PermissionError('Solo el propietario decide la salida de su personaje')
-    if actor.get('hp',0)<=0 or actor.get('conditions','').strip():raise ValueError('El estado del personaje requiere una resolución excepcional')
+    import pf_light_exploration
+    if actor.get('hp',0)<=0 and not pf_light_exploration.eligible(state,actor) or actor.get('conditions','').strip():raise ValueError('El estado del personaje requiere una resolución excepcional')
     if body.get('exit') not in {v['id'] for v in public_view(state)['exits']}:raise ValueError('Salida no disponible')
     progress=state['routeProgress']
     if len(progress['history'])>=1000:raise ValueError('Límite de 1.000 visitas por ruta alcanzado; conserva una exportación')

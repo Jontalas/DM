@@ -119,7 +119,8 @@ def move_player(state,destination,character_id,name,entry=(0,0)):
     if any(c.get('conditions','').strip() or -c['abilities'][2]<c['hp']<0 and not pf_npc_wait.can_remain_awake(state,c) for c in state['characters']):
         raise ValueError('El cambio requiere resolver primero recuperación o condiciones; no se omite su reloj')
     actor=next((c for c in characters(state) if c['id']==character_id and not c.get('enemy')),None)
-    if actor is None or actor['hp']<=0:raise ValueError('El viajero debe ser un PJ presente con PG positivos')
+    import pf_light_exploration
+    if actor is None or actor['hp']<=0 and not pf_light_exploration.eligible(state,actor):raise ValueError('El viajero necesita un estado cubierto para caminar entre escenas')
     if len(scenes['saved'])>=31 and destination not in scenes['saved']:raise ValueError('Límite de32 tableros alcanzado')
     updated=copy.deepcopy(state);scope=updated['boardScenes'];origin=scope['current']
     target=scope['saved'].pop(destination,{'name':name,'terrain':{},'positions':{}})

@@ -1,5 +1,7 @@
 # Continuidad del desarrollo autónomo
 
+8 noviembre2026: exploración ligera a0PG, nueva definición1.12 inmutable, fuentes Core190/568/101/87. Capacidad compartida servidor/UI, revalidación de ficha y pacientes; caminar explícito, sin reloj táctico inventado, descanso ni curación.38 afectadas y navegador orgánico hasta0/tregua/5pistas/3escenas/regreso correctos; 805 completas correctas (201,054s), espera declarada y tiradas dos participantes en navegador correctas. Ningún ensayo real nuevo ni hito personal; continuar negativos conscientes/calendario después de publicar y verificar.
+
 ## Investigación pendiente tras espera: corrección de vista — 8 de noviembre de2026
 
 1cb9a4a7531f06b369ee5d3b8cfbb7d29410581d/Render7637194650 success,799 completas y lectores espera/investigación exactos correctos, cero nuevos POST/IA. Auditoría posterior detectó que pendingCheckUnavailable seguía bloqueando todo PNJ negativo, aunque nueva espera/ruta ya validaba consciencia. Se usa mismo pfNpcRecoveryView.canContinue del servidor, sin eximir otros pacientes/condiciones; se aclaran límites temporales de actor/combate como cobertura, no regla general. Navegador declaración de investigación→prueba pendiente habilita d20/10/20 y resuelve, completa ruta/copia/móvil; navegador de tiradas dos jugadores conserva bloqueos. Solo cliente/fixture, no motor ni suite completa repetida. Publicar/verificar y continuar exploración ligera con fuentes/versionado, sin intervención.

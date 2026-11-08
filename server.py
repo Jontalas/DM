@@ -111,6 +111,10 @@ def view(row,state,me,known_workspace=None):
         state.pop('adventureModule',None)
         state.pop('adventureRoute',None)
         state.pop('routeProgress',None)
+    import pf_light_exploration
+    state.pop('pfLightExplorationView',None)
+    exploration_view=pf_light_exploration.public_view(state)
+    if exploration_view:state['pfLightExplorationView']=exploration_view
     import pf_night_rest
     state.pop('pfNightRestView',None)
     import pf_ceasefire
