@@ -1,5 +1,7 @@
 # Sencillez y orientación
 
+Diálogo coherente con permisos ya dados: ensayo real detectó aclaración injustificada para consultar registro autorizado. Corrección aporta hecho público explícito al director y conserva agencia: conversar no investiga ni concede pistas. No reparar narración histórica ni afirmar verificación semántica real del nuevo prompt. El botón de investigar conserva permiso determinista, sin pago/tirada/aclaración adicional para consultar. COHERENCIA_PNJ_PREPARADOS.md.
+
 Explorar tras despertar con PG negativos1.13: mismo permiso clínico en entrada, búsqueda, tirada pendiente y salidas caminando. Aviso de incapacidad conserva PG y evita pedir descanso o cálculos administrativos; dos pacientes negativos conscientes pueden continuar solo si coinciden exactamente con el resultado médico reproducido. Si no, explica límite actual sin atribuirlo a una prohibición general de Pathfinder. Navegadores orgánicos/teclado/móvil/copia correctos; cero IA, dados simulados. EXPLORACION_CONSCIENTE.md.
 
 Exploración a0PG en patio1.12: entrada y Percepción tranquilas disponibles con ficha verificada; salidas explícitamente caminando. Búsquedas y caminar sin prisa conservan PG, sin obligar a dormir. Mismo permiso derivado para prueba pendiente y formulario; no abre pacientes negativos, combate ni condiciones. Creador guiado/combate hasta0/tregua/5pistas/3escenas/regreso/copia/teclado/móvil verificados con dados simulados y cero IA. EXPLORACION_INCAPACITADO.md.

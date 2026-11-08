@@ -95,6 +95,9 @@ def build_context(state,text,refs,rules=False,check_actors=None,starting=False,s
              'request':text,'rulesOnly':rules,'checkActors':check_actors or [],
              'operation':'rules' if rules else 'startAdventure' if starting else 'narrate'}
     if not rules:
+        import director_prepared_facts
+        facts=director_prepared_facts.public_facts(state)
+        if facts:context['preparedSceneFacts']=facts
         declarations=[i for i,m in enumerate(history) if m['kind'] in ('action','dialogue')]
         context['playerAgency']={'declarationsInHistory':declarations,
                                  'activeDeclaration':declarations[-1] if declarations and declarations[-1]==len(history)-1 else None}

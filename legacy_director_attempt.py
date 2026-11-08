@@ -41,7 +41,7 @@ def compatible_input(saved,current):
 
 def keyed_request(request):
     keyed=copy.deepcopy(request)
-    for name in ('routeTravelActor','preparedDecisions','availableMeleeAttack','availableTurnEnd'):keyed['context'].pop(name,None)
+    for name in ('routeTravelActor','preparedDecisions','availableMeleeAttack','availableTurnEnd','preparedSceneFacts'):keyed['context'].pop(name,None)
     return keyed
 
 
