@@ -26,7 +26,7 @@ function renderAdventure(){
    const form=e.target,button=form.querySelector('button');button.disabled=true;
    $('#adventureProgress').textContent='El director está preparando la aventura…';
    try{
-    const data={premise:form.elements.premise.value,structured:form.elements.source.value==='generated'};
+    const data={premise:form.elements.premise.value,structured:form.elements.source.value==='generated',worldMemoryContract:'structured-world-memory-1'};
     if(form.elements.source.value==='text'){
      data.sourceText=form.elements.sourceText.value.trim();
      if(!data.sourceText||[...data.sourceText].length>12000)throw Error('Aporta entre 1 y 12.000 caracteres de texto.');

@@ -81,7 +81,7 @@ def prepare(state,text,refs,check_actors=None,starting=False,source_text=None,ac
             character['recoveryState']=copy.deepcopy(originals[character['id']]['recoveryState'])
     if len(canonical(request).encode('utf-8'))>300000:raise ValueError('El contexto de esta aventura supera el límite; no se ha llamado a IA')
     return {'request':request,'captureRequest':capture,'sha256':request_sha(capture),'sourceScheme':SCHEME,
-        'promptSha256':hashlib.sha256(system_prompt(False,starting).encode('utf-8')).hexdigest()}
+        'promptSha256':hashlib.sha256(system_prompt(False,starting,world_memory=claude_dm.campaign_world.enabled(state)).encode('utf-8')).hexdigest()}
 
 
 def restore(prepared,payload,scheme):
@@ -90,6 +90,8 @@ def restore(prepared,payload,scheme):
     context=prepared['request']['context'];state=copy.deepcopy(context['state'])
     module=context.get('directorKnowledge',{}).get('adventureModule')
     if module is not None:state['adventureModule']=copy.deepcopy(module)
+    world=context.get('directorKnowledge',{}).get('campaignWorld')
+    if world is not None:state['campaignWorld']=copy.deepcopy(world)
     if payload['kind']=='raw':
         try:raw=base64.b64decode(payload['value'],validate=True)
         except (TypeError,ValueError):raise ValueError('Captura de respuesta dañada; no se ha repetido IA') from None

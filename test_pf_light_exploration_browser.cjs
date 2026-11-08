@@ -2,13 +2,19 @@ const {chromium}=require('./.deps/browser-tests/node_modules/playwright');
 const {spawn}=require('node:child_process'),{createInterface}=require('node:readline');
 const path=require('node:path'),assert=require('node:assert/strict');
 (async()=>{
- const disabledTruce=process.env.TEST_DISABLED_TRUCE==='1',awake=process.env.TEST_AWAKE_EXPLORATION==='1',aidCase=process.env.TEST_NPC_AID_CASE||'',npcAid=['success','boundary','natural','death'].includes(aidCase),falling=awake||npcAid;
+ const guest=process.env.TEST_GUEST_PLAYER==='1',disabledTruce=process.env.TEST_DISABLED_TRUCE==='1',awake=process.env.TEST_AWAKE_EXPLORATION==='1',aidCase=process.env.TEST_NPC_AID_CASE||'',npcAid=['success','boundary','natural','death'].includes(aidCase),falling=awake||npcAid;
  const fixture=spawn(path.resolve('.venv/Scripts/python.exe'),['test_browser_fixture.py'],{env:{...process.env,TEST_PF_ENCOUNTER_VERSION:disabledTruce?'1.15.0':npcAid?'1.14.0':awake?'1.13.0':'1.12.0',TEST_PF_CEASEFIRE_FIXTURE:'1',TEST_PF_TRUCE_NIGHT:'1',TEST_PF_DISABLED_TRUCE_FIXTURE:disabledTruce?'1':'0',TEST_PF_AWAKE_EXPLORATION_FIXTURE:awake?'1':'0',TEST_PF_NPC_AID_FIXTURE:aidCase},stdio:['ignore','pipe','inherit']});let browser;
  try{
   const url=await new Promise((resolve,reject)=>{createInterface({input:fixture.stdout}).once('line',resolve);fixture.once('exit',()=>reject(Error('Fixture exited')))});
   browser=await chromium.launch({headless:true,executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe'});
   const page=await browser.newPage({hasTouch:true,acceptDownloads:true}),actions=[],errors=[];page.on('dialog',d=>d.accept());page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>{if(r.url().endsWith('/api/action'))actions.push(r.postDataJSON())});
   await page.goto(url);await page.locator('#createForm [name=player]').fill('Ana');await page.locator('#createForm [name=goal]').fill('Investigar conservando mis heridas');await page.locator('#createForm button').click();
+  if(guest){
+   await page.waitForFunction(()=>snapshot?.invite&&!busy);const invite=await page.evaluate(()=>snapshot.invite);
+   await page.locator('#exitBtn').click();await page.goto(url+'/?invite='+encodeURIComponent(invite));
+   await page.locator('#joinForm [name=name]').fill('Jugadora invitada');await page.locator('#joinForm button').click();
+   await page.waitForFunction(()=>snapshot?.me&&!snapshot.me.host&&!busy);
+  }
   await page.locator('[data-create-hero]').click();await page.locator('[data-creator-preset=guardian]').click();await page.locator('#creatorName').fill('Aria');await page.locator('[data-creator-step="3"]').click();await page.locator('#creatorFinish').click();await page.locator('.sheet-checks').waitFor();await page.locator('#closeModal').click();
   await page.locator('#beginPreparedEncounter').click();await page.locator('#pfEncounterEntry button').click();await page.locator('#pfEncounterCombat').click();await page.waitForFunction(()=>snapshot.state.board.active&&!busy);
   if(!falling&&!disabledTruce){await page.locator('#attackButton').click();await page.waitForFunction(()=>snapshot.state.characters[1].hp===1&&!busy)}
@@ -46,8 +52,11 @@ const path=require('node:path'),assert=require('node:assert/strict');
    for(let i=0;i<clues;i++){const version=await page.evaluate(()=>snapshot.version);await page.locator('#investigationForm button[value=take20]').tap();await page.waitForFunction(v=>snapshot.version>v&&!busy,version)}
   }
   assert.equal(await page.evaluate(()=>snapshot.state.adventureRouteView.completed),true);await page.locator('[data-route-exit=patio]').tap();await page.waitForFunction(()=>snapshot.state.boardScenes.current==='patio'&&!busy);
-  await page.locator('[data-tab=journal]').tap();const [download]=await Promise.all([page.waitForEvent('download'),page.locator('#exportBtn').click()]);const version=await page.evaluate(()=>snapshot.version);await page.locator('#importFile').setInputFiles(await download.path());await page.waitForFunction(v=>snapshot.version>v&&!busy,version);await page.reload();await page.waitForFunction(()=>snapshot?.state.boardScenes?.current==='patio'&&!busy);
+  await page.locator('[data-tab=journal]').tap();
+  if(!guest){const [download]=await Promise.all([page.waitForEvent('download'),page.locator('#exportBtn').click()]);const version=await page.evaluate(()=>snapshot.version);await page.locator('#importFile').setInputFiles(await download.path());await page.waitForFunction(v=>snapshot.version>v&&!busy,version)}
+  else assert.equal(await page.locator('#exportBtn').isDisabled(),true);
+  await page.reload();await page.waitForFunction(()=>snapshot?.state.boardScenes?.current==='patio'&&!busy);
   assert.deepEqual(await page.evaluate(()=>snapshot.state.characters.map(({sceneId,...c})=>c)),original);assert.equal(actions.some(a=>['talk','rest_pf_night','manual'].includes(a.type)),false);assert.deepEqual(errors,[]);assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
-  await page.locator('[data-tab=story]').tap();await page.screenshot({path:npcAid?`.deps/npc-aid-${aidCase}-mobile.png`:awake?'.deps/awake-exploration-mobile.png':'.deps/zero-hp-exploration-mobile.png',fullPage:true});console.log((npcAid?'NPC first aid '+aidCase:awake?'Both patients negative/conscious after organic combat/shared recovery':'Zero HP after organic combat/truce')+': legal guided creator, keyboard entry, five clues/three scenes/walking return, unchanged sheets and medical proofs, mobile/touch/copy/reload; zero IA. Dice simulated.');
+  await page.locator('[data-tab=story]').tap();await page.screenshot({path:npcAid?`.deps/npc-aid-${aidCase}-mobile.png`:awake?'.deps/awake-exploration-mobile.png':'.deps/zero-hp-exploration-mobile.png',fullPage:true});console.log((guest?'Guest player · ':'')+(disabledTruce?'Zero HP/unhurt guard truce':npcAid?'NPC first aid '+aidCase:awake?'Both patients negative/conscious after organic combat/shared recovery':'Zero HP after organic combat/truce')+': legal guided creator, keyboard entry, five clues/three scenes/walking return, unchanged sheets and medical proofs, mobile/touch/'+(guest?'reload; campaign export correctly unavailable':'copy/reload')+'; zero IA. Dice simulated.');
  }finally{await browser?.close();fixture.kill()}
 })().catch(e=>{console.error(e);process.exitCode=1});

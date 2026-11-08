@@ -1,5 +1,9 @@
 # Sencillez y orientación
 
+Memoria del mundo local: diario muestra Personas y lugares conocidos bajo detalle cerrado, solo si hay notas públicas. Conserva apertura al actualizar; personas/lugares/vínculos accesibles por teclado/tacto/móvil, sin IO al desplegar. No aparecen nombres desconocidos ni secretos, tampoco en cliente anfitrión; fichas y registro siguen siendo autoridad de salud/equipo/reglas. Inicio incluye contrato automáticamente sin opción técnica adicional. Navegador GUI/copia/salir/cerrar/reanudar e invitado verificados con2respuestas simuladas. MEMORIA_DEL_MUNDO.md.
+
+Hito1 acotado: invitación separada preparada y comprobada en producción (formulario, teclado/móvil y campaña vacía,0POST/IA). Ruta de invitado desde creador GUI1.15 completa comprobada localmente sin permisos de anfitrión; exportación total permanece reservada al anfitrión por privacidad. Invitación opcional comunicada una vez, no bloquea desarrollo. HITO_1_AVENTURA_ACOTADA.md.
+
 Tregua1.15: a0PG y con guardiana ilesa, la oferta permite salir del combate sin necesitar un ataque fatigoso. Orientación por teclado, aceptación voluntaria gratuita y texto que no inventa heridas al PNJ; mostrar/consultar no envía operaciones. Creador guiado, exploración completa, móvil/tacto/copia verificados localmente sin IA. TREGUA_INCAPACITADO.md.
 
 Auxilio del PNJ1.14: si el personaje cae moribundo, la guardiana positiva adyacente intenta primeros auxilios en su propia estándar disponible; no se pide al jugador administrar al PNJ ni decidir por su personaje inconsciente. Mostrar resultado real, cuidado y consciencia; un intento o un episodio vacío no implica ayuda exitosa. Al despertar se ofrecen búsquedas/salidas tranquilas; muerte, seis horas sin consciencia y cota conservan límites explícitos y copia. Cuatro recorridos locales desde creador/caída orgánica verificados con teclado/tacto/móvil, sin IA. Auditoría horaria hasta40 entradas bajo detalle local. AUXILIO_PNJ.md.

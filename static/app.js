@@ -122,6 +122,14 @@ function renderPlayGuidance(s){
  if(button.textContent!==label)button.textContent=label;
  button.onclick=open||null;
 }
+function renderCampaignWorld(s){
+ let details=$('#campaignWorldJournal');
+ if(!details){details=document.createElement('details');details.id='campaignWorldJournal';details.innerHTML='<summary>Personas y lugares conocidos</summary><div id="campaignWorldNotes"></div>';$('#journalOverview').after(details)}
+ const world=s.campaignWorldView,known=world&&[...world.npcs,...world.places,...world.relationships].length;
+ details.hidden=!known;if(!known)return;
+ const section=(title,entries)=>entries.length?`<h3>${title}</h3>${entries.map(item=>`<h4>${esc(item.name)}</h4><p>${esc(item.public||'Todavía no hay notas compartidas.')}</p>`).join('')}`:'';
+ $('#campaignWorldNotes').innerHTML=section('Personas',world.npcs)+section('Lugares',world.places)+section('Vínculos',world.relationships.map(link=>({name:link.fromName+' · '+link.toName,public:link.public})))+'<p class="hint">Recuerdos de la historia. La salud, el equipo y las reglas se consultan en las fichas y el registro.</p>';
+}
 function renderJournalOverview(s){
  const lists=[['Aliados',s.allies],['Enemigos',s.enemies],['Incógnitas',s.unknowns]].filter(([,items])=>items?.length);
  const unmeasuredActivity=s.adventureRouteView?.visits>1||s.adventureModuleView?.searchActions>0;
@@ -130,6 +138,7 @@ function renderJournalOverview(s){
  const timeLabel=unknownCurrentTime?'Hora no registrada':s.worldTime;
  const resolved=s.adventureRouteView?.completed?'Ruta completada':!s.adventureRouteView&&s.adventureModuleView?.completed?'Investigación resuelta':'';
  $('#journalOverview').innerHTML=`<h3>Situación actual</h3><p><strong>${esc(s.location)}</strong> · ${esc(timeLabel)}</p><p>${esc(s.goal)}</p>${resolved?`<p class="notice">${esc(resolved)}. Los hallazgos confirmados quedan guardados.</p>`:''}${!s.adventure&&s.objectives.length?`<ul>${s.objectives.map(v=>`<li>${esc(v)}</li>`).join('')}</ul>`:''}${s.notes?`<h4>Notas confirmadas</h4><p>${esc(s.notes)}</p>`:''}${s.adventureRouteView?.visitedScenes?.length>1?`<details class="visited-scene-notes"><summary>Lugares visitados y hallazgos</summary>${s.adventureRouteView.visitedScenes.map(v=>`<h4>${esc(v.location)}</h4>${v.discoveries.length?v.discoveries.map(d=>`<p>${esc(d.text)}</p>`).join(''):'<p>Sin hallazgos confirmados todavía.</p>'}`).join('')}</details>`:''}${lists.length?`<details><summary>Personas e incógnitas</summary>${lists.map(([title,items])=>`<h4>${title}</h4><ul>${items.map(v=>`<li>${esc(v)}</li>`).join('')}</ul>`).join('')}</details>`:''}`;
+ renderCampaignWorld(s);
  $('#journalFacts').hidden=!Object.keys(s.facts).length;
  if(unknownCurrentTime)$('#journalOverview').insertAdjacentHTML('beforeend',`<details class="clock-reference"><summary>Última referencia de tiempo</summary><p>${esc(s.worldTime)}</p><p>La duración de las búsquedas y los trayectos todavía no se calcula. Se conserva esta referencia sin inventar una hora actual.</p></details>`);
  $('#journalConsequences').hidden=!s.consequences.length;

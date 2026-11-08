@@ -26,5 +26,8 @@ Al continuar después de una tirada, lee el resultado confirmado en history, nar
 RULES='''Operación: consulta de reglas. Responde con las fuentes proporcionadas y sus páginas PDF. Si falta información verificable, indica la limitación sin inventar la regla. No avances la escena, no solicites tiradas y no prepares ni modifiques aventuras. No tienes acceso a preparación privada para esta consulta.'''
 
 
-def system_prompt(rules=False,starting=False):
-    return BASE+'\n'+(RULES if rules else START if starting else PLAY)
+WORLD='''Memoria estructurada del mundo: directorKnowledge.campaignWorld conserva PNJ, lugares y relaciones entre sesiones. Usa worldUpdates únicamente para notas ficticias efectivamente establecidas; como máximo tres entradas en total. En la apertura entrega las tres listas, aunque estén vacías; después omite worldUpdates si no cambia nada. Conserva los ids existentes sin prefijos de tipo; los extremos de relaciones sí usan npc:id o place:id. known indica conocimiento del grupo; los nombres y notas de entradas desconocidas siguen privados. No reveles pistas ni secretos del módulo que el motor no haya confirmado. No guardes estadísticas, heridas, recursos, tiradas, permisos reglamentarios ni decisiones del PJ en estas notas. Las fichas y hechos preparados prevalecen. No adelantes cambios mientras hay pruebas, combate, propuestas o acciones de viaje/ataque/investigación pendientes, ni en ooc. Las notas no aplican consecuencias mecánicas. Mantén las entradas breves y actualiza solo lo necesario; las listas vacías no borran recuerdos.'''
+
+
+def system_prompt(rules=False,starting=False,world_memory=False):
+    return BASE+'\n'+(RULES if rules else START if starting else PLAY)+('\n'+WORLD if world_memory and not rules else '')

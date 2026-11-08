@@ -143,6 +143,19 @@ def main():
                 return result
             server.ai_reply=compact_fixture_reply
         else:server.ai_reply=fixture_reply
+    if os.environ.get('TEST_ADVENTURE_FIXTURE')=='1':
+        previous_reply=server.ai_reply
+        def world_fixture_reply(state,text,refs,**options):
+            result=previous_reply(state,text,refs,**options)
+            if 'campaignWorld' in state:
+                updates={'npcs':[],'places':[],'relationships':[]}
+                if os.environ.get('TEST_CAMPAIGN_WORLD_FIXTURE')=='1':
+                    from test_rule_pack_world import npc,place,relationship
+                    if options.get('starting'):updates={'npcs':[npc(),npc('oculta',name='SECRET-NAME',known=False,public='')],'places':[place()],'relationships':[]}
+                    else:updates={'npcs':[npc(public='Arda recuerda vuestra conversación junto al archivo.')],'places':[],'relationships':[relationship()]}
+                result={**result,'worldUpdates':updates}
+            return result
+        server.ai_reply=world_fixture_reply
     from test_reader_support import fixture_reader
     server.READER=fixture_reader()
     if os.environ.get('TEST_PF_ENCOUNTER_VERSION'):

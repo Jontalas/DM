@@ -96,6 +96,9 @@ def view(row,state,me,known_workspace=None):
         if workspace_unavailable:result['workspaceUnavailable']=True
         return result
     state=json.loads(json.dumps(state))
+    import campaign_world
+    state.pop('campaignWorldView',None)
+    if 'campaignWorld' in state:state['campaignWorldView']=campaign_world.public_view(state.pop('campaignWorld'))
     module_view=adventure_modules.public_view(state)
     route_view=adventure_routes.public_view(state)
     # Repair historical model prose on the copy, preserving originals in storage/export.
@@ -210,6 +213,9 @@ def execute_action(body,me):
                 import pf_scene_transition
                 pf_scene_transition.validate_restored(state)
                 adventure_routes.validate_restored(state)
+                import campaign_world
+                if 'campaignWorld' in state:campaign_world.validate(state['campaignWorld'])
+                state.pop('campaignWorldView',None)
                 state['private']={}
             title=str(data['title'])[:120]
         elif selected is not None:
@@ -241,6 +247,11 @@ def execute_action(body,me):
             else:state=selected.execute_action(state,body,me)
         elif body['type']=='start_adventure':
             premise=adventure.validate_start(state,body,me)
+            import campaign_world
+            if 'worldMemoryContract' in body:
+                if body['worldMemoryContract']!=campaign_world.CONTRACT:raise ValueError('Contrato de memoria del mundo no disponible')
+                if 'campaignWorld' in state:raise ValueError('Conserva la memoria del mundo existente; no se reemplaza al empezar')
+                state['campaignWorld']=campaign_world.empty()
             if type(body.get('structured',False))!=bool:raise ValueError('Modo de aventura inválido')
             source=adventure.source_text(body)
             if body.get('moduleId') and body.get('module') is not None:raise ValueError('Elige una sola fuente de aventura')
@@ -255,6 +266,7 @@ def execute_action(body,me):
             actors=[c['id'] for c in adventure.ready_characters(state)]
             source_options={'source_text':source} if source is not None else {}
             result=legacy_reply(premise,[],check_actors=actors,starting=True,**source_options)
+            if campaign_world.enabled(state) and 'worldUpdates' not in result:raise ValueError('El director no entregó las notas iniciales del mundo; la campaña no se ha modificado')
             if result.get('checks') or result.get('investigation') or result.get('routeTravel') or result.get('preparedDecision') or result.get('meleeAttack') or result.get('turnEnd'):raise ValueError('La apertura no puede resolver ni solicitar acciones de los personajes')
             if result.get('proposals'):raise ValueError('La apertura requiere una situación dentro de la cobertura disponible')
             if (body.get('structured') or source is not None) and not state.get('adventureModule') and result.get('adventureModule') is None:
@@ -263,6 +275,8 @@ def execute_action(body,me):
                 if state.get('adventureModule'):raise ValueError('El director no puede sustituir una aventura aportada')
                 adventure_modules.install(state,result['adventureModule'])
             adventure.apply_memory(state,result.get('memory'),starting=True)
+            if 'worldUpdates' in result:
+                state['campaignWorld']=campaign_world.validate_turn(state,result['worldUpdates'],starting=True,result=result)
             state['messages'].append({'kind':'director','speaker':'Director · Claude Haiku','text':result['narration'],
                                       'time':time.time(),'adventureStart':True})
         elif body['type']=='travel_scene':
@@ -322,6 +336,10 @@ def execute_action(body,me):
                 import director_turn
                 randomness=ActionRandomness(store,cid,aid,me['id'],signature,row['version'])
                 with using_random_source(randomness):director_turn.apply(state,result['turnEnd'],body,me)
+            if 'worldUpdates' in result:
+                import campaign_world
+                if body.get('kind')=='ooc' and any(result['worldUpdates'].values()):raise ValueError('Un comentario fuera de personaje no cambia las notas del mundo')
+                state['campaignWorld']=campaign_world.validate_turn(state,result['worldUpdates'],result=result)
             if (state.get('adventure') and body.get('kind','action')!='ooc' and not result.get('checks') and not result.get('investigation')
                 and not result.get('routeTravel') and not result.get('preparedDecision') and not result.get('meleeAttack') and not result.get('turnEnd')
                 and not any(p.get('check') for p in state['pending'])):
