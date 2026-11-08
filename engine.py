@@ -53,11 +53,11 @@ def begin_turn(s):
         if patient.get('conditions','').strip():
             log(s,patient['name']+': estabilización pendiente; las condiciones requieren resolución excepcional.')
         else:
-            raw=dice([20])[0];modifier=(patient['abilities'][2]-10)//2+patient['hp']
-            if raw==20 or raw+modifier>=10:
-                import pf_recovery
-                pf_recovery.record_stabilization(patient,assisted=False,round_number=board['round'],initiative=upcoming,order=[entry['id'] for entry in board['order']],epoch=board.get('combatSerial'))
-            else:patient['hp']-=1
+            import pf_stabilization
+            clock={'round_number':board['round'],'order':[entry['id'] for entry in board['order']],'epoch':board.get('combatSerial')}
+            pf_stabilization.validate(patient,**clock)
+            raw=dice([20])[0];result=pf_stabilization.resolve(patient,die=raw,**clock)
+            patient.clear();patient.update(result['patient']);modifier=result['modifier']
             log(s,f"{patient['name']}: estabilización d20 {raw} {modifier:+} contra CD 10 → {combat.health_status(patient)}; PG {patient['hp']}.",refs=[{'book':'reglas','page':191}])
 
 

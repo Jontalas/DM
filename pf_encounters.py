@@ -23,7 +23,9 @@ def participants_present(state,record):
         for identifier in (record['character'],record['npc']))
 
 
-def definition(version='1.13.0'):
+def definition(version='1.14.0'):
+    if version=='1.14.0':
+        return json.loads((Path(__file__).parent/'adventures/pf-patio-del-peaje-1.14.0.json').read_text(encoding='utf-8'))
     if version=='1.13.0':
         return json.loads((Path(__file__).parent/'adventures/pf-patio-del-peaje-1.13.0.json').read_text(encoding='utf-8'))
     if version=='1.12.0':
@@ -119,6 +121,14 @@ def resolve_defeat(state):
     if (combat.standing(actor) or any(c.get('conditions','').strip() for c in (actor,npc)) or state['board']['terrain']
         or actor['creation'].get('manualOverride') or npc['npcCreation'].get('manualOverride')):return False
     from engine import log,advance_turn
+    import pf_npc_aid
+    if pf_npc_aid.supported(record['definition']):
+        reason=pf_npc_aid.limitation(state)
+        if reason is None:
+            pf_npc_aid.apply(state)
+            record=state['pfEncounter'];actor=next(c for c in state['characters'] if c['id']==record['character']);npc=next(c for c in state['characters'] if c['id']==record['npc'])
+        elif combat.health_status(actor)=='moribundo' and npc['hp']>0:
+            log(state,'El auxilio automático no cubre esta situación: '+reason+' Las comprobaciones de estabilización conservan su iniciativa.')
     if combat.standing(npc):log(state,record['definition']['defeatPolicy'])
     else:log(state,'No quedan participantes conscientes; se resuelven únicamente sus pruebas de estabilización, sin elegir acciones por el PJ.')
     # No one chooses a player's action. Each failure loses HP; the total bound
@@ -144,7 +154,7 @@ def resolve_recovery(state):
     """Quiet authored scene, one unconscious patient; no player decisions."""
     record=state.get('pfEncounter')
     if record and not participants_present(state,record):return False
-    if record and record['definition'].get('recoveryScope')=='shared-patients-1':
+    if record and record['definition'].get('recoveryScope') in ('shared-patients-1','shared-patients-2'):
         import pf_shared_recovery
         return pf_shared_recovery.apply(state)
     if (not record or record['phase']!='defeated' or state['board']['active'] or record.get('recoveryOutcome') or record.get('recoveryLimit')
@@ -216,21 +226,16 @@ def aid_or_wait(state,body,me):
     from engine import log,advance_turn,run_automatic_turns
     if body['type']=='pf_first_aid':
         if 'physical' in body and not me['host']:raise PermissionError('En esta mesa el anfitrión registra los dados físicos, como en las demás pruebas Pathfinder')
-        if max(abs(helper['x']-target['x']),abs(helper['y']-target['y']))!=1:raise ValueError('Este bloque de primeros auxilios requiere un paciente adyacente')
+        import pf_first_aid
         spent=result['board']['spent'].get(helper['id'],{})
-        if spent.get('standard') or helper['hp']<=0 and spent.get('move'):raise ValueError('No queda la acción estándar necesaria para primeros auxilios')
-        # Validate the prepared skill and physical die before any RNG.
-        checks.modifier(helper,'skill','Curar')
+        clock={'round_number':result['board']['round'],'order':[entry['id'] for entry in result['board']['order']],
+            'epoch':result['board'].get('combatSerial')}
+        pf_first_aid.validate(helper,target,spent,**clock)
         if 'physical' in body:checks.integer(body['physical'],1,20)
         die=body['physical'] if 'physical' in body else game_randomness.draw(20)
-        resolved=checks.resolve(helper,'skill','Curar',die,15)
-        result['board']['spent'].setdefault(helper['id'],{})['standard']=True
-        if resolved['success']:
-            import pf_recovery
-            pf_recovery.record_stabilization(target,assisted=True,round_number=result['board']['round'],initiative=helper['id'],order=[entry['id'] for entry in result['board']['order']],epoch=result['board'].get('combatSerial'))
-        if helper['hp']<=0:
-            import pf_recovery
-            helper['hp']-=1;helper['stable']=False;pf_recovery.clear_episode(helper)
+        resolution=pf_first_aid.resolve(helper,target,spent,die=die,**clock)
+        helper.clear();helper.update(resolution['helper']);target.clear();target.update(resolution['patient'])
+        result['board']['spent'][helper['id']]=resolution['spent'];resolved=resolution['check']
         log(result,helper['name']+': primeros auxilios, d20 '+str(die)+' '+str(resolved['modifier'])+' = '+str(resolved['total'])+' contra CD15. '+('El paciente queda estable sin recuperar PG.' if resolved['success'] else 'El paciente sigue moribundo; no se aplica daño adicional por fallar.'),
             check=resolved|{'patient':target['id']},refs=[{'book':'reglas','page':93},{'book':'reglas','page':94},{'book':'reglas','page':191}])
     else:
@@ -248,9 +253,11 @@ def validate_restored(state):
     record=state.get('pfEncounter')
     import pf_ceasefire
     import pf_npc_wait
+    import pf_npc_aid
     if record is None:
         pf_ceasefire.validate_restored(state)
         pf_npc_wait.validate_restored(state)
+        pf_npc_aid.validate_restored(state)
         return
     fields={'format','definition','sha256','character','npc','phase'}
     if isinstance(record,dict) and record.get('phase') in ('resolved','defeated'):fields.add('outcome')
@@ -259,6 +266,7 @@ def validate_restored(state):
     if isinstance(record,dict) and 'recoveryStart' in record:fields.add('recoveryStart')
     if isinstance(record,dict) and 'ceasefire' in record:fields.add('ceasefire')
     if isinstance(record,dict) and 'npcRecovery' in record:fields.add('npcRecovery')
+    if isinstance(record,dict) and 'npcAidEpisode' in record:fields.add('npcAidEpisode')
     if (state.get('ruleset','pathfinder-1e')!='pathfinder-1e' or not isinstance(record,dict)
         or set(record)!=fields
         or record['format']!='cronicas-pf-encounter-state-1' or record['phase'] not in ('offered','agreement','combat','resolved','defeated')):
@@ -274,6 +282,7 @@ def validate_restored(state):
     npc_catalog.validate_character(npc,'pathfinder-1e')
     pf_ceasefire.validate_restored(state)
     pf_npc_wait.validate_restored(state)
+    pf_npc_aid.validate_restored(state)
     here=participants_present(state,record)
     if record['phase']=='offered' and not here:raise ValueError('La escena ofrecida requiere sus participantes presentes')
     if record['phase'] in ('offered','agreement') and state['board']['active'] and here:raise ValueError('La fase del encuentro contradice el combate activo')
@@ -309,7 +318,7 @@ def validate_restored(state):
         if outcome['npcConstitution']!=original_npc['abilities'][2]:raise ValueError('La derrota requiere la Constitución verificada del PNJ')
         if -outcome['npcConstitution']<outcome['npcHp']<0 and not outcome['npcStable']:raise ValueError('No se omite un PNJ todavía moribundo')
         if state['board']['active'] and here:raise ValueError('La derrota registrada no conserva combate activo')
-    if record['definition'].get('recoveryScope')=='shared-patients-1':
+    if record['definition'].get('recoveryScope') in ('shared-patients-1','shared-patients-2'):
         import pf_shared_recovery
         if record.get('recoveryLimit')=='armor-rest' and actor['creation']['choices']['armor']!='scale':raise ValueError('El límite de armadura no corresponde al PJ')
         pf_shared_recovery.validate_record(record);return

@@ -9,7 +9,7 @@ import pf_shared_recovery
 
 def verified(state):
     record=state.get('pfEncounter') or {}
-    if (record.get('phase')!='defeated' or record.get('definition',{}).get('recoveryScope')!='shared-patients-1'
+    if (record.get('phase')!='defeated' or record.get('definition',{}).get('recoveryScope') not in ('shared-patients-1','shared-patients-2')
         or state['board'].get('combatSerial')!=1 or state['board']['active']
         or len(state['characters'])!=2 or record.get('recoveryLimit')):return False
     try:

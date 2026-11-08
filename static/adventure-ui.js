@@ -64,15 +64,15 @@ function renderAdventure(){
 }
 
 function preparedEncounterHelp(definition,actor){
- const limited=['single-unconscious-player-1','shared-patients-1'].includes(definition.recoveryScope)&&actor?.hp>=0&&actor?.creation?.choices?.armor==='scale';
+ const limited=['single-unconscious-player-1','shared-patients-1','shared-patients-2'].includes(definition.recoveryScope)&&actor?.hp>=0&&actor?.creation?.choices?.armor==='scale';
  return `${limited?'<p class="notice recovery-limit">Si caes inconsciente con tu cota de escamas, la recuperación posterior necesitará una resolución excepcional. El juego conservará tu estado.</p>':''}<details class="encounter-help"><summary>Qué incluye este encuentro</summary><p>${esc(definition.coverage)}</p><p>Una persona juega con su personaje. Luz normal, patio abierto y sin sorpresa. La guardiana tiene su ficha preparada.</p><p>Su disposición a negociar pertenece a esta escena; otras conversaciones pueden necesitar una prueba de Diplomacia.</p></details>`;
 }
 
 function preparedEncounterHealthDescription(record,actor,npc){
  if(record.phase!=='defeated')return '';
  if(characterIsConscious(actor)){
-  if(record.definition.recoveryScope==='shared-patients-1'&&npc&&!characterIsConscious(npc))return npc.hp<=-npc.abilities[2]?'Has recuperado la consciencia. La guardiana ha muerto; tú decides qué haces a continuación.':'Has recuperado la consciencia. La guardiana sigue inconsciente; tú decides qué haces a continuación.';
-  return ['single-unconscious-player-1','shared-patients-1'].includes(record.definition.recoveryScope)?'Has recuperado la consciencia. La guardiana te permite retirarte; tú decides qué haces a continuación.':'Estás consciente. Consulta tus heridas en la ficha; tú decides qué haces a continuación.';
+  if(['shared-patients-1','shared-patients-2'].includes(record.definition.recoveryScope)&&npc&&!characterIsConscious(npc))return npc.hp<=-npc.abilities[2]?'Has recuperado la consciencia. La guardiana ha muerto; tú decides qué haces a continuación.':'Has recuperado la consciencia. La guardiana sigue inconsciente; tú decides qué haces a continuación.';
+  return ['single-unconscious-player-1','shared-patients-1','shared-patients-2'].includes(record.definition.recoveryScope)?'Has recuperado la consciencia. La guardiana te permite retirarte; tú decides qué haces a continuación.':'Estás consciente. Consulta tus heridas en la ficha; tú decides qué haces a continuación.';
  }
  if(actor.hp<=-actor.abilities[2])return 'Tu personaje ha muerto por sus heridas. Puedes revisar lo ocurrido en el registro. Para empezar otra campaña, vuelve al inicio con «Salir».';
  if(record.recoveryLimit==='armor-rest')return 'Tu personaje está inconsciente y estable. La recuperación prolongada con su armadura requiere efectos de descanso aún pendientes. No se han avanzado horas de juego.';

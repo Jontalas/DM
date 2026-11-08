@@ -11,6 +11,7 @@ import game_randomness
 import pf_timeline
 
 SCOPE='shared-patients-1'
+ASSISTED_SCOPE='shared-patients-2'
 
 
 class CoverageLimit(ValueError):
@@ -19,7 +20,8 @@ class CoverageLimit(ValueError):
         super().__init__('La recuperación compartida necesita resolver '+code)
 
 
-def _participants(start):
+def _participants(start,*,scope=SCOPE):
+    if scope not in (SCOPE,ASSISTED_SCOPE):raise ValueError('Ámbito de recuperación compartida desconocido')
     if not isinstance(start,dict) or set(start)!={'epoch','round','initiative','order','patients'}:
         raise ValueError('Inicio de reloj compartido inválido')
     if type(start['epoch'])!=int or not 1<=start['epoch']<=1000000 or type(start['round'])!=int or not 1<=start['round']<=1000000:
@@ -49,25 +51,26 @@ def _participants(start):
             raise CoverageLimit('unverified-clock')
         if (care['round'],order.index(care['initiative']))>closure:raise ValueError('La asistencia no puede proceder del futuro')
         if (care['round']+600,order.index(care['initiative']))<=closure:raise CoverageLimit('overdue-events')
-    if player['recoveryCare']['assisted']:raise CoverageLimit('assisted-player-rest')
+    if player['recoveryCare']['assisted'] and scope==SCOPE:raise CoverageLimit('assisted-player-rest')
     npc=result[1]
     if -npc['abilities'][2]<npc['hp']<0 and (start['epoch']!=1 or start['round']>=600):
         raise CoverageLimit('extended-encounter')
     return result
 
 
-def simulate(start,draw):
+def simulate(start,draw,*,scope=SCOPE):
     """draw(role) returns one d20. role0 is PC, role1 is NPC."""
-    patients=_participants(start);player,npc=patients;order=start['order']
+    patients=_participants(start,scope=scope);player,npc=patients;order=start['order']
     care=player['recoveryCare'];origin=(care['round'],order.index(care['initiative']))
     horizon=(origin[0]+3600,origin[1]);clock=(start['round'],order.index(start['initiative']))
     ledger=[];audit=[];roles={p['id']:i for i,p in enumerate(patients)}
     for _ in range(44):
         if pf_recovery.is_conscious(player):status='conscious';break
         if player['hp']<=-player['abilities'][2]:status='dead';break
-        assisted_npc=(-npc['abilities'][2]<npc['hp']<0 and not pf_recovery.is_conscious(npc)
-            and npc.get('recoveryCare',{}).get('assisted') is True)
-        if assisted_npc and clock>=horizon:status='rest-boundary';break
+        watched=patients if scope==ASSISTED_SCOPE else [npc]
+        assisted_patient=any(-p['abilities'][2]<p['hp']<0 and not pf_recovery.is_conscious(p)
+            and p.get('recoveryCare',{}).get('assisted') is True for p in watched)
+        if assisted_patient and clock>=horizon:status='rest-boundary';break
         events=pf_recovery.next_hourly_events(patients)
         if not events:raise ValueError('No hay una próxima prueba verificable para el jugador inconsciente')
         due=(events[0]['round'],events[0]['orderIndex'])
@@ -98,10 +101,10 @@ def _snapshot(state,record):
         'order':[v['id'] for v in board['order']],'patients':rows}
 
 
-def _receipt(start,result,world_time):
+def _receipt(start,result,world_time,*,scope=SCOPE):
     player,npc=result['patients']
-    return {'format':'cronicas-pf-recovery-outcome-2','fromHp':start['patients'][0]['hp'],'hp':player['hp'],
-        'constitution':player['abilities'][2],'assisted':False,'dice':[raw for role,raw in result['rolls'] if role==0],
+    return {'format':'cronicas-pf-recovery-outcome-3' if scope==ASSISTED_SCOPE else 'cronicas-pf-recovery-outcome-2','fromHp':start['patients'][0]['hp'],'hp':player['hp'],
+        'constitution':player['abilities'][2],'assisted':start['patients'][0]['care']['assisted'] if scope==ASSISTED_SCOPE else False,'dice':[raw for role,raw in result['rolls'] if role==0],
         'hours':result['hours'],'seconds':result['seconds'],'status':result['status'],'npcHp':npc['hp'],
         'rolls':result['rolls'],'worldTimeBefore':world_time}
 
@@ -109,7 +112,8 @@ def _receipt(start,result,world_time):
 def apply(state):
     """Called only by the prepared encounter after both dying states resolve."""
     record=state.get('pfEncounter')
-    if not record or record['definition'].get('recoveryScope')!=SCOPE or record['phase']!='defeated' or state['board']['active'] or record.get('recoveryOutcome') or record.get('recoveryLimit'):return False
+    if not record or record['definition'].get('recoveryScope') not in (SCOPE,ASSISTED_SCOPE) or record['phase']!='defeated' or state['board']['active'] or record.get('recoveryOutcome') or record.get('recoveryLimit'):return False
+    scope=record['definition']['recoveryScope']
     if len(state['characters'])!=2 or state['board']['terrain'] or state['pending'] or any(not e.get('interpreted') for e in state['consequences']):return False
     actor=next(c for c in state['characters'] if c['id']==record['character']);npc=next(c for c in state['characters'] if c['id']==record['npc'])
     if (pf_recovery.is_conscious(actor) or actor['hp']<=-actor['abilities'][2] or actor.get('stable') is not True
@@ -122,11 +126,11 @@ def apply(state):
         record['recoveryLimit']='armor-rest'
         log(state,'No se avanzan horas: la recuperación con esta armadura requiere efectos de descanso aún no cubiertos.',refs=[{'book':'reglas','page':151}]);return False
     try:
-        start=_snapshot(state,record);_participants(start)
+        start=_snapshot(state,record);_participants(start,scope=scope)
     except CoverageLimit as error:
         record['recoveryLimit']='shared-'+error.code
         log(state,'No se avanza la recuperación compartida: el estado necesita una resolución fuera del alcance actual. Se conservan las heridas y el tiempo.');return False
-    result=simulate(start,lambda role:game_randomness.draw(20))
+    result=simulate(start,lambda role:game_randomness.draw(20),scope=scope)
     updated=copy.deepcopy(state);target_record=updated['pfEncounter']
     for role,patient in enumerate(result['patients']):
         if not any(rolled_role==role for rolled_role,raw in result['rolls']):continue
@@ -134,7 +138,7 @@ def apply(state):
         for key in ('hp','stable','recoveryCare','recoveryState'):
             if key in patient:target[key]=copy.deepcopy(patient[key])
             else:target.pop(key,None)
-    target_record['recoveryStart']=start;target_record['recoveryOutcome']=_receipt(start,result,state['worldTime'])
+    target_record['recoveryStart']=start;target_record['recoveryOutcome']=_receipt(start,result,state['worldTime'],scope=scope)
     if result['status']=='rest-boundary':target_record['recoveryLimit']='shared-rest-boundary'
     updated['worldTime']=str(result['hours'])+' hora'+('s' if result['hours']!=1 else '')+' desde la estabilización del personaje'
     log(updated,record['definition']['recoveryPolicy'])
@@ -164,7 +168,8 @@ def validate_record(record):
     start=record.get('recoveryStart');receipt=record['recoveryOutcome'];outcome=record['outcome']
     if not isinstance(start,dict) or not isinstance(receipt,dict) or not isinstance(receipt.get('rolls'),list) or len(receipt['rolls'])>40:
         raise ValueError('Recibo de reloj compartido inválido')
-    _participants(start)
+    scope=record['definition'].get('recoveryScope',SCOPE)
+    _participants(start,scope=scope)
     if (start['round']!=outcome['round'] or [p['id'] for p in start['patients']]!=[record['character'],record['npc']]
         or [(p['hp'],p['constitution'],p['stable']) for p in start['patients']]!=[
             (outcome['hp'],outcome['constitution'],outcome['stable']),(outcome['npcHp'],outcome['npcConstitution'],outcome['npcStable'])]):
@@ -177,10 +182,10 @@ def validate_record(record):
         if not isinstance(entry,list) or len(entry)!=2 or type(entry[0])!=int or entry[0]!=role:
             raise ValueError('Prueba de participante fuera de su instante')
         return entry[1]
-    result=simulate(start,replay)
+    result=simulate(start,replay,scope=scope)
     if index!=len(receipt['rolls']) or not isinstance(receipt.get('worldTimeBefore'),str):raise ValueError('Sobran pruebas o falta el tiempo anterior')
     from rule_pack_authoring import canonical
-    if canonical(receipt)!=canonical(_receipt(start,result,receipt['worldTimeBefore'])):
+    if canonical(receipt)!=canonical(_receipt(start,result,receipt['worldTimeBefore'],scope=scope)):
         raise ValueError('El resultado compartido no coincide con sus pruebas')
     expected_limit='shared-rest-boundary' if result['status']=='rest-boundary' else None
     if record.get('recoveryLimit')!=expected_limit:raise ValueError('El límite no corresponde al resultado compartido')

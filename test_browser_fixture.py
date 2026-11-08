@@ -166,6 +166,12 @@ def main():
         awake_dice=iter([20,1,*([19,1,4]*4),12,4,20,20,20,20])
         game_randomness.draw=lambda sides:next(awake_dice)
         game_randomness.initiative_tie=lambda:0
+    if os.environ.get('TEST_PF_NPC_AID_FIXTURE') in ('success','boundary','natural','death'):
+        medical_case=os.environ['TEST_PF_NPC_AID_FIXTURE']
+        after={'success':[20,20],'boundary':[20,*([1]*6)],'natural':[1,20,20],'death':[1]*30}[medical_case]
+        medical_dice=iter([20,1,*([19,1,4]*4),12,1,*after])
+        game_randomness.draw=lambda sides:next(medical_dice)
+        game_randomness.initiative_tie=lambda:0
     if os.environ.get('TEST_PF_NIGHT_FIXTURE')=='1':
         night_dice=iter([1,20,18,3,20,20,8,8]*2)
         game_randomness.draw=lambda sides:next(night_dice)

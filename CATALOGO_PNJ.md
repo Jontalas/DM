@@ -1,5 +1,9 @@
 # Plantillas de adversarios desde fuentes verificadas
 
+## Variante de auxilio preparada para1.14
+
+Nueva plantilla original pf1-common-speaking-first-aid-guard-1: todos los valores de la variante común6PG se conservan; añade Curar−1 sin entrenamiento, Sab9/0rangos/sin clase ni kit. No se cambia el reparto anterior de tres rangos, equipo, idiomas, PG o CA. Tabla4-3 CorePDF90/89 y apartados93–94/92–93 contrastados visualmente; discrepancia de cabecera Int frente a tabla Sab documentada en AUXILIO_PNJ.md. Las dos plantillas previas permanecen idénticas, incluida la huella04f7b0f12f49dc360411d4aae8e54a3c19a82bce6e465b5d267ffdf9368fda12 del goblin publicado7PG. La política de auxilio automático pertenece solo a la escena1.14, no a toda preparación del catálogo.849 completas correctas; operadores y límites en AUXILIO_PNJ.md. Los estados inferiores de1.10 son históricos.
+
 ## Variante original en verificación: guardiana que conoce Común
 
 **Publicada/verificada1.10:**065e63fc64ba65fbd0cfa72e6716f0315de3ccd0, Render7631426667 success,726 completas correctas (165,505s). Campaña técnica common-guard-live-session.json verified sin IA: default idiomas adicionales=[], guardiana1/6PG/CA15, Común compartido, noche/duplicado/copia/continuación correctos, sin partidas personales. No repetir guion ni borrar sesión. Lector real de esa misma campaña correcto: revisión/descriptor/salud/perfil/idiomas/noche/ruta/copia/recarga/teclado/móvil y cero acciones nuevas. Estados inferiores de local/pendiente son históricos.
