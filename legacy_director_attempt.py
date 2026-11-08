@@ -41,7 +41,7 @@ def compatible_input(saved,current):
 
 def keyed_request(request):
     keyed=copy.deepcopy(request)
-    for name in ('routeTravelActor','preparedDecisions','availableMeleeAttack'):keyed['context'].pop(name,None)
+    for name in ('routeTravelActor','preparedDecisions','availableMeleeAttack','availableTurnEnd'):keyed['context'].pop(name,None)
     return keyed
 
 
@@ -97,7 +97,9 @@ def restore(prepared,payload,scheme):
     attack={}
     if context.get('availableMeleeAttack') and context.get('history') and context['history'][-1].get('kind')=='action' and context['operation']=='narrate':
         attack=context['availableMeleeAttack']
-    result=claude_dm.parse_response(state,raw,rules=False,starting=context['operation']=='startAdventure',route_travel_context=route_travel,prepared_decision_context=decisions,melee_attack_context=attack)
+    turn={}
+    if context.get('availableTurnEnd') and context.get('history') and context['history'][-1].get('kind')=='action' and context['operation']=='narrate':turn=context['availableTurnEnd']
+    result=claude_dm.parse_response(state,raw,rules=False,starting=context['operation']=='startAdventure',route_travel_context=route_travel,prepared_decision_context=decisions,melee_attack_context=attack,turn_end_context=turn)
     if payload['kind']=='report':
         # Reports already passed through the adapter. Validate their structure,
         # but preserve the stored narration instead of repairing it twice.

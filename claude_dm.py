@@ -12,6 +12,7 @@ import adventure_routes
 import director_travel
 import director_prepared_decisions
 import director_combat
+import director_turn
 import board_scenes
 from director_prompt import system_prompt
 from model_config import model_name,DEFAULT_MODEL
@@ -30,6 +31,7 @@ SCHEMA['properties']['investigation']={'type':'object','properties':{
 SCHEMA['properties']['routeTravel']={'type':'object','properties':{'exit':{'type':'string'}},'required':['exit'],'additionalProperties':False}
 SCHEMA['properties']['preparedDecision']={'type':'object','properties':{'action':{'type':'string'}},'required':['action'],'additionalProperties':False}
 SCHEMA['properties']['meleeAttack']={'type':'object','properties':{'target':{'type':'string'}},'required':['target'],'additionalProperties':False}
+SCHEMA['properties']['turnEnd']={'type':'object','properties':{'character':{'type':'string'}},'required':['character'],'additionalProperties':False}
 def response_schema(state,rules=False,starting=False):
     """The provider cannot propose player actions in an opening or rules lookup."""
     schema=copy.deepcopy(SCHEMA)
@@ -58,6 +60,10 @@ def response_schema(state,rules=False,starting=False):
         if attack:
             allowed.add('meleeAttack')
             schema['properties']['meleeAttack']['properties']['target']['enum']=attack['targets']
+        turn=director_turn.declaration_available(state)
+        if turn:
+            allowed.add('turnEnd')
+            schema['properties']['turnEnd']['properties']['character']['enum']=[turn['character']]
         if state.get('adventure'):allowed.add('memory')
         if (state.get('adventureModule') and not state['moduleProgress']['completed'] and not state['pending']
             and state['messages'] and state['messages'][-1].get('kind')=='action'):
@@ -97,6 +103,8 @@ def build_context(state,text,refs,rules=False,check_actors=None,starting=False,s
             if decisions:context['preparedDecisions']=decisions
             attack=director_combat.declaration_available(state)
             if attack:context['availableMeleeAttack']=attack
+            turn=director_turn.declaration_available(state)
+            if turn:context['availableTurnEnd']=turn
         if starting:
             totals=[row['total'] for c in state['characters'] if not c.get('enemy') and c.get('hp',0)>0 and not c.get('conditions','').strip()
                     for row in c.get('skillTotals',[]) if row.get('name')=='Percepción' and type(row.get('total'))==int]
@@ -112,7 +120,7 @@ def build_context(state,text,refs,rules=False,check_actors=None,starting=False,s
     return context
 
 
-def parse_response(state,raw,rules=False,starting=False,route_travel_context=None,prepared_decision_context=None,melee_attack_context=None):
+def parse_response(state,raw,rules=False,starting=False,route_travel_context=None,prepared_decision_context=None,melee_attack_context=None,turn_end_context=None):
     stage='json';stop_reason=None
     try:
         output=json.loads(raw)
@@ -141,14 +149,14 @@ def parse_response(state,raw,rules=False,starting=False,route_travel_context=Non
             item=result['routeTravel'];travel=director_travel.declaration_available(state) if route_travel_context is None else route_travel_context
             if (rules or starting or not travel or not isinstance(item,dict) or set(item)!={'exit'}
                 or not isinstance(item['exit'],str) or item['exit'] not in {e['id'] for e in travel['exits']}
-                or result.get('checks') or result.get('investigation') or result.get('proposals') or result.get('preparedDecision') or result.get('meleeAttack')):
+                or result.get('checks') or result.get('investigation') or result.get('proposals') or result.get('preparedDecision') or result.get('meleeAttack') or result.get('turnEnd')):
                 raise ValueError('Viaje de ruta incompatible con la intervención')
         if 'preparedDecision' in result:
             stage='prepared-decision';item=result['preparedDecision']
             choices=director_prepared_decisions.declaration_available(state) if prepared_decision_context is None else prepared_decision_context
             if (rules or starting or not choices or not isinstance(item,dict) or set(item)!={'action'}
                 or not isinstance(item['action'],str) or item['action'] not in {a['id'] for a in choices['actions']}
-                or result.get('checks') or result.get('investigation') or result.get('proposals') or result.get('routeTravel') or result.get('meleeAttack')):
+                or result.get('checks') or result.get('investigation') or result.get('proposals') or result.get('routeTravel') or result.get('meleeAttack') or result.get('turnEnd')):
                 raise ValueError('Decisión preparada incompatible con la intervención')
         if 'meleeAttack' in result:
             stage='melee-attack';item=result['meleeAttack']
@@ -157,6 +165,12 @@ def parse_response(state,raw,rules=False,starting=False,route_travel_context=Non
                 or not isinstance(item['target'],str) or item['target'] not in attack['targets']
                 or result.get('checks') or result.get('investigation') or result.get('proposals') or result.get('routeTravel') or result.get('preparedDecision')):
                 raise ValueError('Ataque incompatible con la intervención')
+        if 'turnEnd' in result:
+            stage='turn-end';item=result['turnEnd']
+            turn=director_turn.declaration_available(state) if turn_end_context is None else turn_end_context
+            if (rules or starting or not turn or not isinstance(item,dict) or set(item)!={'character'}
+                or item!=turn or any(result.get(k) for k in ('checks','investigation','proposals','routeTravel','preparedDecision','meleeAttack'))):
+                raise ValueError('Fin de turno incompatible con la intervención')
         if 'investigation' in result:
             stage='investigation'
             item=result['investigation']

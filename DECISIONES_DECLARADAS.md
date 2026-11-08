@@ -17,3 +17,6 @@ La elección usa la llamada de conversación ya solicitada; no añade una infere
 Navegador con proveedor simulado: personaje legal por API del creador, daño por ataques hasta0, pregunta sobre aceptar sin acción, tregua explícita sin daño por hablar, descanso ambiguo sin avanzar, elección de sueño/armadura completa, investigación por otra declaración, teclado/móvil/toque/copia por interfaz/recarga y un recibo de noche. No recorre pantallas del creador ni acredita semántica real de Haiku; sus regresiones anteriores permanecen separadas. No se ha realizado otra inferencia real para este campo. El viaje declarado real publicado se comprobó una vez en c7e75e5 y su sesión está cerrada/protegida.
 
 Suite completa en curso80711, .deps/director-prepared-decisions-final-tests.log. No publicar hasta terminar y resolver fallos. No nueva aventura autónoma completa ni hito de prueba personal.
+# Evidencia integrada posterior
+
+RECORRIDO_INTEGRADO.md documenta una declaración real de comenzar la investigación, una sola respuesta8199ms, creador guiado por defecto, cinco pistas/tres escenas/objetivo completo y copia/recarga/móvil. No extender esa evidencia a tregua o noche declaradas, que conservan pruebas simuladas; tampoco a combate nuevo o campaña general. El ensayo está cerrado y no debe repetirse.

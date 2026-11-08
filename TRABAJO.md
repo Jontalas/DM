@@ -1,5 +1,15 @@
 # Continuidad del desarrollo autónomo
 
+## Fin explícito de turno en regresión — 8 de noviembre de2026
+
+Regresión completa cerrada:757 correctas sin omisiones (182,243s), sesión43471 terminada. Sin cambios de motor desde inicio. Publicar/verificar investigación/Common/viaje solo lectura; después continuar estudio e integración prudente de recuperación/calendario, sin inventar prioridad entre eventos simultáneos. No hay dependencia del usuario.
+
+director_turn.py/turnEnd opcional solo para acción inequívoca del propietario del turno actual del encuentro preparado; reutiliza iniciativa y PNJ automático sin decidir acciones del PJ ni añadir IA por PNJ. Fuente Core PDF179/folio178 revisada visualmente. Cuarta pista derivada compatible con capturas históricas, restauradas con capacidades originales.37 afectadas correctas con HTTP/emulador/dados reales de servidor/fallo503/cliente nuevo/duplicado/copia, y navegadores de turno/ataque/decisiones preparados correctos. Proveedor/dados browser simulados, no inferencia real para turnEnd. Suite completa43471/director-turn-final-tests.log en curso; no cambios de motor desde inicio. Esperar resultado/publicar/verificar y continuar autónomamente. TURNOS_DECLARADOS.md.
+
+## Recorrido integrado real cerrado — 8 de noviembre de2026
+
+3e6f4efc247288bbb77d3183afb08efcdc123c19/Render7635830885 success; lectores investigación nueva/Common/viaje exactos, cero POST/IA nuevos. Nueva campaña íntegra por GUI con creador por defecto/acuerdo1.10 y una declaración real inicia investigación (8199ms). Controles deterministas resuelven5pistas/3escenas/objetivo/copia/importación/recarga/móvil; PJ16/guardiana6 en patio. RECORRIDO_INTEGRADO.md registra el límite y la corrección de una aserción del guion que esperaba terminar en cobertizo: se continuó misma campaña sin repetir IA. Checkpoint cerrado/protegido, no repetir ningún guion de acción. Cuatro hitos siguen pendientes. Desarrollo continúa con fin explícito de turno propio y circuito de combate declarado; no se requiere intervención.
+
 ## Recuperación guiada publicada y errores claros — 8 de noviembre de2026
 
 94b4b23f0a2ec1c274077f5744ce204863676950/Render7635802684 success. Siguiente ajuste de api muestra mensajes sencillos en español para conexión fallida y respuesta ilegible, conservando pendientes y contrato JSON400/403/409. Navegadores conexión/HTML502/borrador, recuperación409 tras acción en otra pestaña, permisos y Cairn correctos. Sin cambios de motor desde751 completas ni inferencias reales nuevas. Verificar/publicar este ajuste y continuar recorrido integrado; sin intervención del usuario.

@@ -79,4 +79,5 @@ class DeclaredMeleeTests(unittest.TestCase):
             self.assertEqual(legacy.restore(prepared,{'kind':'report','value':value,'latencyMs':0},legacy.SCHEME),value)
         previous=copy.deepcopy(prepared['request']);previous['context'].pop('availableMeleeAttack')
         previous['context'].pop('preparedDecisions',None)
+        previous['context'].pop('availableTurnEnd',None)
         self.assertEqual(prepared['sha256'],hashlib.sha256(canonical(previous).encode()).hexdigest())

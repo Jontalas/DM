@@ -79,6 +79,11 @@ def main():
         os.environ['ANTHROPIC_API_KEY']='fixture-only-never-sent'
         from test_adventure import reply,memory
         def fixture_reply(state,text,refs,**options):
+            if os.environ.get('TEST_DIRECTOR_TURN')=='1' and not options.get('starting'):
+                from director_turn import declaration_available
+                turn=declaration_available(state)
+                if turn and text.casefold().strip().rstrip('.')=='termino mi turno':return reply(narration='Cedes el turno sin realizar otra acción.',turnEnd=turn)
+                return reply(narration='El final de tu turno sigue siendo una decisión tuya.')
             if os.environ.get('TEST_DIRECTOR_MELEE')=='1' and not options.get('starting'):
                 from director_combat import declaration_available
                 attack=declaration_available(state)
