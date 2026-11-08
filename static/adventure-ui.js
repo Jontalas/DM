@@ -56,6 +56,8 @@ function renderAdventure(){
  const continuation=$('#continueAdventure');
  continuation.hidden=!active||!results.length||!ownsResult||s.pending.some(p=>p.check);
  continuation.disabled=!model.aiConfigured;
+ const narrationHint=$('#continueAdventureHint');narrationHint.hidden=continuation.hidden;
+ narrationHint.textContent=model.aiConfigured?'Opcional. Las tiradas ya están resueltas; puedes seguir jugando sin pedir esta narración.':'El director no está disponible. Puedes seguir con las opciones de la aventura, las fichas y los dados.';
  continuation.onclick=run(()=>act('continue_adventure'));
  renderInvestigation();
  renderPreparedPathfinderEncounter();
