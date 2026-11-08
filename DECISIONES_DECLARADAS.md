@@ -1,5 +1,7 @@
 # Decisiones preparadas por la conversación
 
+Actualización1.11: wait-for-guard en regresión interpreta la elección explícita de esperar junto a la guardiana estabilizada. No significa dormir, curar o investigar; el motor resuelve las comprobaciones cubiertas y para al despertar/morir/límite. Riesgo sin ayuda explícito. ActionRandomness engloba la decisión preparada, crea reserva únicamente si realmente tira; dormir/tregua/entrada a investigación conservan cero reservas de dados. Captura privada y capacidades originales intactas. Una IA por declaración elegida; el botón directo continúa0IA. No inferencia real nueva para esta intención. ESPERA_GUARDIANA.md.
+
 **Publicada/verificada:**ff8e8a59fe836f1a34a00ef01c8e401358d619e7, Render7631161921 success,713 completas correctas (176,454s). Lectores reales de sesiones viaje/noche1.9 con revisión exacta/salud/descriptor, copias/salud/escenas/reloj/recarga/teclado/móvil correctos. Cero nuevas acciones/inferencias, sin repetir campaña ni proveedor. El nuevo campo sigue probado mediante simulación/contrato/HTTP, sin atribuirle la verificación semántica real del campo routeTravel. Estados inferiores local/pendiente son históricos.
 
 Integración local en regresión,8 de noviembre de2026. Reutiliza las acciones verificadas de tregua, descanso e inicio de investigación del patio. Las definiciones y las reglas de esas acciones no cambian; los botones siguen disponibles sin IA.

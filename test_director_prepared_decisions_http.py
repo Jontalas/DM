@@ -20,6 +20,13 @@ class PreparedDecisionHTTPTests(unittest.TestCase):
         configured=patch.dict('os.environ',{'ANTHROPIC_API_KEY':'fixture-never-sent'})
         configured.start();self.addCleanup(configured.stop);truce_http.CeasefireHTTPTests.setUp(self)
 
+    def test_prepared_sleep_does_not_reserve_or_read_dice_after_shared_randomness_wrapper(self):
+        self.prepare_truce(version='1.9.0');self.action('accept_pf_ceasefire');actor=self.state()['state']['characters'][0]['id']
+        result=reply(narration='El patio permanece tranquilo.',preparedDecision={'action':'sleep-in-light-armor'})
+        with patch.object(server,'search',return_value=[]),patch.object(server,'ai_reply',return_value=result),patch.object(server.STORE,'action_random_seed',side_effect=AssertionError('Sleep reserved dice')),patch.object(server.STORE,'check_action_random_seed',side_effect=AssertionError('Sleep read dice')):
+            self.action('talk',kind='action',character=actor,text='Duermo con la armadura ligera',director=True)
+        self.assertTrue(self.state()['state']['pfNightRestView']['completed'])
+
     def test_zero_hp_declared_night_recovers_commit_without_second_provider_then_declared_investigation(self):
         self.prepare_truce(version='1.9.0')
         for _ in range(4):

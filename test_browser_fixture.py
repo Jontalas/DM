@@ -79,6 +79,11 @@ def main():
         os.environ['ANTHROPIC_API_KEY']='fixture-only-never-sent'
         from test_adventure import reply,memory
         def fixture_reply(state,text,refs,**options):
+            if os.environ.get('TEST_DIRECTOR_NPC_WAIT')=='1' and not options.get('starting'):
+                from director_prepared_decisions import declaration_available
+                choices=declaration_available(state)
+                if choices and text.casefold().strip().rstrip('.')=='espero junto a la guardiana a que despierte':return reply(narration='Permaneces junto a la guardiana sin dormir ni realizar otra acción.',preparedDecision={'action':'wait-for-guard'})
+                return reply(narration='Tú decides si quieres esperar junto a la guardiana.')
             if os.environ.get('TEST_DIRECTOR_TURN')=='1' and not options.get('starting'):
                 from director_turn import declaration_available
                 turn=declaration_available(state)

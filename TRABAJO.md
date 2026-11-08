@@ -1,5 +1,11 @@
 # Continuidad del desarrollo autónomo
 
+## Espera1.11 publicada y declaración en regresión — 8 de noviembre de2026
+
+Regresión de declaración cerrada:792 completas correctas sin omisiones (195,629s), sesión17867 terminada. Publicar/verificar mismas sesiones en lectura y continuar orientación de narración opcional/estado clínico actual; no repetir inferencias ni ensayos. Sin cambios de motor desde inicio de suite.
+
+42622b8ac5de08958c55e75555704afbf7a1ce08/Render7636634497 success;787 completas y cuatro lectores exactos correctos, cero POST/IA nuevos. Nueva campaña técnica API0IA despierta asistida en1hora, PJ16/NPC−2 intactos, ruta/regreso/copia/duplicado; ensayo cerrado/protegido. Desarrollo sigue con preparedDecision wait-for-guard y semilla por talk para recuperar dados de NPC tras commit503/cliente nuevo sin segundo proveedor; decisiones sin dados no reservan/leen semillas.17 seleccionadas con emulador y navegador declaración/pregunta/diálogo/combate/auxilio/ruta/copia/móvil correctos, proveedor simulado. Modo botón0IA anterior conservado. Suite completa17867/declared-npc-wait-final-tests.log en curso; no cambios de motor desde inicio. Seguir después orientación de narración opcional/estado clínico actual y recuperación/calendario, sin intervención.
+
 ## Espera1.11 verificada y lista para publicar — 8 de noviembre de2026
 
 787 completas correctas sin omisiones (198,486s), sesión22750/npc-wait-final-tests.log.66 seleccionadas y navegador desde creador/combate/auxilio orgánicos/espera elegida con2comprobaciones/NPC−3 despierta sin curación/ruta5pistas3escenas/regreso/copia/recarga/móvil correctos, cero IA. Dados browser simulados; HTTP usa dados de servidor reales y conserva semilla tras commit503/cliente nuevo/duplicado/copia. Propiedad, reloj, forja/vista falsa/corrección posterior/recibo histórico protegidos. Definiciones anteriores intactas, descriptor local1.11. ESPERA_GUARDIANA.md. Publicar junto a bases52a13fa y8c9cdc7 respaldadas solo en feature. Verificar mismas sesiones en lectura y nuevo ensayo técnico0IA preparado, sin repetirlo si alcanza frontera. Continuar espera declarada/orientación/calendario, sin intervención del usuario.

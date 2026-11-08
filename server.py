@@ -298,7 +298,10 @@ def execute_action(body,me):
                 if result.get('checks') or result.get('investigation') or result.get('proposals') or result.get('routeTravel') or result.get('meleeAttack') or result.get('turnEnd'):
                     raise ValueError('La decisión preparada no se combina con otras resoluciones')
                 import director_prepared_decisions
-                director_prepared_decisions.apply(state,result['preparedDecision'],body,me)
+                from action_randomness import ActionRandomness
+                from game_randomness import using_random_source
+                randomness=ActionRandomness(store,cid,aid,me['id'],signature,row['version'])
+                with using_random_source(randomness):director_prepared_decisions.apply(state,result['preparedDecision'],body,me)
             if result.get('meleeAttack'):
                 if result.get('checks') or result.get('investigation') or result.get('proposals') or result.get('routeTravel') or result.get('preparedDecision'):
                     raise ValueError('El ataque declarado no se combina con otras resoluciones')

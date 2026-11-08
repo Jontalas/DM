@@ -1,4 +1,4 @@
-"""Existing prepared, deterministic decisions selected from a player declaration."""
+"""Prepared source-backed decisions selected from a player declaration."""
 
 
 def available(state):
@@ -9,6 +9,7 @@ def available(state):
     import pf_ceasefire
     import pf_night_rest
     import pf_scene_transition
+    import pf_npc_wait
     actions=[]
     if pf_ceasefire.limitation(state) is None:
         actions.append({'id':'accept-truce','label':'Aceptar la tregua ofrecida; conservar heridas y permitir el paso'})
@@ -20,12 +21,22 @@ def available(state):
                 else 'Elegir dormir8h con la armadura ligera puesta'})
     if pf_scene_transition.limitation(state) is None:
         actions.append({'id':'investigate-courtyard','label':'Comenzar a investigar el registro del patio, sin salir de él'})
+    if pf_npc_wait.limitation(state) is None:
+        npc=next(c for c in state['characters'] if c['id']==record['npc'])
+        risk='; sin ayuda puede perder PG y morir' if not npc['recoveryCare']['assisted'] else ''
+        actions.append({'id':'wait-for-guard','label':'Esperar junto a la guardiana estabilizada hasta despertar, morir o seis comprobaciones horarias; no dormir ni curar'+risk})
     return {'character':actor['id'],'actions':actions} if actions else None
 
 
 def declaration_available(state):
     if not state.get('messages') or state['messages'][-1].get('kind')!='action':return None
-    return available(state)
+    choices=available(state)
+    if choices:
+        actor=next(c for c in state['characters'] if c['id']==choices['character'])
+        if state['messages'][-1].get('owner')!=actor['owner']:
+            choices['actions']=[a for a in choices['actions'] if a['id']!='wait-for-guard']
+            if not choices['actions']:return None
+    return choices
 
 
 def apply(state,item,body,me):
@@ -38,6 +49,6 @@ def apply(state,item,body,me):
     if actor['owner']!=me['id'] or body.get('character') not in (None,actor['id']):raise PermissionError('Solo el propietario decide por su personaje')
     actions={'accept-truce':{'type':'accept_pf_ceasefire'},'sleep-in-light-armor':{'type':'rest_pf_night'},
         'sleep-after-removing-armor':{'type':'rest_pf_night','armorPlan':'remove-and-reequip'},
-        'investigate-courtyard':{'type':'continue_pf_encounter'}}
+        'investigate-courtyard':{'type':'continue_pf_encounter'},'wait-for-guard':{'type':'wait_pf_npc_recovery'}}
     from engine import apply_action
     apply_action(state,actions[item['action']],me)
