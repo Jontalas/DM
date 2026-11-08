@@ -1,5 +1,7 @@
 # Viajar por una declaración del jugador
 
+**Producción verificada:**c7e75e56050b42b2c6f5977b37518af2dc10ebfd, Render7631061889 success. Una inferencia real del nuevo contrato,5720ms cliente, en campaña técnica separada: declaración explícita al cobertizo produce transición confirmada; guardiana sigue en patio, PG16/7, reloj/duplicado/copia conservados. Texto real revisado sin acciones extra del PJ. Sesión .deps/director-travel-live-session.json verified y protegida: no repetir guion ni --resume. Lector real de esa misma campaña correcto: revisión/salud, una respuesta/una transición, salud/guardiana/reloj/copia/recarga/teclado/móvil, cero acciones o inferencias nuevas. Estados de local/pendiente inferiores son históricos. No demuestra semántica correcta para cualquier declaración.
+
 Integración local en verificación,8 de noviembre de2026. Amplía la conversación existente del módulo Pathfinder; los botones de salida siguen disponibles y no usan IA. No incorpora viajes con peligros, distancias o duración ni abre lugares ausentes de la ruta.
 
 **Regresión cerrada:**707 completas correctas sin omisiones (171,260s), .deps/director-travel-final-tests.log, sesión19729 terminada.36 afectadas y navegadores de declaración, aventura/memoria/privacidad y rutas1.6 por acuerdo/combate/regreso correctos. Sin cambios de motor posteriores al inicio de suite. Pendiente respaldo/publicación y verificación real de una sola inferencia para el nuevo contrato. Guion privado único preparado/compilado; no ejecutado ni nueva sesión creada todavía. No repetir capturas anteriores.

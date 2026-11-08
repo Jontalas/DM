@@ -34,8 +34,8 @@ class NightRestHTTPTests(unittest.TestCase):
 
     def state(self,token=None):return self.request('/api/state',token=token)
 
-    def action(self,kind,token=None,**data):
-        body={'id':secrets.token_hex(12),'version':self.state(token)['version'],'type':kind,**data}
+    def action(self,action_type,token=None,**data):
+        body={'id':secrets.token_hex(12),'version':self.state(token)['version'],'type':action_type,**data}
         self.request('/api/action',body,token);return body
 
     def setUp(self):self.token=self.request('/api/create',{'title':'Noche técnica','player':'Ana'})['token']

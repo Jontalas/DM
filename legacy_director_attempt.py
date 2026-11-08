@@ -25,6 +25,7 @@ def prepare(state,text,refs,check_actors=None,starting=False,source_text=None):
     # A derived action hint must not invalidate an already paid response.
     # Old captures keep their original narration and do not gain a new action.
     keyed['context'].pop('routeTravelActor',None)
+    keyed['context'].pop('preparedDecisions',None)
     raw=canonical(keyed).encode('utf-8')
     if len(raw)>300000:raise ValueError('El contexto de esta aventura supera el límite; no se ha llamado a IA')
     return {'request':request,'sha256':hashlib.sha256(raw).hexdigest(),'sourceScheme':SCHEME,
@@ -46,7 +47,10 @@ def restore(prepared,payload,scheme):
     if (context.get('routeTravelActor') and context.get('history') and context['history'][-1].get('kind')=='action'
         and context['operation']=='narrate'):
         route_travel={'character':context['routeTravelActor'],'exits':state.get('adventureRouteView',{}).get('exits',[])}
-    result=claude_dm.parse_response(state,raw,rules=False,starting=context['operation']=='startAdventure',route_travel_context=route_travel)
+    decisions={}
+    if context.get('preparedDecisions') and context.get('history') and context['history'][-1].get('kind')=='action' and context['operation']=='narrate':
+        decisions=context['preparedDecisions']
+    result=claude_dm.parse_response(state,raw,rules=False,starting=context['operation']=='startAdventure',route_travel_context=route_travel,prepared_decision_context=decisions)
     if payload['kind']=='report':
         # Reports already passed through the adapter. Validate their structure,
         # but preserve the stored narration instead of repairing it twice.

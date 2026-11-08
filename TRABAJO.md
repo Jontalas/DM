@@ -1,5 +1,13 @@
 # Continuidad del desarrollo autónomo
 
+## Viaje real verificado y decisiones preparadas en regresión cerrada — 8 de noviembre de2026
+
+c7e75e56050b42b2c6f5977b37518af2dc10ebfd, Render7631061889 success. Una inferencia real necesaria del nuevo contrato,5720ms cliente: patio→cobertizo por declaración, guardiana patio, PG16/7/reloj/duplicado/copia conservados. Texto revisado sin decisiones extra del PJ; sesión director-travel-live-session.json verified, no repetir ni --resume. Navegador real de la misma campaña correcto con cero nuevas acciones/inferencias. VIAJES_DECLARADOS.md actualizado.
+
+Desarrollo continuado con preparedDecision para tregua, noche ligera, preparación completa de cota e inicio de investigación. Una elección explícita por acción, propietario y estado revalidados, sin dados ni llamadas adicionales para calcular, sin memoria que anticipe consecuencias. Nuevas claves derivadas no invalidan capturas pagadas antiguas.19 afectadas con HTTP/Waitress/emulador/reintento/cliente nuevo/sin segunda IA/duplicado/copia; navegador desde personaje legal por API y heridas orgánicas, pregunta/ambigüedad sin acción,0→1PG/guardiana2, cota29100s, teclado/móvil/toque/copia UI/recarga correctos. Campo probado con proveedor simulado, no inferencia real nueva. Helper de pruebas kind renombrado para evitar colisión con payload, sin cambio de API.
+
+713 completas correctas sin omisiones (176,454s), log privado director-prepared-decisions-final-tests.log, sesión80711 terminada. Regresiones de viajes declarados y cuatro casos de armadura1.7 correctas. No cambios de motor desde inicio de suite. Publicar/verificar lectores existentes en lectura con EXPECTED_RELEASE; no nueva campaña ni IA. DECISIONES_DECLARADAS.md conserva límites. REANUDAR.md consolidado y original conservado en HISTORIAL_REANUDAR_2026-11-08_TREGUA_DESCANSO_Y_DECLARACIONES.md, sin borrar historial. Después seguir intención de combate y recuperación/planificador, sin esperar intervención.
+
 ## Regresión de viajes declarados cerrada — 8 de noviembre de2026
 
 707 completas correctas sin omisiones (171,260s), .deps/director-travel-final-tests.log, sesión19729 terminada.36 afectadas; navegadores desde creador/declaración/teclado/móvil/toque/copia y aventura/memoria/privacidad/rutas1.6 por paz/combate/regreso correctos. Sin cambios mecánicos posteriores a inicio de suite. Publicar/verificar y ejecutar una sola comprobación real de nuevo contrato, una inferencia necesaria, campaña técnica separada y captura protegida; guion preparado, aún no ejecutado. No repetir sesiones previas ni anunciar hito personal. Seguir trabajo autorizado después.

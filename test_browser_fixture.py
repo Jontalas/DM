@@ -79,6 +79,16 @@ def main():
         os.environ['ANTHROPIC_API_KEY']='fixture-only-never-sent'
         from test_adventure import reply,memory
         def fixture_reply(state,text,refs,**options):
+            if os.environ.get('TEST_DIRECTOR_PREPARED_DECISIONS')=='1' and not options.get('starting'):
+                from director_prepared_decisions import declaration_available
+                choices=declaration_available(state)
+                selected={'acepto la tregua':'accept-truce','duermo8h con mi armadura ligera':'sleep-in-light-armor',
+                    'me quito la cota, duermo sin ella y vuelvo a equiparla':'sleep-after-removing-armor',
+                    'empiezo a investigar el registro del patio':'investigate-courtyard'}.get(text.casefold().strip().rstrip('.'))
+                if choices and selected in {a['id'] for a in choices['actions']}:
+                    return reply(narration='El patio sigue tranquilo.',preparedDecision={'action':selected})
+                return reply(narration='Aclara qué quieres hacer antes de continuar.',memory=memory(
+                    summary='La situación se conserva.',location=state['location'],goal=state['goal'],objectives=state['objectives']))
             if os.environ.get('TEST_DIRECTOR_TRAVEL')=='1' and not options.get('starting'):
                 from director_travel import declaration_available
                 travel=declaration_available(state)
