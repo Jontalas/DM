@@ -1,5 +1,9 @@
 # Continuidad del desarrollo autónomo
 
+## Captura publicada y recuperación guiada verificada — 8 de noviembre de2026
+
+a6b2291f71b84f5fbe1d9df3de7d9e199ca397b3/Render7635760550 success;751 completas y lectores Common/viaje exactos, cero POST/IA. Continúa recuperación guiada desde conversación: aviso y botón para repetir mismo envío sin recarga, bloqueo hasta refrescar, conservación tras nuevo fallo, limpieza de texto original/preservación de borrador distinto. Pendientes de otro acceso no aparecen. Navegadores móvil/teclado/tacto de ambas variantes y contrato histórico/tiradas/tregua correctos; captura visual revisada. Solo interfaz, sin cambios de motor desde751 completas: comprobaciones específicas suficientes. Publicar/verificar y continuar trabajo autorizado; sin dependencia del usuario.
+
 ## Agencia publicada y captura por envío en regresión — 8 de noviembre de2026
 
 Regresión cerrada:751 completas correctas sin omisiones en176,416s, sesión1632 terminada. Navegador adicional conserva exactamente el contrato anterior de un envío pendiente histórico; agencia también correcta. Publicar/verificar y continuar recuperación accesible de envíos, sin necesidad del usuario.

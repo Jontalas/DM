@@ -48,11 +48,24 @@ function renderSpeakerChoices(){
  $('#speaker').innerHTML='<option value="">'+esc(me.name)+'</option>'+choices.map(c=>`<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('');
  if(choices.some(c=>c.id===previous))$('#speaker').value=previous;
 }
+async function recoverPendingSubmission(){
+ if(busy)throw Error('Hay una acción en curso');
+ const saved=JSON.parse(localStorage.getItem('cronicas-pending')||'null');
+ if(!saved||saved.token!==token)throw Error('No hay un envío pendiente de esta partida');
+ busy=true;$('#send').disabled=true;$('#playGuidanceAction').disabled=true;$('#sync').textContent='Recuperando envío…';
+ try{await recoverSubmission(saved);localStorage.removeItem('cronicas-pending');if(saved.body.type==='talk'&&$('#message').value===saved.body.text)$('#message').value='';toast('Envío recuperado')}
+ catch(error){if(error.confirmed)localStorage.removeItem('cronicas-pending');throw error}
+ finally{try{await refresh(true)}catch{}busy=false;$('#send').disabled=false;$('#playGuidanceAction').disabled=false}
+}
 function renderPlayGuidance(s){
  const panel=$('#playGuidance'),text=$('#playGuidanceText'),button=$('#playGuidanceAction');
  const checks=s.pending.filter(p=>p.check),mine=checks.filter(p=>s.characters.some(c=>c.id===p.check.character&&c.owner===snapshot.me.id)),own=mine.filter(p=>!pendingCheckUnavailable(p,s.characters.find(c=>c.id===p.check.character)));
  let message='',label='',open;
- if(own.length){
+ const saved=JSON.parse(localStorage.getItem('cronicas-pending')||'null');
+ if(saved?.token===token){
+  message='Tu último envío aún no está confirmado. Recupéralo antes de continuar.';
+  label='Recuperar envío';open=run(recoverPendingSubmission);
+ }else if(own.length){
   message=own.length===1?'Tienes una tirada pendiente. Resuélvela para continuar.':`Tienes ${own.length} tiradas pendientes. Puedes resolverlas en la conversación.`;
   label='Ver mi tirada';
   open=()=>{const target=$$('[data-resolve-check]').find(b=>b.dataset.resolveCheck===own[0].check.id);if(target){target.scrollIntoView({block:'center'});target.focus({preventScroll:true})}};
