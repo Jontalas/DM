@@ -120,6 +120,10 @@ def apply_action(s,b,me):
         pf_night_rest.rest(s,b,me)
         return
     if kind in ('move','attack','combat','turn','automation'):board_scenes.require_no_remote_events(s)
+    if kind=='wait_pf_npc_recovery':
+        import pf_npc_wait
+        pf_npc_wait.wait(s,b,me)
+        return
     if kind=='continue_pf_encounter':
         import pf_scene_transition
         pf_scene_transition.enter(s,b,me)

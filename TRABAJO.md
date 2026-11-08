@@ -1,5 +1,9 @@
 # Continuidad del desarrollo autónomo
 
+## Espera1.11 verificada y lista para publicar — 8 de noviembre de2026
+
+787 completas correctas sin omisiones (198,486s), sesión22750/npc-wait-final-tests.log.66 seleccionadas y navegador desde creador/combate/auxilio orgánicos/espera elegida con2comprobaciones/NPC−3 despierta sin curación/ruta5pistas3escenas/regreso/copia/recarga/móvil correctos, cero IA. Dados browser simulados; HTTP usa dados de servidor reales y conserva semilla tras commit503/cliente nuevo/duplicado/copia. Propiedad, reloj, forja/vista falsa/corrección posterior/recibo histórico protegidos. Definiciones anteriores intactas, descriptor local1.11. ESPERA_GUARDIANA.md. Publicar junto a bases52a13fa y8c9cdc7 respaldadas solo en feature. Verificar mismas sesiones en lectura y nuevo ensayo técnico0IA preparado, sin repetirlo si alcanza frontera. Continuar espera declarada/orientación/calendario, sin intervención del usuario.
+
 ## Evolución clínica interna verificada — 8 de noviembre de2026
 
 776 completas correctas sin omisiones (180,060s), sesión22490/log medical-evolution-final-tests.log. Estado3 reproduce curación negativa conservando asistencia/consciencia y perfil histórico; corrección manual diferenciada, cadenas acotadas/ciclos/forja/época futura rechazados. Helper no es descanso jugable ni reloj. Contexto médico resumido al director, captura/copia completas; fixture>5KB sin IA real nueva.53 puras y22 seleccionadas con HTTP/emulador/fallo503/cliente nuevo/duplicado/copia correctas; navegadores guardiana/noche/compartida correctos. EVOLUCION_MEDICA.md. Respaldar feature sin main junto a base52a13fa/763correctas; producción b239200 sigue verificada. Siguiente integración jugable: espera elegida por PJ positivo para guardiana estabilizada, con comprobaciones/reloj/recibo/semilla y nueva definición, conservando fronteras médicas. No depende del usuario ni termina trabajo autorizado.

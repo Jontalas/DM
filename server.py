@@ -115,6 +115,10 @@ def view(row,state,me,known_workspace=None):
     state.pop('pfNightRestView',None)
     import pf_ceasefire
     state.pop('pfCeasefireView',None)
+    import pf_npc_wait
+    state.pop('pfNpcRecoveryView',None)
+    recovery_view=pf_npc_wait.public_view(state)
+    if recovery_view:state['pfNpcRecoveryView']=recovery_view
     encounter=state.get('pfEncounter') or {}
     if pf_ceasefire.supported(encounter.get('definition')):
         state['pfCeasefireView']={'reason':pf_ceasefire.limitation(state),'offerLanguage':pf_ceasefire.offer_language(encounter['definition'])}

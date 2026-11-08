@@ -47,7 +47,9 @@ def limitation(state,*,active=False):
     actor=actors.get(record['character']);npc=actors.get(record['npc'])
     if not actor or not npc:return 'Falta un participante del encuentro.'
     if actor['hp']<=0:return 'La investigación requiere un personaje con PG positivos; no se simula su descanso.'
-    if -npc['abilities'][2]<npc['hp']<0:return 'La guardiana aún necesita seguimiento de recuperación; no se omiten sus pruebas.'
+    if -npc['abilities'][2]<npc['hp']<0:
+        import pf_npc_wait
+        if not pf_npc_wait.can_remain_awake(state,npc):return 'La guardiana aún necesita seguimiento de recuperación; no se omiten sus pruebas.'
     if any(c.get('conditions','').strip() for c in (actor,npc)) or actor['creation'].get('manualOverride') or npc['npcCreation'].get('manualOverride'):return 'Las condiciones o correcciones necesitan una resolución fuera de esta escena tranquila.'
     expected=state.get('adventureModule',{}).get('location') if routed and active else record['definition']['location']
     if state['location']!=expected:return 'La localización no coincide con la escena preparada.'

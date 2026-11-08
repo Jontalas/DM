@@ -77,7 +77,7 @@ def response_schema(state,rules=False,starting=False):
 
 def build_context(state,text,refs,rules=False,check_actors=None,starting=False,source_text=None):
     """Separate player-visible state, director knowledge and personal privacy."""
-    public={k:v for k,v in state.items() if k not in {'secrets','directorNotes','directorMemory','adventureModule','adventureRoute','routeProgress','private','messages','pfNightRest','pfNightRestView','pfCeasefireView'}}
+    public={k:v for k,v in state.items() if k not in {'secrets','directorNotes','directorMemory','adventureModule','adventureRoute','routeProgress','private','messages','pfNightRest','pfNightRestView','pfCeasefireView','pfNpcRecoveryView'}}
     boards=board_scenes.director_view(state)
     if boards is not None:public['boardScenes']=boards
     if state.get('pfNightRest') and not rules:public['nightRestResult']={k:copy.deepcopy(v) for k,v in state['pfNightRest']['result'].items() if k!='phases'}

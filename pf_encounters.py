@@ -23,7 +23,9 @@ def participants_present(state,record):
         for identifier in (record['character'],record['npc']))
 
 
-def definition(version='1.10.0'):
+def definition(version='1.11.0'):
+    if version=='1.11.0':
+        return json.loads((Path(__file__).parent/'adventures/pf-patio-del-peaje-1.11.0.json').read_text(encoding='utf-8'))
     if version=='1.10.0':
         return json.loads((Path(__file__).parent/'adventures/pf-patio-del-peaje-1.10.0.json').read_text(encoding='utf-8'))
     if version=='1.9.0':
@@ -241,8 +243,10 @@ def aid_or_wait(state,body,me):
 def validate_restored(state):
     record=state.get('pfEncounter')
     import pf_ceasefire
+    import pf_npc_wait
     if record is None:
         pf_ceasefire.validate_restored(state)
+        pf_npc_wait.validate_restored(state)
         return
     fields={'format','definition','sha256','character','npc','phase'}
     if isinstance(record,dict) and record.get('phase') in ('resolved','defeated'):fields.add('outcome')
@@ -250,6 +254,7 @@ def validate_restored(state):
     if isinstance(record,dict) and 'recoveryLimit' in record:fields.add('recoveryLimit')
     if isinstance(record,dict) and 'recoveryStart' in record:fields.add('recoveryStart')
     if isinstance(record,dict) and 'ceasefire' in record:fields.add('ceasefire')
+    if isinstance(record,dict) and 'npcRecovery' in record:fields.add('npcRecovery')
     if (state.get('ruleset','pathfinder-1e')!='pathfinder-1e' or not isinstance(record,dict)
         or set(record)!=fields
         or record['format']!='cronicas-pf-encounter-state-1' or record['phase'] not in ('offered','agreement','combat','resolved','defeated')):
@@ -264,6 +269,7 @@ def validate_restored(state):
         raise ValueError('El encuentro no está vinculado a sus participantes preparados')
     npc_catalog.validate_character(npc,'pathfinder-1e')
     pf_ceasefire.validate_restored(state)
+    pf_npc_wait.validate_restored(state)
     here=participants_present(state,record)
     if record['phase']=='offered' and not here:raise ValueError('La escena ofrecida requiere sus participantes presentes')
     if record['phase'] in ('offered','agreement') and state['board']['active'] and here:raise ValueError('La fase del encuentro contradice el combate activo')
