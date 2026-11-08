@@ -7,24 +7,314 @@
       "label": "Goblin combatiente 1 · espada corta",
       "license": "OGL-1.0a",
       "sources": [
-        {"book": "bestiario", "edition": "Devir PFR002, depósito B 5055-2014, erratas 2.0", "pdfPage": 167, "printedPage": 166, "section": "Goblin: estadísticas publicadas"},
-        {"book": "bestiario", "edition": "Devir PFR002, erratas 2.0", "pdfPage": 7, "printedPage": 6, "section": "Lectura del bloque: espacio y alcance estándar"},
-        {"book": "reglas", "edition": "Devir PFR001, erratas 1.4", "pdfPage": 143, "printedPage": 142, "section": "Tabla 6-4, espada corta Pequeña y crítico"},
-        {"book": "reglas", "edition": "Devir PFR001, erratas 1.4", "pdfPage": 185, "printedPage": 184, "section": "Impactos críticos"}
+        {
+          "book": "bestiario",
+          "edition": "Devir PFR002, depósito B 5055-2014, erratas 2.0",
+          "pdfPage": 167,
+          "printedPage": 166,
+          "section": "Goblin: estadísticas publicadas"
+        },
+        {
+          "book": "bestiario",
+          "edition": "Devir PFR002, erratas 2.0",
+          "pdfPage": 7,
+          "printedPage": 6,
+          "section": "Lectura del bloque: espacio y alcance estándar"
+        },
+        {
+          "book": "reglas",
+          "edition": "Devir PFR001, erratas 1.4",
+          "pdfPage": 143,
+          "printedPage": 142,
+          "section": "Tabla 6-4, espada corta Pequeña y crítico"
+        },
+        {
+          "book": "reglas",
+          "edition": "Devir PFR001, erratas 1.4",
+          "pdfPage": 185,
+          "printedPage": 184,
+          "section": "Impactos críticos"
+        }
       ],
       "coverage": {
-        "implemented": ["Estadísticas publicadas de esta entrada", "Ataque básico con espada corta preparada", "Iniciativa y movimiento terrestre de una casilla"],
-        "pending": ["Arco corto y gestión de munición", "Visión en la oscuridad y diferencias de iluminación", "Cambio automático de arma", "Recompensas, tesoro y progresión"]
+        "implemented": [
+          "Estadísticas publicadas de esta entrada",
+          "Ataque básico con espada corta preparada",
+          "Iniciativa y movimiento terrestre de una casilla"
+        ],
+        "pending": [
+          "Arco corto y gestión de munición",
+          "Visión en la oscuridad y diferencias de iluminación",
+          "Cambio automático de arma",
+          "Recompensas, tesoro y progresión"
+        ]
       },
-      "profile": {"mode": "basic-melee", "size": "small", "spaceFeet": 5, "reachFeet": 5, "touchAc": 13, "challengeRating": "1/3", "xp": 135},
+      "profile": {
+        "mode": "basic-melee",
+        "size": "small",
+        "spaceFeet": 5,
+        "reachFeet": 5,
+        "touchAc": 13,
+        "challengeRating": "1/3",
+        "xp": 135
+      },
       "character": {
-        "name": "Goblin", "race": "Goblin", "class": "Combatiente", "level": 1,
-        "abilities": [11, 15, 12, 10, 9, 6], "maxHp": 7, "hp": 7, "ac": 16,
-        "saves": [3, 2, -1], "speed": 6, "initiative": 6, "attack": 2, "damage": "1d4",
-        "meleeProfile": {"flatAc": 14, "criticalMin": 19, "multiplier": 2},
-        "skillTotals": [{"name": "Percepción", "total": -1}, {"name": "Montar", "total": 10}, {"name": "Nadar", "total": 4}, {"name": "Sigilo", "total": 10}],
-        "feats": "Iniciativa mejorada", "equipment": "Armadura de cuero; escudo ligero de madera; espada corta; arco corto; 20 flechas.",
+        "name": "Goblin",
+        "race": "Goblin",
+        "class": "Combatiente",
+        "level": 1,
+        "abilities": [
+          11,
+          15,
+          12,
+          10,
+          9,
+          6
+        ],
+        "maxHp": 7,
+        "hp": 7,
+        "ac": 16,
+        "saves": [
+          3,
+          2,
+          -1
+        ],
+        "speed": 6,
+        "initiative": 6,
+        "attack": 2,
+        "damage": "1d4",
+        "meleeProfile": {
+          "flatAc": 14,
+          "criticalMin": 19,
+          "multiplier": 2
+        },
+        "skillTotals": [
+          {
+            "name": "Percepción",
+            "total": -1
+          },
+          {
+            "name": "Montar",
+            "total": 10
+          },
+          {
+            "name": "Nadar",
+            "total": 4
+          },
+          {
+            "name": "Sigilo",
+            "total": 10
+          }
+        ],
+        "feats": "Iniciativa mejorada",
+        "equipment": "Armadura de cuero; escudo ligero de madera; espada corta; arco corto; 20 flechas.",
         "notes": "Goblin Pequeño, combatiente 1. PG publicados con bonificador de clase predilecta incluido. Idioma goblin. Preparación parcial para espada corta empuñada y entorno con iluminación suficiente; arco y visión en la oscuridad aún no automatizados."
+      }
+    },
+    "pf1-common-speaking-goblin-guard-1": {
+      "version": "1.0.0",
+      "ruleset": "pathfinder-1e",
+      "label": "Guardiana goblin · Común y goblin · combatiente1",
+      "license": "OGL-1.0a",
+      "sources": [
+        {
+          "book": "bestiario",
+          "edition": "Devir PFR002, depósito B 5055-2014, erratas 2.0",
+          "pdfPage": 167,
+          "printedPage": 166,
+          "section": "Rasgos raciales goblin para un PNJ original; no estadísticas idénticas a la entrada publicada"
+        },
+        {
+          "book": "bestiario",
+          "edition": "Devir PFR002, erratas 2.0",
+          "pdfPage": 7,
+          "printedPage": 6,
+          "section": "Lectura del bloque: espacio y alcance estándar"
+        },
+        {
+          "book": "reglas",
+          "edition": "Devir PFR001, erratas 1.4",
+          "pdfPage": 143,
+          "printedPage": 142,
+          "section": "Tabla 6-4, espada corta Pequeña y crítico"
+        },
+        {
+          "book": "reglas",
+          "edition": "Devir PFR001, erratas 1.4",
+          "pdfPage": 185,
+          "printedPage": 184,
+          "section": "Impactos críticos"
+        },
+        {
+          "book": "reglas",
+          "edition": "Devir PFR001, erratas1.4",
+          "pdfPage": 13,
+          "printedPage": 12,
+          "section": "PG de clase PNJ y redondeo hacia abajo"
+        },
+        {
+          "book": "reglas",
+          "edition": "Devir PFR001, erratas1.4",
+          "pdfPage": 15,
+          "printedPage": 14,
+          "section": "Idiomas adicionales por modificador de Inteligencia"
+        },
+        {
+          "book": "reglas",
+          "edition": "Devir PFR001, erratas1.4",
+          "pdfPage": 18,
+          "printedPage": 17,
+          "section": "Tabla1-3: modificadores de característica"
+        },
+        {
+          "book": "reglas",
+          "edition": "Devir PFR001, erratas1.4",
+          "pdfPage": 87,
+          "printedPage": 86,
+          "section": "Rangos y bonificador de habilidad de clase"
+        },
+        {
+          "book": "reglas",
+          "edition": "Devir PFR001, erratas1.4",
+          "pdfPage": 450,
+          "printedPage": 449,
+          "section": "Combatiente: d10, habilidades, rangos y competencias"
+        },
+        {
+          "book": "reglas",
+          "edition": "Devir PFR001, erratas1.4",
+          "pdfPage": 451,
+          "printedPage": 450,
+          "section": "PNJ básico y tabla14-3 de combatiente"
+        },
+        {
+          "book": "reglas",
+          "edition": "Devir PFR001, erratas1.4",
+          "pdfPage": 452,
+          "printedPage": 451,
+          "section": "Asignación precisa de rangos"
+        },
+        {
+          "book": "reglas",
+          "edition": "Devir PFR001, erratas1.4",
+          "pdfPage": 455,
+          "printedPage": 454,
+          "section": "PG medios al completar un PNJ"
+        },
+        {
+          "book": "reglas",
+          "edition": "Devir PFR001, erratas1.4",
+          "pdfPage": 399,
+          "printedPage": 398,
+          "section": "VD de clases PNJ y tabla12-2 de PX"
+        }
+      ],
+      "coverage": {
+        "implemented": [
+          "PNJ original construido con rasgos goblin y clase combatiente1",
+          "Común como idioma adicional por Int12",
+          "Perfil básico de espada corta y cuero sin escudo preparado",
+          "Totales derivados de características, tres rangos y clase predilecta de PG"
+        ],
+        "pending": [
+          "Arco corto y gestión de munición",
+          "Visión en la oscuridad y diferencias de iluminación",
+          "Cambio automático de arma",
+          "Recompensas, tesoro y progresión",
+          "Riqueza total, transferencias y saqueo de equipo/dinero"
+        ]
+      },
+      "profile": {
+        "mode": "basic-melee",
+        "size": "small",
+        "spaceFeet": 5,
+        "reachFeet": 5,
+        "touchAc": 13,
+        "challengeRating": "1/3",
+        "xp": 135,
+        "languages": [
+          "Goblin",
+          "Común"
+        ],
+        "construction": {
+          "baseAbilities": [
+            13,
+            11,
+            10,
+            12,
+            9,
+            8
+          ],
+          "racialAdjustments": [
+            -2,
+            4,
+            0,
+            0,
+            0,
+            -2
+          ],
+          "skillRanks": {
+            "Montar": 1,
+            "Nadar": 1,
+            "Percepción": 1
+          },
+          "favoredHp": 1,
+          "hitDie": 10,
+          "armorAc": 2,
+          "shieldAc": 0
+        }
+      },
+      "character": {
+        "name": "Guardiana goblin",
+        "race": "Goblin",
+        "class": "Combatiente",
+        "level": 1,
+        "abilities": [
+          11,
+          15,
+          10,
+          12,
+          9,
+          6
+        ],
+        "maxHp": 6,
+        "hp": 6,
+        "ac": 15,
+        "saves": [
+          2,
+          2,
+          -1
+        ],
+        "speed": 6,
+        "initiative": 6,
+        "attack": 2,
+        "damage": "1d4",
+        "meleeProfile": {
+          "flatAc": 13,
+          "criticalMin": 19,
+          "multiplier": 2
+        },
+        "skillTotals": [
+          {
+            "name": "Percepción",
+            "total": 0
+          },
+          {
+            "name": "Montar",
+            "total": 10
+          },
+          {
+            "name": "Nadar",
+            "total": 4
+          },
+          {
+            "name": "Sigilo",
+            "total": 10
+          }
+        ],
+        "feats": "Iniciativa mejorada",
+        "equipment": "Armadura de cuero; espada corta; arco corto;20 flechas. Sin escudo.",
+        "notes": "PNJ original goblin Pequeño, combatiente1, con matriz básica reasignada y ajustes raciales. Idiomas: goblin y Común, este último por Int12. PG medios6 incluyen1 de clase predilecta; no se usa máximo de un PJ. Espada corta empuñada y cuero sin escudo. No se presupone alfabetización. Arco, visión en oscuridad, riqueza total y transferencias no automatizados."
       }
     }
   }

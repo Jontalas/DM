@@ -23,7 +23,9 @@ def participants_present(state,record):
         for identifier in (record['character'],record['npc']))
 
 
-def definition(version='1.9.0'):
+def definition(version='1.10.0'):
+    if version=='1.10.0':
+        return json.loads((Path(__file__).parent/'adventures/pf-patio-del-peaje-1.10.0.json').read_text(encoding='utf-8'))
     if version=='1.9.0':
         return json.loads((Path(__file__).parent/'adventures/pf-patio-del-peaje-1.9.0.json').read_text(encoding='utf-8'))
     if version=='1.8.0':
@@ -282,7 +284,7 @@ def validate_restored(state):
         if record['definition'].get('recoveryScope')=='single-unconscious-player-1':outcome_fields.add('assisted')
         if (not isinstance(outcome,dict) or set(outcome)!=outcome_fields
             or type(outcome['hp'])!=int or not -10000<=outcome['hp']<0 or type(outcome['stable'])!=bool
-            or type(outcome['constitution'])!=int or type(outcome['npcHp'])!=int or not -10000<=outcome['npcHp']<=7
+            or type(outcome['constitution'])!=int or type(outcome['npcHp'])!=int or not -10000<=outcome['npcHp']<=10000
             or type(outcome['npcStable'])!=bool or type(outcome['npcConstitution'])!=int
             or type(outcome['round'])!=int or not 1<=outcome['round']<=1000000):raise ValueError('Desenlace de derrota inválido')
         import character_builder
@@ -293,6 +295,7 @@ def validate_restored(state):
             raise ValueError('Asistencia de desenlace inválida')
         if outcome['status']!=('dead' if dead else 'unconscious') or not dead and not outcome['stable']:raise ValueError('La derrota no corresponde al estado verificado del PJ')
         original_npc,_=npc_catalog.prepare(record['definition']['npc']['template'],'pathfinder-1e')
+        if outcome['npcHp']>original_npc['maxHp']:raise ValueError('Los PG del desenlace superan el perfil original del PNJ')
         if outcome['npcConstitution']!=original_npc['abilities'][2]:raise ValueError('La derrota requiere la Constitución verificada del PNJ')
         if -outcome['npcConstitution']<outcome['npcHp']<0 and not outcome['npcStable']:raise ValueError('No se omite un PNJ todavía moribundo')
         if state['board']['active'] and here:raise ValueError('La derrota registrada no conserva combate activo')

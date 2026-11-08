@@ -1,5 +1,7 @@
 # Ataque básico por declaración
 
+**Publicado/verificado:**ba7fd932fee6d3f89b7092c0b22d6077e15988d7, Render7631255491 success.719 completas correctas (162,263s). Lectores reales viaje/noche1.9 con revisión exacta/salud/estado persistido/recarga/teclado/móvil correctos, cero nuevas acciones/inferencias. Semántica del campo meleeAttack sigue probada mediante simulación/contrato/HTTP con dados reales del servidor; no se realizó ni atribuye una nueva comprobación de Haiku. Estados local/pendiente inferiores son históricos.
+
 Integración local en regresión,8 de noviembre de2026. El modelo identifica una intención; no calcula ni certifica el resultado. Se conserva el ataque por botón sin IA. Este bloque cubre únicamente el ataque básico cuerpo a cuerpo ya implementado del PJ legal contra su guardiana preparada, presentes en el patio y durante su combate activo.
 
 **Regresión cerrada:**719 completas correctas sin omisiones (162,263s), .deps/director-combat-final-tests.log, sesión49616 terminada.23 afectadas con HTTP/Waitress/emulador y navegadores de ataque declarado, encuentro desde creador y decisiones preparadas correctos. Sin cambios de motor posteriores al inicio de suite. Publicar y verificar revisiones/estado persistido con lectores existentes en lectura, sin nuevas inferencias. Proveedor del campo meleeAttack todavía simulado; no atribuirle la comprobación real de routeTravel.

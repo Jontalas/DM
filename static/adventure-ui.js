@@ -97,7 +97,7 @@ function renderPreparedPathfinderEncounter(){
   const night=s.pfNightRestView;
   if(s.pfCeasefireView&&record.phase==='combat'&&patient.hp>0&&patient.hp<patient.maxHp&&characterIsConscious(actor)){
    const reason=s.pfCeasefireView.reason,canAccept=mine&&!reason;
-   entry.querySelector('.card').insertAdjacentHTML('beforeend',`<h4>Detener el enfrentamiento</h4><p>La guardiana herida ofrece en goblin dejar de combatir y permitirte pasar. Tú decides si aceptas o sigues luchando.</p><p id="pfCeasefireHint">${esc(!mine?'El propietario del personaje decide si acepta.':reason||'Puedes responder con unas palabras, sin gastar tu acción estándar ni perder PG. Las heridas se conservan.')}</p><button id="pfAcceptCeasefire" aria-describedby="pfCeasefireHint" ${canAccept?'':'disabled'}>Aceptar la tregua</button>`);
+   entry.querySelector('.card').insertAdjacentHTML('beforeend',`<h4>Detener el enfrentamiento</h4><p>La guardiana herida ofrece en ${esc((s.pfCeasefireView.offerLanguage||'Goblin').toLowerCase())} dejar de combatir y permitirte pasar. Tú decides si aceptas o sigues luchando.</p><p id="pfCeasefireHint">${esc(!mine?'El propietario del personaje decide si acepta.':reason||'Puedes responder con unas palabras, sin gastar tu acción estándar ni perder PG. Las heridas se conservan.')}</p><button id="pfAcceptCeasefire" aria-describedby="pfCeasefireHint" ${canAccept?'':'disabled'}>Aceptar la tregua</button>`);
    $('#pfAcceptCeasefire').onclick=run(()=>act('accept_pf_ceasefire'));
   }
   if(night&&['agreement','resolved'].includes(record.phase)){

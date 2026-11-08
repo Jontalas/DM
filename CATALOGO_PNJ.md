@@ -1,5 +1,17 @@
 # Plantillas de adversarios desde fuentes verificadas
 
+## Variante original en verificación: guardiana que conoce Común
+
+**Regresión cerrada:**726 completas correctas sin omisiones (165,505s), .deps/common-guard-final-tests.log, sesión39582 terminada.46 afectadas puras y18 con HTTP/Waitress/emulador; navegador desde creador guiado por defecto, paz y combate orgánico hasta0/tregua/noche/copia/recarga/móvil/ruta correctos. No cambios de motor desde inicio de suite. Pendiente publicación/verificación1.10 sin nueva inferencia. Guion técnico único preparado/compilado, aún no ejecutado; conservar sesiones anteriores.
+
+Nueva plantilla local `pf1-common-speaking-goblin-guard-1`, versión1.0.0, usada solo por la nueva escena1.10. No sustituye ni corrige al goblin publicado. Huella original `pf1-goblin-warrior-1` preservada y probada:04f7b0f12f49dc360411d4aae8e54a3c19a82bce6e465b5d267ffdf9368fda12; conserva PG7/CA16/Int10/idioma goblin. Versiones1.0–1.9 del encuentro intactas, sin migrar campañas.
+
+Construcción según originales Devir revisados visualmente: matriz básica13,12,11,10,9,8 asignada como Fue13/Des11/Con10/Int12/Sab9/Car8, luego ajustes goblin−2/+4/0/0/0/−2:11/15/10/12/9/6. Int12 aporta un idioma adicional; Común está expresamente permitido para goblins. No se usa Lingüística ni se presume alfabetización. Combatiente1 tiene d10, BAB1, Fort2/Ref0/Vol0 y2+Int rangos. Asigna1 a Montar,1 a Nadar y1 a Percepción; esta última no es de clase. Resultado: Montar10, Nadar4, Percepción0 y Sigilo10 sin entrenar. Cuero, sin escudo: CA15/toque13/desprevenido13. Espada corta Pequeña+2/1d4,19–20/×2; iniciativa6 y30pies. PG medios: floor(5,5+Con0+clase predilecta1)=6, sin máximo inicial de PJ. No es la cifra publicada del otro goblin ni una errata de esa entrada.
+
+Fuentes: Bestiario PDF167/166 (rasgos, idiomas y equipo de referencia),7/6 (espacio/alcance); Reglas PDF13/12 (PG PNJ y redondeo),15/14 (idiomas),18/17 (tabla1-3),87/86 (habilidades),450/449 (combatiente),451/450 (matriz y tabla14-3),452/451 (rangos precisos),455/454 (PG medios),399/398 (VD de clase PNJ y tabla12-2:1/3,135PX totales). Arma/crítico conserva referencias PDF143/142 y185/184. Riqueza total/transferencias/saqueo, arco, visión en oscuridad y recompensas siguen pendientes; no se concede dinero ni PX por narración.
+
+Datos de construcción acompañan el perfil de procedencia; IA recibe notas compactas de idiomas/estado, sin duplicar esa auditoría. Preparar y consultar no requieren IA ni operaciones remotas nuevas. Licencias/designación en licenses/NPC-CONTENT.md, sin ilustraciones ni ficción copiada. Cálculos/huella/idiomas/copia/permisos y recorrido orgánico comprobados; suite completa en curso39582, .deps/common-guard-final-tests.log. No publicar hasta resultado. Producción anterior ba7fd93 verificada con719 completas y lectores de sesiones existentes, sin nuevas inferencias.
+
 Desplegado y verificado: d4816bd83d802777701f82dd831ce87e4509d1ec, Render7588288003 success y revisión/salud exactas. Preparación aislada de producción sin IA: valores publicados, controlador, duplicado, copia, invitado y avisos correctos; ninguna aventura iniciada. Navegador anfitrión/invitado/copia/móvil correcto, cero acciones por consultar. Los «pendiente/sin API» inferiores corresponden al proceso de construcción previo; sigue pendiente conectar un encuentro autónomo.
 
 ## Integración local posterior

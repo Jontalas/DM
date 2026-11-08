@@ -116,8 +116,8 @@ def view(row,state,me,known_workspace=None):
     import pf_ceasefire
     state.pop('pfCeasefireView',None)
     encounter=state.get('pfEncounter') or {}
-    if encounter.get('definition',{}).get('ceasefireScope')==pf_ceasefire.SCOPE:
-        state['pfCeasefireView']={'reason':pf_ceasefire.limitation(state)}
+    if pf_ceasefire.supported(encounter.get('definition')):
+        state['pfCeasefireView']={'reason':pf_ceasefire.limitation(state),'offerLanguage':pf_ceasefire.offer_language(encounter['definition'])}
     rest_view=pf_night_rest.public_view(state)
     state.pop('pfNightRest',None)
     if rest_view:state['pfNightRestView']=rest_view
