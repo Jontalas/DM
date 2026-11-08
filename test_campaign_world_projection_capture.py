@@ -63,3 +63,10 @@ class WorldProjectionCaptureTests(unittest.TestCase):
         self.assertNotIn('campaignWorld',context['state']);self.assertIn('PRIVATE 3',str(context['directorKnowledge']))
         omitted=next(item for item in self.state['campaignWorld']['npcs'] if item['id'] not in self.selected['npcs'])
         self.assertNotIn(omitted['private'],str(context));self.assertIn(omitted['name'],str(context['directorKnowledge']['campaignWorld']['identities']))
+
+    def test_full_memory_schema_cannot_request_a_new_identity_beyond_capacity(self):
+        schema=claude_dm.response_schema(self.state)['properties']['worldUpdates']['properties']
+        for kind in ('npcs','places','relationships'):
+            self.assertEqual(schema[kind]['items']['properties']['id']['enum'],[item['id'] for item in self.state['campaignWorld'][kind]])
+        smaller=copy.deepcopy(self.state);smaller['campaignWorld']['relationships'].pop()
+        self.assertNotIn('enum',claude_dm.response_schema(smaller)['properties']['worldUpdates']['properties']['relationships']['items']['properties']['id'])

@@ -30,7 +30,7 @@ async function recoverSubmission(saved){
   await api('/api/action',body);
  }
 }
-async function act(type,data={}){if(JSON.parse(localStorage.getItem('cronicas-pending')||'null')?.token===token)throw Error('Recarga la mesa para recuperar el envio pendiente antes de otra accion');if(busy)throw Error('Hay una acción en curso');busy=true;$('#send').disabled=true;$('#sync').textContent='Resolviendo…';const body={...data,type,id:crypto.randomUUID(),version:snapshot.version};if((!snapshot.state.ruleset||snapshot.state.ruleset==='pathfinder-1e')&&['talk','start_adventure','continue_adventure'].includes(type))body.captureContract='pf-director-action-1';try{localStorage.setItem('cronicas-pending',JSON.stringify({token,body}));await api('/api/action',body);localStorage.removeItem('cronicas-pending');path=[];await refresh(true)}catch(e){if(e.name==='QuotaExceededError')throw Error('No hay espacio en el navegador para conservar este envio. No se ha enviado al servidor; libera espacio o importa una copia mas pequena.');if(e.confirmed)localStorage.removeItem('cronicas-pending');try{await refresh(true)}catch{}throw e}finally{busy=false;renderComposerAvailability()}}
+async function act(type,data={}){if(JSON.parse(localStorage.getItem('cronicas-pending')||'null')?.token===token)throw Error('Recarga la mesa para recuperar el envio pendiente antes de otra accion');if(busy)throw Error('Hay una acción en curso');busy=true;$('#send').disabled=true;$('#sync').textContent='Resolviendo…';const body={...data,type,id:crypto.randomUUID(),version:snapshot.version};if((!snapshot.state.ruleset||snapshot.state.ruleset==='pathfinder-1e')&&['talk','start_adventure','continue_adventure','next_adventure'].includes(type))body.captureContract='pf-director-action-1';try{localStorage.setItem('cronicas-pending',JSON.stringify({token,body}));await api('/api/action',body);localStorage.removeItem('cronicas-pending');path=[];await refresh(true)}catch(e){if(e.name==='QuotaExceededError')throw Error('No hay espacio en el navegador para conservar este envio. No se ha enviado al servidor; libera espacio o importa una copia mas pequena.');if(e.confirmed)localStorage.removeItem('cronicas-pending');try{await refresh(true)}catch{}throw e}finally{busy=false;renderComposerAvailability()}}
 function run(fn){return async e=>{e?.preventDefault();try{await fn(e)}catch(err){toast(err.message)}}}
 async function refresh(force=false){
  if(!token)return;
@@ -114,8 +114,9 @@ function renderPlayGuidance(s){
   message='Has completado la ruta preparada. Puedes revisar los hallazgos en el diario; otros viajes aún no están disponibles.';
   label='Revisar el diario';open=()=>chooseTab('journal');
  }else if(s.adventureModuleView?.completed){
-  message='La investigación está resuelta. Puedes revisar lo descubierto y decidir tu siguiente acción.';
-  label='Revisar el diario';open=()=>chooseTab('journal');
+  const next=s.nextAdventureView?.reason===null&&model.aiConfigured;
+  message=next?'La investigación está resuelta. Puedes elegir otro objetivo aquí conservando tu personaje y lo descubierto.':'La investigación está resuelta. Puedes revisar lo descubierto y decidir tu siguiente acción.';
+  label=next?'Elegir otro objetivo':'Revisar el diario';open=()=>{if(next){chooseTab('story');$('#nextAdventure')?.click()}else chooseTab('journal')};
  }
  panel.hidden=!message;
  if(text.textContent!==message)text.textContent=message;
@@ -130,15 +131,22 @@ function renderCampaignWorld(s){
  const section=(title,entries)=>entries.length?`<h3>${title}</h3>${entries.map(item=>`<h4>${esc(item.name)}</h4><p>${esc(item.public||'Todavía no hay notas compartidas.')}</p>`).join('')}`:'';
  $('#campaignWorldNotes').innerHTML=section('Personas',world.npcs)+section('Lugares',world.places)+section('Vínculos',world.relationships.map(link=>({name:link.fromName+' · '+link.toName,public:link.public})))+'<p class="hint">Recuerdos de la historia. La salud, el equipo y las reglas se consultan en las fichas y el registro.</p>';
 }
+function renderChapterHistory(s){
+ let details=$('#chapterHistory');
+ if(!details){details=document.createElement('details');details.id='chapterHistory';details.innerHTML='<summary>Investigaciones anteriores</summary><div id="chapterHistoryNotes"></div>';$('#journalOverview').after(details)}
+ const history=s.adventureChaptersView;details.hidden=!history?.completed?.length;if(details.hidden)return;
+ $('#chapterHistoryNotes').innerHTML=history.completed.map(chapter=>`<h3>${esc(chapter.title)}</h3><p>${esc(chapter.goal)}</p><p>${esc(chapter.conclusion)}</p><details><summary>Pistas confirmadas</summary>${chapter.discoveries.map(clue=>`<p>${esc(clue.text)}</p>`).join('')}</details>`).join('');
+}
 function renderJournalOverview(s){
  const lists=[['Aliados',s.allies],['Enemigos',s.enemies],['Incógnitas',s.unknowns]].filter(([,items])=>items?.length);
- const unmeasuredActivity=s.adventureRouteView?.visits>1||s.adventureModuleView?.searchActions>0;
+ const unmeasuredActivity=s.adventureRouteView?.visits>1||s.adventureModuleView?.searchActions>0||s.adventureChaptersView?.clockUncertain;
  const knownAnchor=['Comienzo de la aventura','Inicio de la noche del patio'].includes(s.worldTime)||(s.pfNightRestView?.completed&&s.worldTime===s.pfNightRestView.result?.worldTimeAfter);
- const unknownCurrentTime=s.boardScenes&&unmeasuredActivity&&knownAnchor;
+ const unknownCurrentTime=unmeasuredActivity&&knownAnchor;
  const timeLabel=unknownCurrentTime?'Hora no registrada':s.worldTime;
  const resolved=s.adventureRouteView?.completed?'Ruta completada':!s.adventureRouteView&&s.adventureModuleView?.completed?'Investigación resuelta':'';
  $('#journalOverview').innerHTML=`<h3>Situación actual</h3><p><strong>${esc(s.location)}</strong> · ${esc(timeLabel)}</p><p>${esc(s.goal)}</p>${resolved?`<p class="notice">${esc(resolved)}. Los hallazgos confirmados quedan guardados.</p>`:''}${!s.adventure&&s.objectives.length?`<ul>${s.objectives.map(v=>`<li>${esc(v)}</li>`).join('')}</ul>`:''}${s.notes?`<h4>Notas confirmadas</h4><p>${esc(s.notes)}</p>`:''}${s.adventureRouteView?.visitedScenes?.length>1?`<details class="visited-scene-notes"><summary>Lugares visitados y hallazgos</summary>${s.adventureRouteView.visitedScenes.map(v=>`<h4>${esc(v.location)}</h4>${v.discoveries.length?v.discoveries.map(d=>`<p>${esc(d.text)}</p>`).join(''):'<p>Sin hallazgos confirmados todavía.</p>'}`).join('')}</details>`:''}${lists.length?`<details><summary>Personas e incógnitas</summary>${lists.map(([title,items])=>`<h4>${title}</h4><ul>${items.map(v=>`<li>${esc(v)}</li>`).join('')}</ul>`).join('')}</details>`:''}`;
  renderCampaignWorld(s);
+ renderChapterHistory(s);
  $('#journalFacts').hidden=!Object.keys(s.facts).length;
  if(unknownCurrentTime)$('#journalOverview').insertAdjacentHTML('beforeend',`<details class="clock-reference"><summary>Última referencia de tiempo</summary><p>${esc(s.worldTime)}</p><p>La duración de las búsquedas y los trayectos todavía no se calcula. Se conserva esta referencia sin inventar una hora actual.</p></details>`);
  $('#journalConsequences').hidden=!s.consequences.length;

@@ -1,6 +1,6 @@
 # Siguiente bloque: otro objetivo en la misma partida
 
-Plan técnico de continuidad; todavía no implementado ni disponible. Se ejecutará después de cerrar/verificar la selección de contexto, sin pedir intervención del usuario. No amplía los hitos por sí solo.
+Diseño inicial conservado como referencia. Implementación local9nov en CAPITULOS_AVENTURA.md y REANUDAR.md; todavía pendiente de publicación y regresión final. No amplía los hitos por sí solo.
 
 El recorrido genérico Pathfinder permite terminar una investigación tranquila, pero no comenzar otra sin otra campaña. El siguiente bloque debe permitir elegir un nuevo objetivo en el mismo lugar y conservar personaje, mundo, hallazgos previos y recuperación de envíos. No introducir un viaje, una noche, curación, recompensa, nivel o paso del tiempo implícitos.
 

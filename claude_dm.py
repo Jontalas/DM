@@ -17,6 +17,7 @@ import pf_medical_evolution
 import board_scenes
 import campaign_world
 import campaign_world_context
+import adventure_chapters
 from director_prompt import system_prompt
 from model_config import model_name,DEFAULT_MODEL
 
@@ -50,6 +51,8 @@ def response_schema(state,rules=False,starting=False):
             maximum=min(40,max(0,20+max(totals))) if totals else 0
             for field in ('firstSearch','secondSearch'):
                 schema['properties']['generatedAdventure']['properties'][field]['properties']['dc']['enum']=list(range(maximum+1))
+            transition=adventure_chapters.transition(state)
+            if transition:schema['properties']['generatedAdventure']['properties']['location']['enum']=[transition['location']]
     elif not rules:
         allowed.add('checks')
         travel=director_travel.declaration_available(state)
@@ -74,6 +77,7 @@ def response_schema(state,rules=False,starting=False):
             allowed.add('investigation')
     if not rules and campaign_world.enabled(state) and (starting or state.get('adventure')):
         allowed.add('worldUpdates')
+        schema['properties']['worldUpdates']=campaign_world.updates_schema(state['campaignWorld'])
         if starting:schema['required'].append('worldUpdates')
     if 'memory' in allowed and state.get('adventureModule'):
         schema['properties']['memory']=copy.deepcopy(COMPACT_MEMORY_SCHEMA)
@@ -86,6 +90,11 @@ def build_context(state,text,refs,rules=False,check_actors=None,starting=False,s
     public={k:v for k,v in state.items() if k not in {'secrets','directorNotes','directorMemory','adventureModule','adventureRoute','routeProgress','private','messages','pfNightRest','pfNightRestView','pfCeasefireView','pfNpcRecoveryView','pfLightExplorationView'}}
     boards=board_scenes.director_view(state)
     public.pop('campaignWorld',None);public.pop('campaignWorldView',None)
+    public.pop('adventureChapters',None);public.pop('adventureChaptersView',None);public.pop('nextAdventureView',None)
+    if not rules and state.get('adventureChapters'):
+        chapters=adventure_chapters.public_view(state['adventureChapters'])
+        public['adventureChaptersView']={**chapters,'completed':chapters['completed'][-3:],
+            'references':[{'number':entry['number'],'sha256':entry['sha256']} for entry in chapters['completed']]}
     if boards is not None:public['boardScenes']=boards
     if state.get('pfNightRest') and not rules:public['nightRestResult']={k:copy.deepcopy(v) for k,v in state['pfNightRest']['result'].items() if k!='phases'}
     if state.get('adventureModule'):public['adventureModuleView']=adventure_modules.public_view(state)
@@ -206,6 +215,10 @@ def parse_response(state,raw,rules=False,starting=False,route_travel_context=Non
             if rules or not starting or state.get('adventureModule') or result.get('adventureModule'):
                 raise ValueError('Generación de aventura fuera de la operación permitida')
             result['adventureModule']=adventure_modules.from_generated(result.pop('generatedAdventure'))
+        if starting and state.get('adventureChapterTransition'):
+            stage='chapter-transition';transition=adventure_chapters.transition(state)
+            if not result.get('adventureModule') or result['adventureModule']['location']!=transition['location']:
+                raise ValueError('La continuación conserva el lugar actual')
         if 'worldUpdates' in result:
             stage='world-memory'
             campaign_world.validate_turn(state,result['worldUpdates'],rules=rules,starting=starting,result=result)
@@ -227,7 +240,7 @@ def ai_reply(state,text,refs,rules=False,check_actors=None,starting=False,source
     if not key:raise ValueError('Claude Haiku sin configurar: falta ANTHROPIC_API_KEY en el servidor. La acción no se ha guardado')
     context=build_context(state,text,refs,rules,check_actors,starting,source_text)
     budget=4500 if starting and not state.get('adventureModule') else 3000
-    body={'model':model_name(),'max_tokens':budget,'system':system_prompt(rules,starting,world_memory=campaign_world.enabled(state),world_projection='worldMemorySelection' in context),'messages':[{'role':'user','content':json.dumps(context,ensure_ascii=False)}],'output_config':{'format':{'type':'json_schema','schema':response_schema(state,rules,starting)}}}
+    body={'model':model_name(),'max_tokens':budget,'system':system_prompt(rules,starting,world_memory=campaign_world.enabled(state),world_projection='worldMemorySelection' in context,chapter_start=bool(state.get('adventureChapterTransition'))),'messages':[{'role':'user','content':json.dumps(context,ensure_ascii=False)}],'output_config':{'format':{'type':'json_schema','schema':response_schema(state,rules,starting)}}}
     req=urllib.request.Request('https://api.anthropic.com/v1/messages',data=json.dumps(body).encode(),headers={'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'})
     started=time.monotonic()
     try:

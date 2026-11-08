@@ -45,9 +45,14 @@ def public_view(record):
         'relationships':world.public_relationships(record['relationships'],record['npcs'],record['places'])}
 
 
-def updates_schema():
-    return {'type':'object','properties':{'npcs':world.schema(),'places':world.schema(),'relationships':world.relationship_schema()},
+def updates_schema(record=None):
+    result={'type':'object','properties':{'npcs':world.schema(),'places':world.schema(),'relationships':world.relationship_schema()},
         'required':['npcs','places','relationships'],'additionalProperties':False}
+    if record is not None:
+        record=validate(record)
+        for kind,limit in (('npcs',world.MAX_NPCS),('places',world.MAX_PLACES),('relationships',world.MAX_RELATIONSHIPS)):
+            if len(record[kind])==limit:result['properties'][kind]['items']['properties']['id']['enum']=[item['id'] for item in record[kind]]
+    return result
 
 
 def enabled(state):

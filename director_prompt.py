@@ -32,5 +32,8 @@ WORLD='''Memoria estructurada del mundo: directorKnowledge.campaignWorld conserv
 WORLD_CONTEXT='''La memoria extensa usa cronicas-campaign-world-context-1. identities es solo un índice de ids, nombres y visibilidad, no contiene todas sus notas. npcs/places/relationships incluyen las notas completas seleccionadas; omitted indica las que no se han cargado. No inventes lo omitido ni reemplaces una entrada existente ausente de esas listas: perderías su información. Puedes crear identidades nuevas o actualizar entradas cargadas completas. Si falta un recuerdo necesario, pide concretar sobre qué persona o lugar quiere continuar el jugador, sin decidir por él. Los secretos y nombres desconocidos del índice siguen privados.'''
 
 
-def system_prompt(rules=False,starting=False,world_memory=False,world_projection=False):
-    return BASE+'\n'+(RULES if rules else START if starting else PLAY)+('\n'+WORLD if world_memory and not rules else '')+('\n'+WORLD_CONTEXT if world_memory and world_projection and not rules else '')
+CHAPTER_START='''Esta apertura continúa una investigación terminada en la misma partida. adventureChapterTransition contiene el objetivo nuevo elegido por el propietario y bloquea el lugar actual. Genera una nueva investigación tranquila aquí, sin viaje, salto temporal, descanso, curación, recompensas, equipo ni decisiones del personaje. Los hallazgos y conclusiones confirmados de adventureChaptersView prevalecen sobre un resumen narrativo antiguo que aún los describa pendientes. Conserva PNJ, lugares y vínculos existentes; cambia solo las notas necesarias. La precisión del reloj no se recupera por comenzar otro capítulo. No repitas la investigación anterior ni entregues de antemano las pistas nuevas.'''
+
+
+def system_prompt(rules=False,starting=False,world_memory=False,world_projection=False,chapter_start=False):
+    return BASE+'\n'+(RULES if rules else START if starting else PLAY)+('\n'+WORLD if world_memory and not rules else '')+('\n'+WORLD_CONTEXT if world_memory and world_projection and not rules else '')+('\n'+CHAPTER_START if starting and chapter_start and not rules else '')

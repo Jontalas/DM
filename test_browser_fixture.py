@@ -79,6 +79,9 @@ def main():
         os.environ['ANTHROPIC_API_KEY']='fixture-only-never-sent'
         from test_adventure import reply,memory
         def fixture_reply(state,text,refs,**options):
+            if options.get('starting') and state.get('adventureChapterTransition'):
+                from test_adventure_chapters_context import reply as chapter_reply
+                return chapter_reply(state)
             if os.environ.get('TEST_DIRECTOR_NPC_WAIT')=='1' and not options.get('starting'):
                 from director_prepared_decisions import declaration_available
                 choices=declaration_available(state)
@@ -151,7 +154,8 @@ def main():
                 updates={'npcs':[],'places':[],'relationships':[]}
                 if os.environ.get('TEST_CAMPAIGN_WORLD_FIXTURE')=='1':
                     from test_rule_pack_world import npc,place,relationship
-                    if options.get('starting'):updates={'npcs':[npc(),npc('oculta',name='SECRET-NAME',known=False,public='')],'places':[place()],'relationships':[]}
+                    if state.get('adventureChapterTransition'):updates={'npcs':[npc(public='Arda recuerda la investigación de la carta y el nuevo objetivo.')],'places':[],'relationships':[]}
+                    elif options.get('starting'):updates={'npcs':[npc(),npc('oculta',name='SECRET-NAME',known=False,public='')],'places':[place()],'relationships':[]}
                     else:updates={'npcs':[npc(public='Arda recuerda vuestra conversación junto al archivo.')],'places':[],'relationships':[relationship()]}
                 result={**result,'worldUpdates':updates}
             return result

@@ -101,6 +101,11 @@ def view(row,state,me,known_workspace=None):
     if 'campaignWorld' in state:state['campaignWorldView']=campaign_world.public_view(state.pop('campaignWorld'))
     module_view=adventure_modules.public_view(state)
     route_view=adventure_routes.public_view(state)
+    import adventure_chapters
+    state.pop('adventureChaptersView',None);state.pop('nextAdventureView',None)
+    if module_view and module_view['completed']:state['nextAdventureView']={'reason':adventure_chapters.limitation(state,me)}
+    if state.get('adventureChapters'):state['adventureChaptersView']=adventure_chapters.public_view(state['adventureChapters'])
+    state.pop('adventureChapters',None)
     # Repair historical model prose on the copy, preserving originals in storage/export.
     for message in state['messages']:
         if message.get('kind')=='director':message['text']=repair_text(message.get('text',''))
@@ -169,7 +174,7 @@ def execute_action(body,me):
         selected=rulesets.adapter(state['ruleset'])
         if 'captureContract' in body:
             import legacy_director_attempt as legacy
-            if selected is not None or body['type'] not in ('talk','start_adventure','continue_adventure') or body['captureContract']!=legacy.ACTION_CONTRACT:
+            if selected is not None or body['type'] not in ('talk','start_adventure','continue_adventure','next_adventure') or body['captureContract']!=legacy.ACTION_CONTRACT:
                 raise ValueError('Contrato de envío no disponible para esta acción')
         workspace_readonly=False
         if state['ruleset']=='rule-pack' and me['host'] and body['type'] in ('prepare_rule_pack','install_prepared_rule_pack'):
@@ -213,6 +218,9 @@ def execute_action(body,me):
                 import pf_scene_transition
                 pf_scene_transition.validate_restored(state)
                 adventure_routes.validate_restored(state)
+                import adventure_chapters
+                adventure_chapters.validate_restored(state)
+                state.pop('adventureChaptersView',None);state.pop('nextAdventureView',None)
                 import campaign_world
                 if 'campaignWorld' in state:campaign_world.validate(state['campaignWorld'])
                 state.pop('campaignWorldView',None)
@@ -245,10 +253,14 @@ def execute_action(body,me):
                 randomness=ActionRandomness(store,cid,aid,me['id'],signature,row['version'],reservation=reservation)
                 state=selected.execute_action(state,body,me,draw=randomness)
             else:state=selected.execute_action(state,body,me)
-        elif body['type']=='start_adventure':
-            premise=adventure.validate_start(state,body,me)
+        elif body['type'] in ('start_adventure','next_adventure'):
+            next_chapter=body['type']=='next_adventure'
             import campaign_world
-            if 'worldMemoryContract' in body:
+            import adventure_chapters
+            if next_chapter:
+                state=adventure_chapters.prepare_next(state,body,me);premise=state['adventureChapterTransition']['premise']
+            else:premise=adventure.validate_start(state,body,me)
+            if not next_chapter and 'worldMemoryContract' in body:
                 if body['worldMemoryContract']!=campaign_world.CONTRACT:raise ValueError('Contrato de memoria del mundo no disponible')
                 if 'campaignWorld' in state:raise ValueError('Conserva la memoria del mundo existente; no se reemplaza al empezar')
                 state['campaignWorld']=campaign_world.empty()
@@ -269,16 +281,26 @@ def execute_action(body,me):
             if campaign_world.enabled(state) and 'worldUpdates' not in result:raise ValueError('El director no entregó las notas iniciales del mundo; la campaña no se ha modificado')
             if result.get('checks') or result.get('investigation') or result.get('routeTravel') or result.get('preparedDecision') or result.get('meleeAttack') or result.get('turnEnd'):raise ValueError('La apertura no puede resolver ni solicitar acciones de los personajes')
             if result.get('proposals'):raise ValueError('La apertura requiere una situación dentro de la cobertura disponible')
-            if (body.get('structured') or source is not None) and not state.get('adventureModule') and result.get('adventureModule') is None:
+            if (next_chapter or body.get('structured') or source is not None) and not state.get('adventureModule') and result.get('adventureModule') is None:
                 raise ValueError('El director no entregó la investigación estructurada solicitada; la campaña no se ha modificado')
             if result.get('adventureModule') is not None:
                 if state.get('adventureModule'):raise ValueError('El director no puede sustituir una aventura aportada')
-                adventure_modules.install(state,result['adventureModule'])
+                module=result['adventureModule']
+                if next_chapter:
+                    transition=adventure_chapters.transition(state)
+                    if module['location']!=transition['location']:raise ValueError('La continuación debe conservar el lugar; no se ha aplicado un viaje')
+                    module=json.loads(json.dumps(module));module['premise']=transition['premise']
+                adventure_modules.install(state,module)
             adventure.apply_memory(state,result.get('memory'),starting=True)
             if 'worldUpdates' in result:
                 state['campaignWorld']=campaign_world.validate_turn(state,result['worldUpdates'],starting=True,result=result)
+            marker=state.pop('adventureChapterTransition') if next_chapter else None
+            if marker:
+                actor=state['characters'][0]
+                state['messages'].append({'kind':'action','speaker':actor['name'],'owner':me['id'],'text':'Próximo objetivo aquí: '+marker['premise'],'time':time.time()})
             state['messages'].append({'kind':'director','speaker':'Director · Claude Haiku','text':result['narration'],
-                                      'time':time.time(),'adventureStart':True})
+                                      'time':time.time(),**({'adventureChapterStart':{'number':marker['to'],'previousSha256':marker['previousSha256']}} if marker else {'adventureStart':True})})
+            adventure_chapters.validate_restored(state)
         elif body['type']=='travel_scene':
             adventure_routes.travel(state,body,me)
         elif body['type']=='investigate':

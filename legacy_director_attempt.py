@@ -90,7 +90,7 @@ def prepare(state,text,refs,check_actors=None,starting=False,source_text=None,ac
             character['recoveryState']=copy.deepcopy(originals[character['id']]['recoveryState'])
     if len(canonical(request).encode('utf-8'))>300000:raise ValueError('El contexto de esta aventura supera el límite; no se ha llamado a IA')
     return {'request':request,'captureRequest':capture,'sha256':request_sha(capture),'sourceScheme':SCHEME,
-        'promptSha256':hashlib.sha256(system_prompt(False,starting,world_memory=claude_dm.campaign_world.enabled(state),world_projection='worldMemorySelection' in context).encode('utf-8')).hexdigest()}
+        'promptSha256':hashlib.sha256(system_prompt(False,starting,world_memory=claude_dm.campaign_world.enabled(state),world_projection='worldMemorySelection' in context,chapter_start=bool(state.get('adventureChapterTransition'))).encode('utf-8')).hexdigest()}
 
 
 def restore(prepared,payload,scheme):

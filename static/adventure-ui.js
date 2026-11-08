@@ -146,6 +146,23 @@ function renderPreparedPathfinderEncounter(){
 
 function canExplorePrepared(c){return c.hp>0||(snapshot.state.pfLightExplorationView?.character===c.id&&snapshot.state.pfLightExplorationView?.canExplore===true)}
 
+function renderNextAdventure(panel,s){
+ if(!s.nextAdventureView||s.pfEncounter||s.adventureRoute)return;
+ const reason=s.nextAdventureView.reason||(!model.aiConfigured?'El director no está disponible en esta mesa.':'');
+ panel.insertAdjacentHTML('beforeend',`<section class="card"><h4>Seguir la aventura aquí</h4><p>La investigación ha terminado. Puedes elegir otro objetivo en este lugar conservando tu personaje, sus heridas y lo descubierto.</p><p id="nextAdventureHint">${esc(reason||'Tú decides qué quieres averiguar. Empezar no cura ni mueve tu personaje.')}</p><button id="nextAdventure" aria-describedby="nextAdventureHint" ${reason?'disabled':''}>Elegir otro objetivo</button><details><summary>Qué cubre la continuación</summary><p>Otra investigación tranquila en el mismo lugar, para un personaje con PG positivos. No prepara viajes, combates, descansos ni recompensas. El juego conserva los capítulos anteriores y no calcula un salto de tiempo.</p></details></section>`);
+ $('#nextAdventure').onclick=()=>{
+  const campaign=token+':'+snapshot.id,chapter=s.adventureChaptersView?.current||1;
+  modal('<h2>¿Qué quieres averiguar aquí?</h2><form id="nextAdventureForm"><label>Tu próximo objetivo<textarea name="premise" required maxlength="2000" rows="4" placeholder="Por ejemplo: quiero averiguar quién dejó el paquete en este lugar."></textarea></label><p>El director preparará otra investigación aquí. Conservas tu ficha, tus heridas y lo descubierto.</p><button class="primary">Continuar aquí</button><p id="nextAdventureProgress" role="status" aria-live="polite"></p></form>');
+  $('#nextAdventureForm').onsubmit=run(async e=>{
+   if(token+':'+snapshot.id!==campaign||(snapshot.state.adventureChaptersView?.current||1)!==chapter)throw Error('La partida ha cambiado; vuelve a abrir tu próximo objetivo.');
+   const button=e.target.querySelector('button');button.disabled=true;$('#nextAdventureProgress').textContent='El director está preparando tu próximo objetivo…';
+   try{await act('next_adventure',{premise:e.target.elements.premise.value,worldMemoryContract:'structured-world-memory-1'});$('#modal').close();chooseTab('story')}
+   catch(error){$('#nextAdventureProgress').textContent=error.message;throw error}
+   finally{button.disabled=false}
+  });
+ };
+}
+
 function renderInvestigation(){
  const s=snapshot.state, view=s.adventureModuleView, panel=$('#investigationPanel');
  panel.hidden=!view;
@@ -159,6 +176,7 @@ function renderInvestigation(){
   const data={...values(e.target),method:e.submitter?.value||'roll'};
   await act('investigate',data);
  });
+ if(view.completed)renderNextAdventure(panel,s);
  const route=s.adventureRouteView;
  if(route){
   const blocked=!available.length||s.board.active||s.pending.length>0||s.characters.filter(c=>!c.enemy).length!==1||!!linkedLimit;
