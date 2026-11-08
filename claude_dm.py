@@ -13,6 +13,7 @@ import director_travel
 import director_prepared_decisions
 import director_combat
 import director_turn
+import pf_medical_evolution
 import board_scenes
 from director_prompt import system_prompt
 from model_config import model_name,DEFAULT_MODEL
@@ -83,6 +84,9 @@ def build_context(state,text,refs,rules=False,check_actors=None,starting=False,s
     if state.get('adventureModule'):public['adventureModuleView']=adventure_modules.public_view(state)
     if state.get('adventureRoute') and not rules:public['adventureRouteView']=adventure_routes.public_view(state)
     public['characters']=[{k:v for k,v in c.items() if k not in ('creation','npcCreation')} for c in state.get('characters',[])]
+    for character in public['characters']:
+        medical=pf_medical_evolution.director_view(character)
+        if medical is not None:character['recoveryState']=medical
     history=[{'speaker':m['speaker'],'kind':m['kind'],'text':repair_text(m['text']) if m.get('kind')=='director' else m['text'],
               **({'check':m['check']} if m.get('kind')=='rules' and m.get('check') else {}),
               **({'routeTransition':m['routeTransition']} if m.get('kind')=='rules' and m.get('routeTransition') else {})} for m in state['messages'][-30:]

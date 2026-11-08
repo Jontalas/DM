@@ -3,10 +3,16 @@
 Not a rest action: the caller must schedule time, all other creatures, armor,
 fatigue and daily resources before applying this result. No dice or IO.
 """
+import copy
 import pf_recovery
 
 
 def night_healing(character,*,elapsed_seconds,significant_interruption=False):
+    pf_recovery.validate_restored({'characters':[character]})
+    return _night_healing_result(character,elapsed_seconds=elapsed_seconds,significant_interruption=significant_interruption)
+
+
+def _night_healing_result(character,*,elapsed_seconds,significant_interruption):
     if type(elapsed_seconds)!=int or not 0<=elapsed_seconds<=28800 or type(significant_interruption)!=bool:
         raise ValueError('Este cálculo cubre un único período de descanso de hasta8h')
     hp=character.get('hp');maximum=character.get('maxHp');level=character.get('level');abilities=character.get('abilities')
@@ -16,7 +22,6 @@ def night_healing(character,*,elapsed_seconds,significant_interruption=False):
         raise ValueError('El descanso requiere PG, nivel y Constitución preparados')
     if hp<=-abilities[2]:raise ValueError('El descanso no devuelve la vida')
     if character.get('conditions','').strip():raise ValueError('Las condiciones necesitan resolución conjunta antes de aplicar descanso')
-    pf_recovery.validate_restored({'characters':[character]})
     assisted=None
     if hp<0:
         assisted=character.get('recoveryCare',{}).get('assisted')
@@ -28,3 +33,21 @@ def night_healing(character,*,elapsed_seconds,significant_interruption=False):
     return {'kind':'natural-night-rest','elapsedSeconds':elapsed_seconds,'reason':reason,
         'hpBefore':hp,'hpAfter':after,'amount':amount,'level':level,'assisted':assisted,
         'consciousAfter':after>=0 or pf_recovery.is_conscious(character)}
+
+
+def apply_night_healing(character,*,elapsed_seconds,significant_interruption=False):
+    """Internal update only: caller must schedule every patient and other effect.
+
+    Does not advance campaign time, choose sleep, resolve armor or grant a rest.
+    """
+    result=night_healing(character,elapsed_seconds=elapsed_seconds,significant_interruption=significant_interruption)
+    if not result['amount']:return result
+    updated=copy.deepcopy(character)
+    if result['hpBefore']<0 and result['hpAfter']<0:
+        import pf_medical_evolution
+        updated['recoveryState']=pf_medical_evolution.record(character,{'kind':'natural-night-rest','result':result})
+    else:pf_recovery.clear_episode(updated)
+    updated['hp']=result['hpAfter'];updated['stable']=True
+    pf_recovery.validate_restored({'characters':[updated]})
+    character.clear();character.update(updated)
+    return result

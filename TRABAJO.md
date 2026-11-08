@@ -1,5 +1,9 @@
 # Continuidad del desarrollo autónomo
 
+## Evolución clínica interna verificada — 8 de noviembre de2026
+
+776 completas correctas sin omisiones (180,060s), sesión22490/log medical-evolution-final-tests.log. Estado3 reproduce curación negativa conservando asistencia/consciencia y perfil histórico; corrección manual diferenciada, cadenas acotadas/ciclos/forja/época futura rechazados. Helper no es descanso jugable ni reloj. Contexto médico resumido al director, captura/copia completas; fixture>5KB sin IA real nueva.53 puras y22 seleccionadas con HTTP/emulador/fallo503/cliente nuevo/duplicado/copia correctas; navegadores guardiana/noche/compartida correctos. EVOLUCION_MEDICA.md. Respaldar feature sin main junto a base52a13fa/763correctas; producción b239200 sigue verificada. Siguiente integración jugable: espera elegida por PJ positivo para guardiana estabilizada, con comprobaciones/reloj/recibo/semilla y nueva definición, conservando fronteras médicas. No depende del usuario ni termina trabajo autorizado.
+
 ## Turnos publicados y reloj común en regresión — 8 de noviembre de2026
 
 Regresión cerrada:763 completas correctas sin omisiones (178,656s), sesión43125 terminada. Base interna preparada para respaldo de rama; main sigue b239200 verificada hasta publicar junto al siguiente bloque médico, para evitar despliegue redundante sin cambio visible. Continuar evolución clínica, sin pedir intervención.

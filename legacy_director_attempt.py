@@ -57,6 +57,10 @@ def capture_input(prepared):
         import board_scenes
         view=board_scenes.director_view(projected['context']['state'])
         if view is not None:projected['context']['state']['boardScenes']=view
+        import pf_medical_evolution
+        for character in projected['context']['state'].get('characters',[]):
+            medical=pf_medical_evolution.director_view(character)
+            if medical is not None:character['recoveryState']=medical
         if canonical(projected)!=canonical(prepared['request']):raise ValueError('El contexto reducido no corresponde a su entrada original')
     return original
 
@@ -71,6 +75,10 @@ def prepare(state,text,refs,check_actors=None,starting=False,source_text=None,ac
     capture=copy.deepcopy(request)
     # Preserve old paid keys while sending only a projection of archived maps.
     if 'boardScenes' in state:capture['context']['state']['boardScenes']=copy.deepcopy(state['boardScenes'])
+    originals={c['id']:c for c in state['characters']}
+    for character in capture['context']['state']['characters']:
+        if character.get('recoveryState',{}).get('format')=='cronicas-pf-medical-context-1':
+            character['recoveryState']=copy.deepcopy(originals[character['id']]['recoveryState'])
     if len(canonical(request).encode('utf-8'))>300000:raise ValueError('El contexto de esta aventura supera el límite; no se ha llamado a IA')
     return {'request':request,'captureRequest':capture,'sha256':request_sha(capture),'sourceScheme':SCHEME,
         'promptSha256':hashlib.sha256(system_prompt(False,starting).encode('utf-8')).hexdigest()}

@@ -49,6 +49,10 @@ def validate_restored(state):
         raise ValueError('Historial temporal de combate inválido')
     for character in state.get('characters',[]):
         recovery=character.get('recoveryState')
+        if isinstance(recovery,dict) and recovery.get('format')=='cronicas-pf-recovery-state-3':
+            import pf_medical_evolution
+            pf_medical_evolution.validate(character,board=board if 'board' in state else None)
+            continue
         adjusted=isinstance(recovery,dict) and recovery.get('format')=='cronicas-pf-recovery-state-2'
         if adjusted and 'recoveryCare' in character:raise ValueError('La corrección manual no certifica asistencia actual')
         if 'recoveryState' in character and 'recoveryCare' not in character and not adjusted:raise ValueError('La recuperación no conserva asistencia conocida')
@@ -102,11 +106,16 @@ def manual_hp_change(character,delta,*,reason):
     before=character['hp'];after=before+delta;proof=None
     if delta>0 and after<0 and 'recoveryState' in character:
         validate_restored({'characters':[character]})
-        proof=copy.deepcopy(character['recoveryState'])
-        if proof['format']=='cronicas-pf-recovery-state-1':
-            proof.update(format='cronicas-pf-recovery-state-2',careAtCheck=copy.deepcopy(character['recoveryCare']),adjustments=[])
-        if len(proof['adjustments'])>=100:raise ValueError('El historial médico requiere revisión antes de otra corrección')
-        proof['adjustments'].append({'kind':'manual-hp-correction','fromHp':before,'hp':after,'reason':reason.strip()[:500]})
+        change={'kind':'manual-hp-correction','fromHp':before,'hp':after,'reason':reason.strip()[:500]}
+        if character['recoveryState']['format']=='cronicas-pf-recovery-state-3':
+            import pf_medical_evolution
+            proof=pf_medical_evolution.record(character,change)
+        else:
+            proof=copy.deepcopy(character['recoveryState'])
+            if proof['format']=='cronicas-pf-recovery-state-1':
+                proof.update(format='cronicas-pf-recovery-state-2',careAtCheck=copy.deepcopy(character['recoveryCare']),adjustments=[])
+            if len(proof['adjustments'])>=100:raise ValueError('El historial médico requiere revisión antes de otra corrección')
+            proof['adjustments'].append(change)
     character['hp']=after;character['stable']=delta>0;clear_episode(character)
     if proof is not None:character['recoveryState']=proof
 
