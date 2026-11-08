@@ -162,6 +162,10 @@ def main():
         truce_dice=iter(([20,1,12,1,*([19,1,4]*4)] if os.environ.get('TEST_PF_TRUCE_NIGHT')=='1' else [20,1,12,1])*4)
         game_randomness.draw=lambda sides:next(truce_dice)
         game_randomness.initiative_tie=lambda:0
+    if os.environ.get('TEST_PF_DISABLED_TRUCE_FIXTURE')=='1':
+        truce_dice=iter([20,1,*([19,1,4]*4)])
+        game_randomness.draw=lambda sides:next(truce_dice)
+        game_randomness.initiative_tie=lambda:0
     if os.environ.get('TEST_PF_AWAKE_EXPLORATION_FIXTURE')=='1':
         awake_dice=iter([20,1,*([19,1,4]*4),12,4,20,20,20,20])
         game_randomness.draw=lambda sides:next(awake_dice)

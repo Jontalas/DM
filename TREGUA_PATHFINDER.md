@@ -1,5 +1,7 @@
 # Tregua preparada: versión1.8 del patio
 
+Ampliación1.15 en TREGUA_INCAPACITADO.md: oferta también con PJ a0PG y guardiana ilesa, recibo3 separado; versiones anteriores intactas.
+
 **Ampliación local1.10:** nueva guardiana original con Común por Int12 y perfil distinto verificado (6PG/CA15/sin escudo), sin modificar entrada publicada ni versiones anteriores. SCOPE2/recibo2 deja constancia de Común como idioma compartido de la oferta; no decide frases ni idioma literal del PJ. Personaje humano por defecto conserva Común y su lista de idiomas adicionales vacía. SCOPE1/recibo1 siguen exigiendo Goblin para el encuentro antiguo. La disponibilidad/UI deriva el idioma de la oferta localmente; copia rechaza idioma, plantilla o perfil sustituidos. CATALOGO_PNJ.md conserva construcción/fuentes y huella original preservada.
 
 46 afectadas puras y18 con HTTP/Waitress/emulador correctas; navegador desde creador guiado por defecto, paz/combate, cuatro ataques hasta0, tregua Común sin coste de PG, sueño0→1/guardiana1, copia UI/recarga/teclado/móvil/toque/investigación/ruta correctos, sin IA. La validación del desenlace usa máximo original de la plantilla en vez de7 fijo: para entrada antigua sigue7; nueva6. Primer ajuste de texto dejó un doble+ local, detectado por regresión y corregido antes de continuar. Suite completa en curso39582, .deps/common-guard-final-tests.log; no publicar hasta resultado.

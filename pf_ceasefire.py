@@ -12,12 +12,29 @@ SCOPE='wounded-goblin-truce-1'
 SHARED_SCOPE='wounded-common-guard-truce-1'
 FORMAT='cronicas-pf-ceasefire-1'
 SHARED_FORMAT='cronicas-pf-ceasefire-2'
+DISABLED_SCOPE='disabled-player-common-guard-truce-1'
+DISABLED_FORMAT='cronicas-pf-ceasefire-3'
 
 
-def supported(definition):return isinstance(definition,dict) and definition.get('ceasefireScope') in (SCOPE,SHARED_SCOPE)
+def supported(definition):return isinstance(definition,dict) and definition.get('ceasefireScope') in (SCOPE,SHARED_SCOPE,DISABLED_SCOPE)
 
 
-def offer_language(definition):return 'Común' if definition.get('ceasefireScope')==SHARED_SCOPE else 'Goblin'
+def offer_language(definition):return 'Común' if definition.get('ceasefireScope') in (SHARED_SCOPE,DISABLED_SCOPE) else 'Goblin'
+
+
+def disabled_player_offer(state):
+    record=state.get('pfEncounter') or {}
+    if record.get('definition',{}).get('ceasefireScope')!=DISABLED_SCOPE:return False
+    actor=next((c for c in state['characters'] if c['id']==record.get('character')),None)
+    return bool(actor and type(actor.get('hp'))==int and actor['hp']==0)
+
+
+def _health_allows_offer(definition,actor_hp,npc_hp,npc_max_hp):
+    return 0<npc_hp<npc_max_hp or (definition.get('ceasefireScope')==DISABLED_SCOPE and actor_hp==0 and npc_hp==npc_max_hp)
+
+
+def _format(definition):
+    return DISABLED_FORMAT if definition.get('ceasefireScope')==DISABLED_SCOPE else SHARED_FORMAT if definition.get('ceasefireScope')==SHARED_SCOPE else FORMAT
 
 
 def _shared_language(actor,npc,definition):
@@ -45,7 +62,9 @@ def limitation(state):
         return 'Esta conversación breve requiere conocer el idioma goblin.' if record['definition'].get('ceasefireScope')==SCOPE else 'Esta tregua requiere un idioma compartido verificado.'
     if actor['hp']<0:
         return 'Este recorrido preparado no cubre todavía la respuesta con PG negativos.'
-    if not combat.standing(actor) or not 0<npc['hp']<npc['maxHp']:
+    if not combat.standing(actor) or not _health_allows_offer(record['definition'],actor['hp'],npc['hp'],npc['maxHp']):
+        if record['definition'].get('ceasefireScope')==DISABLED_SCOPE:
+            return 'La guardiana ofrece detenerse si está herida o si tú estás a0PG y puedes responder.'
         return 'La guardiana ofrece esta tregua cuando está herida y ambos podéis responder.'
     if any(c.get('conditions','').strip() or c.get('creation',{}).get('manualOverride')
         or c.get('npcCreation',{}).get('manualOverride') for c in (actor,npc)):
@@ -70,16 +89,16 @@ def accept(state,body,me):
     reason=limitation(state)
     if reason:raise ValueError(reason)
     npc=next(c for c in state['characters'] if c['id']==record['npc'])
-    shared=record['definition'].get('ceasefireScope')==SHARED_SCOPE
+    shared=record['definition'].get('ceasefireScope') in (SHARED_SCOPE,DISABLED_SCOPE)
     language=_shared_language(actor,npc,record['definition'])
-    receipt={'format':SHARED_FORMAT if shared else FORMAT,'encounterSha256':record['sha256'],'character':actor['id'],'npc':npc['id'],
+    receipt={'format':_format(record['definition']),'encounterSha256':record['sha256'],'character':actor['id'],'npc':npc['id'],
         'actorHp':actor['hp'],'npcHp':npc['hp'],'combatSerial':1,'round':state['board']['round']}
     if shared:receipt['sharedLanguage']=language
     result=copy.deepcopy(state)
     result['pfEncounter'].update(phase='agreement',ceasefire=receipt)
     result['board']['active']=False;result['board'].pop('autoPaused',None)
     from engine import log
-    acceptance=(actor['name']+' acepta con unas palabras la tregua que la guardiana herida ofrece en común. ' if shared
+    acceptance=(actor['name']+' acepta con unas palabras la tregua que la guardiana'+(' herida' if npc['hp']<npc['maxHp'] else '')+' ofrece en común. ' if shared
         else actor['name']+' acepta con unas palabras en goblin la tregua que ofrece la guardiana herida. ')
     log(result,acceptance
         +'Ambos dejan de combatir. Las heridas, objetos y posiciones se conservan; no pasa tiempo adicional. '
@@ -103,9 +122,9 @@ def validate_restored(state):
             and state['board'].get('combatSerial',0)>0):
             raise ValueError('El acuerdo tras combatir necesita su registro de tregua')
         return
-    shared=definition.get('ceasefireScope')==SHARED_SCOPE
+    shared=definition.get('ceasefireScope') in (SHARED_SCOPE,DISABLED_SCOPE)
     fields={'format','encounterSha256','character','npc','actorHp','npcHp','combatSerial','round'}|({'sharedLanguage'} if shared else set())
-    if (not isinstance(receipt,dict) or set(receipt)!=fields or receipt['format']!=(SHARED_FORMAT if shared else FORMAT)
+    if (not isinstance(receipt,dict) or set(receipt)!=fields or receipt['format']!=_format(definition)
         or not supported(definition)
         or receipt['encounterSha256']!=record.get('sha256')
         or receipt['character']!=record.get('character') or receipt['npc']!=record.get('npc')
@@ -117,7 +136,7 @@ def validate_restored(state):
     if (not actor or not npc or not _shared_language(actor,npc,definition)
         or shared and receipt['sharedLanguage']!=_shared_language(actor,npc,definition)
         or type(receipt['actorHp'])!=int or not 0<=receipt['actorHp']<=actor['maxHp']
-        or type(receipt['npcHp'])!=int or not 0<receipt['npcHp']<npc['maxHp']
+        or type(receipt['npcHp'])!=int or not _health_allows_offer(definition,receipt['actorHp'],receipt['npcHp'],npc['maxHp'])
         or state['board'].get('combatSerial',0)<1
         or record['phase']=='offered'
         or markers!=[hashlib.sha256(canonical(receipt).encode()).hexdigest()]):

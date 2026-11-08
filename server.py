@@ -125,7 +125,8 @@ def view(row,state,me,known_workspace=None):
     if recovery_view:state['pfNpcRecoveryView']=recovery_view
     encounter=state.get('pfEncounter') or {}
     if pf_ceasefire.supported(encounter.get('definition')):
-        state['pfCeasefireView']={'reason':pf_ceasefire.limitation(state),'offerLanguage':pf_ceasefire.offer_language(encounter['definition'])}
+        state['pfCeasefireView']={'reason':pf_ceasefire.limitation(state),'offerLanguage':pf_ceasefire.offer_language(encounter['definition']),
+            'disabledPlayerOffer':pf_ceasefire.disabled_player_offer(state)}
     rest_view=pf_night_rest.public_view(state)
     state.pop('pfNightRest',None)
     if rest_view:state['pfNightRestView']=rest_view
