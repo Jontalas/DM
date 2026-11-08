@@ -13,15 +13,29 @@ from rule_pack_authoring import canonical
 
 SCOPE='courtyard-safe-night-1'
 ARMOR_SCOPE='courtyard-safe-night-2'
+TRUCE_SCOPE='courtyard-safe-night-3'
 FORMAT='cronicas-pf-night-rest-1'
 ARMOR_FORMAT='cronicas-pf-night-rest-2'
+TRUCE_FORMAT='cronicas-pf-night-rest-3'
 START_TIME='Inicio de la noche del patio'
 END_TIME='8 horas desde el comienzo del descanso en el patio'
 # Core PDF154/printed153, table6-7; normal donning and no assistance.
 ARMOR_MINUTES={'leather':(1,1),'studded':(1,1),'chainshirt':(1,1),'scale':(1,4)}
 
 
-def supported(definition):return isinstance(definition,dict) and definition.get('restScope') in (SCOPE,ARMOR_SCOPE)
+def supported(definition):return isinstance(definition,dict) and definition.get('restScope') in (SCOPE,ARMOR_SCOPE,TRUCE_SCOPE)
+
+
+def _extended(definition):return definition.get('restScope') in (ARMOR_SCOPE,TRUCE_SCOPE)
+
+
+def _format(definition):return TRUCE_FORMAT if definition.get('restScope')==TRUCE_SCOPE else ARMOR_FORMAT if _extended(definition) else FORMAT
+
+
+def _has_truce(record):return record['definition'].get('restScope')==TRUCE_SCOPE and bool(record.get('ceasefire'))
+
+
+def _truce_hash(record):return hashlib.sha256(canonical(record['ceasefire']).encode()).hexdigest() if record.get('ceasefire') else None
 
 
 def _participants(state):
@@ -37,7 +51,7 @@ def _profile(actor,npc,definition,armor_plan='keep'):
         return 'Este descanso requiere el personaje del asistente sin correcciones de perfil.'
     if armor_plan not in ('keep','remove-and-reequip'):return 'Elige una preparación de armadura verificada.'
     armor=actor['creation'].get('choices',{}).get('armor')
-    if armor_plan=='remove-and-reequip' and (definition.get('restScope')!=ARMOR_SCOPE or armor not in ARMOR_MINUTES):
+    if armor_plan=='remove-and-reequip' and (not _extended(definition) or armor not in ARMOR_MINUTES):
         return 'Esta escena no incluye quitarse y volver a ponerse esa armadura.'
     if armor_plan=='keep' and armor not in ('leather','studded','chainshirt'):
         return 'Dormir con esta armadura necesita efectos de fatiga todavía no cubiertos; no se avanza tiempo.'
@@ -45,13 +59,18 @@ def _profile(actor,npc,definition,armor_plan='keep'):
     except (ValueError,KeyError,TypeError):return 'Las opciones del personaje necesitan revisión antes de dormir.'
     if any(canonical(actor.get(k))!=canonical(v) for k,v in expected.items() if k not in ('hp','notes')):
         return 'La ficha cambió respecto al personaje preparado; revisa sus correcciones.'
-    if type(actor.get('hp'))!=int or not 0<actor['hp']<=actor['maxHp']:
+    minimum=0 if definition.get('restScope')==TRUCE_SCOPE and armor_plan=='keep' else 1
+    if definition.get('restScope')==TRUCE_SCOPE and actor.get('hp')==0 and armor_plan!='keep':
+        return 'Con 0 PG esta noche solo cubre dormir con armadura ligera; quitarla y volver a ponerla necesita resolver el esfuerzo.'
+    if type(actor.get('hp'))!=int or not minimum<=actor['hp']<=actor['maxHp']:
+        if definition.get('restScope')==TRUCE_SCOPE:
+            return 'Esta noche no cubre PG negativos ni recuperación médica pendiente; se conservan las heridas y el reloj.'
         return 'Este descanso cubre únicamente personajes con PG positivos; la recuperación negativa sigue otro recorrido.'
     if npc.get('npcCreation',{}).get('template')!=definition['npc']['template'] or npc.get('npcCreation',{}).get('manualOverride'):
         return 'La guardiana necesita su perfil original para resolver esta noche.'
     try:npc_catalog.validate_character(npc,'pathfinder-1e')
     except ValueError:return 'La ficha de la guardiana necesita revisión antes de avanzar la noche.'
-    if npc['hp']!=npc['maxHp'] and npc['hp']>-npc['abilities'][2]:
+    if npc['hp']!=npc['maxHp'] and npc['hp']>-npc['abilities'][2] and not (definition.get('restScope')==TRUCE_SCOPE and npc['hp']>0):
         return 'La guardiana está herida y necesita seguimiento propio antes de avanzar la noche.'
     if any(c.get('conditions','').strip() or any(k in c for k in ('recoveryCare','recoveryState')) for c in (actor,npc)):
         return 'Hay condiciones o seguimiento médico que este descanso todavía no resuelve.'
@@ -72,23 +91,24 @@ def limitation(state,armor_plan='keep'):
         return 'El lugar o el reloj cambiaron; no se supone una noche segura sin comprobarlos.'
     if any(k in record for k in ('recoveryOutcome','recoveryStart','recoveryLimit')):
         return 'El reloj médico necesita continuar su propio seguimiento; esta noche no lo sustituye.'
-    if (state['board'].get('combatSerial',0)!=(1 if record['phase']=='resolved' else 0)
+    expected_serial=1 if record['phase']=='resolved' or _has_truce(record) else 0
+    if (state['board'].get('combatSerial',0)!=expected_serial
         or type(state['board']['round'])!=int or not 1<=state['board']['round']<=100):
         return 'Esta noche cubre solo el primer encuentro corto; el tiempo adicional necesita seguimiento.'
     actor,npc=_participants(state)
     reason=_profile(actor,npc,record['definition'],armor_plan)
     if reason:return reason
-    if record['phase']=='agreement' and npc['hp']!=npc['maxHp']:
+    if record['phase']=='agreement' and npc['hp']!=npc['maxHp'] and not _has_truce(record):
         return 'La guardiana cambió tras el acuerdo; esta noche preparada necesita revisar esa situación.'
     return None
 
 
 def _result(start,definition):
-    extended=definition.get('restScope')==ARMOR_SCOPE
-    fields={'choices','hp','npcHp','worldTime','combatSerial','round','phase'}|({'armorPlan'} if extended else set())
+    extended=_extended(definition);truce=definition.get('restScope')==TRUCE_SCOPE
+    fields={'choices','hp','npcHp','worldTime','combatSerial','round','phase'}|({'armorPlan'} if extended else set())|({'ceasefireSha256'} if truce else set())
     if (not isinstance(start,dict) or set(start)!=fields
         or start['worldTime']!=START_TIME or type(start['combatSerial'])!=int
-        or start['combatSerial']!=(1 if start['phase']=='resolved' else 0)
+        or start['combatSerial']!=(1 if start['phase']=='resolved' or truce and start.get('ceasefireSha256') else 0)
         or type(start['round'])!=int or not 1<=start['round']<=100
         or start['phase'] not in ('agreement','resolved')):raise ValueError('Origen de descanso inválido')
     actor,_=character_builder.build(start['choices'])
@@ -98,7 +118,10 @@ def _result(start,definition):
     plan=start.get('armorPlan','keep')
     reason=_profile(actor,npc,definition,plan)
     if reason:raise ValueError(reason)
-    if start['phase']=='agreement' and npc['hp']!=npc['maxHp']:raise ValueError('El acuerdo no contiene una muerte de combate')
+    if truce and start['ceasefireSha256'] is not None:
+        marker=start['ceasefireSha256']
+        if not isinstance(marker,str) or len(marker)!=64 or any(c not in '0123456789abcdef' for c in marker):raise ValueError('Origen de tregua inválido')
+    if start['phase']=='agreement' and npc['hp']!=npc['maxHp'] and not (truce and start['ceasefireSha256'] and npc['hp']>0):raise ValueError('El acuerdo no contiene una muerte de combate')
     result={'healing':pf_rest.night_healing(actor,elapsed_seconds=28800),'seconds':28800,
         'npcActivity':'dead' if npc['hp']<=-npc['abilities'][2] else 'awake-watch',
         'npcHpAfter':npc['hp'],'worldTimeAfter':END_TIME}
@@ -117,7 +140,7 @@ def _result(start,definition):
 
 def rest(state,body,me):
     definition=(state.get('pfEncounter') or {}).get('definition') or {}
-    extended=definition.get('restScope')==ARMOR_SCOPE
+    extended=_extended(definition)
     if body.get('type')!='rest_pf_night' or set(body)-({'type','id','version'}|({'armorPlan'} if extended else set())):
         raise ValueError('Elige la noche preparada; no se admiten horas o PG arbitrarios')
     actor,npc=_participants(state)
@@ -131,8 +154,9 @@ def rest(state,body,me):
     start={'choices':copy.deepcopy(actor['creation']['choices']),'hp':actor['hp'],'npcHp':npc['hp'],
         'worldTime':state['worldTime'],'combatSerial':state['board'].get('combatSerial',0),'round':state['board']['round'],'phase':record['phase']}
     if extended:start['armorPlan']=plan
+    if definition.get('restScope')==TRUCE_SCOPE:start['ceasefireSha256']=_truce_hash(record)
     result=_result(start,record['definition'])
-    receipt={'format':ARMOR_FORMAT if extended else FORMAT,'encounterSha256':record['sha256'],'character':actor['id'],'npc':npc['id'],'start':start,'result':result}
+    receipt={'format':_format(definition),'encounterSha256':record['sha256'],'character':actor['id'],'npc':npc['id'],'start':start,'result':result}
     updated=copy.deepcopy(state)
     next(c for c in updated['characters'] if c['id']==actor['id'])['hp']=result['healing']['hpAfter']
     updated['worldTime']=result['worldTimeAfter'];updated['pfNightRest']=receipt
@@ -161,10 +185,12 @@ def validate_restored(state):
     record=state.get('pfEncounter');actor,npc=_participants(state)
     if (not isinstance(receipt,dict) or set(receipt)!={'format','encounterSha256','character','npc','start','result'}
         or not record or not supported(record['definition'])
-        or receipt['format']!=(ARMOR_FORMAT if record['definition'].get('restScope')==ARMOR_SCOPE else FORMAT)
+        or receipt['format']!=_format(record['definition'])
         or receipt['encounterSha256']!=record['sha256'] or not actor or not npc
         or receipt['character']!=actor['id'] or receipt['npc']!=npc['id']):raise ValueError('La noche no corresponde al encuentro y sus participantes')
     if canonical(receipt['result'])!=canonical(_result(receipt['start'],record['definition'])):raise ValueError('La curación o el tiempo no coinciden con la noche registrada')
+    if record['definition'].get('restScope')==TRUCE_SCOPE and receipt['start']['ceasefireSha256']!=_truce_hash(record):
+        raise ValueError('La noche no corresponde a la tregua registrada')
     if canonical(receipt['start']['choices'])!=canonical(actor.get('creation',{}).get('choices')):
         raise ValueError('El origen del descanso no coincide con la creación de este personaje')
     if state['board'].get('combatSerial',0)<receipt['start']['combatSerial']:raise ValueError('La noche pertenece a un combate posterior al reloj de esta copia')
@@ -176,8 +202,8 @@ def public_view(state):
     if not supported(definition):return None
     receipt=state.get('pfNightRest')
     actor,_=_participants(state)
-    plan='remove-and-reequip' if definition.get('restScope')==ARMOR_SCOPE and actor and actor.get('creation',{}).get('choices',{}).get('armor')=='scale' else 'keep'
+    plan='remove-and-reequip' if _extended(definition) and actor and actor.get('creation',{}).get('choices',{}).get('armor')=='scale' else 'keep'
     result={'completed':bool(receipt),'reason':limitation(state,plan),
         'result':copy.deepcopy(receipt['result']) if receipt else None}
-    if definition.get('restScope')==ARMOR_SCOPE:result['armorPlan']=plan
+    if _extended(definition):result['armorPlan']=plan
     return result

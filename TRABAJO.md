@@ -1,5 +1,15 @@
 # Continuidad del desarrollo autónomo
 
+## Regresión1.9 cerrada — 8 de noviembre de2026
+
+700 completas correctas sin omisiones (163,498s), log privado pf-truce-night-final-tests.log, sesión80704 terminada.27 afectadas con HTTP/Waitress/emulador y navegador de cuatro ataques hasta0/tregua/noche1PG/guardiana2/copia por interfaz/recarga/móvil/toque/continuación correctos. Regresiones de encuentro actual desde creador y noche1.5 correctas. No cambios mecánicos posteriores al inicio de suite. Respaldar/publicar y verificar revisión/descriptor1.9/salud; guion técnico único sin IA preparado/compilado, aún no ejecutado, no usa corrección manual para fingir0. Conservar sesiones anteriores y seguir desarrollo sin solicitar intervención.
+
+## Tregua1.8 verificada y descanso1.9 en regresión — 8 de noviembre de2026
+
+589c6f2e341486ff2a6e4e9a5f9b5d83ccd3ad33, Render7630892971 success, revisión/salud/descriptor1.8 exactos. Sesión técnica única pf-ceasefire-live-session.json verified sin IA: ataque con dado físico explícito, guardiana2PG, respuesta elegida, duplicado/copia/continuación correctos. Navegador real de la misma campaña correcto; comparador inicial ajustado por sceneId legítimo de ruta, sin repetir acciones ni cambiar partidas personales. No repetir ensayo ni borrar sesión.
+
+Desarrollo siguió con1.9/restScope3/recibo3: permite noche explícita con guardiana positiva herida despierta/sin curación y PJ a0 con armadura ligera puesta,0→1PG. Positivos mantienen preparación normal de cota; quitar/poner a0 y negativos siguen excluidos. Fuentes originales PDF190/189,192/191 y151/150 revisadas visualmente. Recibo vincula tregua histórica y conserva origen sin tregua para acuerdo inicial.27 afectadas con HTTP/Waitress/emulador/reintento/cliente nuevo/duplicado/copia y navegador orgánico hasta0/aceptar/dormir1PG/guardiana2/copia por interfaz/recarga/móvil/toque/continuación correctos. Suite completa en curso80704, log privado pf-truce-night-final-tests.log; no publicar hasta resultado. DESCANSO_PATHFINDER.md conserva detalles. Sin IA ni intervención del usuario; negativos/fatiga/planificador general siguen pendientes.
+
 ## Regresión1.8 cerrada — 8 de noviembre de2026
 
 694 completas correctas sin omisiones (183,506s), log privado pf-ceasefire-final-tests.log, sesión3478 terminada.47 afectadas y28 posteriores al orden de validación; navegadores de tregua, encuentro desde creador y cuatro casos de armadura correctos. Guía local permite encontrar oferta por teclado sin acciones. Publicar y comprobar revisión/descriptor1.8/salud; guion técnico único sin IA preparado/compilado, aún no ejecutado. No sustituye las pruebas del creador ni acredita aventura completa. Después continuar sin esperar al usuario con descanso de guardiana positiva herida/PJ a0, conservando límites y fuentes.

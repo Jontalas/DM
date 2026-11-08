@@ -17,12 +17,13 @@ class CeasefireHTTPTests(unittest.TestCase):
     state=night_http.NightRestHTTPTests.state
     action=night_http.NightRestHTTPTests.action
 
-    def prepare_truce(self,token=None):
+    def prepare_truce(self,token=None,version='1.8.0',armor=None):
         selected=choices();selected['abilities'][3:5]=[12,10]
         selected['languages']=['Goblin'];selected['skills'].append('swim')
+        if armor:selected['armor']=armor
         self.action('create_character',token,choices=selected)
         actor=self.state(token)['state']['characters'][0]['id']
-        self.action('enter_pf_encounter',token,encounter='patio-del-peaje',encounterVersion='1.8.0',character=actor)
+        self.action('enter_pf_encounter',token,encounter='patio-del-peaje',encounterVersion=version,character=actor)
         with patch('game_randomness.draw',side_effect=[20,1]),patch('game_randomness.initiative_tie',return_value=0):
             self.action('choose_pf_encounter',token,choice='combat')
         npc=self.state(token)['state']['characters'][1]['id']
