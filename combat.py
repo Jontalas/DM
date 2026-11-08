@@ -59,7 +59,8 @@ def basic_pair(source,target,board):
     return source_profile,target_profile
 
 
-def attack(state,body,actor,dice):
+def attack_context(state,body,actor):
+    """Shared read-only legality and totals; never draws dice or spends actions."""
     board=state['board']
     if not board['active']:raise ValueError('Inicia el combate antes de atacar')
     source=next((c for c in state['characters'] if c['id']==body.get('character')),None)
@@ -87,6 +88,12 @@ def attack(state,body,actor,dice):
         if (ally['x']-target['x'],ally['y']-target['y'])==(-(source['x']-target['x']),-(source['y']-target['y'])):
             flanking=True
     modifier=source['attack']+(2 if flanking else 0)
+    return source,target,source_profile,spent,flat,armor,flanking,modifier
+
+
+def attack(state,body,actor,dice):
+    source,target,source_profile,spent,flat,armor,flanking,modifier=attack_context(state,body,actor)
+    board=state['board']
     physical=body.get('physical')
     if physical is not None and (not actor['host'] or not isinstance(physical,dict)):
         raise PermissionError('Solo el anfitrión registra tiradas físicas verificadas de combate')

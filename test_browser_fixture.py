@@ -79,6 +79,13 @@ def main():
         os.environ['ANTHROPIC_API_KEY']='fixture-only-never-sent'
         from test_adventure import reply,memory
         def fixture_reply(state,text,refs,**options):
+            if os.environ.get('TEST_DIRECTOR_MELEE')=='1' and not options.get('starting'):
+                from director_combat import declaration_available
+                attack=declaration_available(state)
+                if attack and text.casefold().strip().rstrip('.')=='ataco a la guardiana con mi espada':
+                    return reply(narration='La guardiana mantiene su espada preparada.',meleeAttack={'target':attack['targets'][0]})
+                return reply(narration='Puedes revisar tu turno y decidir qué haces.',memory=memory(
+                    summary='La situación se conserva.',location=state['location'],goal=state['goal'],objectives=state['objectives']))
             if os.environ.get('TEST_DIRECTOR_PREPARED_DECISIONS')=='1' and not options.get('starting'):
                 from director_prepared_decisions import declaration_available
                 choices=declaration_available(state)

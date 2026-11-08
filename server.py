@@ -241,7 +241,7 @@ def execute_action(body,me):
             actors=[c['id'] for c in adventure.ready_characters(state)]
             source_options={'source_text':source} if source is not None else {}
             result=legacy_reply(premise,[],check_actors=actors,starting=True,**source_options)
-            if result.get('checks') or result.get('investigation') or result.get('routeTravel') or result.get('preparedDecision'):raise ValueError('La apertura no puede resolver ni solicitar acciones de los personajes')
+            if result.get('checks') or result.get('investigation') or result.get('routeTravel') or result.get('preparedDecision') or result.get('meleeAttack'):raise ValueError('La apertura no puede resolver ni solicitar acciones de los personajes')
             if result.get('proposals'):raise ValueError('La apertura requiere una situación dentro de la cobertura disponible')
             if (body.get('structured') or source is not None) and not state.get('adventureModule') and result.get('adventureModule') is None:
                 raise ValueError('El director no entregó la investigación estructurada solicitada; la campaña no se ha modificado')
@@ -271,27 +271,35 @@ def execute_action(body,me):
             import board_scenes
             actors=[c['id'] for c in board_scenes.characters(state) if me['host'] or c['owner']==me['id']]
             result=legacy_reply(text,refs,check_actors=actors)
-            if body.get('kind')=='ooc' and (result.get('checks') or result.get('investigation') or result.get('routeTravel') or result.get('preparedDecision')):
+            if body.get('kind')=='ooc' and (result.get('checks') or result.get('investigation') or result.get('routeTravel') or result.get('preparedDecision') or result.get('meleeAttack')):
                 raise ValueError('Una intervención fuera de personaje no solicita pruebas, investigaciones ni viajes')
             if result.get('adventureModule') is not None:raise ValueError('La conversación no puede sustituir la aventura en curso')
-            if body['type']=='continue_adventure' and (result.get('checks') or result.get('investigation') or result.get('routeTravel') or result.get('preparedDecision')):
+            if body['type']=='continue_adventure' and (result.get('checks') or result.get('investigation') or result.get('routeTravel') or result.get('preparedDecision') or result.get('meleeAttack')):
                 raise ValueError('La continuación debe narrar el resultado confirmado, sin solicitar otra prueba ni viaje')
             if result.get('investigation'):
                 if result.get('checks'):raise ValueError('Una investigación utiliza su propia prueba, sin pruebas genéricas adicionales')
                 if body.get('kind')=='ooc':raise ValueError('Una intervención fuera de personaje no solicita investigaciones')
                 queue_investigation(state,result['investigation'],me)
             if result.get('routeTravel'):
-                if result.get('checks') or result.get('investigation') or result.get('proposals') or result.get('preparedDecision'):
+                if result.get('checks') or result.get('investigation') or result.get('proposals') or result.get('preparedDecision') or result.get('meleeAttack'):
                     raise ValueError('El viaje no se combina con otras resoluciones pendientes')
                 import director_travel
                 director_travel.apply(state,result['routeTravel'],body,me)
             if result.get('preparedDecision'):
-                if result.get('checks') or result.get('investigation') or result.get('proposals') or result.get('routeTravel'):
+                if result.get('checks') or result.get('investigation') or result.get('proposals') or result.get('routeTravel') or result.get('meleeAttack'):
                     raise ValueError('La decisión preparada no se combina con otras resoluciones')
                 import director_prepared_decisions
                 director_prepared_decisions.apply(state,result['preparedDecision'],body,me)
+            if result.get('meleeAttack'):
+                if result.get('checks') or result.get('investigation') or result.get('proposals') or result.get('routeTravel') or result.get('preparedDecision'):
+                    raise ValueError('El ataque declarado no se combina con otras resoluciones')
+                from action_randomness import ActionRandomness
+                from game_randomness import using_random_source
+                import director_combat
+                randomness=ActionRandomness(store,cid,aid,me['id'],signature,row['version'])
+                with using_random_source(randomness):director_combat.apply(state,result['meleeAttack'],body,me)
             if (state.get('adventure') and body.get('kind','action')!='ooc' and not result.get('checks') and not result.get('investigation')
-                and not result.get('routeTravel') and not result.get('preparedDecision')
+                and not result.get('routeTravel') and not result.get('preparedDecision') and not result.get('meleeAttack')
                 and not any(p.get('check') for p in state['pending'])):
                 adventure.apply_memory(state,result.get('memory'))
             state['messages'].append({'kind':'director','speaker':'Director · Claude Haiku','text':result['narration'],'refs':[{'book':r['book'],'page':r['page']} for r in refs],'time':time.time(),'ooc':body.get('kind')=='ooc'})

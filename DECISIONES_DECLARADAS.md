@@ -1,5 +1,7 @@
 # Decisiones preparadas por la conversación
 
+**Publicada/verificada:**ff8e8a59fe836f1a34a00ef01c8e401358d619e7, Render7631161921 success,713 completas correctas (176,454s). Lectores reales de sesiones viaje/noche1.9 con revisión exacta/salud/descriptor, copias/salud/escenas/reloj/recarga/teclado/móvil correctos. Cero nuevas acciones/inferencias, sin repetir campaña ni proveedor. El nuevo campo sigue probado mediante simulación/contrato/HTTP, sin atribuirle la verificación semántica real del campo routeTravel. Estados inferiores local/pendiente son históricos.
+
 Integración local en regresión,8 de noviembre de2026. Reutiliza las acciones verificadas de tregua, descanso e inicio de investigación del patio. Las definiciones y las reglas de esas acciones no cambian; los botones siguen disponibles sin IA.
 
 **Regresión cerrada:**713 completas correctas sin omisiones (176,454s), .deps/director-prepared-decisions-final-tests.log, sesión80711 terminada.19 afectadas y navegadores de decisiones por declaración, viajes por declaración y cuatro casos de armadura1.7 correctos. Sin cambios de motor desde el inicio de suite. Pendiente publicación y verificación de revisión/salud con lectores de sesiones existentes sin nuevas inferencias. El campo nuevo sigue probado con proveedor simulado; no repetir la comprobación real de viaje para este cambio.

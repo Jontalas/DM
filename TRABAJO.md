@@ -1,5 +1,15 @@
 # Continuidad del desarrollo autónomo
 
+## Regresión de ataque declarado cerrada — 8 de noviembre de2026
+
+719 completas correctas sin omisiones (162,263s), .deps/director-combat-final-tests.log, sesión49616 terminada.23 afectadas incluidas HTTP de semilla duradera/captura/cliente nuevo/sin segundo proveedor/duplicado/copia; navegadores de ataque por declaración, encuentro desde creador y decisiones preparadas correctos. Sin cambios de motor desde inicio de suite. Publicar/verificar lectores de sesiones existentes con EXPECTED_RELEASE, sin nuevas acciones ni inferencias. Campo meleeAttack simulado, no atribuirle semántica real de routeTravel. Seguir diálogo del recorrido por defecto/recuperación y planificador pendientes, sin modificar fuentes o definiciones históricas ni pedir intervención.
+
+## Decisiones verificadas y ataque declarado en regresión — 8 de noviembre de2026
+
+ff8e8a59fe836f1a34a00ef01c8e401358d619e7, Render7631161921 success,713 completas correctas. Lectores viaje/noche1.9 con revisión exacta/descriptor/salud y estado persistido/recarga/teclado/móvil correctos, cero acciones o inferencias nuevas. Semántica real de preparedDecision todavía no ensayada: distinguir de routeTravel real cerrado.
+
+Desarrollo continuó con meleeAttack y preflight compartido combat.attack_context, sin cambiar reglas; originales PDF180/179 y185/184 revisados visualmente. Mismo motor de dados/daño/acción/desenlace, propietario y objetivos verificados; ninguna otra elección implícita. ActionRandomness de la talk original y captura privada conservan intención y dados tras fallo de commit.60 regresiones iniciales,32 contrato/motor y23 incluidas HTTP/Waitress/emulador correctas. HTTP usa dados reales y compara estado/auditoría tras cliente nuevo, sin segundo proveedor simulado; duplicado/copia y permisos atómicos. Navegador desde creador guiado con pregunta/diálogo sin ataque, declaración teclado, gasto de acción impide repetición, móvil/tacto/copia UI/recarga correcto; proveedor/dados simulados. Suite en curso49616/log director-combat-final-tests.log; no publicar antes de resultado. ATAQUES_DECLARADOS.md conserva alcance. No inferencia nueva ni dependencia del usuario; seguir tras cierre.
+
 ## Viaje real verificado y decisiones preparadas en regresión cerrada — 8 de noviembre de2026
 
 c7e75e56050b42b2c6f5977b37518af2dc10ebfd, Render7631061889 success. Una inferencia real necesaria del nuevo contrato,5720ms cliente: patio→cobertizo por declaración, guardiana patio, PG16/7/reloj/duplicado/copia conservados. Texto revisado sin decisiones extra del PJ; sesión director-travel-live-session.json verified, no repetir ni --resume. Navegador real de la misma campaña correcto con cero nuevas acciones/inferencias. VIAJES_DECLARADOS.md actualizado.
