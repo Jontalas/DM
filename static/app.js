@@ -80,7 +80,7 @@ function renderPlayGuidance(s){
 function renderJournalOverview(s){
  const lists=[['Aliados',s.allies],['Enemigos',s.enemies],['Incógnitas',s.unknowns]].filter(([,items])=>items?.length);
  const unmeasuredActivity=s.adventureRouteView?.visits>1||s.adventureModuleView?.searchActions>0;
- const knownAnchor=['Comienzo de la aventura','Inicio de la noche del patio'].includes(s.worldTime)||(s.pfNightRestView?.completed&&s.worldTime==='8 horas desde el comienzo del descanso en el patio');
+ const knownAnchor=['Comienzo de la aventura','Inicio de la noche del patio'].includes(s.worldTime)||(s.pfNightRestView?.completed&&s.worldTime===s.pfNightRestView.result?.worldTimeAfter);
  const unknownCurrentTime=s.boardScenes&&unmeasuredActivity&&knownAnchor;
  const timeLabel=unknownCurrentTime?'Hora no registrada':s.worldTime;
  const resolved=s.adventureRouteView?.completed?'Ruta completada':!s.adventureRouteView&&s.adventureModuleView?.completed?'Investigación resuelta':'';

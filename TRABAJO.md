@@ -1,5 +1,15 @@
 # Continuidad del desarrollo autónomo
 
+## Regresión final de preparación de armadura cerrada — 8 de noviembre de2026
+
+686 pruebas completas correctas sin omisiones (241,029s), .deps/pf-prepared-armor-night-final-tests.log, sesión74704 terminada.100 afectadas y HTTP/Waitress previas; navegador de cuatro casos y regresiones1.5/1.6 correctos. Comprobación móvil adicional antes de elegir la preparación: botón dentro del ancho390px y toque real, después29100s/8h de sueño/PG/equipo/copia/recarga correctos. Ayuda redactada como opción, no como decisión tomada por abrir el desplegable. Fuentes originales PDF154/153 tabla6-7 y armadura/sueño verificadas. Guion técnico único sin IA preparado/compilado y no ejecutado. Siguiente respaldo/publicación/verificación1.7; conservar sesiones anteriores, no modificar partidas personales ni detenerse tras el checkpoint.
+
+## Preparación voluntaria de armadura para descansar1.7 — 8 de noviembre de2026
+
+Continuación tras tres bloques publicados/verificados, sin pedir intervención. Originales PDF151/150,152/151 y154/153 revisados visualmente; tabla6-7 de quitar/poner. Nueva definición1.7/restScope2/recibo2: elección del propietario de quitar cota1min, dormir8h sin ella y ponerla normalmente4min sin ayuda,29100s. Secuencia atómica segura sin eventos/condiciones/pacientes ni combate; mismas estadísticas/equipo finales salvo PG. No se implementan sueño con cota/fatiga, prisas, ayudantes ni negativos. Recibo reproduce fases/tiempos y liga origen a creación para impedir trasplante de otra armadura incluso reescribiendo hash. Fases no se envían al director. Versiones anteriores intactas.
+
+100 afectadas correctas con emulador y HTTP/Waitress de fallo503/cliente nuevo/mismo identificador/duplicado/copia. Navegador cuatro casos desde creador, paz/combate y ligera/cota, herida orgánica13→14PG, máximo, elección explícita, copia/recarga/móvil correcto. Noches1.5 y ruta1.6 anteriores correctas. Suite final en curso74704, .deps/pf-prepared-armor-night-final-tests.log; no publicar hasta resultado. Producción actual d65e598964010072b8cff68ae6cbfc939d74400d, Render7628841810 success y navegador de lectura de la sesión1.6 con revisión/salud/rótulos/diario/teclado/móvil correctos, cero acciones/inferencias nuevas. No repetir ensayos previos ni tocar partidas personales. Seguir trabajo autorizado tras el checkpoint.
+
 ## Continuidad1.6 verificada y claridad clínica local — 8 de noviembre de2026
 
 40e3dc0fb82395719367406a713a78dd87871fce en main/producción, Render7628758418 success; descriptor1.6/revisión/salud HTTPS200. Ensayo técnico separado pf-return-live-session.json verified con cero IA, resultado global conservado en cobertizo mientras sigue pendiente su pista opcional, guardiana en patio, PG16/7/tiempo/duplicado/copia intactos. Ninguna partida personal modificada. Navegador real de esa sesión correcto: recarga, salida/diario/referencia temporal con teclado, móvil, cero nuevas acciones/inferencias. No repetir sesiones anteriores.

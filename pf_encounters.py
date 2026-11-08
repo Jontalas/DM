@@ -23,8 +23,8 @@ def participants_present(state,record):
         for identifier in (record['character'],record['npc']))
 
 
-def definition(version='1.6.0'):
-    files={'1.0.0':'pf-patio-del-peaje.json','1.1.0':'pf-patio-del-peaje-1.1.0.json','1.2.0':'pf-patio-del-peaje-1.2.0.json','1.3.0':'pf-patio-del-peaje-1.3.0.json','1.4.0':'pf-patio-del-peaje-1.4.0.json','1.5.0':'pf-patio-del-peaje-1.5.0.json','1.6.0':'pf-patio-del-peaje-1.6.0.json'}
+def definition(version='1.7.0'):
+    files={'1.0.0':'pf-patio-del-peaje.json','1.1.0':'pf-patio-del-peaje-1.1.0.json','1.2.0':'pf-patio-del-peaje-1.2.0.json','1.3.0':'pf-patio-del-peaje-1.3.0.json','1.4.0':'pf-patio-del-peaje-1.4.0.json','1.5.0':'pf-patio-del-peaje-1.5.0.json','1.6.0':'pf-patio-del-peaje-1.6.0.json','1.7.0':'pf-patio-del-peaje-1.7.0.json'}
     if not isinstance(version,str) or version not in files:raise ValueError('Revisión de encuentro no disponible')
     return json.loads((Path(__file__).parent/'adventures'/files[version]).read_text(encoding='utf-8'))
 
@@ -51,7 +51,7 @@ def enter(state,body,me):
     result['pfEncounter']={'format':'cronicas-pf-encounter-state-1','definition':scenario,
         'sha256':hashlib.sha256(canonical(scenario).encode()).hexdigest(),'character':actor['id'],'npc':npc['id'],'phase':'offered'}
     result['location']=scenario['location']
-    if scenario.get('restScope')=='courtyard-safe-night-1':
+    if scenario.get('restScope') in ('courtyard-safe-night-1','courtyard-safe-night-2'):
         import pf_night_rest
         if state['worldTime']!='Comienzo de la aventura':raise ValueError('La noche preparada requiere un reloj inicial sin modificaciones')
         result['worldTime']=pf_night_rest.START_TIME

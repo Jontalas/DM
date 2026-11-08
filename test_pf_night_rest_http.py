@@ -40,8 +40,10 @@ class NightRestHTTPTests(unittest.TestCase):
 
     def setUp(self):self.token=self.request('/api/create',{'title':'Noche técnica','player':'Ana'})['token']
 
-    def prepare(self,token=None,wounded=False,version='1.5.0'):
-        self.action('create_character',token,choices=choices())
+    def prepare(self,token=None,wounded=False,version='1.5.0',armor=None):
+        selected=choices()
+        if armor:selected['armor']=armor
+        self.action('create_character',token,choices=selected)
         actor=self.state(token)['state']['characters'][0]['id']
         self.action('enter_pf_encounter',token,encounter='patio-del-peaje',encounterVersion=version,character=actor)
         if wounded:
@@ -110,3 +112,25 @@ class NightRestHTTPTests(unittest.TestCase):
         before=self.state()
         with self.assertRaises(urllib.error.HTTPError) as error:self.action('import',campaign=altered)
         self.assertEqual(error.exception.code,400);error.exception.close();self.assertEqual(self.state(),before)
+
+    def test_armor_preparation_failed_commit_recovers_the_same_timing_and_equipment(self):
+        self.prepare(wounded=True,version='1.7.0',armor='scale');before=self.state()
+        self.assertEqual(before['state']['characters'][0]['hp'],13)
+        self.assertEqual(before['state']['pfNightRestView']['armorPlan'],'remove-and-reequip')
+        body={'id':secrets.token_hex(12),'version':before['version'],'type':'rest_pf_night','armorPlan':'remove-and-reequip'}
+        with patch.object(server.STORE,'commit',side_effect=Unavailable('Interrupted prepared rest')):
+            with self.assertRaises(urllib.error.HTTPError) as error:self.request('/api/action',body)
+        self.assertEqual(error.exception.code,503);error.exception.close();self.assertEqual(self.state(),before)
+        previous=server.STORE
+        if isinstance(previous,FirestoreStore):
+            server.STORE=FirestoreStore.from_environment();server.STORE.prefix=previous.prefix
+        try:
+            with patch.object(server,'ai_reply',side_effect=AssertionError('Armor preparation called provider')):
+                self.request('/api/action',body);after=self.state();self.assertTrue(self.request('/api/action',body)['duplicate'])
+            expected=copy.deepcopy(before['state']['characters']);expected[0]['hp']=14
+            self.assertEqual(after['state']['characters'],expected)
+            self.assertEqual(after['state']['pfNightRestView']['result']['seconds'],29100)
+            exported=self.request('/api/export',{});self.action('import',campaign=exported)
+            self.assertEqual(self.state()['state']['characters'],expected)
+            self.assertEqual(self.state()['state']['worldTime'],after['state']['worldTime'])
+        finally:server.STORE=previous
