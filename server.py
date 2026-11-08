@@ -113,6 +113,11 @@ def view(row,state,me,known_workspace=None):
         state.pop('routeProgress',None)
     import pf_night_rest
     state.pop('pfNightRestView',None)
+    import pf_ceasefire
+    state.pop('pfCeasefireView',None)
+    encounter=state.get('pfEncounter') or {}
+    if encounter.get('definition',{}).get('ceasefireScope')==pf_ceasefire.SCOPE:
+        state['pfCeasefireView']={'reason':pf_ceasefire.limitation(state)}
     rest_view=pf_night_rest.public_view(state)
     state.pop('pfNightRest',None)
     if rest_view:state['pfNightRestView']=rest_view

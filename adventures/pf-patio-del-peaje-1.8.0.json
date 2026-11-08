@@ -1,0 +1,33 @@
+{
+  "format": "cronicas-pf-encounter-1",
+  "id": "patio-del-peaje",
+  "version": "1.8.0",
+  "ruleset": "pathfinder-1e",
+  "title": "El patio del peaje",
+  "location": "Patio iluminado del peaje",
+  "description": "La noche acaba de comenzar en el patio del peaje, iluminado por faroles que mantienen una visibilidad normal. Una guardiana goblin, recién descansada, espera ante la salida con la espada corta preparada. Os habéis visto; no hay sorpresa. Propone que habléis antes de disputar el paso. Tú decides si hablar o combatir.",
+  "goal": "Resolver la disputa por el paso",
+  "npc": {
+    "template": "pf1-goblin-warrior-1",
+    "name": "Guardiana del patio"
+  },
+  "conditions": {
+    "lighting": "normal",
+    "surprise": false,
+    "terrain": "open",
+    "players": 1
+  },
+  "agreement": "La guardiana acepta dejarte pasar sin exigir dinero ni objetos. Has obtenido permiso; atravesar la salida sigue siendo una decisión tuya.",
+  "defeatPolicy": "Conducta de esta guardiana en esta escena original: no remata a un personaje que queda inconsciente. Si conserva la consciencia, cesa sus ataques y espera a que el estado de los caídos se determine. No presta curación ni decide por el personaje del jugador.",
+  "recoveryPolicy": "El patio permanece tranquilo después del enfrentamiento. Si ambos quedan inconscientes, se resuelven sus comprobaciones cubiertas sin elegir acciones por el PJ. Si la guardiana despierta antes, observa sin acciones fatigosas, sin atacar, curar ni dormir; espera a que el PJ despierte o muera. Si ella está consciente cuando él despierta, le permite retirarse. Esta conducta pertenece a la escena original, no a las reglas de Pathfinder.",
+  "recoveryScope": "shared-patients-1",
+  "coverage": "Acuerdo, combate básico, primeros auxilios y recuperación compartida acotada, sin curación inventada. Se respeta el instante de cada paciente y se detiene al despertar o morir el PJ. Con un PNJ asistido todavía inconsciente, el reloj se detiene a las seis horas antes de un descanso no cubierto; ese límite es del motor, no una regla del juego. Descanso curativo de varios caídos, fatiga con armadura intermedia y recompensas todavía pendientes. Tras resolver el encuentro puedes investigar el registro sin salir del patio si tu PJ tiene PG positivos y no queda un PNJ negativo vivo con recuperación pendiente. No se curan heridas ni se eligen tus acciones al continuar. La continuación incluye patio, cobertizo opcional y almacén, con hallazgos persistentes y tableros separados. La guardiana permanece en el patio. Las salidas enlazan escenas por elección del jugador; no calculan duración, distancias ni peligros de viaje. Las imágenes de mapas y la gestión general de páginas siguen pendientes. Esta versión comienza al inicio de una noche iluminada por faroles. Antes de investigar puedes elegir una única noche segura de ocho horas: 1 PG/nivel, hasta el máximo, con PJ positivo y armadura ligera, o quitándose la cota de escamas antes de dormir y volviendo a equiparla normalmente después. No cubre pacientes heridos pendientes, fatiga, recursos diarios ni nuevas noches; las limitaciones se muestran antes de avanzar. Tras localizar el envío puedes regresar al patio por la salida indicada, conservando el objetivo cumplido y los hallazgos. Volver no entrega, abre ni recoge el bulto, no cura y no reinicia el descanso. La preparación elegida se registra: sin ayuda, quitar la cota lleva1min y ponerla normalmente4min, además de8h de sueño. Dormir con ella puesta y sus efectos de fatiga siguen sin cubrirse. Esta revision permite aceptar una tregua ofrecida por la guardiana herida si el personaje conoce goblin. La guardiana original solo habla goblin. La respuesta conserva heridas y decisiones; el descanso de la guardiana herida sigue sin cubrirse.",
+  "continuation": {
+    "id": "envio-del-peaje",
+    "version": "1.2.0"
+  },
+  "restScope": "courtyard-safe-night-2",
+  "restPolicy": "Ficción original de esta noche: tras resolver la disputa puedes elegir dormir ocho horas sin interrupciones bajo el tejadillo del banco del mismo patio. El intervalo completo está libre de peligros y sucesos pendientes, incluida la preparación de la armadura elegida. Si vive y tiene todos sus PG, la guardiana permanece despierta vigilando hasta que termines; no ayuda a quitar o poner armadura, no duerme, no cura ni gasta recursos. Si ha muerto, permanece muerta. El propietario puede elegir quitarse la armadura, dormir sin ella y volver a ponérsela normalmente, sin prisas y sin ayuda: se añaden los tiempos verificados de quitar y poner. No se decide esa preparación por el jugador, no se presta asistencia médica ni se conceden recursos o equipo. No se ofrece repetir la misma noche. No se resuelve dormir con armadura intermedia o pesada puesta.",
+  "ceasefireScope": "wounded-goblin-truce-1",
+  "ceasefirePolicy": "Conducta original de esta guardiana: mientras esta herida pero conserva PG positivos, ofrece en goblin detener el combate y permitir el paso. El jugador decide si acepta o sigue luchando. Esta respuesta breve preparada requiere conocer goblin y estar en el turno del PJ del primer combate corto, con PG no negativos y sin condiciones ni situaciones pendientes. No es una prueba de Diplomacia ni obliga a otras criaturas. No cura ni mueve fichas."
+}

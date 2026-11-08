@@ -109,6 +109,10 @@ def main():
     engine.secrets.randbelow=lambda sides:0 if os.environ.get('TEST_CAIRN_FIXTURE')=='1' else min(11,sides-1)
     import game_randomness
     game_randomness.draw=lambda sides:1 if os.environ.get('TEST_CAIRN_FIXTURE')=='1' else min(12,sides)
+    if os.environ.get('TEST_PF_CEASEFIRE_FIXTURE')=='1':
+        truce_dice=iter([20,1,12,1]*4)
+        game_randomness.draw=lambda sides:next(truce_dice)
+        game_randomness.initiative_tie=lambda:0
     if os.environ.get('TEST_PF_NIGHT_FIXTURE')=='1':
         night_dice=iter([1,20,18,3,20,20,8,8]*2)
         game_randomness.draw=lambda sides:next(night_dice)

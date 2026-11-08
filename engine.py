@@ -111,6 +111,10 @@ def run_automatic_turns(s):
 
 def apply_action(s,b,me):
     kind=b['type']
+    if kind=='accept_pf_ceasefire':
+        import pf_ceasefire
+        pf_ceasefire.accept(s,b,me)
+        return
     if kind=='rest_pf_night':
         import pf_night_rest
         pf_night_rest.rest(s,b,me)

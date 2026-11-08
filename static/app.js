@@ -55,6 +55,9 @@ function renderPlayGuidance(s){
  }else if(checks.length){
   message='Hay tiradas pendientes. Cada jugador puede revisar las que corresponden a su personaje.';
   label='Ver tiradas';open=()=>$('#checkRequests').scrollIntoView({block:'center'});
+ }else if(s.board.active&&s.pfCeasefireView?.reason===null&&s.characters.some(c=>c.id===s.pfEncounter?.character&&c.owner===snapshot.me.id)){
+  message='La guardiana ofrece detener el combate. Puedes aceptar la tregua o seguir luchando.';
+  label='Ver la tregua';open=()=>{chooseTab('story');const target=$('#pfAcceptCeasefire');target?.scrollIntoView({block:'center'});target?.focus({preventScroll:true})};
  }else if(s.board.active){
   const current=s.characters.find(c=>c.id===s.board.order[s.board.turn]?.id);
   message=s.board.autoPaused?'Un turno automático necesita revisión. Consulta el aviso de la mesa.':current?.owner===snapshot.me.id?(characterIsConscious(current)?'Es tu turno. Elige tu acción en el tablero.':'Tu personaje no puede actuar. Revisa su estado en la mesa.'):`Es el turno de ${current?.name||'otro participante'}. Puedes consultar la mesa mientras tanto.`;

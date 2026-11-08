@@ -23,7 +23,9 @@ def participants_present(state,record):
         for identifier in (record['character'],record['npc']))
 
 
-def definition(version='1.7.0'):
+def definition(version='1.8.0'):
+    if version=='1.8.0':
+        return json.loads((Path(__file__).parent/'adventures/pf-patio-del-peaje-1.8.0.json').read_text(encoding='utf-8'))
     files={'1.0.0':'pf-patio-del-peaje.json','1.1.0':'pf-patio-del-peaje-1.1.0.json','1.2.0':'pf-patio-del-peaje-1.2.0.json','1.3.0':'pf-patio-del-peaje-1.3.0.json','1.4.0':'pf-patio-del-peaje-1.4.0.json','1.5.0':'pf-patio-del-peaje-1.5.0.json','1.6.0':'pf-patio-del-peaje-1.6.0.json','1.7.0':'pf-patio-del-peaje-1.7.0.json'}
     if not isinstance(version,str) or version not in files:raise ValueError('Revisión de encuentro no disponible')
     return json.loads((Path(__file__).parent/'adventures'/files[version]).read_text(encoding='utf-8'))
@@ -234,12 +236,16 @@ def aid_or_wait(state,body,me):
 
 def validate_restored(state):
     record=state.get('pfEncounter')
-    if record is None:return
+    import pf_ceasefire
+    if record is None:
+        pf_ceasefire.validate_restored(state)
+        return
     fields={'format','definition','sha256','character','npc','phase'}
     if isinstance(record,dict) and record.get('phase') in ('resolved','defeated'):fields.add('outcome')
     if isinstance(record,dict) and 'recoveryOutcome' in record:fields.add('recoveryOutcome')
     if isinstance(record,dict) and 'recoveryLimit' in record:fields.add('recoveryLimit')
     if isinstance(record,dict) and 'recoveryStart' in record:fields.add('recoveryStart')
+    if isinstance(record,dict) and 'ceasefire' in record:fields.add('ceasefire')
     if (state.get('ruleset','pathfinder-1e')!='pathfinder-1e' or not isinstance(record,dict)
         or set(record)!=fields
         or record['format']!='cronicas-pf-encounter-state-1' or record['phase'] not in ('offered','agreement','combat','resolved','defeated')):
@@ -253,6 +259,7 @@ def validate_restored(state):
     if actor is None or actor.get('enemy') or not actor.get('creation') or npc is None or npc.get('npcCreation',{}).get('template')!=record['definition']['npc']['template']:
         raise ValueError('El encuentro no está vinculado a sus participantes preparados')
     npc_catalog.validate_character(npc,'pathfinder-1e')
+    pf_ceasefire.validate_restored(state)
     here=participants_present(state,record)
     if record['phase']=='offered' and not here:raise ValueError('La escena ofrecida requiere sus participantes presentes')
     if record['phase'] in ('offered','agreement') and state['board']['active'] and here:raise ValueError('La fase del encuentro contradice el combate activo')

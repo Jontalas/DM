@@ -1,5 +1,15 @@
 # Continuidad del desarrollo autónomo
 
+## Regresión1.8 cerrada — 8 de noviembre de2026
+
+694 completas correctas sin omisiones (183,506s), log privado pf-ceasefire-final-tests.log, sesión3478 terminada.47 afectadas y28 posteriores al orden de validación; navegadores de tregua, encuentro desde creador y cuatro casos de armadura correctos. Guía local permite encontrar oferta por teclado sin acciones. Publicar y comprobar revisión/descriptor1.8/salud; guion técnico único sin IA preparado/compilado, aún no ejecutado. No sustituye las pruebas del creador ni acredita aventura completa. Después continuar sin esperar al usuario con descanso de guardiana positiva herida/PJ a0, conservando límites y fuentes.
+
+## Tregua voluntaria1.8 en verificación — 8 de noviembre de2026
+
+Desarrollo continuado tras664a9fb09dcab31dd4296d3b8f80b4c7c1b360cb/Render7630795411 success y navegador real de lectura de la misma campaña1.7 correcto. Nueva definición1.8 y pf_ceasefire.py permiten aceptar oferta original de guardiana herida y viva, con idioma goblin legal, en turno propio, sin curación, movimiento, acción estándar ni pérdida de PG por hablar brevemente. Prueba orgánica a0 tras cuatro ataques demuestra respuesta sin esfuerzo; todavía no concede descanso/continuación a0. Fuentes y adaptación explícitas en TREGUA_PATHFINDER.md; no nueva variante de PNJ ni cambio retroactivo. Recibo/mensaje, dueño/invitado, fallo de commit, cliente nuevo, duplicado y copia verificados. Vista derivada se recalcula/omite del contexto IA. Navegación a oferta mediante guía/foco local sin escrituras. Se retira texto inicial obsoleto que decía que descanso y continuación seguían pendientes.
+
+47 afectadas correctas, navegador nuevo con creación legal por API y combate real, idioma/teclado/móvil/toque/recarga/continuación; regresión navegador desde creador y cuatro casos de armadura1.7 correctos. Suite completa en curso3478/log privado pf-ceasefire-final-tests.log; no publicar hasta resultado. Ajuste posterior de orden de validación pasó28 afectadas. Sin nuevas inferencias, sin tocar partidas personales ni necesitar intervención del usuario. Continuar descanso de guardiana positiva herida/PJ a0 después del cierre de este bloque; negativos/fatiga/planificador siguen pendientes.
+
 ## Compatibilidad publicada y preaviso de descanso coherente — 8 de noviembre de2026
 
 f51c03dd99f9167f104c8e0d2e80dea75e5209d3, Render7629240041 success, revisión/salud y navegador real de lectura de la misma sesión1.7 correctos. Cero acciones nuevas, inferencias o partidas personales modificadas. La corrección de nulabilidad queda publicada.

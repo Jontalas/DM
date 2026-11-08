@@ -95,6 +95,11 @@ function renderPreparedPathfinderEncounter(){
    $('#pfContinueScene').onclick=run(()=>act('continue_pf_encounter'));
   }
   const night=s.pfNightRestView;
+  if(s.pfCeasefireView&&record.phase==='combat'&&patient.hp>0&&patient.hp<patient.maxHp&&characterIsConscious(actor)){
+   const reason=s.pfCeasefireView.reason,canAccept=mine&&!reason;
+   entry.querySelector('.card').insertAdjacentHTML('beforeend',`<h4>Detener el enfrentamiento</h4><p>La guardiana herida ofrece en goblin dejar de combatir y permitirte pasar. Tú decides si aceptas o sigues luchando.</p><p id="pfCeasefireHint">${esc(!mine?'El propietario del personaje decide si acepta.':reason||'Puedes responder con unas palabras, sin gastar tu acción estándar ni perder PG. Las heridas se conservan.')}</p><button id="pfAcceptCeasefire" aria-describedby="pfCeasefireHint" ${canAccept?'':'disabled'}>Aceptar la tregua</button>`);
+   $('#pfAcceptCeasefire').onclick=run(()=>act('accept_pf_ceasefire'));
+  }
   if(night&&['agreement','resolved'].includes(record.phase)){
    const result=night.result,canRest=mine&&!night.reason,removeArmor=night.armorPlan==='remove-and-reequip';
    const restText=removeArmor?'Puedes quitarte la cota, dormir 8 horas sin ella y volver a ponértela normalmente. Recuperas 1 PG por nivel, hasta tu máximo. Quitarla y equiparla suma 5 minutos, sin ayuda.':'Puedes dormir 8 horas sin interrupciones en el refugio del patio. Recuperas 1 PG por nivel, hasta tu máximo. La guardiana viva permanece despierta; no se cura.';
@@ -117,7 +122,7 @@ function renderPreparedPathfinderEncounter(){
   return;
  }
  if(s.mode!=='solo'||s.adventure||s.adventureModule||s.adventureRoute||s.board.active||s.characters.length!==1||own.length!==1)return;
- entry.insertAdjacentHTML('beforeend','<section class="card"><h3>Un encuentro preparado</h3><p>Entrar con tu personaje y un adversario del catálogo, sin escribir estadísticas. Encuentro experimental; el descanso curativo y la siguiente escena siguen pendientes.</p><button id="beginPreparedEncounter">Consultar El patio del peaje</button></section>');
+ entry.insertAdjacentHTML('beforeend','<section class="card"><h3>Un encuentro preparado</h3><p>Habla o combate para conseguir el paso. Después puedes investigar el patio y seguir las pistas. El juego prepara las fichas y calcula las reglas cubiertas.</p><button id="beginPreparedEncounter">Consultar El patio del peaje</button></section>');
  $('#beginPreparedEncounter').onclick=run(async()=>{
   const key=token+':'+snapshot.id,{encounters}=await api('/api/pf-encounters'),definition=encounters[0];
   if(token+':'+snapshot.id!==key)throw Error('La campaña ha cambiado; vuelve a abrir el encuentro.');
