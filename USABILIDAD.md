@@ -1,5 +1,7 @@
 # Sencillez y orientación
 
+Fuentes de la narración: en mensajes del director quedan bajo Consultar fuentes, cerrado inicialmente; las resoluciones de reglas mantienen sus referencias visibles. Se conservan todas las páginas, se puede desplegar con teclado/tacto y los enlaces ampliados tienen44px de alto. Consulta del detalle local sin IA, POST ni lectura de libros hasta elegir un enlace. Captura móvil inspeccionada con5fuentes reales y UI local superpuesta; lector de libros/cache/recuperación verificado. Sin cambios de contenido, permisos o estado.
+
 Consciencia en conversación: explicar junto al campo por qué una ficha inconsciente/muerta no puede actuar/hablar; habilitar comentarioOOC/nota sin borrar borrador. Validación local, enviar deshabilitado y CtrlEnter sin POST. Hablar a0 o negativo consciente sigue permitido y gratuito. Cambiar hablante/tipo y terminar acciones recalcula disponibilidad; teclado/tacto/móvil y permisos entre participantes comprobados. CONVERSACION_Y_CONSCIENCIA.md.
 
 Diálogo coherente con permisos ya dados: ensayo real detectó aclaración injustificada para consultar registro autorizado. Corrección aporta hecho público explícito al director y conserva agencia: conversar no investiga ni concede pistas. No reparar narración histórica ni afirmar verificación semántica real del nuevo prompt. El botón de investigar conserva permiso determinista, sin pago/tirada/aclaración adicional para consultar. COHERENCIA_PNJ_PREPARADOS.md.

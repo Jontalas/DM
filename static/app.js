@@ -142,6 +142,11 @@ function checkMessage(message){
  const outcome=hasDc?(c.success?'Éxito':'Fallo'):'Tirada libre';
  return `<p class="check-result"><strong>${esc(outcome)} · ${esc(character?.name||'Personaje')} · ${esc(c.name)}</strong><br>Total ${esc(c.total)}${hasDc?` contra CD ${esc(c.dc)}`:''}${c.natural?` · ${esc(c.natural)}`:''}</p><details class="check-audit"><summary>Ver cálculo y resultado</summary><p>${esc(message.text)}</p></details>`;
 }
+function messageSources(message){
+ if(!Array.isArray(message.refs)||!message.refs.length)return '';
+ const links=message.refs.map(r=>ref(r.book,r.page)).join('');
+ return message.kind==='director'?`<details class="message-sources"><summary>Consultar fuentes</summary><div>${links}</div></details>`:`<div>${links}</div>`;
+}
 function recoveryAudit(message){
  if(!Array.isArray(message.recoveryChecks)||!message.recoveryChecks.length||message.recoveryChecks.length>20||message.recoveryChecks.some(check=>!check||typeof check!=='object'))return '';
  return `<details class="recovery-audit"><summary>Ver tiradas de recuperación (${message.recoveryChecks.length})</summary>${message.recoveryChecks.map((check,i)=>`<p>${check.characterName?esc(check.characterName)+' · hora '+esc(check.hour):'Hora '+(i+1)}: d20 ${esc(check.die)}, modificador ${esc(check.modifier)}, total ${esc(check.total)} frente a 10. ${check.conscious?'Recupera la consciencia':check.dead?'Muere por sus heridas':'Sigue inconsciente'}. PG: ${esc(check.hpBefore)} → ${esc(check.hpAfter)}.</p>`).join('')}</details>`;
@@ -153,7 +158,7 @@ function render(){if(snapshot.state.ruleset==='rule-pack'){RulePackUI.render();r
  const boardAvailable=boardCharacters(s).filter(c=>me.host||c.owner===me.id);
  $('#boardCharacter').innerHTML=boardAvailable.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('');if(boardAvailable.some(c=>c.id===boardPrev))$('#boardCharacter').value=boardPrev;
  const area=$('#story'), near=area.scrollHeight-area.scrollTop-area.clientHeight<150;
- $('#messages').innerHTML=s.messages.map(m=>`<article class="message ${esc(m.kind)}"><div class="speaker">${esc(m.speaker)} · ${esc({rules:'Resolución',director:'Director de IA',action:'Acción',dialogue:'Diálogo',ooc:'Fuera de personaje',private:'Privado'}[m.kind]||m.kind)}</div>${checkMessage(m)}${recoveryAudit(m)}${m.refs?'<div>'+m.refs.map(r=>ref(r.book,r.page)).join('')+'</div>':''}</article>`).join('')||`<div class="empty"><div class="icon">✧</div><h3>Una página todavía en blanco</h3><p>Crea un personaje y presenta la situación inicial.<br>${model.aiConfigured?'El director está configurado; su disponibilidad se comprobará al enviar.':'Puedes crear tu personaje, consultar libros y usar el tablero. El director no está disponible en esta mesa.'}</p></div>`;
+ $('#messages').innerHTML=s.messages.map(m=>`<article class="message ${esc(m.kind)}"><div class="speaker">${esc(m.speaker)} · ${esc({rules:'Resolución',director:'Director de IA',action:'Acción',dialogue:'Diálogo',ooc:'Fuera de personaje',private:'Privado'}[m.kind]||m.kind)}</div>${checkMessage(m)}${recoveryAudit(m)}${messageSources(m)}</article>`).join('')||`<div class="empty"><div class="icon">✧</div><h3>Una página todavía en blanco</h3><p>Crea un personaje y presenta la situación inicial.<br>${model.aiConfigured?'El director está configurado; su disponibilidad se comprobará al enviar.':'Puedes crear tu personaje, consultar libros y usar el tablero. El director no está disponible en esta mesa.'}</p></div>`;
  if(!available.length)$('#messages').insertAdjacentHTML('afterbegin','<div class="card"><h3>Tu personaje es el primer paso</h3><p>Elige sus opciones; el creador calcula la ficha y la deja lista para jugar.</p><button class="primary" data-create-hero>Crear mi personaje</button></div>');
  renderAdventure();renderChecks();renderPlayGuidance(s);if(near)area.scrollTop=area.scrollHeight;
  renderJournalOverview(s);
