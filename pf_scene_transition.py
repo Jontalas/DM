@@ -49,8 +49,8 @@ def limitation(state,*,active=False):
     import pf_light_exploration
     if actor['hp']<=0 and not pf_light_exploration.eligible(state,actor):return 'Esta investigación aún no cubre el estado de tu personaje; no se simula su descanso.'
     if -npc['abilities'][2]<npc['hp']<0:
-        import pf_npc_wait
-        if not pf_npc_wait.can_remain_awake(state,npc):return 'La guardiana aún necesita seguimiento de recuperación; no se omiten sus pruebas.'
+        import pf_light_exploration
+        if not pf_light_exploration.can_remain_awake(state,npc):return 'La guardiana aún necesita seguimiento de recuperación; no se omiten sus pruebas.'
     if any(c.get('conditions','').strip() for c in (actor,npc)) or actor['creation'].get('manualOverride') or npc['npcCreation'].get('manualOverride'):return 'Las condiciones o correcciones necesitan una resolución fuera de esta escena tranquila.'
     expected=state.get('adventureModule',{}).get('location') if routed and active else record['definition']['location']
     if state['location']!=expected:return 'La localización no coincide con la escena preparada.'

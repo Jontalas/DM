@@ -50,10 +50,10 @@ def require_present(state,*participants):
 
 def require_no_remote_events(state):
     if state.get('boardScenes') is None:return
-    import pf_npc_wait
+    import pf_light_exploration
     for character in state['characters']:
         if not present(state,character) and (character.get('conditions','').strip()
-            or -character['abilities'][2]<character['hp']<0 and not pf_npc_wait.can_remain_awake(state,character)):
+            or -character['abilities'][2]<character['hp']<0 and not pf_light_exploration.can_remain_awake(state,character)):
             raise ValueError('Un participante de otra escena necesita resolver recuperación o condiciones; no se omite su seguimiento')
 
 
@@ -115,8 +115,8 @@ def move_player(state,destination,character_id,name,entry=(0,0)):
     if destination==scenes['current']:raise ValueError('Ya estás en este tablero')
     if not isinstance(name,str) or not name.strip() or len(name)>200:raise ValueError('Nombre de escena inválido')
     if state['board']['active'] or state['pending']:raise ValueError('No se cambia de tablero con combate o pruebas pendientes')
-    import pf_npc_wait
-    if any(c.get('conditions','').strip() or -c['abilities'][2]<c['hp']<0 and not pf_npc_wait.can_remain_awake(state,c) for c in state['characters']):
+    import pf_light_exploration
+    if any(c.get('conditions','').strip() or -c['abilities'][2]<c['hp']<0 and not pf_light_exploration.can_remain_awake(state,c) for c in state['characters']):
         raise ValueError('El cambio requiere resolver primero recuperación o condiciones; no se omite su reloj')
     actor=next((c for c in characters(state) if c['id']==character_id and not c.get('enemy')),None)
     import pf_light_exploration

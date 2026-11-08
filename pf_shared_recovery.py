@@ -184,3 +184,4 @@ def validate_record(record):
         raise ValueError('El resultado compartido no coincide con sus pruebas')
     expected_limit='shared-rest-boundary' if result['status']=='rest-boundary' else None
     if record.get('recoveryLimit')!=expected_limit:raise ValueError('El límite no corresponde al resultado compartido')
+    return result

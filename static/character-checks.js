@@ -33,10 +33,10 @@ function pendingCheckUnavailable(p,c){
  if(!characterIsConscious(c))return 'El personaje no puede tirar mientras esté inconsciente o muerto.';
  if(c.conditions?.trim())return 'Hay condiciones que requieren revisar esta prueba antes de resolverla.';
  if(p.investigation&&snapshot.state.board.active)return 'La investigación automática no está disponible durante el combate.';
- if(p.investigation&&!canExplorePrepared(c))return 'Esta versión de la investigación todavía requiere PG positivos.';
+ if(p.investigation&&!canExplorePrepared(c))return 'Esta investigación todavía no cubre el estado actual de tu personaje.';
  if(p.investigation&&snapshot.state.pfContinuation){
   const npc=snapshot.state.characters.find(v=>v.id===snapshot.state.pfEncounter.npc);
-  if(npc&&((npc.hp<0&&npc.hp>-npc.abilities[2]&&!snapshot.state.pfNpcRecoveryView?.canContinue)||npc.conditions?.trim()))return 'La guardiana necesita resolver su estado antes de continuar investigando.';
+  if(npc&&((npc.hp<0&&npc.hp>-npc.abilities[2]&&!(snapshot.state.pfNpcRecoveryView?.canContinue||snapshot.state.pfLightExplorationView?.canExplore))||npc.conditions?.trim()))return 'La guardiana necesita resolver su estado antes de continuar investigando.';
  }
  return '';
 }
