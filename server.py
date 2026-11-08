@@ -155,6 +155,10 @@ def execute_action(body,me):
         row,state=load(cid)
         if body.get('version')!=row['version']:raise Conflict('La mesa ha cambiado. Revisa tu acción antes de enviarla')
         selected=rulesets.adapter(state['ruleset'])
+        if 'captureContract' in body:
+            import legacy_director_attempt as legacy
+            if selected is not None or body['type'] not in ('talk','start_adventure','continue_adventure') or body['captureContract']!=legacy.ACTION_CONTRACT:
+                raise ValueError('Contrato de envío no disponible para esta acción')
         workspace_readonly=False
         if state['ruleset']=='rule-pack' and me['host'] and body['type'] in ('prepare_rule_pack','install_prepared_rule_pack'):
             workspace_readonly=body['type']=='install_prepared_rule_pack' and state.get('authoringWorkspaceRef') is not None
@@ -165,7 +169,8 @@ def execute_action(body,me):
             nonlocal preparation_key
             import legacy_director_attempt as legacy
             import rule_preparation_attempt as attempts
-            prepared=legacy.prepare(state,text,refs,**options)
+            binding={'action':aid,'actor':me['id'],'fingerprint':signature,'version':row['version']} if body.get('captureContract')==legacy.ACTION_CONTRACT else None
+            prepared=legacy.prepare(state,text,refs,**options,action_identity=binding)
             preparation_key=attempts.key(me['id'],prepared['sha256'])
             def convert(current,response_observer=None):return ai_reply(state,text,refs,**options,response_observer=response_observer)
             return attempts.run(store,cid,me['id'],prepared,converter=convert,restore=legacy.restore)

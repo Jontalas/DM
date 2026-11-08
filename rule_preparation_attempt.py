@@ -38,7 +38,7 @@ def inputs_match(saved,current,saved_scheme,current_scheme):
         if (isinstance(saved,dict) and isinstance(current,dict)
             and isinstance(saved.get('context'),dict) and isinstance(current.get('context'),dict)
             and saved.get('contract')==current.get('contract')==legacy.CONTRACT):
-            return authoring.canonical(legacy.keyed_request(saved))==authoring.canonical(legacy.keyed_request(current))
+            return legacy.compatible_input(saved,current)
     return False
 
 

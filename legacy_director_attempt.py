@@ -7,12 +7,36 @@ import base64
 import copy
 import hashlib
 import json
+import re
 import claude_dm
 from director_prompt import system_prompt
 from rule_pack_authoring import canonical
 
 SCHEME='pf-director-v1'
 CONTRACT='cronicas-pf-director-1'
+ACTION_CONTRACT='pf-director-action-1'
+
+
+def request_sha(request):
+    identity=request.get('actionIdentity')
+    if identity is None:value=keyed_request(request)
+    else:
+        if (not isinstance(identity,dict) or set(identity)!={'action','actor','fingerprint','version'}
+            or any(not isinstance(identity[k],str) or not 1<=len(identity[k])<=200 for k in ('action','actor'))
+            or not isinstance(identity['fingerprint'],str) or not re.fullmatch('[a-f0-9]{64}',identity['fingerprint'])
+            or type(identity['version'])!=int or identity['version']<0):
+            raise ValueError('Identidad de envío inválida')
+        value={'contract':ACTION_CONTRACT,'action':identity['action'],'actor':identity['actor']}
+    return hashlib.sha256(canonical(value).encode('utf-8')).hexdigest()
+
+
+def compatible_input(saved,current):
+    previous=keyed_request(saved);now=keyed_request(current)
+    if previous.get('actionIdentity') is not None and previous.get('actionIdentity')==now.get('actionIdentity'):
+        # Search may change after indexing. Replay the original private input;
+        # keep game facts, history, version and submission exact.
+        previous['context'].pop('sources',None);now['context'].pop('sources',None)
+    return canonical(previous)==canonical(now)
 
 
 def keyed_request(request):
@@ -26,7 +50,7 @@ def capture_input(prepared):
     if 'captureRequest' not in prepared:return original
     if (not isinstance(original,dict) or not isinstance(original.get('context'),dict)
         or not isinstance(prepared['request'],dict) or original.get('contract')!=CONTRACT
-        or hashlib.sha256(canonical(keyed_request(original)).encode('utf-8')).hexdigest()!=prepared['sha256']):
+        or request_sha(original)!=prepared['sha256']):
         raise ValueError('La entrada original no coincide con la huella de la captura')
     if canonical(original)!=canonical(prepared['request']):
         projected=copy.deepcopy(original)
@@ -37,19 +61,18 @@ def capture_input(prepared):
     return original
 
 
-def prepare(state,text,refs,check_actors=None,starting=False,source_text=None):
+def prepare(state,text,refs,check_actors=None,starting=False,source_text=None,action_identity=None):
     context=claude_dm.build_context(state,text,refs,check_actors=check_actors,starting=starting,source_text=source_text)
     # Distinguish genuinely new turns after the bounded history window repeats,
     # while a retry against the same uncommitted state keeps the same key.
     transcript_length=sum(1 for message in state['messages'] if message.get('visibility','public')=='public' and message.get('kind')!='private')
     request={'contract':CONTRACT,'context':copy.deepcopy(context),'transcriptLength':transcript_length}
+    if action_identity is not None:request['actionIdentity']=copy.deepcopy(action_identity)
     capture=copy.deepcopy(request)
     # Preserve old paid keys while sending only a projection of archived maps.
     if 'boardScenes' in state:capture['context']['state']['boardScenes']=copy.deepcopy(state['boardScenes'])
-    keyed=keyed_request(capture)
-    raw=canonical(keyed).encode('utf-8')
     if len(canonical(request).encode('utf-8'))>300000:raise ValueError('El contexto de esta aventura supera el límite; no se ha llamado a IA')
-    return {'request':request,'captureRequest':capture,'sha256':hashlib.sha256(raw).hexdigest(),'sourceScheme':SCHEME,
+    return {'request':request,'captureRequest':capture,'sha256':request_sha(capture),'sourceScheme':SCHEME,
         'promptSha256':hashlib.sha256(system_prompt(False,starting).encode('utf-8')).hexdigest()}
 
 

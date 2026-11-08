@@ -1,5 +1,11 @@
 # Continuidad del desarrollo autónomo
 
+## Agencia publicada y captura por envío en regresión — 8 de noviembre de2026
+
+Regresión cerrada:751 completas correctas sin omisiones en176,416s, sesión1632 terminada. Navegador adicional conserva exactamente el contrato anterior de un envío pendiente histórico; agencia también correcta. Publicar/verificar y continuar recuperación accesible de envíos, sin necesidad del usuario.
+
+eb187e8018861f20e7975831ee7f032ea726e4b0/Render7635669838 success,744 completas correctas. Lectores reales Common/viaje correctos sin POST/IA. Desarrollo continúa con contrato explícito de nuevas declaraciones/aperturas/continuaciones UI PF que vincula captura al envío. Reindexar fuentes entre fallo de commit y reintento recupera entrada/respuesta originales; reutilizar id con otro cuerpo se rechaza antes de proveedor. Pendientes históricos intactos, sin nuevas operaciones Firebase ni inferencia real. CAPTURA_POR_ENVIO.md.28 afectadas correctas con emulador y navegadores de respuesta perdida móvil/viaje/ataque correctos. Suite completa1632/log director-action-capture-final-tests.log en curso, sin cambios de motor desde inicio. Publicar/verificar al terminar y continuar sin pedir desbloqueo innecesario.
+
 ## Agencia de conversación y contexto publicado — 8 de noviembre de2026
 
 Regresión completa cerrada:744 pruebas correctas sin omisiones en183,612s, sesión25297 terminada/log speaker-agency-final-tests.log. Sin cambios de motor desde inicio. Publicar y verificar mismas campañas en lectura, sin nuevas inferencias; continuar después.

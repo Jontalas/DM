@@ -1,0 +1,11 @@
+# Recuperar la respuesta del mismo envío
+
+Las nuevas declaraciones, aperturas y continuaciones Pathfinder enviadas por la interfaz incluyen `captureContract: pf-director-action-1`. El navegador conserva ese campo con el cuerpo completo antes de enviar. Los envíos pendientes anteriores, sin ese campo, conservan la clave histórica y su recuperación; no se transforman en solicitudes nuevas al recargar.
+
+El servidor construye una identidad privada con identificador del envío, participante, huella íntegra del cuerpo y versión confirmada. La clave de captura depende del identificador y participante dentro de la campaña. Reutilizar el identificador con otro texto, versión u opciones encuentra la reserva original y se rechaza antes de otra inferencia. Otro envío tiene otra clave.
+
+En el reintento del mismo envío se admite que hayan cambiado los resultados de búsqueda de reglas por reindexación. La respuesta se vuelve a interpretar con la entrada privada original y sus capacidades originales, no con las fuentes nuevas. Se siguen comparando todos los hechos de juego, mapas completos, historial, versión, cuerpo y permisos; las tres pistas derivadas mantienen su compatibilidad anterior. Si otros hechos cambian de forma incompatible, se rechaza la recuperación sin crear otra reserva. Un resultado incierto sin respuesta sigue sin autorizar otra llamada automática.
+
+No añade documentos, lecturas o escrituras de Firestore: usa la reserva/captura ya existente. No modifica reglas ni envía la identidad privada al proveedor. Solo se aplica a los envíos con el nuevo contrato; clientes antiguos y solicitudes API sin él mantienen el contrato previo, cuya clave depende del contexto. No promete recuperación ante toda migración futura de esquemas.
+
+Pruebas: cinco de contrato puro; HTTP/Waitress/Firestore emulado con transporte Anthropic simulado, fallo503 al guardar, cliente nuevo, fuentes reindexadas, intento de cambiar texto rechazado409, recuperación/duplicado/copia. Contratos desconocidos se rechazan sin proveedor. Navegador móvil táctil simula pérdida de una respuesta ya confirmada, conserva el envío exacto y recupera al recargar un solo mensaje y respuesta. Viajes y ataques declarados siguen funcionando en sus navegadores. No nueva inferencia real ni medición económica.
