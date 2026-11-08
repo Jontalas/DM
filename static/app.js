@@ -4,6 +4,7 @@ const names={reglas:'Reglas básicas',bestiario:'Bestiario',trey:'TREY'};
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const characterIsConscious=c=>!!c&&(c.hp>=0||(c.hp>-c.abilities[2]&&c.stable===true&&c.recoveryState?.conscious===true));
 const characterHealthLabel=c=>c.hp<=-c.abilities[2]?'Ha muerto':c.hp>0?'':characterIsConscious(c)?'Incapacitado':c.stable===true?'Inconsciente y estable':'Moribundo';
+const characterMovementCells=c=>c&&characterIsConscious(c)&&Number.isInteger(c.speed)?Math.floor(c.speed/(c.hp<=0?2:1)):0;
 const boardCharacters=s=>s.boardScenes?s.characters.filter(c=>c.sceneId===s.boardScenes.current):s.characters;
 function toast(s){$('#toast').textContent=s;$('#toast').hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('#toast').hidden=true,7000)}
 async function api(url,body){
@@ -159,10 +160,19 @@ function renderBoard(){if(!snapshot)return;renderAttack();renderAutomation();con
 function openBook(book=$('#book').value,page=Number($('#page').value)){if(!token)return;$('#book').value=book;$('#page').value=page;bookReader.open(book,page)}
 function renderTabletopTools(){
  const board=snapshot.state.board,selected=$('#boardCharacter').value,spent=board.spent[selected]||{};
- $('#actionBudget').textContent=board.active?`Estándar: ${spent.standard?'gastada':'disponible'} · Movimiento: ${spent.move?'gastado':'disponible'}`:'Exploración';
+ const moving=snapshot.state.characters.find(c=>c.id===selected),incapacitated=moving?.hp<=0&&characterIsConscious(moving);
+ $('#actionBudget').textContent=board.active?(incapacitated?`Incapacitado · ${spent.standard||spent.move?'Acción usada':'Elige una acción estándar o de movimiento'} · Hasta ${characterMovementCells(moving)} casillas completas por movimiento`:`Estándar: ${spent.standard?'gastada':'disponible'} · Movimiento: ${spent.move?'gastado':'disponible'}`):'Exploración';
  const measuring=$('#tool').value==='measure';
  $('.board-scroll').dataset.tool=$('#tool').value;
  $('#confirmMove').disabled=measuring||$('#tool').value==='pan'||!path.length;
+ let movementReason='';
+ if(moving?.hp<=0&&path.length&&!measuring&&$('#tool').value==='move'){
+  let x=moving.x,y=moving.y,diagonal=0,cost=0;
+  for(const [nx,ny] of path){const d=nx!==x&&ny!==y;if(d)diagonal++;cost+=board.terrain[nx+','+ny]==='difficult'?(d?3:2):(d&&diagonal%2===0?2:1);x=nx;y=ny}
+  movementReason=!characterIsConscious(moving)?'No puede moverse en su estado actual. Revisa su ficha.':board.active&&board.order[board.turn]?.id!==moving.id?'Espera al turno de esta ficha.':board.active&&(spent.standard||spent.move)?'Incapacitado: ya has usado tu acción de este turno.':board.active&&cost>characterMovementCells(moving)?`Este recorrido supera las ${characterMovementCells(moving)} casillas completas de tu movimiento reducido.`:'';
+  if(movementReason)$('#confirmMove').disabled=true;
+  $('#pathInfo').textContent+=(incapacitated?' Incapacitado: velocidad reducida a la mitad.':'')+(movementReason?' '+movementReason:'');
+ }
  $('#confirmMove').hidden=!path.length||$('#tool').value!=='move';
  $('#clearPath').hidden=!path.length;
  if($('#tool').value==='pan')$('#pathInfo').textContent='Arrastra el mapa para desplazar la vista. También puedes usar el botón derecho.';
@@ -187,7 +197,7 @@ function renderTabletopTools(){
  $('#nextTurn').hidden=!board.active;
  $('#nextTurn').disabled=!current||(!snapshot.me.host&&current.owner!==snapshot.me.id);
  const mine=current&&(snapshot.me.host||current.owner===snapshot.me.id);
- const guidance=!snapshot.state.characters.length?'Usa «Crear personaje» para empezar.':!board.active?'Puedes consultar el mapa, medir o preparar un recorrido. El combate solo empieza cuando lo decides.':!mine?`Es el turno de ${current?.name||'otro participante'}. Puedes consultar el mapa mientras esperas.`:current.id!==selected?`Es el turno de ${current.name}. Selecciona su ficha para actuar.`:spent.standard&&(spent.move||current.hp<=0)?'Ya has usado tus acciones disponibles. Pulsa «Terminar turno» cuando quieras continuar.':spent.standard?'Ya has usado tu acción estándar. Puedes moverte o terminar el turno.':spent.move?'Ya te has movido. Puedes atacar a un objetivo cercano o terminar el turno.':'Es tu turno. Puedes preparar un movimiento, elegir un objetivo para atacar o terminar el turno.';
+ const guidance=!snapshot.state.characters.length?'Usa «Crear personaje» para empezar.':!board.active?'Puedes consultar el mapa, medir o preparar un recorrido. El combate solo empieza cuando lo decides.':!mine?`Es el turno de ${current?.name||'otro participante'}. Puedes consultar el mapa mientras esperas.`:current.id!==selected?`Es el turno de ${current.name}. Selecciona su ficha para actuar.`:(spent.standard&&spent.move||current.hp<=0&&(spent.standard||spent.move))?'Ya has usado tus acciones disponibles. Pulsa «Terminar turno» cuando quieras continuar.':spent.standard?'Ya has usado tu acción estándar. Puedes moverte o terminar el turno.':spent.move?'Ya te has movido. Puedes atacar a un objetivo cercano o terminar el turno.':'Es tu turno. Puedes preparar un movimiento, elegir un objetivo para atacar o terminar el turno.';
  if($('#boardGuidance').textContent!==guidance)$('#boardGuidance').textContent=guidance;
 }
 $('#requestCheck').onclick=requestCheckForm;
@@ -218,7 +228,8 @@ function renderAttack(){
  const disabledMove=source?.hp<=0&&spent.move;
  $('#attackForm').hidden=!board.active;
  $('#attackButton').disabled=!current||!source?.meleeProfile||!characterIsConscious(source)||spent.standard||disabledMove||!adjacent;
- $('#attackHint').textContent=!board.active?'El ataque estará disponible durante un combate.':!current?'Selecciona el personaje de tu turno.':!characterIsConscious(source)?'Tu personaje no puede atacar mientras está inconsciente.':!source?.meleeProfile?'El arma necesita un perfil preparado antes del combate.':spent.standard?'Ya has atacado o usado tu acción estándar. Puedes terminar el turno.':disabledMove?'Estás incapacitado y ya te has movido; termina el turno.':!targets.length?'No hay un adversario consciente disponible para este ataque básico.':!adjacent?'Acércate a una casilla junto al objetivo para atacar cuerpo a cuerpo.':'El juego tira, calcula el impacto y aplica el daño. No tienes que calcular modificadores.';
+ $('#attackButton').textContent=source?.hp<=0&&characterIsConscious(source)?'Atacar · perderás 1 PG':'Tirar ataque y resolver';
+ $('#attackHint').textContent=!board.active?'El ataque estará disponible durante un combate.':!current?'Selecciona el personaje de tu turno.':!characterIsConscious(source)?'Tu personaje no puede atacar mientras está inconsciente.':!source?.meleeProfile?'El arma necesita un perfil preparado antes del combate.':spent.standard?'Ya has atacado o usado tu acción estándar. Puedes terminar el turno.':disabledMove?'Estás incapacitado y ya te has movido; termina el turno.':!targets.length?'No hay un adversario consciente disponible para este ataque básico.':!adjacent?'Acércate a una casilla junto al objetivo para atacar cuerpo a cuerpo.':source.hp<=0?'Si atacas, perderás 1 PG al terminar y '+(source.hp-1<=-source.abilities[2]?'morirás por tus heridas.':'volverás a quedar moribundo. El movimiento no causa esa pérdida de PG.'):'El juego tira, calcula el impacto y aplica el daño. No tienes que calcular modificadores.';
 }
 $('#attackTarget').onchange=renderAttack;
 $('#attackForm').onsubmit=run(async()=>{await act('attack',{character:$('#boardCharacter').value,target:$('#attackTarget').value})});

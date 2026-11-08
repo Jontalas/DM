@@ -43,6 +43,14 @@ def standing(character):
     return pf_recovery.is_conscious(character)
 
 
+def movement_cells(character):
+    """Full5ft squares in one move: disabled speed halves (Core PDF568/567)."""
+    speed=character.get('speed')
+    if type(speed)!=int or not 1<=speed<=100:raise ValueError('El movimiento requiere una velocidad normal preparada')
+    if not standing(character):return 0
+    return speed//2 if character['hp']<=0 else speed
+
+
 def adjacent(a,b):
     return a.get('sceneId')==b.get('sceneId') and max(abs(a['x']-b['x']),abs(a['y']-b['y']))==1
 

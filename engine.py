@@ -387,9 +387,10 @@ def apply_action(s,b,me):
             used=board['spent'].get(c['id'],{})
             if c['hp']<=0 and used.get('standard'):raise ValueError('Incapacitado: solo una acción estándar o de movimiento')
             if used.get('move'): raise ValueError('Acción de movimiento gastada. Más movimiento requiere resolución asistida')
-            if cost>c['speed']: raise ValueError('El recorrido supera una acción de movimiento')
+            if cost>combat.movement_cells(c):raise ValueError('El recorrido supera tu movimiento reducido por incapacidad' if c['hp']<=0 else 'El recorrido supera una acción de movimiento')
             used['move']=True; board['spent'][c['id']]=used
-        c.update(x=x,y=y); log(s,f"{c['name']} se mueve {cost*5} pies a ({x},{y}). Recorrido {path}. Diagonales 5/10 pies; diagonal difícil 15 pies. Reglas básicas, Movimiento, posición y distancia: impresa p.193 / PDF p.194. AdO, alcance y visibilidad especiales se resuelven aparte.",refs=[{'book':'reglas','page':194}])
+        reduced=c['hp']<=0
+        c.update(x=x,y=y); log(s,f"{c['name']} se mueve {cost*5} pies a ({x},{y}). Recorrido {path}. Diagonales 5/10 pies; diagonal difícil 15 pies. Reglas básicas, Movimiento, posición y distancia: impresa p.193 / PDF p.194. AdO, alcance y visibilidad especiales se resuelven aparte."+(' Incapacitado: velocidad reducida a la mitad, sin perder PG por moverse. PDF p.568.' if reduced else ''),refs=[{'book':'reglas','page':194}]+([{'book':'reglas','page':568}] if reduced else []))
     elif kind=='manual':
         host(me); reason=str(b['reason']).strip(); resolution=str(b['resolution']).strip()
         if not reason or not resolution: raise ValueError('Indica motivo y resolución')
