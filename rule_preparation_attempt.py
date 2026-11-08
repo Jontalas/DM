@@ -23,6 +23,25 @@ _lock=threading.RLock()
 def key(actor,request_sha):return hashlib.sha256((actor+':'+request_sha).encode()).hexdigest()
 
 
+def input_request(prepared):
+    if prepared.get('sourceScheme')=='pf-director-v1':
+        import legacy_director_attempt as legacy
+        return legacy.capture_input(prepared)
+    if 'captureRequest' in prepared:raise RulePackError('Entrada de captura fuera de su contrato')
+    return prepared['request']
+
+
+def inputs_match(saved,current,saved_scheme,current_scheme):
+    if authoring.canonical(saved)==authoring.canonical(current):return True
+    if saved_scheme==current_scheme=='pf-director-v1':
+        import legacy_director_attempt as legacy
+        if (isinstance(saved,dict) and isinstance(current,dict)
+            and isinstance(saved.get('context'),dict) and isinstance(current.get('context'),dict)
+            and saved.get('contract')==current.get('contract')==legacy.CONTRACT):
+            return authoring.canonical(legacy.keyed_request(saved))==authoring.canonical(legacy.keyed_request(current))
+    return False
+
+
 def pack(value):
     raw=authoring.canonical(value).encode('utf-8')
     if len(raw)>MAX_PAYLOAD:raise RulePackError('La captura de preparación supera su límite')
@@ -86,10 +105,14 @@ def run(store,cid,actor,prepared,converter=None,restore=None):
     attempt=store.begin_rule_preparation(cid,identifier,actor,prepared,allow_create=configured)
     if attempt is None:raise RulePackError('Claude Haiku sin configurar; no se ha reservado ni llamado al proveedor')
     check_attempt(attempt,actor,prepared['sha256'])
+    restore_prepared=prepared
+    if attempt['sourceScheme']=='pf-director-v1' and attempt.get('inputData') is not None:
+        # Reparse only capabilities present when this response was captured.
+        restore_prepared={**prepared,'request':unpack(attempt['inputData'])}
     data=attempt.get('responseData') or _recall(store,cid,identifier)
     if data is not None:
         if not attempt.get('responseData'):store.save_rule_preparation_response(cid,identifier,actor,prepared['sha256'],data)
-        return restore(prepared,unpack(data),attempt['sourceScheme'])
+        return restore(restore_prepared,unpack(data),attempt['sourceScheme'])
     if not attempt.get('fresh'):
         raise Conflict('Existe un intento en curso o de resultado incierto sin respuesta recuperable. No se hará otra llamada de IA automáticamente')
     captured=[]
@@ -99,10 +122,10 @@ def run(store,cid,actor,prepared,converter=None,restore=None):
         try:store.save_rule_preparation_response(cid,identifier,actor,prepared['sha256'],data)
         except Exception as error:raise Unavailable('La respuesta se conserva en memoria, pero no se pudo guardar; reintenta el mismo envío sin volver a generar') from error
     report=converter(prepared,response_observer=observe)
-    if captured:return restore(prepared,captured[0],attempt['sourceScheme'])
+    if captured:return restore(restore_prepared,captured[0],attempt['sourceScheme'])
     # Deterministic/injected converters may return a validated report directly.
     payload={'kind':'report','value':report,'latencyMs':report.get('usage',{}).get('latencyMs',0)}
-    record=restore(prepared,payload,attempt['sourceScheme'])
+    record=restore(restore_prepared,payload,attempt['sourceScheme'])
     data=_remember(store,cid,identifier,payload)
     store.save_rule_preparation_response(cid,identifier,actor,prepared['sha256'],data)
     return record

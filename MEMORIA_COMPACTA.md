@@ -1,5 +1,7 @@
 # Memoria narrativa compacta para escenas preparadas
 
+**Publicada/verificada:**f4719846e0059abefe480a8dcf176765e4324710, Render7631545496 success,732 completas correctas (162,568s). Lectores reales de mismas campañas Common/viaje con revisión exacta/salud/descriptor1.10, salud/estado/copia/escenas/recarga/teclado/móvil correctos, cero nuevas acciones/inferencias. Reducción de campos probada con adaptador/HTTP/proveedor simulado; no se anuncia medición real de tokens/precio. Estados local/pendiente inferiores son históricos.
+
 Integración local en regresión,8 de noviembre de2026. En módulos de aventura preparados, el motor ya conoce el lugar, la meta y los objetivos confirmados. El esquema de salida pide a la IA únicamente `summary` público y `preparation` privada, en vez de repetir cinco campos. No se atribuye un porcentaje fijo de ahorro de tokens: depende del contenido. Aventuras libres sin módulo conservan el formato completo anterior.
 
 **Regresión cerrada:**732 completas correctas sin omisiones (162,568s), .deps/compact-memory-final-tests.log, sesión53184 terminada.25 afectadas y navegador con respuestas compactas de comienzo/memoria/privacidad/prueba/narración/recarga/móvil correctos. Sin cambios mecánicos desde inicio de suite. Publicar/verificar revisiones y mismos estados técnicos en lectura, sin otra inferencia ni campaña nueva. El proveedor de esta reducción se ha simulado; no se reclama una medición real de ahorro de tokens o precio.

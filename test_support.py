@@ -52,14 +52,14 @@ class TestStore:
         if marker and marker!=(actor,fingerprint):raise Conflict('Identificador reutilizado')
         return bool(marker)
     def begin_rule_preparation(self,cid,identifier,actor,prepared,allow_create=True):
-        from rule_preparation_attempt import check_attempt,key,pack,unpack
-        from rule_pack_authoring import canonical
+        from rule_preparation_attempt import check_attempt,key,pack,unpack,input_request,inputs_match
         if identifier!=key(actor,prepared['sha256']):raise ValueError('Identificador de intento inválido')
+        original=input_request(prepared)
         with self.lock:
             existing=self.preparations.get((cid,identifier))
             if existing is None:
                 if not allow_create:return None
-                existing={'actor':actor,'requestSha256':prepared['sha256'],'sourceScheme':prepared['sourceScheme'],'phase':'started','inputData':pack(prepared['request'])}
+                existing={'actor':actor,'requestSha256':prepared['sha256'],'sourceScheme':prepared['sourceScheme'],'phase':'started','inputData':pack(original)}
                 import hashlib
                 from model_config import model_name
                 from rule_pack_authoring import PROMPT
@@ -68,7 +68,7 @@ class TestStore:
                 return {**copy.deepcopy(existing),'fresh':True}
             if existing.get('phase')=='confirmed':raise Conflict('Preparación ya confirmada')
             check_attempt(existing,actor,prepared['sha256'])
-            if canonical(unpack(existing['inputData']))!=canonical(prepared['request']):raise Conflict('Otra fuente')
+            if not inputs_match(unpack(existing['inputData']),original,existing['sourceScheme'],prepared['sourceScheme']):raise Conflict('Otra fuente')
             return {**copy.deepcopy(existing),'fresh':False}
     def save_rule_preparation_response(self,cid,identifier,actor,request_sha,data):
         from rule_preparation_attempt import key,unpack

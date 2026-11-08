@@ -1,5 +1,15 @@
 # Continuidad del desarrollo autónomo
 
+## Regresión de contexto y captura cerrada — 8 de noviembre de2026
+
+740 completas correctas sin omisiones (168,593s), .deps/board-context-final-tests.log, sesión44144 terminada. Emulador/contratos de otras fuentes y navegadores de autoría/viaje compacto correctos. Sin cambios de motor desde inicio de suite. Publicar/verificar mismas campañas en lectura con revisión exacta, sin nuevos POST/IA; después continuar prevalidación de agencia antes de inferencia y pendientes del producto. El usuario ratifica nuevamente no parar sin dependencia imprescindible; no hay bloqueo ni intervención que pedir.
+
+## Memoria compacta verificada y archivo de tableros en regresión — 8 de noviembre de2026
+
+f4719846e0059abefe480a8dcf176765e4324710/Render7631545496 success,732 completas correctas. Lectores Common/viaje con revisión exacta/salud/estado/recarga/teclado/móvil y cero acciones/inferencias nuevos correctos. Desarrollo siguió con contexto que conserva tablero actual y nombres/posiciones conocidas, omitiendo terreno archivado al modelo sin alterar campaña/copias. Prueba inicial detectó comparación adicional de inputData pese a huella estable; se separa request reducido de captureRequest completo privado, y se restaura siempre inputData original con sus capacidades. Hechos/geometría/historia siguen comparándose íntegros, solo se normalizan tres pistas derivadas PF; otras fuentes mantienen comparación exacta. No nuevas lecturas/escrituras remotas ni inferencias.
+
+30 de contexto/contrato/captura y15 con HTTP/Waitress/emulador correctas. Retorno conserva400casillas/posición, transporte simulado recibe proyección, fallo503/cliente nuevo/reintento sin proveedor, migración de captura antigua, y falsificación/activación retroactiva rechazadas.49 seleccionadas de autoría/captura con un caso emulador omitido por invocación local, suite final con emulador. Navegadores de autoría/instalación/privacidad y viaje con memoria compacta correctos. Suite completa en curso44144/log board-context-final-tests.log; no publicar hasta resultado. CONTEXTO_TABLEROS.md conserva alcance y límites privados de captura. Sin intervención necesaria; continuar tras verificar.
+
 ## Regresión de memoria compacta cerrada — 8 de noviembre de2026
 
 732 completas correctas sin omisiones (162,568s), .deps/compact-memory-final-tests.log, sesión53184 terminada.25 afectadas y navegador con respuestas compactas de comienzo/memoria/privacidad/prueba/narración/recarga/móvil correctos. Sin cambios de motor desde inicio de suite. Publicar/verificar lectores de sesiones Common y viaje con EXPECTED_RELEASE, cero POST/IA. Descriptor permanece1.10. No se mide ni inventa porcentaje de ahorro/tokens/precio: se eliminan tres campos repetidos del modelo, reconstruidos por motor; formato guardado y capturas antiguas permanecen. Seguir después con contexto sin mapas archivados redundantes, preservando claves históricas, y pendientes de producto; ninguna intervención necesaria.

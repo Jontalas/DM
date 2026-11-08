@@ -1,8 +1,10 @@
 import copy
+import io
 import json
 import secrets
 import unittest
 import urllib.error
+import urllib.request
 from unittest.mock import patch
 import server
 from firebase_store import FirestoreStore,Unavailable
@@ -69,3 +71,56 @@ class DirectorTravelHTTPTests(unittest.TestCase):
                 with self.assertRaises(urllib.error.HTTPError) as error:self.request('/api/action',body,token)
                 detail=json.load(error.exception);error.exception.close();self.assertEqual(error.exception.code,403 if case=='host' else 400,detail)
             self.assertEqual(self.state(),baseline)
+
+    def test_projected_archive_goes_to_provider_while_cold_retry_uses_full_private_input(self):
+        actor=self.prepare_route();self.action('travel_scene',exit='cobertizo');before=self.state()
+        body={'id':secrets.token_hex(12),'version':before['version'],'type':'talk','kind':'action','character':actor,'text':'Vuelvo al patio','director':True}
+        value={'narration':'El patio sigue al otro lado.','proposals':[],'routeTravel':{'exit':'patio'}}
+        raw=json.dumps({'stop_reason':'end_turn','content':[{'type':'text','text':json.dumps(value)}]}).encode()
+        original_open=urllib.request.urlopen;sent=[]
+        def dispatch(request,*args,**kwargs):
+            if getattr(request,'full_url','').startswith('https://api.anthropic.com/'):
+                sent.append(json.loads(request.data));return io.BytesIO(raw)
+            return original_open(request,*args,**kwargs)
+        with patch.object(server,'search',return_value=[]),patch('urllib.request.urlopen',side_effect=dispatch):
+            with patch.object(server.STORE,'commit',side_effect=Unavailable('Interrupted projected return')):
+                with self.assertRaises(urllib.error.HTTPError) as error:self.request('/api/action',body)
+            self.assertEqual(error.exception.code,503);error.exception.close()
+        self.assertEqual(len(sent),1);context=json.loads(sent[0]['messages'][0]['content'])
+        self.assertEqual(context['state']['boardScenes']['format'],'cronicas-board-scenes-context-1')
+        self.assertNotIn('terrain',context['state']['boardScenes']['knownScenes']['patio'])
+        self.assertEqual(self.state(),before);previous=server.STORE
+        if isinstance(previous,FirestoreStore):
+            server.STORE=FirestoreStore.from_environment();server.STORE.prefix=previous.prefix
+        try:
+            with patch.object(server,'search',return_value=[]),patch.object(server,'ai_reply',side_effect=AssertionError('Projected return repeated provider')):
+                self.request('/api/action',body);after=self.state();self.assertTrue(self.request('/api/action',body)['duplicate']);self.assertEqual(self.state(),after)
+            self.assertEqual(after['state']['boardScenes']['current'],'patio')
+            self.assertEqual(after['state']['characters'][1]['sceneId'],'patio')
+            self.assertIn('terrain',after['state']['boardScenes']['saved']['cobertizo'])
+        finally:server.STORE=previous
+
+    def test_old_capture_without_new_hint_is_accepted_and_keeps_its_original_response(self):
+        import rule_preparation_attempt as attempts
+        actor=self.prepare_route();before=self.state()
+        body={'id':secrets.token_hex(12),'version':before['version'],'type':'talk','kind':'action','character':actor,'text':'Observo la salida sin elegir destino','director':True}
+        value=reply(narration='Todavía no has elegido una salida.',memory=memory(location=before['state']['location']))
+        with patch.object(server,'search',return_value=[]),patch.object(server,'ai_reply',return_value=value):
+            with patch.object(server.STORE,'commit',side_effect=Unavailable('Interrupted older capture')) as failed:
+                with self.assertRaises(urllib.error.HTTPError) as error:self.request('/api/action',body)
+            self.assertEqual(error.exception.code,503);error.exception.close()
+        cid=failed.call_args.args[0];identifier=failed.call_args.kwargs['preparation_key'];previous=server.STORE
+        if isinstance(previous,FirestoreStore):
+            ref=previous.campaign(cid).collection('rulePreparationAttempts').document(identifier)
+            old=attempts.unpack(ref.get().to_dict()['inputData']);old['context'].pop('routeTravelActor')
+            ref.update({'inputData':attempts.pack(old)})
+            server.STORE=FirestoreStore.from_environment();server.STORE.prefix=previous.prefix
+        else:
+            record=previous.preparations[cid,identifier];old=attempts.unpack(record['inputData']);old['context'].pop('routeTravelActor');record['inputData']=attempts.pack(old)
+        try:
+            with patch.object(server,'search',return_value=[]),patch.object(server,'ai_reply',side_effect=AssertionError('Older capture repeated provider')):
+                self.request('/api/action',body)
+            after=self.state()['state'];self.assertEqual(after['boardScenes']['current'],'patio')
+            self.assertEqual(after['characters'],before['state']['characters'])
+            self.assertEqual([m['text'] for m in after['messages'] if m['kind']=='director'],[value['narration']])
+        finally:server.STORE=previous

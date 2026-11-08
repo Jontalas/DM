@@ -232,13 +232,14 @@ class FirestoreStore:
     def begin_rule_preparation(self,cid,identifier,actor,prepared,allow_create=True):
         from google.cloud import firestore
         from google.api_core.exceptions import AlreadyExists
-        from rule_preparation_attempt import check_attempt,key,pack,unpack
+        from rule_preparation_attempt import check_attempt,key,pack,unpack,input_request,inputs_match
         from model_config import model_name
         from rule_pack_authoring import PROMPT
         if identifier!=key(actor,prepared['sha256']):raise ValueError('Identificador de intento inválido')
         ref=self.campaign(cid).collection('rulePreparationAttempts').document(identifier)
+        original=input_request(prepared)
         data={'actor':actor,'requestSha256':prepared['sha256'],'sourceScheme':prepared['sourceScheme'],
-            'phase':'started','inputData':pack(prepared['request']),'createdAt':firestore.SERVER_TIMESTAMP}
+            'phase':'started','inputData':pack(original),'createdAt':firestore.SERVER_TIMESTAMP}
         if allow_create:
             data.update({'model':model_name(),'promptSha256':prepared.get('promptSha256',hashlib.sha256(PROMPT.encode()).hexdigest())})
             try:ref.create(data);return {**data,'fresh':True}
@@ -248,8 +249,7 @@ class FirestoreStore:
         existing=snapshot.to_dict()
         if existing.get('phase')=='confirmed':raise Conflict('Esta preparación ya fue confirmada; no se repetirá la inferencia')
         check_attempt(existing,actor,prepared['sha256'])
-        from rule_pack_authoring import canonical
-        if canonical(unpack(existing['inputData']))!=canonical(prepared['request']):raise Conflict('La fuente original del intento no coincide')
+        if not inputs_match(unpack(existing['inputData']),original,existing['sourceScheme'],prepared['sourceScheme']):raise Conflict('La fuente original del intento no coincide')
         return {**existing,'fresh':False}
 
     def save_rule_preparation_response(self,cid,identifier,actor,request_sha,data):

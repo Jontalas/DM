@@ -9,6 +9,15 @@ import re
 FORMAT='cronicas-board-scenes-1'
 
 
+def director_view(state):
+    """Current board stays in state.board; archives supply names/positions only."""
+    scenes=state.get('boardScenes')
+    if not isinstance(scenes,dict) or scenes.get('format')!=FORMAT:return None
+    return {'format':'cronicas-board-scenes-context-1','current':scenes['current'],
+        'knownScenes':{key:{'name':entry['name'],'positions':copy.deepcopy(entry['positions'])}
+            for key,entry in scenes['saved'].items()}}
+
+
 def _id(value):
     if not isinstance(value,str) or not re.fullmatch(r'[a-z][a-z0-9_-]{0,39}',value):raise ValueError('Identificador de tablero inválido')
     return value
