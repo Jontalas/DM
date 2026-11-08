@@ -1,5 +1,11 @@
 # Continuidad del desarrollo autónomo
 
+## Turnos publicados y reloj común en regresión — 8 de noviembre de2026
+
+Regresión cerrada:763 completas correctas sin omisiones (178,656s), sesión43125 terminada. Base interna preparada para respaldo de rama; main sigue b239200 verificada hasta publicar junto al siguiente bloque médico, para evitar despliegue redundante sin cambio visible. Continuar evolución clínica, sin pedir intervención.
+
+b2392003efef9add3d801d5e9ff36dfdf1d1778a/Render7636016023 success;757 completas y lectores investigación/Common/viaje exactos correctos, cero nuevos POST/IA. Desarrollo sigue con pf_timeline.py: primer lote por episodio/ronda/cuenta, empates íntegros sin prioridad de efectos, segundos solo con misma cuenta. Integrado en selección de comprobaciones y reloj compartido, sin cambiar cobertura clínica, recibos ni límite actual. Guard de solapamientos aún para integración futura.42 afectadas y navegadores compartido/muerte correctos. Suite completa43125/pf-timeline-final-tests.log en curso, sin cambios de motor desde inicio. PLANIFICADOR_RECUPERACION.md conserva fuentes y siguiente evolución clínica/descanso trazable. Sin intervención necesaria.
+
 ## Fin explícito de turno en regresión — 8 de noviembre de2026
 
 Regresión completa cerrada:757 correctas sin omisiones (182,243s), sesión43471 terminada. Sin cambios de motor desde inicio. Publicar/verificar investigación/Common/viaje solo lectura; después continuar estudio e integración prudente de recuperación/calendario, sin inventar prioridad entre eventos simultáneos. No hay dependencia del usuario.

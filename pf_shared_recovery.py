@@ -8,6 +8,7 @@ That boundary is an engine limitation, not a Pathfinder rule.
 import copy
 import pf_recovery
 import game_randomness
+import pf_timeline
 
 SCOPE='shared-patients-1'
 
@@ -81,8 +82,7 @@ def simulate(start,draw):
                 'initiative':event['initiative'],**check})
         clock=due
     else:raise ValueError('El reloj compartido superó su límite sin un resultado verificable')
-    if clock[1]!=origin[1]:raise ValueError('No se convierte una fracción de iniciativa en segundos inventados')
-    elapsed=(clock[0]-origin[0])*6
+    elapsed=pf_timeline.elapsed_seconds(origin,clock)
     return {'patients':patients,'rolls':ledger,'audit':audit,'status':status,'seconds':elapsed,'hours':elapsed//3600}
 
 

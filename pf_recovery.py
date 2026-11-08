@@ -172,5 +172,5 @@ def next_hourly_events(characters):
         due=(care['round']+600*hours,care['order'].index(care['initiative']))
         events.append({'character':patient['id'],'epoch':care['epoch'],'round':due[0],'initiative':care['initiative'],'orderIndex':due[1]})
     if not events:return []
-    earliest=min((e['round'],e['orderIndex']) for e in events)
-    return [e for e in events if (e['round'],e['orderIndex'])==earliest]
+    import pf_timeline
+    return pf_timeline.first_batch(events,epoch=shared_epoch,order=shared_order)
