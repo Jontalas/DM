@@ -58,6 +58,17 @@ class PreparedNightRestTests(unittest.TestCase):
             with self.assertRaises(PermissionError):rest.rest(self.state,{'type':'rest_pf_night'},self.me|{'id':'other','host':host})
         self.assertEqual(self.state,before)
 
+    def test_manual_guard_death_after_agreement_is_explained_before_sleep(self):
+        self.agree()
+        npc=self.state['characters'][1];npc['hp']=-npc['abilities'][2]
+        before=copy.deepcopy(self.state)
+        view=rest.public_view(self.state)
+        self.assertFalse(view['completed'])
+        self.assertIn('cambió tras el acuerdo',view['reason'])
+        with self.assertRaisesRegex(ValueError,'cambió tras el acuerdo'):
+            self.act('rest_pf_night')
+        self.assertEqual(self.state,before)
+
     def test_preflight_rejects_every_unscheduled_patient_or_effect_without_mutation(self):
         self.agree();baseline=copy.deepcopy(self.state)
         for change in ('negative-player','dead-player','negative-guard','wounded-guard','condition','remote-patient',

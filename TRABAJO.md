@@ -1,5 +1,11 @@
 # Continuidad del desarrollo autónomo
 
+## Compatibilidad publicada y preaviso de descanso coherente — 8 de noviembre de2026
+
+f51c03dd99f9167f104c8e0d2e80dea75e5209d3, Render7629240041 success, revisión/salud y navegador real de lectura de la misma sesión1.7 correctos. Cero acciones nuevas, inferencias o partidas personales modificadas. La corrección de nulabilidad queda publicada.
+
+Continuación local: una muerte manual de la guardiana después del acuerdo conservaba un botón de descanso disponible, aunque el ejecutor rechazaba correctamente ese origen. La comprobación previa ahora explica la incompatibilidad antes de elegir. No modifica reglas, recibos históricos ni concede curación.24 afectadas puras y5 HTTP/Waitress/emulador correctas, incluida comprobación de no mutación. Fuentes originales adicionales para trabajo posterior revisadas visualmente: Reglas PDF450–452/folios449–451, combatiente, tabla14-3, características básicas y rangos; todavía no hay nueva variante de PNJ ni tregua implementada.
+
 ## Armadura1.7 verificada y compatibilidad de copia opcional — 8 de noviembre de2026
 
 d7f32d91070e2a4de8783c118f68fa9a67645abb, Render7629118813 success.686 completas y100 selectivas correctas. Ensayo único pf-armor-night-live-session.json verified sin IA:29100s total/28800s sueño, quitar/reponer normalmente sin ayuda, salud máxima/equipo/estadísticas/PNJ/duplicado/copia/continuación/búsqueda conservados. No se tocaron partidas personales ni ensayos previos. Navegador real de la misma campaña: revisión/salud, tiempos/equipo/diario/ref temporal, recarga/teclado/móvil y cero nuevas acciones/inferencias. No repetir guion ni borrar/renombrar sesión.

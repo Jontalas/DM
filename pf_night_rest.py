@@ -75,7 +75,12 @@ def limitation(state,armor_plan='keep'):
     if (state['board'].get('combatSerial',0)!=(1 if record['phase']=='resolved' else 0)
         or type(state['board']['round'])!=int or not 1<=state['board']['round']<=100):
         return 'Esta noche cubre solo el primer encuentro corto; el tiempo adicional necesita seguimiento.'
-    return _profile(*_participants(state),record['definition'],armor_plan)
+    actor,npc=_participants(state)
+    reason=_profile(actor,npc,record['definition'],armor_plan)
+    if reason:return reason
+    if record['phase']=='agreement' and npc['hp']!=npc['maxHp']:
+        return 'La guardiana cambió tras el acuerdo; esta noche preparada necesita revisar esa situación.'
+    return None
 
 
 def _result(start,definition):
