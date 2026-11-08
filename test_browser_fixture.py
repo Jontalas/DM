@@ -79,6 +79,15 @@ def main():
         os.environ['ANTHROPIC_API_KEY']='fixture-only-never-sent'
         from test_adventure import reply,memory
         def fixture_reply(state,text,refs,**options):
+            if os.environ.get('TEST_DIRECTOR_TRAVEL')=='1' and not options.get('starting'):
+                from director_travel import declaration_available
+                travel=declaration_available(state)
+                targets={'voy al cobertizo':'cobertizo','vuelvo al patio':'patio'}
+                chosen=targets.get(text.casefold().strip().rstrip('.'))
+                if travel and chosen in {e['id'] for e in travel['exits']}:
+                    return reply(narration='El camino está despejado.',routeTravel={'exit':chosen})
+                return reply(narration='Puedes consultar las salidas y decidir dónde ir.',memory=memory(
+                    summary='La ruta conserva su situación.',location=state['location'],goal=state['goal'],objectives=state['objectives']))
             if state.get('adventureModule') and state['adventureModule']['title']!='Fixture libre':
                 module=state['adventureModule']
                 from adventure_modules import public_view

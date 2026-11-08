@@ -1,5 +1,19 @@
 # Continuidad del desarrollo autónomo
 
+## Regresión de viajes declarados cerrada — 8 de noviembre de2026
+
+707 completas correctas sin omisiones (171,260s), .deps/director-travel-final-tests.log, sesión19729 terminada.36 afectadas; navegadores desde creador/declaración/teclado/móvil/toque/copia y aventura/memoria/privacidad/rutas1.6 por paz/combate/regreso correctos. Sin cambios mecánicos posteriores a inicio de suite. Publicar/verificar y ejecutar una sola comprobación real de nuevo contrato, una inferencia necesaria, campaña técnica separada y captura protegida; guion preparado, aún no ejecutado. No repetir sesiones previas ni anunciar hito personal. Seguir trabajo autorizado después.
+
+## Viajes declarados: HTTP y navegador correctos — 8 de noviembre de2026
+
+36 afectadas correctas. El viaje propuesto se valida contra acción/propietario/salida; no se aplica memoria que reponga lugar anterior. Recuperación privada reconstruye permiso desde contexto capturado sin ruta privada original; la huella ignora indicador derivado nuevo para preservar capturas ya pagadas. HTTP/Waitress/emulador demuestra fallo503, cliente nuevo/reintento sin proveedor, duplicado/copia y denegación de anfitrión ajeno, charla/ooc/salida inventada. El fixture inicial carecía de clave falsa de pruebas; corregido, sin llamada real. Navegador desde creador guiado prueba pregunta/diálogo inmóviles, declaración por teclado/regreso móvil/toque, una talk por viaje, PG/hallazgos/guardiana/copia UI/recarga. Proveedor simulado, no certifica semántica real. Suite en curso19729/log privado director-travel-final-tests.log. VIAJES_DECLARADOS.md conserva alcance; falta publicar/verificar y comprobar una vez contrato real con captura protegida. Seguir sin intervención del usuario.
+
+## Descanso1.9 verificado y declaraciones de viaje en desarrollo — 8 de noviembre de2026
+
+2d0dd12f6fc7a2c8c298da52175d51a4be638e6f, Render7630962714 success, revisión/descriptor1.9/salud exactos. Sesión técnica pf-truce-night-live-session.json verified sin IA: guardiana2PG, tregua/noche/curación acotada/duplicado/copia/continuación correctos. Guardado de checkpoint encontró WinError5 temporal OneDrive antes de importar; se recuperaron misma campaña/nonce desde temporal, sin repetir combate ni descanso ni crear campaña. No repetir original ni recuperación ni borrar sesión. Navegador real de lectura de esa misma campaña correcto con cero acciones/inferencias.700 completas correctas previas.
+
+Trabajo siguiente local: director_travel.py + routeTravel opcional en esquema/respuesta, solo declaración de acción y salida de ruta visible/permitida; motor existente aplica y propietario conserva decisión. Apertura/reglas/ooc/continuación/charla no viajan. No se aplica memoria anterior que sobrescriba lugar recién confirmado.12 puras/contrato correctas; helper de pruebas inicialmente pasaba dict en lugar del JSON esperado, corregido. HTTP de commit/reintento/proveedor/permiso/copia, navegador y regresión aún pendientes. Sin publicación de esta integración ni nueva inferencia. Continuar autónomamente.
+
 ## Regresión1.9 cerrada — 8 de noviembre de2026
 
 700 completas correctas sin omisiones (163,498s), log privado pf-truce-night-final-tests.log, sesión80704 terminada.27 afectadas con HTTP/Waitress/emulador y navegador de cuatro ataques hasta0/tregua/noche1PG/guardiana2/copia por interfaz/recarga/móvil/toque/continuación correctos. Regresiones de encuentro actual desde creador y noche1.5 correctas. No cambios mecánicos posteriores al inicio de suite. Respaldar/publicar y verificar revisión/descriptor1.9/salud; guion técnico único sin IA preparado/compilado, aún no ejecutado, no usa corrección manual para fingir0. Conservar sesiones anteriores y seguir desarrollo sin solicitar intervención.

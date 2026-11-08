@@ -21,7 +21,11 @@ def prepare(state,text,refs,check_actors=None,starting=False,source_text=None):
     # while a retry against the same uncommitted state keeps the same key.
     transcript_length=sum(1 for message in state['messages'] if message.get('visibility','public')=='public' and message.get('kind')!='private')
     request={'contract':CONTRACT,'context':copy.deepcopy(context),'transcriptLength':transcript_length}
-    raw=canonical(request).encode('utf-8')
+    keyed=copy.deepcopy(request)
+    # A derived action hint must not invalidate an already paid response.
+    # Old captures keep their original narration and do not gain a new action.
+    keyed['context'].pop('routeTravelActor',None)
+    raw=canonical(keyed).encode('utf-8')
     if len(raw)>300000:raise ValueError('El contexto de esta aventura supera el límite; no se ha llamado a IA')
     return {'request':request,'sha256':hashlib.sha256(raw).hexdigest(),'sourceScheme':SCHEME,
         'promptSha256':hashlib.sha256(system_prompt(False,starting).encode('utf-8')).hexdigest()}
@@ -38,7 +42,11 @@ def restore(prepared,payload,scheme):
         except (TypeError,ValueError):raise ValueError('Captura de respuesta dañada; no se ha repetido IA') from None
     elif payload['kind']=='report':raw=json.dumps({'stop_reason':'end_turn','content':[{'type':'text','text':json.dumps(payload['value'])}]}).encode('utf-8')
     else:raise ValueError('Tipo de captura Pathfinder desconocido')
-    result=claude_dm.parse_response(state,raw,rules=False,starting=context['operation']=='startAdventure')
+    route_travel={}
+    if (context.get('routeTravelActor') and context.get('history') and context['history'][-1].get('kind')=='action'
+        and context['operation']=='narrate'):
+        route_travel={'character':context['routeTravelActor'],'exits':state.get('adventureRouteView',{}).get('exits',[])}
+    result=claude_dm.parse_response(state,raw,rules=False,starting=context['operation']=='startAdventure',route_travel_context=route_travel)
     if payload['kind']=='report':
         # Reports already passed through the adapter. Validate their structure,
         # but preserve the stored narration instead of repairing it twice.

@@ -9,6 +9,7 @@ from adventure import MEMORY_SCHEMA, validate_memory
 from narrative_text import normalize_response, repair_text
 import adventure_modules
 import adventure_routes
+import director_travel
 from director_prompt import system_prompt
 from model_config import model_name,DEFAULT_MODEL
 
@@ -23,6 +24,7 @@ SCHEMA['properties']['generatedAdventure']=adventure_modules.GENERATED_SCHEMA
 SCHEMA['properties']['investigation']={'type':'object','properties':{
     'requested':{'type':'boolean'},'character':{'type':'string'},'opportunity':{'type':'string'}},
     'required':['requested','character','opportunity'],'additionalProperties':False}
+SCHEMA['properties']['routeTravel']={'type':'object','properties':{'exit':{'type':'string'}},'required':['exit'],'additionalProperties':False}
 def response_schema(state,rules=False,starting=False):
     """The provider cannot propose player actions in an opening or rules lookup."""
     schema=copy.deepcopy(SCHEMA)
@@ -39,6 +41,10 @@ def response_schema(state,rules=False,starting=False):
                 schema['properties']['generatedAdventure']['properties'][field]['properties']['dc']['enum']=list(range(maximum+1))
     elif not rules:
         allowed.add('checks')
+        travel=director_travel.declaration_available(state)
+        if travel:
+            allowed.add('routeTravel')
+            schema['properties']['routeTravel']['properties']['exit']['enum']=[e['id'] for e in travel['exits']]
         if state.get('adventure'):allowed.add('memory')
         if (state.get('adventureModule') and not state['moduleProgress']['completed'] and not state['pending']
             and state['messages'] and state['messages'][-1].get('kind')=='action'):
@@ -67,6 +73,9 @@ def build_context(state,text,refs,rules=False,check_actors=None,starting=False,s
                                  'activeDeclaration':declarations[-1] if declarations and declarations[-1]==len(history)-1 else None}
         if starting or state.get('adventureModule'):
             context['verifiedRules']=[{'book':'reglas','pdf_pages':[87,101],'coverage':'Percepcion preparada: d20 mas total contra CD de la aventura. Buscar es accion de movimiento; reintentar si persiste el estimulo. Elegir 10 sin amenazas/distracciones; elegir 20 con tiempo y sin consecuencias de fallo, invirtiendo veinte veces el esfuerzo.'}]
+        if not starting:
+            travel=director_travel.declaration_available(state)
+            if travel:context['routeTravelActor']=travel['character']
         if starting:
             totals=[row['total'] for c in state['characters'] if not c.get('enemy') and c.get('hp',0)>0 and not c.get('conditions','').strip()
                     for row in c.get('skillTotals',[]) if row.get('name')=='Percepción' and type(row.get('total'))==int]
@@ -82,7 +91,7 @@ def build_context(state,text,refs,rules=False,check_actors=None,starting=False,s
     return context
 
 
-def parse_response(state,raw,rules=False,starting=False):
+def parse_response(state,raw,rules=False,starting=False,route_travel_context=None):
     stage='json';stop_reason=None
     try:
         output=json.loads(raw)
@@ -106,6 +115,13 @@ def parse_response(state,raw,rules=False,starting=False):
             stage='memory'
             if rules:raise ValueError('Una consulta de reglas no puede actualizar la aventura')
             result['memory']=validate_memory(result['memory'])
+        if 'routeTravel' in result:
+            stage='route-travel'
+            item=result['routeTravel'];travel=director_travel.declaration_available(state) if route_travel_context is None else route_travel_context
+            if (rules or starting or not travel or not isinstance(item,dict) or set(item)!={'exit'}
+                or not isinstance(item['exit'],str) or item['exit'] not in {e['id'] for e in travel['exits']}
+                or result.get('checks') or result.get('investigation') or result.get('proposals')):
+                raise ValueError('Viaje de ruta incompatible con la intervención')
         if 'investigation' in result:
             stage='investigation'
             item=result['investigation']
