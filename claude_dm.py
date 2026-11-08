@@ -5,7 +5,7 @@ import os
 import time
 import urllib.request
 import urllib.error
-from adventure import MEMORY_SCHEMA, validate_memory
+from adventure import MEMORY_SCHEMA, COMPACT_MEMORY_SCHEMA, memory_for_state
 from narrative_text import normalize_response, repair_text
 import adventure_modules
 import adventure_routes
@@ -61,6 +61,8 @@ def response_schema(state,rules=False,starting=False):
         if (state.get('adventureModule') and not state['moduleProgress']['completed'] and not state['pending']
             and state['messages'] and state['messages'][-1].get('kind')=='action'):
             allowed.add('investigation')
+    if 'memory' in allowed and state.get('adventureModule'):
+        schema['properties']['memory']=copy.deepcopy(COMPACT_MEMORY_SCHEMA)
     schema['properties']={k:v for k,v in schema['properties'].items() if k in allowed}
     return schema
 
@@ -130,7 +132,7 @@ def parse_response(state,raw,rules=False,starting=False,route_travel_context=Non
         if 'memory' in result:
             stage='memory'
             if rules:raise ValueError('Una consulta de reglas no puede actualizar la aventura')
-            result['memory']=validate_memory(result['memory'])
+            result['memory']=memory_for_state(state,result['memory'])
         if 'routeTravel' in result:
             stage='route-travel'
             item=result['routeTravel'];travel=director_travel.declaration_available(state) if route_travel_context is None else route_travel_context

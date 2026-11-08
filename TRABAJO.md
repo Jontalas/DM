@@ -1,5 +1,15 @@
 # Continuidad del desarrollo autónomo
 
+## Regresión de memoria compacta cerrada — 8 de noviembre de2026
+
+732 completas correctas sin omisiones (162,568s), .deps/compact-memory-final-tests.log, sesión53184 terminada.25 afectadas y navegador con respuestas compactas de comienzo/memoria/privacidad/prueba/narración/recarga/móvil correctos. Sin cambios de motor desde inicio de suite. Publicar/verificar lectores de sesiones Common y viaje con EXPECTED_RELEASE, cero POST/IA. Descriptor permanece1.10. No se mide ni inventa porcentaje de ahorro/tokens/precio: se eliminan tres campos repetidos del modelo, reconstruidos por motor; formato guardado y capturas antiguas permanecen. Seguir después con contexto sin mapas archivados redundantes, preservando claves históricas, y pendientes de producto; ninguna intervención necesaria.
+
+## Común1.10 verificado y memoria compacta en regresión — 8 de noviembre de2026
+
+065e63fc64ba65fbd0cfa72e6716f0315de3ccd0, Render7631426667 success, descriptor1.10/revisión/salud exactos y726 completas correctas. common-guard-live-session.json verified sin IA: default idiomas adicionales=[], guardiana1/6PG/CA15, oferta Común, tregua/noche/duplicado/copia/continuación correctos. No repetir ni borrar sesión. Lector real correcto con cero acciones/inferencias; texto de consola antiguo corregido a1/6, sus comprobaciones ya usaban1/6. No partidas personales modificadas.
+
+Trabajo siguiente reduce memoria de módulos preparados de cinco campos a resumen público/notas privadas; motor reconstruye lugar/meta/objetivos confirmados, conserva formato guardado y memoria libre/histórica. Contexto/huella pagada no cambian, no repite proveedor.25 afectadas correctas con adaptador/esquema/HTTP Waitress+emulador/fallo503/cliente nuevo/duplicado/copia/privacidad; navegador con respuestas compactas simulado correcto. Primer with multilineal de fixture corregido. Suite completa en curso53184/log compacto privado compact-memory-final-tests.log; no publicar antes de resultado. MEMORIA_COMPACTA.md conserva límites. Sin nueva inferencia ni intervención requerida; continuar después.
+
 ## Variante con Común y regresión1.10 cerrada — 8 de noviembre de2026
 
 Ataque ba7fd932fee6d3f89b7092c0b22d6077e15988d7/Render7631255491 success verificado con lectores de sesiones viaje/noche1.9, revisión exacta/salud/estado/recarga/teclado/móvil y cero nuevas acciones/inferencias. Desarrollo continuó con NPC original separado: matriz básica13/11/10/12/9/8 + rasgos goblin, combatiente1, PG medios6 con clase predilecta, CA15 sin escudo, Int12 permite Común. Tres rangos precisos, fuentes originales visuales PDF13,15,18,87,399,450–452,455 y Bestiario167; datos/OGL documentados. No añade Común ni cambia PG7/huella de entrada publicada. Nuevo encuentro1.10/ceasefireScope2/recibo2 testifica Común compartido de oferta, no impone frases/idioma literal del jugador. Default humano conserva idiomas adicionales vacíos. Desenlace valida máximo según plantilla, no7 fijo; antiguos siguen7. Un doble+ local del texto inicial fue corregido tras regresión, sin publicar fallo.

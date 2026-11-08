@@ -123,7 +123,15 @@ def main():
                              checks=[{'character':actor,'kind':'ability','key':'str','dc':10,'reason':'CD adjudicada de prueba'}])
             return reply(narration='La puerta se abre tras el resultado confirmado.',
                          memory=memory(summary='Aria abrió la puerta tras superar la prueba.'))
-        server.ai_reply=fixture_reply
+        if os.environ.get('TEST_COMPACT_MEMORY')=='1':
+            full_fixture_reply=fixture_reply
+            def compact_fixture_reply(state,text,refs,**options):
+                result=full_fixture_reply(state,text,refs,**options)
+                if state.get('adventureModule') and result.get('memory'):
+                    result={**result,'memory':{k:result['memory'][k] for k in ('summary','preparation')}}
+                return result
+            server.ai_reply=compact_fixture_reply
+        else:server.ai_reply=fixture_reply
     from test_reader_support import fixture_reader
     server.READER=fixture_reader()
     if os.environ.get('TEST_PF_ENCOUNTER_VERSION'):

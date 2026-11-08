@@ -6,6 +6,8 @@ MEMORY_SCHEMA={'type':'object','properties':{
     'summary':{'type':'string'},'location':{'type':'string'},'goal':{'type':'string'},
     'objectives':{'type':'array','items':{'type':'string'}},'preparation':{'type':'string'}},
     'required':['summary','location','goal','objectives','preparation'],'additionalProperties':False}
+COMPACT_MEMORY_SCHEMA={'type':'object','properties':{'summary':{'type':'string'},'preparation':{'type':'string'}},
+    'required':['summary','preparation'],'additionalProperties':False}
 
 
 def text(value,limit,label):
@@ -26,6 +28,17 @@ def validate_memory(value):
     if len(set(result['objectives']))!=len(result['objectives']):
         raise ValueError('Objetivos narrativos duplicados')
     return result
+
+
+def memory_for_state(state,value):
+    """Reconstruct authored facts locally; keep full historical memory compatible."""
+    if isinstance(value,dict) and set(value)=={'summary','preparation'}:
+        module=state.get('adventureModule')
+        if not module:raise ValueError('La memoria breve necesita una escena preparada')
+        public=adventure_modules.public_view(state)
+        value={**value,'location':module['location'],'goal':module['goal'],
+            'objectives':[item['text'] for item in public['objectives'] if not item['completed']]}
+    return validate_memory(value)
 
 
 def ready_characters(state):
@@ -58,7 +71,7 @@ def validate_start(state,body,me):
 
 def apply_memory(state,value,starting=False):
     """Apply only the allowlisted narrative fields, after complete validation."""
-    memory=validate_memory(value)
+    memory=memory_for_state(state,value)
     if not starting and not state.get('adventure'):
         raise ValueError('Inicia la aventura antes de actualizar su memoria')
     if state['board']['active'] and memory['location']!=state['location']:

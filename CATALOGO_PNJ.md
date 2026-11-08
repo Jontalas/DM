@@ -2,6 +2,8 @@
 
 ## Variante original en verificación: guardiana que conoce Común
 
+**Publicada/verificada1.10:**065e63fc64ba65fbd0cfa72e6716f0315de3ccd0, Render7631426667 success,726 completas correctas (165,505s). Campaña técnica common-guard-live-session.json verified sin IA: default idiomas adicionales=[], guardiana1/6PG/CA15, Común compartido, noche/duplicado/copia/continuación correctos, sin partidas personales. No repetir guion ni borrar sesión. Lector real de esa misma campaña correcto: revisión/descriptor/salud/perfil/idiomas/noche/ruta/copia/recarga/teclado/móvil y cero acciones nuevas. Estados inferiores de local/pendiente son históricos.
+
 **Regresión cerrada:**726 completas correctas sin omisiones (165,505s), .deps/common-guard-final-tests.log, sesión39582 terminada.46 afectadas puras y18 con HTTP/Waitress/emulador; navegador desde creador guiado por defecto, paz y combate orgánico hasta0/tregua/noche/copia/recarga/móvil/ruta correctos. No cambios de motor desde inicio de suite. Pendiente publicación/verificación1.10 sin nueva inferencia. Guion técnico único preparado/compilado, aún no ejecutado; conservar sesiones anteriores.
 
 Nueva plantilla local `pf1-common-speaking-goblin-guard-1`, versión1.0.0, usada solo por la nueva escena1.10. No sustituye ni corrige al goblin publicado. Huella original `pf1-goblin-warrior-1` preservada y probada:04f7b0f12f49dc360411d4aae8e54a3c19a82bce6e465b5d267ffdf9368fda12; conserva PG7/CA16/Int10/idioma goblin. Versiones1.0–1.9 del encuentro intactas, sin migrar campañas.
