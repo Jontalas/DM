@@ -21,11 +21,11 @@ END_TIME='8 horas desde el comienzo del descanso en el patio'
 ARMOR_MINUTES={'leather':(1,1),'studded':(1,1),'chainshirt':(1,1),'scale':(1,4)}
 
 
-def supported(definition):return definition.get('restScope') in (SCOPE,ARMOR_SCOPE)
+def supported(definition):return isinstance(definition,dict) and definition.get('restScope') in (SCOPE,ARMOR_SCOPE)
 
 
 def _participants(state):
-    record=state.get('pfEncounter',{})
+    record=state.get('pfEncounter') or {}
     actor=next((c for c in state['characters'] if c['id']==record.get('character')),None)
     npc=next((c for c in state['characters'] if c['id']==record.get('npc')),None)
     return actor,npc
@@ -111,7 +111,7 @@ def _result(start,definition):
 
 
 def rest(state,body,me):
-    definition=state.get('pfEncounter',{}).get('definition',{})
+    definition=(state.get('pfEncounter') or {}).get('definition') or {}
     extended=definition.get('restScope')==ARMOR_SCOPE
     if body.get('type')!='rest_pf_night' or set(body)-({'type','id','version'}|({'armorPlan'} if extended else set())):
         raise ValueError('Elige la noche preparada; no se admiten horas o PG arbitrarios')
@@ -150,7 +150,7 @@ def validate_restored(state):
     if receipt is None:
         if markers or (isinstance(state.get('worldTime'),str) and state['worldTime'] in (END_TIME,
             '8 horas y 2 minutos desde el comienzo del descanso preparado','8 horas y 5 minutos desde el comienzo del descanso preparado')
-            and supported(state.get('pfEncounter',{}).get('definition',{}))):
+            and supported((state.get('pfEncounter') or {}).get('definition'))):
             raise ValueError('Falta el recibo de la noche registrada')
         return
     record=state.get('pfEncounter');actor,npc=_participants(state)
@@ -167,7 +167,7 @@ def validate_restored(state):
 
 
 def public_view(state):
-    definition=state.get('pfEncounter',{}).get('definition',{})
+    definition=(state.get('pfEncounter') or {}).get('definition') or {}
     if not supported(definition):return None
     receipt=state.get('pfNightRest')
     actor,_=_participants(state)

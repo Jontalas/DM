@@ -91,7 +91,7 @@ def enter(state,body,me):
 def validate_restored(state):
     receipt=state.get('pfContinuation')
     if receipt is None:
-        if state.get('pfEncounter',{}).get('definition',{}).get('continuation') in (LINK,ROUTE_LINK,NIGHT_ROUTE_LINK,RETURN_ROUTE_LINK) and any(state.get(k) for k in ('adventure','adventureModule','adventureRoute')):
+        if ((state.get('pfEncounter') or {}).get('definition') or {}).get('continuation') in (LINK,ROUTE_LINK,NIGHT_ROUTE_LINK,RETURN_ROUTE_LINK) and any(state.get(k) for k in ('adventure','adventureModule','adventureRoute')):
             raise ValueError('La escena enlazada necesita su registro de continuidad')
         return
     record=state.get('pfEncounter')

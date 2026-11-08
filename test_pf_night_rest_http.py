@@ -134,3 +134,15 @@ class NightRestHTTPTests(unittest.TestCase):
             self.assertEqual(self.state()['state']['characters'],expected)
             self.assertEqual(self.state()['state']['worldTime'],after['state']['worldTime'])
         finally:server.STORE=previous
+
+    def test_nullable_optional_encounter_can_be_imported_read_and_replaced_by_a_real_start(self):
+        exported=self.request('/api/export',{})
+        exported['state'].update(pfEncounter=None,pfNightRest=None,pfContinuation=None)
+        self.action('import',campaign=exported);imported=self.state()['state']
+        self.assertIsNone(imported['pfEncounter']);self.assertNotIn('pfNightRestView',imported)
+        self.prepare(version='1.7.0');self.action('rest_pf_night',armorPlan='keep')
+        self.assertTrue(self.state()['state']['pfNightRestView']['completed'])
+        inconsistent=self.request('/api/export',{});inconsistent['state']['pfEncounter']=None
+        before=self.state()
+        with self.assertRaises(urllib.error.HTTPError) as error:self.action('import',campaign=inconsistent)
+        self.assertEqual(error.exception.code,400);error.exception.close();self.assertEqual(self.state(),before)

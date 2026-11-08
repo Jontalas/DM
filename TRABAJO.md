@@ -1,5 +1,11 @@
 # Continuidad del desarrollo autónomo
 
+## Armadura1.7 verificada y compatibilidad de copia opcional — 8 de noviembre de2026
+
+d7f32d91070e2a4de8783c118f68fa9a67645abb, Render7629118813 success.686 completas y100 selectivas correctas. Ensayo único pf-armor-night-live-session.json verified sin IA:29100s total/28800s sueño, quitar/reponer normalmente sin ayuda, salud máxima/equipo/estadísticas/PNJ/duplicado/copia/continuación/búsqueda conservados. No se tocaron partidas personales ni ensayos previos. Navegador real de la misma campaña: revisión/salud, tiempos/equipo/diario/ref temporal, recarga/teclado/móvil y cero nuevas acciones/inferencias. No repetir guion ni borrar/renombrar sesión.
+
+Trabajo siguiente detectó un caso real de nulabilidad en copias: pfEncounter:null, semánticamente ausente y aceptado por el validador del encuentro, causaba AttributeError en vista de descanso/continuidad y terminaba como503. Reproducido en estado inicial aislado, sin modificar ninguna partida; normalización de None corregida.28 afectadas con HTTP/Waitress/emulador correctas: importar copia nula, consultar, crear personaje/iniciar encuentro/descansar y rechazar400 recibo incoherente sin encuentro, conservando estado. No cambia mecánicas ni descarta pruebas. Pendiente respaldar/publicar corrección y verificar la misma campaña1.7 solo en lectura, sin nuevos ensayos/IA. Desarrollo continúa sin intervención del usuario.
+
 ## Regresión final de preparación de armadura cerrada — 8 de noviembre de2026
 
 686 pruebas completas correctas sin omisiones (241,029s), .deps/pf-prepared-armor-night-final-tests.log, sesión74704 terminada.100 afectadas y HTTP/Waitress previas; navegador de cuatro casos y regresiones1.5/1.6 correctos. Comprobación móvil adicional antes de elegir la preparación: botón dentro del ancho390px y toque real, después29100s/8h de sueño/PG/equipo/copia/recarga correctos. Ayuda redactada como opción, no como decisión tomada por abrir el desplegable. Fuentes originales PDF154/153 tabla6-7 y armadura/sueño verificadas. Guion técnico único sin IA preparado/compilado y no ejecutado. Siguiente respaldo/publicación/verificación1.7; conservar sesiones anteriores, no modificar partidas personales ni detenerse tras el checkpoint.
