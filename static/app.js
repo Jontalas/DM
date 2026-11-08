@@ -41,6 +41,13 @@ async function refresh(force=false){
 }
 function chooseTab(id,loadDocument=true){if(id==='board'&&window.matchMedia('(min-width:1100px)').matches)id='story';$$('.tab').forEach(x=>x.classList.toggle('active',x.id===id));$$('[data-tab]').forEach(x=>x.classList.toggle('active',x.dataset.tab===id));document.body.classList.toggle('reader-wide',id==='books'&&readerExpanded);if(id==='books'&&loadDocument)openBook();}
 function ref(book,page,label){return `<button type="button" class="rule-link" data-book="${esc(book)}" data-page="${Number(page)}">${esc(label||names[book]+' · PDF p.'+page)} ↗</button>`}
+function renderSpeakerChoices(){
+ if(!snapshot)return;
+ const me=snapshot.me,kind=$('#messageKind').value,previous=$('#speaker').value;
+ const choices=snapshot.state.characters.filter(c=>c.owner===me.id||(me.host&&(c.enemy||['ooc','private'].includes(kind))));
+ $('#speaker').innerHTML='<option value="">'+esc(me.name)+'</option>'+choices.map(c=>`<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('');
+ if(choices.some(c=>c.id===previous))$('#speaker').value=previous;
+}
 function renderPlayGuidance(s){
  const panel=$('#playGuidance'),text=$('#playGuidanceText'),button=$('#playGuidanceAction');
  const checks=s.pending.filter(p=>p.check),mine=checks.filter(p=>s.characters.some(c=>c.id===p.check.character&&c.owner===snapshot.me.id)),own=mine.filter(p=>!pendingCheckUnavailable(p,s.characters.find(c=>c.id===p.check.character)));
@@ -106,8 +113,8 @@ function recoveryAudit(message){
 }
 function render(){if(snapshot.state.ruleset==='rule-pack'){RulePackUI.render();return}if($('#rulePackWorkspace'))$('#rulePackWorkspace').hidden=true;if(snapshot.state.ruleset==='cairn-1e'){$('#campaignTitle').textContent=snapshot.title;$('#campaignMeta').textContent='Cairn 1e';$('#inviteBtn').hidden=!snapshot.me.host;$('#welcome').hidden=true;$('#app').hidden=false;$('#app > .workspace').hidden=true;run(()=>CairnUI.render())();return}if($('#systemWorkspace'))$('#systemWorkspace').hidden=true;$('#app > .workspace').hidden=false;const s=snapshot.state, me=snapshot.me;$('#savedLibraryPanel').hidden=true;$('#welcome').hidden=true;$('#app').hidden=false;$('#campaignTitle').textContent=snapshot.title;$('#campaignMeta').textContent=`Pathfinder 1e · ${snapshot.players.length} jugadores · ${s.characters.length} personajes`;$('#place').textContent=s.location;$('#objective').textContent=s.goal;$('#sceneNum').textContent=s.scene;$('#tokenNum').textContent=`${s.tokens} / ${s.threshold}`;$('#phase').textContent=s.turned?'Punto de giro alcanzado · desenlace':'Desarrollo de la aventura';$('#sceneTitle').textContent=`Escena ${s.scene} · ${s.location}`;
  $('#party').innerHTML=s.characters.map(c=>`<div class="party-person" role="button" tabindex="0" data-character="${esc(c.id)}"><div class="avatar">${esc(c.name[0])}</div><div><strong>${esc(c.name)}</strong><small>${esc(c.race)} · ${esc(c.class)} ${c.level}</small><div class="hpbar"><span style="width:${Math.max(0,Math.min(100,100*c.hp/c.maxHp))}%"></span></div><small>${c.hp} / ${c.maxHp} PG${characterHealthLabel(c)?' · '+esc(characterHealthLabel(c)):''} · ${esc(c.npcCreation?'Director de la aventura':snapshot.players.find(p=>p.id===c.owner)?.name||'Jugador anterior')}${s.boardScenes&&c.sceneId!==s.boardScenes.current?' · En otra escena':''}</small></div></div>`).join('')||'<small>Aún no hay personajes. Crea tu primer aventurero.</small>';
- const available=s.characters.filter(c=>me.host||c.owner===me.id), prev=$('#speaker').value, boardPrev=$('#boardCharacter').value;
- $('#speaker').innerHTML='<option value="">'+esc(me.name)+'</option>'+available.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('');if(available.some(c=>c.id===prev))$('#speaker').value=prev;
+ const available=s.characters.filter(c=>me.host||c.owner===me.id), boardPrev=$('#boardCharacter').value;
+ renderSpeakerChoices();
  const boardAvailable=boardCharacters(s).filter(c=>me.host||c.owner===me.id);
  $('#boardCharacter').innerHTML=boardAvailable.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('');if(boardAvailable.some(c=>c.id===boardPrev))$('#boardCharacter').value=boardPrev;
  const area=$('#story'), near=area.scrollHeight-area.scrollTop-area.clientHeight<150;
@@ -213,7 +220,7 @@ $('#inviteBtn').onclick=run(async()=>{const link=location.origin+'/?invite='+enc
 $('#addCharacter').onclick=()=>characterForm();$('#manualBtn').onclick=()=>manualForm();
 $('#composer').onsubmit=run(async()=>{let text=$('#message').value;await act('talk',{text,character:$('#speaker').value||null,kind:$('#messageKind').value,director:$('#useAI').checked&&$('#messageKind').value!=='private'});$('#message').value='';$('#story').scrollTop=$('#story').scrollHeight});
 $('#message').onkeydown=e=>{if(e.ctrlKey&&e.key==='Enter')$('#composer').requestSubmit()};
-$('#messageKind').onchange=()=>{if($('#messageKind').value==='private')$('#useAI').checked=false};
+$('#messageKind').onchange=()=>{if($('#messageKind').value==='private')$('#useAI').checked=false;renderSpeakerChoices()};
 $('#journalForm').onsubmit=run(async e=>{const d=values(e.target);for(const key of ['objectives','allies','enemies','unknowns'])d[key]=d[key].split('\n').filter(Boolean);await act('journal',d);toast('Diario guardado')});
 $('#nextScene').onclick=run(async()=>{let location=prompt('Lugar de la siguiente escena',snapshot.state.location);if(location!==null)await act('scene',{location})});
 $('#rollForm').onsubmit=run(async e=>{const d=physical(values(e.target));await act('roll',d);chooseTab('story')});

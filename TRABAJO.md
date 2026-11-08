@@ -1,5 +1,11 @@
 # Continuidad del desarrollo autónomo
 
+## Agencia de conversación y contexto publicado — 8 de noviembre de2026
+
+Regresión completa cerrada:744 pruebas correctas sin omisiones en183,612s, sesión25297 terminada/log speaker-agency-final-tests.log. Sin cambios de motor desde inicio. Publicar y verificar mismas campañas en lectura, sin nuevas inferencias; continuar después.
+
+e7fd13063a745b51a7d6e3aec909f45671db19b6/Render7635545718 success: lectores Common/viaje verificados con revisión exacta, sin POST ni IA. Continúa protección del propietario: action/dialogue explícitos de PJ ajeno rechazados antes de proveedor/commit incluso al anfitrión; selector local por tipo conserva notas administrativas y PNJ.22 afectadas con emulador y navegador de dos participantes/móvil táctil correctos. Suite completa25297/speaker-agency-final-tests.log en curso. AGENCIA_CONVERSACION.md. REANUDAR consolidado con historial preservado. Sin intervención necesaria; después de publicar seguir recuperación de envíos y recorrido integrado.
+
 ## Regresión de contexto y captura cerrada — 8 de noviembre de2026
 
 740 completas correctas sin omisiones (168,593s), .deps/board-context-final-tests.log, sesión44144 terminada. Emulador/contratos de otras fuentes y navegadores de autoría/viaje compacto correctos. Sin cambios de motor desde inicio de suite. Publicar/verificar mismas campañas en lectura con revisión exacta, sin nuevos POST/IA; después continuar prevalidación de agencia antes de inferencia y pendientes del producto. El usuario ratifica nuevamente no parar sin dependencia imprescindible; no hay bloqueo ni intervención que pedir.

@@ -134,9 +134,13 @@ def apply_action(s,b,me):
         text=str(b['text']).strip()
         if not text or len(text)>12000: raise ValueError('Escribe entre 1 y 12000 caracteres')
         speaker=me['name']; cid=b.get('character')
-        if cid: speaker=char(s,cid,me)['name']+' · '+me['name']
         k=b.get('kind','action')
         if k not in ['action','dialogue','ooc','private']: raise ValueError('Tipo de mensaje inválido')
+        if cid:
+            speaking=char(s,cid,me)
+            if k in ('action','dialogue') and not speaking.get('enemy') and speaking['owner']!=me['id']:
+                raise PermissionError('Solo el propietario declara acciones y palabras de su personaje')
+            speaker=speaking['name']+' · '+me['name']
         log(s,text,k,speaker=speaker,owner=me['id'],visibility='private' if k=='private' else 'public')
     elif kind=='create_npc':
         host(me)
