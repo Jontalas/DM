@@ -83,6 +83,7 @@ def main():
                 from director_prepared_decisions import declaration_available
                 choices=declaration_available(state)
                 if choices and text.casefold().strip().rstrip('.')=='espero junto a la guardiana a que despierte':return reply(narration='Permaneces junto a la guardiana sin dormir ni realizar otra acción.',preparedDecision={'action':'wait-for-guard'})
+                if state.get('adventureModule') and text.casefold().strip().rstrip('.')=='examino el registro del patio':return reply(narration='Puedes examinar las anotaciones del registro.',investigation={'character':state['pfEncounter']['character'],'opportunity':'registro'})
                 return reply(narration='Tú decides si quieres esperar junto a la guardiana.')
             if os.environ.get('TEST_DIRECTOR_TURN')=='1' and not options.get('starting'):
                 from director_turn import declaration_available
@@ -154,7 +155,7 @@ def main():
     import game_randomness
     game_randomness.draw=lambda sides:1 if os.environ.get('TEST_CAIRN_FIXTURE')=='1' else min(12,sides)
     if os.environ.get('TEST_PF_NPC_WAIT_FIXTURE')=='1':
-        wait_dice=iter([20,1,12,4,1,20,1,20])
+        wait_dice=iter([20,1,12,4,1,20,1,20,12])
         game_randomness.draw=lambda sides:next(wait_dice)
         game_randomness.initiative_tie=lambda:0
     if os.environ.get('TEST_PF_CEASEFIRE_FIXTURE')=='1':

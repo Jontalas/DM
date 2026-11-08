@@ -1,5 +1,9 @@
 # Continuidad del desarrollo autónomo
 
+## Investigación pendiente tras espera: corrección de vista — 8 de noviembre de2026
+
+1cb9a4a7531f06b369ee5d3b8cfbb7d29410581d/Render7637194650 success,799 completas y lectores espera/investigación exactos correctos, cero nuevos POST/IA. Auditoría posterior detectó que pendingCheckUnavailable seguía bloqueando todo PNJ negativo, aunque nueva espera/ruta ya validaba consciencia. Se usa mismo pfNpcRecoveryView.canContinue del servidor, sin eximir otros pacientes/condiciones; se aclaran límites temporales de actor/combate como cobertura, no regla general. Navegador declaración de investigación→prueba pendiente habilita d20/10/20 y resuelve, completa ruta/copia/móvil; navegador de tiradas dos jugadores conserva bloqueos. Solo cliente/fixture, no motor ni suite completa repetida. Publicar/verificar y continuar exploración ligera con fuentes/versionado, sin intervención.
+
 ## Incapacidad: regresión cerrada y riesgos visibles — 8 de noviembre de2026
 
 799 completas correctas sin omisiones (194,444s), sesión34009/disabled-movement-final-tests.log; sin cambios de motor desde inicio. Aviso posterior solo UI de coste1PG al atacar, consecuencia moribundo/muerte y aria-describedby, sin nueva confirmación; navegador de ambos riesgos/localpreview y recuperación compartida tras ataque0 correctos. Publicar corrección de mitad de velocidad/única acción y verificar mismas sesiones en lectura. Continuar auditoría de exploración ligera de PJ0/negativo consciente, con fuente190/568 y búsqueda101, nueva definición sin modificar anteriores y sin saltar pacientes/descanso pendientes ni certificar tiempo no calculado. No necesita intervención del usuario.

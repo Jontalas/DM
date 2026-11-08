@@ -32,10 +32,11 @@ function pendingCheckUnavailable(p,c){
  if(!c)return 'El personaje ya no está disponible en esta mesa.';
  if(!characterIsConscious(c))return 'El personaje no puede tirar mientras esté inconsciente o muerto.';
  if(c.conditions?.trim())return 'Hay condiciones que requieren revisar esta prueba antes de resolverla.';
- if(p.investigation&&(c.hp<=0||snapshot.state.board.active))return 'La investigación requiere PG positivos y estar fuera de combate.';
+ if(p.investigation&&snapshot.state.board.active)return 'La investigación automática no está disponible durante el combate.';
+ if(p.investigation&&c.hp<=0)return 'Esta versión de la investigación todavía requiere PG positivos.';
  if(p.investigation&&snapshot.state.pfContinuation){
   const npc=snapshot.state.characters.find(v=>v.id===snapshot.state.pfEncounter.npc);
-  if(npc&&((npc.hp<0&&npc.hp>-npc.abilities[2])||npc.conditions?.trim()))return 'La guardiana necesita resolver su estado antes de continuar investigando.';
+  if(npc&&((npc.hp<0&&npc.hp>-npc.abilities[2]&&!snapshot.state.pfNpcRecoveryView?.canContinue)||npc.conditions?.trim()))return 'La guardiana necesita resolver su estado antes de continuar investigando.';
  }
  return '';
 }
