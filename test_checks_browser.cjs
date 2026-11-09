@@ -43,6 +43,7 @@ const path=require('node:path'),assert=require('node:assert/strict');
   assert.match(await audit.locator('p').textContent(),/d20 12.*\+8 = 20/);
   await b.keyboard.press('Enter');assert.equal(await b.evaluate(()=>snapshot.version),beforeAudit);
   await a.reload();await a.locator('#app').waitFor({state:'visible'});
+  if(await a.locator('[data-tab=board]').isVisible())await a.locator('[data-tab=board]').click();await a.locator('#board .board-help > summary').click();
   await a.locator('#requestCheck').click();
   await a.locator('#requestCheckForm [name=selection]').selectOption('6');
   await a.locator('#requestCheckForm [name=dc]').fill('16');

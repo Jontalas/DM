@@ -7,8 +7,8 @@ const path=require('node:path'),assert=require('node:assert/strict');
   const url=await new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(Error('Fixture timeout')),15000);createInterface({input:fixture.stdout}).once('line',line=>{clearTimeout(timer);resolve(line)});fixture.once('exit',()=>reject(Error('Fixture exited')))});
   browser=await chromium.launch({headless:true,executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe'});
   for(const source of ['example','route']){
-   const context=await browser.newContext({hasTouch:true,acceptDownloads:true}),page=await context.newPage(),actions=[],errors=[];
-   page.on('dialog',d=>d.accept());page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>{if(r.url().endsWith('/api/action'))actions.push(r.postDataJSON())});
+   const context=await browser.newContext({hasTouch:true,acceptDownloads:true}),page=await context.newPage(),actions=[],errors=[],apiRequests=[];
+   page.on('dialog',d=>d.accept());page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>{if(r.url().includes('/api/'))apiRequests.push(r.url());if(r.url().endsWith('/api/action'))actions.push(r.postDataJSON())});
    await page.goto(url);await page.locator('#createForm [name=player]').fill('Ana');await page.locator('#createForm [name=goal]').fill('Jugar una aventura preparada');await page.locator('#createForm button').click();
    await page.locator('[data-create-hero]').click();await page.locator('[data-creator-preset=guardian]').click();await page.locator('#creatorName').fill('Aria');await page.locator('[data-creator-step="3"]').click();await page.locator('#creatorFinish').click();await page.locator('.sheet-checks').waitFor();await page.locator('#closeModal').click();
    assert.equal(await page.evaluate(()=>model.aiConfigured),false);assert.equal(await page.locator('#beginAdventure').isEnabled(),true);
@@ -20,6 +20,17 @@ const path=require('node:path'),assert=require('node:assert/strict');
    assert.equal(actions.at(-1).openingContract,'authored-opening-1');assert.equal(actions.at(-1).captureContract,'pf-authored-opening-1');assert.equal(await page.evaluate(()=>snapshot.state.messages.filter(m=>m.kind==='director').length),0);assert.equal(await page.locator('.message.scene').count(),1);
    assert.equal(await page.locator('#useAI').isDisabled(),true);assert.deepEqual(await page.evaluate(()=>snapshot.state.characters),original);assert.equal(await page.evaluate(()=>snapshot.state.moduleProgress.discoveries.length),0);
    if(source==='example'){
+    await page.setViewportSize({width:1440,height:960});
+    assert.equal(await page.locator('.character-preparation details').evaluate(e=>e.open),false);
+    assert.equal(await page.locator('.scene-recap').evaluate(e=>e.open),false);
+    assert.equal(await page.evaluate(()=>!!(document.querySelector('#messages').compareDocumentPosition(document.querySelector('#investigationPanel'))&Node.DOCUMENT_POSITION_FOLLOWING)),true);
+    const io=apiRequests.length;await page.locator('.character-preparation summary').focus();await page.keyboard.press('Enter');assert.equal(await page.locator('.character-preparation .rule-link').count(),7);await page.keyboard.press('Enter');
+    await page.locator('.scene-recap summary').focus();await page.keyboard.press('Enter');await page.keyboard.press('Enter');assert.equal(apiRequests.length,io);
+    assert.equal(await page.locator('#board').isVisible(),true);assert.equal(await page.locator('#story').isVisible(),true);
+    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await page.waitForFunction(()=>document.querySelector('#toast').hidden);await page.screenshot({path:'.deps/table-presentation-desktop.png'});
+    await page.setViewportSize({width:390,height:1000});await page.locator('[data-tab=story]').tap();assert.equal(await page.locator('#sceneTitle').isVisible(),true);await page.locator('.message.scene').scrollIntoViewIfNeeded();await page.screenshot({path:'.deps/table-presentation-mobile-story.png'});
+    await page.locator('[data-tab=board]').tap();assert.equal(await page.locator('#board').isVisible(),true);assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await page.screenshot({path:'.deps/table-presentation-mobile-board.png'});
+    await page.locator('[data-tab=story]').tap();await page.setViewportSize({width:1440,height:960});
     for(let search=0;search<2;search++){const version=await page.evaluate(()=>snapshot.version);await page.locator('#investigationForm button[value=take20]').click();await page.waitForFunction(v=>snapshot.version>v&&!busy,version)}
     assert.equal(await page.evaluate(()=>snapshot.state.moduleProgress.completed),true);assert.equal(await page.locator('#nextAdventure').isDisabled(),true);assert.match(await page.locator('#nextAdventureHint').textContent(),/director no está disponible/);
    }else{assert.equal(await page.locator('[data-route-exit]').count(),2);await page.locator('[data-route-exit=estantes]').click();await page.waitForFunction(()=>snapshot.state.adventureRouteView.current==='estantes'&&!busy)}

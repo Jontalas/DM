@@ -121,3 +121,51 @@ body.reader-wide #composer{display:none}
 .library-entry small, .library-character small { display: block; }
 .library-character { margin: 12px 0; padding: 10px; background: var(--panel); }
 @media(max-width:680px){ .saved-library { margin: 12px; } #libraryBtn { font-size: 10px; padding: 6px; } }
+
+/* The playable surface is paper; the surrounding controls remain a quiet forest. */
+:root{--map-paper:#e4dac3;--map-line:#c2b79d;--map-ink:#405448;--party-token:#315b48;--opponent-token:#9c5145}
+#grid{background:var(--map-line);outline:1px solid var(--map-line)}
+#grid .cell{background:var(--map-paper);color:var(--map-ink)}
+#grid .cell:hover{background:#f1ead9}
+#grid .cell.wall{background:#34453e;box-shadow:inset 0 0 0 1px #516458}
+#grid .cell.difficult{background:repeating-linear-gradient(45deg,#c3b185,#c3b185 4px,#b39c70 4px,#b39c70 8px)}
+#grid .cell.measured{background:#d5bb78}
+#grid .cell.path{background:#c7ae70;box-shadow:inset 0 0 0 2px #71602e}
+#grid .cell[aria-pressed=true]{outline:2px solid var(--party-token);outline-offset:-3px}
+#grid .cell .token{background:var(--party-token);border-color:#f2ead8;color:#fffdf4;font-weight:700}
+#grid .cell .enemy{background:var(--opponent-token);border-color:#fae8dc}
+.token-hp{background:#20382e;border-radius:2px;font-variant-numeric:tabular-nums}
+.ruler-overlay line{stroke:#405b45;filter:none}
+.message.scene{font:18px/1.7 Georgia,serif;padding-top:20px;padding-bottom:20px}
+.message.character-preparation{padding:4px 12px;background:transparent;border:1px solid var(--line)}
+.character-preparation details{padding:0;border:0}
+.character-preparation summary{min-height:44px;align-content:center;font-size:13px;color:var(--muted)}
+.character-preparation details[open]{padding-bottom:12px}
+.scene-recap{padding:4px 0 12px;border-top:0;font-size:14px}
+.scene-recap summary{min-height:36px;align-content:center;color:var(--muted)}
+.scene-recap p{margin:8px 0}
+#investigationPanel{margin-top:16px;padding:18px}
+#investigationPanel>.eyebrow{font-size:11px}
+#investigationPanel>h3{margin-top:8px}
+.acting-character{font-size:13px;color:var(--muted);margin:0 0 8px}
+#investigationForm .toolbar{gap:6px;margin:12px 0}
+#investigationForm .toolbar button{padding:8px 10px;min-height:44px}
+#investigationForm .toolbar .primary{width:auto;flex:1;margin:0}
+@media(min-width:1100px){
+ main{grid-template-columns:minmax(0,1fr) clamp(360px,34vw,480px)}
+ main>#board{min-width:0;background:#182520}
+ #board .board-scroll{background:#23352b;border-color:#4c5b48}
+ .sidebar{background:#141f1b}
+ .sidebar .party-person strong{font-size:14px}
+ .sidebar .party-person small{font-size:12px}
+ .sidebar .side-bottom>p{font-size:14px;line-height:1.5}
+ body.adventure-active #story>.chapter{display:none}
+ #composer{background:#18231f}
+ .compose-row textarea{min-width:0;flex:1}
+ .compose-row button{flex-shrink:0}
+}
+@media(max-width:1099px){
+ body.adventure-active #story>.chapter{text-align:left;padding:0 0 12px;margin:0 0 12px}
+ body.adventure-active #story>.chapter h2{font-size:23px;margin:0}
+ body.adventure-active #story>.chapter p,body.adventure-active #story>.chapter .eyebrow{display:none}
+}

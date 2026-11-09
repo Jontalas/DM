@@ -168,6 +168,16 @@ function messageSources(message){
  const links=message.refs.map(r=>ref(r.book,r.page)).join('');
  return message.kind==='director'?`<details class="message-sources"><summary>Consultar fuentes</summary><div>${links}</div></details>`:`<div>${links}</div>`;
 }
+function messageEntry(message){
+ const label={rules:'Resolución',director:'Director de IA',scene:'Escena',action:'Acción',dialogue:'Diálogo',ooc:'Fuera de personaje',private:'Privado'}[message.kind]||'Registro';
+ const heading=`<div class="speaker">${esc(message.speaker)}${message.kind==='scene'?'':' · '+esc(label)}</div>`;
+ const content=checkMessage(message)+recoveryAudit(message)+messageSources(message);
+ if(message.kind==='rules'&&typeof message.text==='string'&&message.text.startsWith('Personaje creado automáticamente: ')){
+  const character=snapshot.state.characters.find(c=>message.text.startsWith('Personaje creado automáticamente: '+c.name+'.'));
+  return `<article class="message rules character-preparation"><details><summary>${esc(character?.name||'Personaje')} · ficha preparada</summary>${heading}${content}</details></article>`;
+ }
+ return `<article class="message ${esc(message.kind)}">${heading}${content}</article>`;
+}
 function recoveryAudit(message){
  if(!Array.isArray(message.recoveryChecks)||!message.recoveryChecks.length||message.recoveryChecks.length>40||message.recoveryChecks.some(check=>!check||typeof check!=='object'))return '';
  return `<details class="recovery-audit"><summary>Ver tiradas de recuperación (${message.recoveryChecks.length})</summary>${message.recoveryChecks.map((check,i)=>`<p>${check.characterName?esc(check.characterName)+' · hora '+esc(check.hour):'Hora '+(i+1)}: d20 ${esc(check.die)}, modificador ${esc(check.modifier)}, total ${esc(check.total)} frente a 10. ${check.conscious?'Recupera la consciencia':check.dead?'Muere por sus heridas':'Sigue inconsciente'}. PG: ${esc(check.hpBefore)} → ${esc(check.hpAfter)}.</p>`).join('')}</details>`;
@@ -179,9 +189,9 @@ function render(){if(snapshot.state.ruleset==='rule-pack'){RulePackUI.render();r
  const boardAvailable=boardCharacters(s).filter(c=>me.host||c.owner===me.id);
  $('#boardCharacter').innerHTML=boardAvailable.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('');if(boardAvailable.some(c=>c.id===boardPrev))$('#boardCharacter').value=boardPrev;
  const area=$('#story'), near=area.scrollHeight-area.scrollTop-area.clientHeight<150;
- $('#messages').innerHTML=s.messages.map(m=>`<article class="message ${esc(m.kind)}"><div class="speaker">${esc(m.speaker)} · ${esc({rules:'Resolución',director:'Director de IA',action:'Acción',dialogue:'Diálogo',ooc:'Fuera de personaje',private:'Privado'}[m.kind]||m.kind)}</div>${checkMessage(m)}${recoveryAudit(m)}${messageSources(m)}</article>`).join('')||`<div class="empty"><div class="icon">✧</div><h3>Una página todavía en blanco</h3><p>Crea un personaje y presenta la situación inicial.<br>${model.aiConfigured?'El director está configurado; su disponibilidad se comprobará al enviar.':'Puedes crear tu personaje, consultar libros y usar el tablero. El director no está disponible en esta mesa.'}</p></div>`;
+ $('#messages').innerHTML=s.messages.map(messageEntry).join('')||`<div class="empty"><div class="icon">✧</div><h3>Una página todavía en blanco</h3><p>Crea un personaje y presenta la situación inicial.<br>${model.aiConfigured?'El director está configurado; su disponibilidad se comprobará al enviar.':'Puedes crear tu personaje, consultar libros y usar el tablero. El director no está disponible en esta mesa.'}</p></div>`;
  if(!available.length)$('#messages').insertAdjacentHTML('afterbegin','<div class="card"><h3>Tu personaje es el primer paso</h3><p>Elige sus opciones; el creador calcula la ficha y la deja lista para jugar.</p><button class="primary" data-create-hero>Crear mi personaje</button></div>');
- renderAdventure();renderChecks();renderPlayGuidance(s);if(near)area.scrollTop=area.scrollHeight;
+ document.body.classList.toggle('adventure-active',!!(s.adventure||s.pfEncounter));renderAdventure();renderChecks();renderPlayGuidance(s);if(near)area.scrollTop=area.scrollHeight;
  renderJournalOverview(s);
  const jf=$('#journalForm');for(const key of ['location','worldTime','goal','notes','secrets','directorNotes','objectives','allies','enemies','unknowns']){const el=jf.elements[key];if(document.activeElement!==el)el.value=Array.isArray(s[key])?s[key].join('\n'):s[key]||'';el.disabled=!me.host}
  $$('.host-only').forEach(x=>x.hidden=!me.host);$('#inviteBtn').hidden=!me.host;$('#exportBtn').disabled=!me.host;
@@ -192,7 +202,7 @@ function render(){if(snapshot.state.ruleset==='rule-pack'){RulePackUI.render();r
  $('#oracleLog').innerHTML=s.oracleLog.map(v=>`<p>${esc(v.question)} · ${esc(v.result)}<small>Escena ${v.scene} · ${esc(v.origin)} · originales ${esc(v.raw.join('/'))} · ${esc(v.probability)} → ${v.total} · ${esc(v.group)} d8=${v.detail??'no aplica'}<br>${esc(v.interpretation)}</small>${ref('trey',19)}</p>`).join('')||'<small>No se ha consultado el oráculo.</small>';
  $('#bookmarks').innerHTML=s.bookmarks.map(v=>ref(v.book,v.page,v.label)).join('');renderBoard();
 }
-function renderBoard(){if(!snapshot)return;renderAttack();renderAutomation();const s=snapshot.state,board=s.board;const title=s.boardScenes?s.location:'Mesa táctica';if($('#board h2').textContent!==title)$('#board h2').textContent=title;$('#turnInfo').textContent=board.active?`Asalto ${board.round} · Turno de ${s.characters.find(c=>c.id===board.order[board.turn].id)?.name} · ${board.order.map(o=>s.characters.find(c=>c.id===o.id)?.name+' '+(o.roll+o.modifier)).join(' → ')}`:'Exploración · sin combate activo';
+function renderBoard(){if(!snapshot)return;renderAttack();renderAutomation();const s=snapshot.state,board=s.board;const title=s.boardScenes||s.adventureModuleView||s.pfEncounter?s.location:board.active?'Encuentro':'Tu mesa';$('#board .eyebrow').textContent=board.active?'ENCUENTRO':'LA MESA';if($('#board h2').textContent!==title)$('#board h2').textContent=title;$('#turnInfo').textContent=board.active?`Asalto ${board.round} · Turno de ${s.characters.find(c=>c.id===board.order[board.turn].id)?.name} · ${board.order.map(o=>s.characters.find(c=>c.id===o.id)?.name+' '+(o.roll+o.modifier)).join(' → ')}`:'Exploración · sin combate activo';
  let cells='';for(let y=0;y<20;y++)for(let x=0;x<20;x++){const c=boardCharacters(s).find(c=>c.x===x&&c.y===y);cells+=`<button class="cell ${board.terrain[x+','+y]||''} ${path.some(p=>p[0]===x&&p[1]===y)?'path':''} ${ruler.some(p=>p[0]===x&&p[1]===y)?'measured':''} ${c&&board.active&&board.order[board.turn]?.id===c.id?'current-turn':''}" data-token-id="${esc(c?.id||'')}" data-controlled="${!!c&&(snapshot.me.host||c.owner===snapshot.me.id)}" aria-pressed="${!!c&&c.id===$('#boardCharacter').value}" data-x="${x}" data-y="${y}" aria-label="Casilla ${x},${y}${c?' '+esc(c.name):''}">${c?`<span class="token ${c.enemy?'enemy':''}">${esc(c.name.slice(0,2))}</span><span class="token-hp">${c.hp} PG</span>`:''}</button>`}$('#grid').innerHTML=cells;
  let c=s.characters.find(c=>c.id===$('#boardCharacter').value),x=c?.x,y=c?.y,diagonal=0,cost=0;for(const [nx,ny] of path){let d=nx!==x&&ny!==y;if(d)diagonal++;cost+=board.terrain[nx+','+ny]==='difficult'?(d?3:2):(d&&diagonal%2===0?2:1);x=nx;y=ny}$('#pathInfo').textContent=path.length?`Recorrido: ${path.map(p=>p.join(',')).join(' → ')} · Coste: ${cost*5} pies (${cost} casillas). Revisión manual de AdO, alcance, visibilidad y consecuencias antes de confirmar.`:'Selecciona una ficha y traza casillas adyacentes.';renderTabletopTools()}
 function openBook(book=$('#book').value,page=Number($('#page').value)){if(!token)return;$('#book').value=book;$('#page').value=page;bookReader.open(book,page)}
@@ -226,7 +236,7 @@ function renderTabletopTools(){
   }
  }
  for(const option of $('#tool').options)option.disabled=!snapshot.me.host&&['wall','difficult','clear'].includes(option.value);
- $('#startCombat').hidden=!snapshot.me.host||board.active||snapshot.state.pfEncounter?.phase==='offered';
+ $('#startCombat').hidden=!snapshot.me.host||board.active||snapshot.state.pfEncounter?.phase==='offered'||boardCharacters(snapshot.state).length<2;
  $('#startCombat').disabled=boardCharacters(snapshot.state).length<2;
  $('#endCombat').hidden=!snapshot.me.host||!board.active;
  $('#manualBtn').hidden=!snapshot.me.host;

@@ -57,7 +57,7 @@ function requestCheckForm(){
  const form=$('#requestCheckForm');
  function update(){const c=snapshot.state.characters.find(c=>c.id===form.elements.character.value);form.elements.selection.innerHTML=characterChecks(c).map((v,i)=>`<option value="${i}">${esc(v.name)} (${v.total>=0?'+':''}${v.total})</option>`).join('')}
  form.elements.character.onchange=update;update();
- form.onsubmit=run(async()=>{const c=snapshot.state.characters.find(c=>c.id===form.elements.character.value),check=characterChecks(c)[Number(form.elements.selection.value)];await act('request_check',{character:c.id,checkKind:check.kind,key:check.key,dc:Number(form.elements.dc.value),reason:form.elements.reason.value});$('#modal').close()});
+ form.onsubmit=run(async()=>{const c=snapshot.state.characters.find(c=>c.id===form.elements.character.value),check=characterChecks(c)[Number(form.elements.selection.value)];await act('request_check',{character:c.id,checkKind:check.kind,key:check.key,dc:Number(form.elements.dc.value),reason:form.elements.reason.value});$('#modal').close();chooseTab('story')});
 }
 document.addEventListener('click',e=>{
  const button=e.target.closest('[data-sheet-check],[data-resolve-check],[data-cancel-check]');if(!button)return;
