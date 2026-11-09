@@ -12,13 +12,13 @@ Comunicar qué puede hacer el jugador, qué falta y dónde verlo. No usar contad
 
 Siguiente trabajo autorizado:
 
-1. Publicar/verificar la recuperación visible sin recarga yel foco tras movimiento (bloque local abajo); mantener el informe local con capturas reales rotuladas.
+1. Publicar/verificar el recibo de acción confirmada cuando falla cargar el resultado. Recuperación visible y foco tras movimiento ya publicados. Mantener informe local con capturas reales rotuladas.
 2. Continuar la revisión de primeras decisiones, combate y recuperación del recorrido individual. Resolver fricciones observadas, conservando agencia y reglas; no expandir el alcance para producir más cambios.
 3. Conservar el progreso en estos archivos existentes. No crear un MD por corrección: PRODUCTO para alcance, REANUDAR para continuidad, TRABAJO para detalle, USABILIDAD para criterios/evidencia.
 
 ## Producción y verificación actual
 
-**5260f8751daa430bb60226d63f296ef22fbe289d**, Render **7657535570 success**, ambas ramas publicadas. Revisión, salud y app.js/index.html/tabletop.css exactos comprobados públicamente. Descriptor Pathfinder **1.15.0**. Incluye navegación del tablero por flechas/unTab.
+**4c6680d631fc6ac7cf4c6d662902275488cc02de**, Render **7658384887 success**, ambas ramas publicadas. Revisión, salud y app.js/index.html/tabletop.css exactos comprobados públicamente. Descriptor Pathfinder **1.15.0**. Incluye navegación del tablero por flechas/unTab.
 
 Motor desde **e174ea8ee0381f53b4953ac3b43e5db3b5fadce4**: **945 pruebas completas correctas, 300,506s**, .deps/copy-shape-final-suite.log, sesión21341 terminada. Ningún Python modificado después de ese arranque; cambios posteriores solo UI/pruebas/docs. No repetir suite completa sin cambio o preocupación concreta. No hay pruebas ni inferencias en curso.
 
@@ -30,7 +30,7 @@ Respuesta perdida ylectura deestado fallida: recuperador existente visible enelc
 
 Baseline offline-guidance-baseline.log reprodujo ausencia deaviso trasPOSTconfirmado conrespuesta perdida yGETabortado. Browserdirector final: cuerpo/ID exactos, recupera sinrecarga, unmensaje/respuesta porintención, nuevo borrador conservado, CtrlEnter0envíos, estado pendiente aguanta lecturas sin cambios; legacy sincontrato conserva recarga. Capítulos: diálogo cierra a recuperación, draft original intacto, reintento frío exacto. Mesa: foco destino ygestos/permiso/táctil correctos. Checks, biblioteca, paquete ysync correctos. Proveedores simulados;0IAreal. Captura pending-recovery-offline-mobile revisada.945Python intacto.
 
-Publicar/verificar app.js,index.html,tabletop.css. Después reproducir caso distinto: POST200 recibido peroGETposterior falla; no confundirlo conrespuesta perdida ni repetir acción facturable. Revisar también retención deenvíos pendientes endos pestañas/campañas antes de cambiar almacenamiento; aún no se ha hecho esa reproducción. Seguir alcance individual, no expandir reglas. No bloqueo deaprobación vigente.
+Publicar/verificar app.js,index.html,tabletop.css. Caso POST200 recibido pero GET posterior falla ya reproducido y corregido localmente: sobre confirmed:true, recuperación/recarga solo GET, una lectura fallida sin repetición automática; lectura anterior tardía no retira el recibo. Director, pendiente de paquete, capítulos, biblioteca y sync correctos. Publicar app.js y prueba; Python intacto. Revisar también retención deenvíos pendientes endos pestañas/campañas antes de cambiar almacenamiento; aún no se ha hecho esa reproducción. Seguir alcance individual, no expandir reglas. No bloqueo deaprobación vigente.
 
 ## Qué está terminado en este bloque
 
