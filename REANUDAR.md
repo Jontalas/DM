@@ -12,13 +12,13 @@ Comunicar qué puede hacer el jugador, qué falta y dónde verlo. No usar contad
 
 Siguiente trabajo autorizado:
 
-1. Publicar/verificar la consulta de personajes de otra escena yel aviso de salud inequívoco (bloque local abajo); mantener el informe local con capturas reales rotuladas.
+1. Publicar/verificar la navegación del tablero por teclado (bloque local abajo); mantener el informe local con capturas reales rotuladas.
 2. Continuar la revisión de primeras decisiones, combate y recuperación del recorrido individual. Resolver fricciones observadas, conservando agencia y reglas; no expandir el alcance para producir más cambios.
 3. Conservar el progreso en estos archivos existentes. No crear un MD por corrección: PRODUCTO para alcance, REANUDAR para continuidad, TRABAJO para detalle, USABILIDAD para criterios/evidencia.
 
 ## Producción y verificación actual
 
-**00b3ae640983628c6fa173ffd6cd1273e1b03fdb**, Render **7653618090 success**, ambas ramas publicadas. Revisión, salud y character-creator.js/character-checks.js/tabletop.css exactos comprobados públicamente. Descriptor Pathfinder **1.15.0**. Incluye fichas de consulta ycontinuidad consolidada.
+**20bf73943f820a2ea89b9cc21ec886183c6b3cf0**, Render **7653819093 success**, ambas ramas publicadas. Revisión, salud y app.js/character-checks.js/tabletop.css exactos comprobados públicamente. Descriptor Pathfinder **1.15.0**. Incluye consulta de otras escenas yavisos de salud que identifican al sujeto.
 
 Motor desde **e174ea8ee0381f53b4953ac3b43e5db3b5fadce4**: **945 pruebas completas correctas, 300,506s**, .deps/copy-shape-final-suite.log, sesión21341 terminada. Ningún Python modificado después de ese arranque; cambios posteriores solo UI/pruebas/docs. No repetir suite completa sin cambio o preocupación concreta. No hay pruebas ni inferencias en curso.
 
@@ -26,9 +26,11 @@ Lectores reales de capítulos y clínica correctos sobre esa base; revisiones UI
 
 ## Trabajo local listo para publicar
 
-Grupo lateral: NPC consciente o muerto de otra escena se consulta bajo botón «En otra escena»; personaje jugador, pacientes inconscientes/moribundos ycondiciones siguen visibles. Reutiliza plantilla de fila yconsulta de ficha, sin cambiar datos, posiciones, visibilidad servidor oreglas. Popup/consulta porEnter ytacto no genera acciones. Salud de ficha identifica «Este PNJ», «Tu personaje» o«Este personaje» para evitar atribuir muerte delPNJ aljugador; cálculos intactos.
+Teclado de tablero: una sola entradaTab, flechas enfocan casillas sin seleccionar/mover, Intro usa herramienta actual yconTrazarrecorrido prepara pasos; Tab lleva aConfirmar cuando hayruta, Esc cancela yShiftTab regresa al último foco. Movimiento sigue confirmación explícita/servidor. Conserva foco alrepintar, sin robar foco dechat, reinicia punto porcampaña/propietario/escena ydescribe terreno/ficha/PG/salud/turno conetiquetas accesibles. Caché local delista visible porrepintado, sin operaciones remotas nuevas.
 
-Ruta navegador1.6 acuerdo/combate/5pistas/3escenas/regreso/copia/móvil correcta; NPCremoto consultable, estado yubicación conservados. Casos defensivos de render solamente (moribundo/condición) permanecen visibles sin instalar pacientes imposibles enel estado. Clínica navegador correctacontextosaludpropio/corrección/copia/recarga. Capturas pf-route-return-parley-board-mobile yremote-npc-combat-mobile revisadas. Nodecheck/diffcheck correctos;945Python intacto. Publicar yverificar app.js,character-checks.js,tabletop.css. Después continuar revisión acotada del recorrido individual yactualizar informe local, no ampliar reglas.
+Baseline .deps/tabletop-keyboard-baseline.log confirmó400entradasTab. Navegador final correcto: flechas/bordes/ruta0acciones, Tab/ShiftTab, repintado/focochat, ficha/muroetiquetados, confirmación porEnter unúnico movimiento, ratón/puntos/regla/pan/zoom/atajos/permisos/táctil conservados. Openingambospreparados/copia/teclado/móvil correcto. Captura tabletop-keyboard-focus revisada, foco distinto deselección. Fallo intermedio: onfocusin propiedad no enlazaba listener, corregido addEventListener ytabindex antes de focus. Logs de depuración retirados. Nodecheck/diffcheck correctos;945Python intacto.
+
+Consultar fuente W3CAPG enUSABILIDAD; adaptación propia conbotones nativos/grupo, no certificar auditoría conlectores depantalla ni nuevo contrato Roll20. Publicar/verificar app.js,index.html,tabletop.css públicamente yseguir cierre individual. La revisión automática bloqueó unaejecución porcuota hasta15:00; trasnuevaorden yhora local posterior se reintentó porvía normal yfunciona, sin bypass ni bloqueo actual.
 
 ## Qué está terminado en este bloque
 

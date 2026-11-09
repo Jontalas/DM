@@ -27,6 +27,7 @@ const assert=require('node:assert/strict');
    const response=await host.request.post(url+'/api/action',{headers:hostHeaders,data:{id:name,version:row.version,type:'character',character:{name,enemy,owner:enemy?room.me.id:person.id}}});
    assert.equal(response.ok(),true);
   }
+  const terrainState=await saved();assert.equal((await host.request.post(url+'/api/action',{headers:hostHeaders,data:{id:'wall-description',version:terrainState.version,type:'terrain',x:19,y:19,terrain:'wall'}})).ok(),true);
   await guest.addInitScript(value=>localStorage.setItem('cronicas-token',value),guestToken);
   const page=await guest.newPage(),errors=[];let writes=0;
   page.on('pageerror',error=>errors.push(error.message));
@@ -36,6 +37,18 @@ const assert=require('node:assert/strict');
   const cell=(x,y)=>page.locator(`.cell[data-x="${x}"][data-y="${y}"]`);
   const center=async locator=>{const box=await locator.boundingBox();return {x:box.x+box.width/2,y:box.y+box.height/2}};
   const scroll=page.locator('.board-scroll');
+  // One tab stop enters the board; arrows inspect cells without selecting or moving.
+  assert.equal(await page.locator('#grid .cell').evaluateAll(cells=>cells.filter(c=>c.tabIndex===0).length),1);
+  assert.match(await cell(0,0).getAttribute('aria-label'),/Aria, 10 PG/);assert.match(await cell(19,19).getAttribute('aria-label'),/Muro/);
+  await cell(0,0).focus();await page.keyboard.press('ArrowRight');assert.equal(await cell(1,0).evaluate(e=>e===document.activeElement),true);assert.equal(writes,0);
+  await page.keyboard.press('Enter');assert.equal(await page.locator('#boardCharacter').inputValue(),before.state.characters[0].id);
+  await page.keyboard.press('ArrowDown');await page.keyboard.press('Enter');assert.equal(await cell(1,1).evaluate(e=>e===document.activeElement),true);assert.equal(await page.locator('#grid .path').count(),1);
+  await page.keyboard.press('ArrowLeft');await page.keyboard.press('Enter');assert.equal(await cell(0,1).evaluate(e=>e===document.activeElement),true);assert.equal(await page.locator('#grid .path').count(),2);assert.equal(writes,0);assert.equal((await saved()).version,before.version);
+  await scroll.screenshot({path:'.deps/tabletop-keyboard-focus.png'});
+  await page.keyboard.press('Tab');assert.equal(await page.locator('#confirmMove').evaluate(e=>e===document.activeElement),true);await page.keyboard.press('Shift+Tab');assert.equal(await cell(0,1).evaluate(e=>e===document.activeElement),true);assert.equal(writes,0);
+  await page.keyboard.press('Escape');await page.keyboard.press('ArrowUp');await page.keyboard.press('ArrowLeft');await page.keyboard.press('ArrowUp');assert.equal(await cell(0,0).evaluate(e=>e===document.activeElement),true);
+  await page.keyboard.press('Tab');assert.equal(await page.locator('.board-help > summary').evaluate(e=>e===document.activeElement),true);await page.keyboard.press('Shift+Tab');assert.equal(await cell(0,0).evaluate(e=>e===document.activeElement),true);
+  await page.locator('#message').focus();await page.evaluate(()=>renderBoard());assert.equal(await page.locator('#message').evaluate(e=>e===document.activeElement),true);assert.equal(writes,0);
   // Drag prepares a continuous route; Escape cancels it without saving.
   await cell(0,0).dragTo(cell(2,1));
   assert.equal(await page.locator('#grid .path').count(),2);
@@ -98,7 +111,7 @@ const assert=require('node:assert/strict');
   assert.equal(writes,0);assert.equal((await saved()).version,before.version);
   // A confirmed drop route is one action validated by the existing server engine.
   await page.locator('#tool').selectOption('move');await cell(0,0).dragTo(cell(2,1));
-  page.once('dialog',dialog=>dialog.accept());await page.locator('#confirmMove').click();
+  page.once('dialog',dialog=>dialog.accept());await page.locator('#confirmMove').focus();await page.keyboard.press('Enter');
   await page.waitForFunction(()=>document.querySelector('.cell[data-x="2"][data-y="1"] .token')!==null);
   const after=await saved();assert.equal(after.version,before.version+1);assert.equal(writes,1);
   const hero=after.state.characters.find(c=>c.name==='Aria');assert.deepEqual([hero.x,hero.y],[2,1]);

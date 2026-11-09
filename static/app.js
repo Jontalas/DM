@@ -1,5 +1,5 @@
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
-let token=localStorage.getItem('cronicas-token'), model={}, snapshot, snapshotToken, path=[], ruler=[], lastVersion=-1, busy=false, toastTimer;
+let token=localStorage.getItem('cronicas-token'), model={}, snapshot, snapshotToken, path=[], ruler=[], lastVersion=-1, busy=false, toastTimer, gridFocus=[0,0], gridFocusKey;
 const names={reglas:'Reglas básicas',bestiario:'Bestiario',trey:'TREY'};
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const characterIsConscious=c=>!!c&&(c.hp>=0||(c.hp>-c.abilities[2]&&c.stable===true&&c.recoveryState?.conscious===true));
@@ -219,7 +219,19 @@ function render(){const importStatus=$('#copyImportStatus'),access=snapshot.id+'
  $('#bookmarks').innerHTML=s.bookmarks.map(v=>ref(v.book,v.page,v.label)).join('');renderBoard();
 }
 function renderBoard(){if(!snapshot)return;renderAttack();renderAutomation();const s=snapshot.state,board=s.board;const title=s.boardScenes||s.adventureModuleView||s.pfEncounter?s.location:board.active?'Encuentro':'Tu mesa';$('#board .eyebrow').textContent=board.active?'ENCUENTRO':'LA MESA';if($('#board h2').textContent!==title)$('#board h2').textContent=title;$('#turnInfo').textContent=board.active?`Asalto ${board.round} · Turno de ${s.characters.find(c=>c.id===board.order[board.turn].id)?.name} · ${board.order.map(o=>s.characters.find(c=>c.id===o.id)?.name+' '+(o.roll+o.modifier)).join(' → ')}`:'Exploración · sin combate activo';
- let cells='';for(let y=0;y<20;y++)for(let x=0;x<20;x++){const c=boardCharacters(s).find(c=>c.x===x&&c.y===y);cells+=`<button class="cell ${board.terrain[x+','+y]||''} ${path.some(p=>p[0]===x&&p[1]===y)?'path':''} ${ruler.some(p=>p[0]===x&&p[1]===y)?'measured':''} ${c&&board.active&&board.order[board.turn]?.id===c.id?'current-turn':''}" data-token-id="${esc(c?.id||'')}" data-controlled="${!!c&&(snapshot.me.host||c.owner===snapshot.me.id)}" aria-pressed="${!!c&&c.id===$('#boardCharacter').value}" data-x="${x}" data-y="${y}" aria-label="Casilla ${x},${y}${c?' '+esc(c.name):''}">${c?`<span class="token ${c.enemy?'enemy':''}">${esc(c.name.slice(0,2))}</span><span class="token-hp">${c.hp} PG</span>`:''}</button>`}$('#grid').innerHTML=cells;
+ const grid=$('#grid'),focused=document.activeElement?.closest('#grid .cell'),visible=boardCharacters(s),focusKey=snapshot.id+':'+snapshot.me.id+':'+(s.boardScenes?.current||'main');
+ if(gridFocusKey!==focusKey){
+  const selected=visible.find(c=>c.id===$('#boardCharacter').value);gridFocus=[selected?.x??0,selected?.y??0].map(n=>Number.isInteger(n)?Math.max(0,Math.min(19,n)):0);gridFocusKey=focusKey;
+ }else if(focused)gridFocus=[Number(focused.dataset.x),Number(focused.dataset.y)];
+ grid.setAttribute('aria-label','Tablero de '+s.location+'. Flechas para recorrer casillas; Intro utiliza la herramienta elegida.');
+ let cells='';
+ for(let y=0;y<20;y++)for(let x=0;x<20;x++){
+  const c=visible.find(c=>c.x===x&&c.y===y),terrain=board.terrain[x+','+y],current=c&&board.active&&board.order[board.turn]?.id===c.id;
+  const label=`Casilla ${x},${y}${terrain==='wall'?'. Muro':terrain==='difficult'?'. Terreno difícil':''}${c?'. '+c.name+', '+c.hp+' PG'+(characterHealthLabel(c)?', '+characterHealthLabel(c):''):''}${current?'. Turno actual':''}`;
+  cells+=`<button class="cell ${terrain||''} ${path.some(p=>p[0]===x&&p[1]===y)?'path':''} ${ruler.some(p=>p[0]===x&&p[1]===y)?'measured':''} ${current?'current-turn':''}" tabindex="${gridFocus[0]===x&&gridFocus[1]===y?'0':'-1'}" data-token-id="${esc(c?.id||'')}" data-controlled="${!!c&&(snapshot.me.host||c.owner===snapshot.me.id)}" aria-pressed="${!!c&&c.id===$('#boardCharacter').value}" data-x="${x}" data-y="${y}" aria-label="${esc(label)}">${c?`<span class="token ${c.enemy?'enemy':''}">${esc(c.name.slice(0,2))}</span><span class="token-hp">${c.hp} PG</span>`:''}</button>`;
+ }
+ grid.innerHTML=cells;
+ if(focused)grid.querySelector(`.cell[data-x="${gridFocus[0]}"][data-y="${gridFocus[1]}"]`)?.focus({preventScroll:true});
  let c=s.characters.find(c=>c.id===$('#boardCharacter').value),x=c?.x,y=c?.y,diagonal=0,cost=0;for(const [nx,ny] of path){let d=nx!==x&&ny!==y;if(d)diagonal++;cost+=board.terrain[nx+','+ny]==='difficult'?(d?3:2):(d&&diagonal%2===0?2:1);x=nx;y=ny}$('#pathInfo').textContent=path.length?`Recorrido: ${path.map(p=>p.join(',')).join(' → ')} · Coste: ${cost*5} pies (${cost} casillas). Revisión manual de AdO, alcance, visibilidad y consecuencias antes de confirmar.`:'Selecciona una ficha y traza casillas adyacentes.';renderTabletopTools()}
 function openBook(book=$('#book').value,page=Number($('#page').value)){if(!token)return;$('#book').value=book;$('#page').value=page;bookReader.open(book,page)}
 function renderTabletopTools(){
@@ -328,6 +340,17 @@ const npcButton=document.createElement('button');npcButton.type='button';npcButt
 $('#voluntary').onclick=run(async()=>{if(!confirm('Evento voluntario normal: ganas FH iguales al número de escena antes del punto de giro. Solo uno por escena. ¿Confirmar?'))return;await act('voluntary');chooseTab('journal')});
 $('#spend').onclick=()=>{modal(`<h2>Un giro a vuestro favor</h2><form id="spendForm"><label>Beneficio<select name="benefit">${Object.entries({'repetir habilidad':2,'éxito habilidad':4,'acción adicional':2,'éxito combate':4,'evitar muerte':6,'invertir oráculo':6,'reducir excepcional':4,'grado detalle':4,'evento positivo':6,'reducir evento':4,'grado comportamiento':2,'grado capacidad':4,'objeto útil':2,'ayuda':6}).map(([k,v])=>`<option value="${k}">${k} · ${v} FH</option>`).join('')}</select></label><label>Interpretación y alcance<input name="interpretation" required></label><label class="check"><input type="checkbox" name="consent" required> Todo el grupo ha dado su consentimiento.</label><p class="hint">Se descuentan FH y se abre una resolución asistida. Las ventajas de TREY sobre Pathfinder son una adaptación declarada.</p><button class="primary">Registrar gasto</button></form>`);$('#spendForm').onsubmit=run(async e=>{let d=values(e.target);d.consent=!!d.consent;await act('spend',d);$('#modal').close();chooseTab('journal')})};
 $('#startCombat').onclick=run(()=>act('combat',{automateEnemies:$('#autoEnemies').checked}));$('#nextTurn').onclick=run(()=>act('turn'));$('#endCombat').onclick=run(()=>act('endcombat'));$('#expandBoard').onclick=()=>document.body.classList.toggle('expanded');$('#boardCharacter').onchange=()=>{path=[];renderBoard()};
+function rememberGridFocus(cell){
+ if(!cell)return;const previous=$('#grid .cell[tabindex="0"]');
+ if(previous!==cell)previous?.setAttribute('tabindex','-1');cell.tabIndex=0;gridFocus=[Number(cell.dataset.x),Number(cell.dataset.y)];
+}
+$('#grid').addEventListener('focusin',e=>rememberGridFocus(e.target.closest('.cell')));
+$('#grid').onkeydown=e=>{
+ const step={ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,-1],ArrowDown:[0,1]}[e.key],cell=e.target.closest('.cell');
+ if(!step||!cell||e.ctrlKey||e.altKey||e.metaKey||e.shiftKey||$('#modal').open||$('#app').hidden)return;
+ e.preventDefault();const x=Math.max(0,Math.min(19,Number(cell.dataset.x)+step[0])),y=Math.max(0,Math.min(19,Number(cell.dataset.y)+step[1]));
+ const next=$(`#grid .cell[data-x="${x}"][data-y="${y}"]`);rememberGridFocus(next);next?.focus();
+};
 $('#grid').onclick=run(async e=>{const cell=e.target.closest('[data-x]');if(!cell)return;const x=+cell.dataset.x,y=+cell.dataset.y,tool=$('#tool').value;if(tool==='pan')return;if(tool==='measure'){ruler=ruler.length===1?[ruler[0],[x,y]]:[[x,y]];renderBoard();return}if(tool!=='move'){await act('terrain',{x,y,terrain:tool});return}const clicked=boardCharacters(snapshot.state).find(c=>c.x===x&&c.y===y);if(clicked){if(snapshot.me.host||clicked.owner===snapshot.me.id){if($('#boardCharacter').value!==clicked.id||path.length){$('#boardCharacter').value=clicked.id;path=[];renderBoard()}}else{$('#attackTarget').value=clicked.id;renderAttack();toast('Objetivo seleccionado: '+clicked.name)}return}const ch=snapshot.state.characters.find(c=>c.id===$('#boardCharacter').value);if(!ch)throw Error('Crea y selecciona una ficha');let prev=path.length?path[path.length-1]:[ch.x,ch.y];if(Math.max(Math.abs(prev[0]-x),Math.abs(prev[1]-y))!==1)throw Error('Selecciona una casilla adyacente al último punto');path.push([x,y]);renderBoard()});
 $('#clearPath').onclick=()=>{path=[];renderBoard()};$('#confirmMove').onclick=run(async()=>{if(!path.length)throw Error('Traza un recorrido primero');if(!confirm($('#pathInfo').textContent+'\n¿Has revisado las consecuencias conocidas y las reglas pendientes con la mesa?'))return;await act('move',{character:$('#boardCharacter').value,path,acknowledge:true})});
 $('#openPage').onclick=()=>openBook();$('#book').onchange=()=>openBook($('#book').value,1);$('#bookmark').onclick=run(async()=>{const label=prompt('Nombre del marcador',names[$('#book').value]+' · p.'+$('#page').value);if(label)await act('bookmark',{book:$('#book').value,page:+$('#page').value,label})});

@@ -50,6 +50,8 @@ Las filas probadas indican cobertura de **nuestra** implementación frente al co
 
 Revisión propia9nov: creador mantiene cuatro pasos de personalización yofrece camino nombre/estilo→revisión→confirmar. Fichas preparadas se consultan antes de editar; PNJde otra escena sin seguimiento se agrupan localmente ypacientes/jugadores siguen visibles. Son adaptaciones de claridad verificadas con nuestros navegadores, sin observación directa nueva ni filtrado servidor/niebla añadidos.
 
+Teclado de casillas9nov: extensión propia conentradaTab única, flechas defoco, Intro segúnherramienta yconfirmación de movimiento intacta; conserva atajosdocumentados ygestos existentes. Fuente APG yprueba enUSABILIDAD/test_tabletop_browser.cjs. No se atribuye este comportamiento aobservación nueva deRoll20.
+
 ## Adaptaciones primordiales
 
 - El arrastre no altera inmediatamente posiciones ni consume movimiento. Tras confirmar, el servidor valida el recorrido y guarda una acción identificada. Los casos de ataques de oportunidad aún no automatizados requieren la revisión existente; no se ignoran por imitar un gesto.

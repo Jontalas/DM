@@ -136,3 +136,8 @@ La aceptación exige comprobar recorridos nuevos, teclado y móvil: decisiones r
 9nov: PNJ preparado se consulta en ficha compacta, sin formulario por defecto; origen/límites/licencias bajo demanda. Corrección excepcional plegada/confirmada yestado manual visible. Invitado no edita ni tira yrecibe causa; PC encombate explica bloqueo. Consulta0acciones, permisos/corrección real/estado clínico/móvil verificados confixtures.
 
 9nov: personajes de jugador ypacientes siguen visibles; PNJ conscientes/muertos sin condiciones deotraescena quedan bajo consulta local accesibleEnter/Tap. Aventura1.6 completa ycasos render-only de seguimiento correctos, sin mover fichas ocrear eventos. Avisos de salud identifican PNJ/propio/otro, evitando atribuir una muerte alpersonaje equivocado.
+
+
+9nov · tablero con teclado: un punto de entrada porTab, flechas recorren casillas, Intro activa herramienta (conTrazarrecorrido prepara pasos), Tab ofrece confirmar yEsc cancela. El foco se distingue de selección yse conserva alrepintar, sinrobar chat. Etiquetas comunican terreno, ficha, PG, salud yturno condatos públicos existentes. Ninguna flecha mueve personaje ni llama API/IA; movimiento confirmado conserva validación existente. Navegador desktop/táctil correcto, baseline400entradas reducido a1, Enter confirma una sola acción; apertura/ruta/copia/móvil conservadas.
+
+Fuente consultada9nov: [W3C APG · interfaz de teclado](https://www.w3.org/WAI/ARIA/apg/practices/keyboard-interface/). Se tomó el manejo de foco itinerante, separación entre foco yselección ycontinuidad alrecrear contenido. Implementación propia conbotones nativos ygrupo; no se afirma unaauditoría conlectores depantalla ni equivalencia nueva conRoll20.
