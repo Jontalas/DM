@@ -167,3 +167,6 @@ Fuente consultada9nov: [W3C APG · interfaz de teclado](https://www.w3.org/WAI/A
 
 
 9 noviembre: si el encuentro ya ofrece auxilio a guardiana moribunda, guía conduce a sus opciones antes que al tablero genérico. Explica ayudar/esperar sin escoger por jugador; consultar enfoca panel y no dispara botones. Conserva prioridad de envíos, tiradas, tregua y pausas; paciente/personaje inconsciente no se confunden. Baseline y corrección navegador, auxilio posterior y regresiones correctos,0acciones por navegar.
+
+
+9 noviembre: Reglamentos móvil entra ampliado, página primero y herramientas de búsqueda/consulta bajo demanda. Se puede cerrar vista ampliada con estado accesible; cualquier recibo pendiente conserva recuperación visible. IA indisponible deshabilitada con causa y alternativas. Navegador con páginas sintéticas: vista inicial, navegación/caché por sesión/revisión, errores, teclado,0operaciones al desplegar; director y general correctos. Demo local sin credenciales no abre originales remotos, se mantiene aislada y no requiere configurar nada.

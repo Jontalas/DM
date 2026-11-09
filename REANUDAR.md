@@ -12,13 +12,13 @@ Comunicar qué puede hacer el jugador, qué falta y dónde verlo. No usar contad
 
 Siguiente trabajo autorizado:
 
-1. Publicar/verificar guía de auxilio en app.js. Baseline daba Ver el tablero con guardiana moribunda; nueva guía lleva a opciones de ayuda/espera sin decidir ni activar acciones, foco/Enter0acciones. Conserva prioridad de recibos/tiradas/tregua/pausas. Encuentro, pendientes y tregua correctos, Python945 intacto. Registrar verificación pública deec1b308 y mantener informe local.
+1. Publicar/verificar lector móvil en app.js/index.html/tabletop.css: vista ampliada automática, herramientas plegadas, fuentes legibles, estado accesible y recuperador visible si hay recibo. Reader/director/capítulos/general correctos. General actualizado a resumen de ataque (dos expectativas de texto crudo antiguas).945Python intacto. Regenerar/verificar informe local y continuar cierre del recorrido sin ampliar reglas.
 2. Continuar la revisión de primeras decisiones, combate y recuperación del recorrido individual. Resolver fricciones observadas, conservando agencia y reglas; no expandir el alcance para producir más cambios.
 3. Conservar el progreso en estos archivos existentes. No crear un MD por corrección: PRODUCTO para alcance, REANUDAR para continuidad, TRABAJO para detalle, USABILIDAD para criterios/evidencia.
 
 ## Producción y verificación actual
 
-**ec1b30848897c7b45e62160fc4d23226bae684ff**, Render7659618076 success; verificación pública app.js/tabletop.css ejecutada (registrar resultado)., ambas ramas publicadas. Revisión, salud y app.js/index.html/tabletop.css exactos comprobados públicamente. Descriptor Pathfinder **1.15.0**. Incluye navegación del tablero por flechas/unTab.
+**2654acc948d96f36824b9aad7c132851a8a4912f**, Render7659748715 success; revisión/salud/app.js exactos verificados públicamente., ambas ramas publicadas. Revisión, salud y app.js/index.html/tabletop.css exactos comprobados públicamente. Descriptor Pathfinder **1.15.0**. Incluye navegación del tablero por flechas/unTab.
 
 Motor desde **e174ea8ee0381f53b4953ac3b43e5db3b5fadce4**: **945 pruebas completas correctas, 300,506s**, .deps/copy-shape-final-suite.log, sesión21341 terminada. Ningún Python modificado después de ese arranque; cambios posteriores solo UI/pruebas/docs. No repetir suite completa sin cambio o preocupación concreta. No hay pruebas ni inferencias en curso.
 
@@ -39,6 +39,10 @@ adventure-ui.js: diálogo inmediato de carga, identidad del nodo+ámbito de acce
 ## Guía de auxilio local
 
 Si existe formulario de primeros auxilios del encuentro y actor está consciente, guía se centra en ayudar/esperar, sin elegir por el jugador. Enviar pendiente/tiradas/tregua/pausa automática conservan precedencia. Abrir lleva a conversación/encabezado y enfoca div de opciones sin pulsar acción. Baseline aid-guidance-baseline.log: Ver el tablero; final encuentro0acciones y auxilio posterior correctos; pendientes y tregua correctos. Publicar app.js. Ninguna regla ni Python modificados.
+
+## Lector móvil local listo
+
+Abrir Reglamentos en móvil usa vista ampliada existente; búsqueda/IA/índice bajo bookTools nativo. Cerrar vista ampliada y aria-pressed coherentes; cualquier recibo pendiente muestra compositor incluso dentro de vista ampliada. Consulta IA deshabilitada con motivo si director ausente; búsqueda y lectura disponibles. Reader con páginas sintéticas verifica vista inicial/caché/privacidad/errores/recuperación0IA/escrituras, director/capítulos/general correctos. Captura reader-mobile revisada (documento sintético). General necesitó adaptar dos aserciones al ataque plegado ya publicado; final correcto, no fallo del lector. Demo8766 conserva estado y versión; originales remotos no accesibles sin credenciales Firebase, mantener aislamiento, no configurar ni reiniciar. Publicar app.js/index.html/tabletop.css, no releer campañas reales por estos ajustes.
 
 ## Qué está terminado en este bloque
 

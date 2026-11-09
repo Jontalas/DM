@@ -74,7 +74,8 @@ const assert=require('node:assert/strict');
   await b.locator('#attackButton').click();
   await b.waitForFunction(()=>document.querySelector('#attackButton').disabled);
   await b.locator('[data-tab=story]').click();
-  await b.getByText('Aria ataca a Bandido:',{exact:false}).waitFor();
+  await b.locator('.combat-result').filter({hasText:'Aria → Bandido'}).waitFor();
+  const attackAudit=b.locator('.combat-audit').last();await attackAudit.locator('summary').click();await attackAudit.getByText('Aria ataca a Bandido:',{exact:false}).waitFor();await attackAudit.locator('summary').click();
   const state=await b.evaluate(async()=>{
    const token=localStorage.getItem('cronicas-token');
    return (await (await fetch('/api/state',{headers:{Authorization:'Bearer '+token}})).json()).state;
@@ -110,7 +111,7 @@ const assert=require('node:assert/strict');
   await b.locator('[data-quick-die="20"]').click();
   await b.getByText('Tirada rápida d20:',{exact:false}).waitFor();
   await a.reload();await a.locator('#app').waitFor({state:'visible'});
-  await a.locator('[data-tab=story]').click();await a.getByText('Aria ataca a Bandido:',{exact:false}).waitFor();
+  await a.locator('[data-tab=story]').click();await a.locator('.combat-result').filter({hasText:'Aria → Bandido'}).waitFor();
   assert.deepEqual(errors,[]);
   assert.equal(await b.locator('#board').isVisible(),true);
   await b.screenshot({path:'.deps/combat-browser.png',fullPage:true});

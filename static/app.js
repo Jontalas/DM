@@ -100,7 +100,11 @@ async function refresh(force=false){
  snapshot=next;snapshotToken=requestedToken;rememberCampaign();renderSyncStatus();
  if(!force&&!completed&&lastVersion===next.version)return;lastVersion=next.version;render();
 }
-function chooseTab(id,loadDocument=true){if(id==='board'&&window.matchMedia('(min-width:1100px)').matches)id='story';document.body.classList.toggle('board-tab-active',id==='board');$$('.tab').forEach(x=>x.classList.toggle('active',x.id===id));$$('[data-tab]').forEach(x=>x.classList.toggle('active',x.dataset.tab===id));document.body.classList.toggle('reader-wide',id==='books'&&readerExpanded);if(id==='books'&&loadDocument)openBook();}
+function chooseTab(id,loadDocument=true){if(id==='board'&&window.matchMedia('(min-width:1100px)').matches)id='story';if(id==='books'&&window.matchMedia('(max-width:1099px)').matches)readerExpanded=true;document.body.classList.toggle('board-tab-active',id==='board');$$('.tab').forEach(x=>x.classList.toggle('active',x.id===id));$$('[data-tab]').forEach(x=>x.classList.toggle('active',x.dataset.tab===id));renderReaderMode();if(id==='books'&&loadDocument)openBook();}
+function renderReaderMode(){
+ const expanded=readerExpanded&&$('#books').classList.contains('active');
+ document.body.classList.toggle('reader-wide',expanded);$('#expandReader').textContent=expanded?'Cerrar vista ampliada':'Ampliar lectura';$('#expandReader').setAttribute('aria-pressed',String(expanded));
+}
 function ref(book,page,label){return `<button type="button" class="rule-link" data-book="${esc(book)}" data-page="${Number(page)}">${esc(label||names[book]+' · PDF p.'+page)} ↗</button>`}
 function renderSpeakerChoices(){
  if(!snapshot)return;
@@ -124,7 +128,7 @@ function renderComposerAvailability(){
 function renderSubmissionFeedback(){
  if(!snapshot||(snapshot.state.ruleset&&snapshot.state.ruleset!=='pathfinder-1e'))return;
  const saved=JSON.parse(localStorage.getItem('cronicas-pending')||'null'),pending=!!saved,hadModal=$('#modal').open;
- if(pending){renderSyncStatus(true);if(hadModal)$('#modal').close();document.body.classList.remove('reader-wide');readerExpanded=false}
+ if(pending){renderSyncStatus(true);if(hadModal)$('#modal').close();readerExpanded=false;renderReaderMode()}
  renderPlayGuidance(snapshot.state);
  if(pending&&(hadModal||document.activeElement===document.body||['send','confirmMove'].includes(document.activeElement.id)))$('#playGuidanceAction').focus();
 }
@@ -470,7 +474,7 @@ async function loadSystemChoices(){
   $('#systemChoiceHint').textContent=selected.status==='experimental'?'Experimental: recorrido en pruebas, con límites indicados al entrar.':(selected.coverage||[]).join(' · ');
  };label.querySelector('select').onchange();
 }
-async function init(){renderSavedCampaigns();const invite=new URLSearchParams(location.search).get('invite');prepareEntryInvitation(invite);try{model=await api('/api/status');await loadSystemChoices();$('#capabilities').innerHTML=`<p><strong>● Guardado persistente</strong><br>${esc(model.storage)}</p><p>${model.aiConfigured?'● IA configurada: '+esc(model.model):'○ Director de IA sin configurar'}<br>Conexión real a Claude Haiku; sin respuestas prefijadas.</p><p>${Object.entries(model.books).map(([k,n])=>esc(names[k])+': '+n+' páginas indexadas').join('<br>')}</p>`;$('#aiHint').textContent=model.aiConfigured?'El director responderá si activas «Responder con IA». Las tiradas y herramientas funcionan sin IA.':'El director no está disponible en esta mesa. Puedes usar las fichas, los dados y el tablero sin IA.';$('#useAI').disabled=!model.aiConfigured;if(!model.aiConfigured)$('#useAI').checked=false;$('#resume').hidden=!token;if(token&&!invite){let accepted;const pending=JSON.parse(localStorage.getItem('cronicas-pending')||'null');if(pending&&pending.token===token){try{busy=true;accepted=await recoverSubmission(pending)}catch(e){if(e.confirmed)clearSubmission(pending);toast(e.message)}finally{busy=false}}await refresh(true);if(accepted){clearSubmission(accepted);renderSyncStatus();renderComposerAvailability();renderSubmissionFeedback();toast('Envío recuperado')}}}catch(e){toast(e.message)}}
+async function init(){renderSavedCampaigns();const invite=new URLSearchParams(location.search).get('invite');prepareEntryInvitation(invite);try{model=await api('/api/status');await loadSystemChoices();$('#capabilities').innerHTML=`<p><strong>● Guardado persistente</strong><br>${esc(model.storage)}</p><p>${model.aiConfigured?'● IA configurada: '+esc(model.model):'○ Director de IA sin configurar'}<br>Conexión real a Claude Haiku; sin respuestas prefijadas.</p><p>${Object.entries(model.books).map(([k,n])=>esc(names[k])+': '+n+' páginas indexadas').join('<br>')}</p>`;$('#aiHint').textContent=model.aiConfigured?'El director responderá si activas «Responder con IA». Las tiradas y herramientas funcionan sin IA.':'El director no está disponible en esta mesa. Puedes usar las fichas, los dados y el tablero sin IA.';$('#askRule').disabled=!model.aiConfigured;$('#ruleAIHint').textContent=model.aiConfigured?'Consultar a la IA usa el servicio del director. Buscar en el texto y leer páginas no llama a IA.':'El director no está disponible. Puedes buscar en el texto y leer el manual.';$('#useAI').disabled=!model.aiConfigured;if(!model.aiConfigured)$('#useAI').checked=false;$('#resume').hidden=!token;if(token&&!invite){let accepted;const pending=JSON.parse(localStorage.getItem('cronicas-pending')||'null');if(pending&&pending.token===token){try{busy=true;accepted=await recoverSubmission(pending)}catch(e){if(e.confirmed)clearSubmission(pending);toast(e.message)}finally{busy=false}}await refresh(true);if(accepted){clearSubmission(accepted);renderSyncStatus();renderComposerAvailability();renderSubmissionFeedback();toast('Envío recuperado')}}}catch(e){toast(e.message)}}
 const tabletopControls=window.TabletopControls.mount({
  scroller:$('.board-scroll'),grid:$('#grid'),tool:$('#tool'),zoom:$('#zoom'),snapshot:()=>snapshot&&(!snapshot.state.ruleset||snapshot.state.ruleset==='pathfinder-1e')?{...snapshot,state:{...snapshot.state,characters:boardCharacters(snapshot.state)}}:null,
  select:id=>{$('#boardCharacter').value=id;path=[];renderBoard()},
@@ -485,7 +489,7 @@ $('#nextBookPage').onclick=()=>openBook($('#book').value,Number($('#page').value
 $('#readerZoomOut').onclick=()=>bookReader.zoom(-25);
 $('#readerZoomIn').onclick=()=>bookReader.zoom(25);
 $('#readerFit').onclick=()=>bookReader.fit();
-$('#expandReader').onclick=()=>{readerExpanded=!readerExpanded;document.body.classList.toggle('reader-wide',readerExpanded);$('#expandReader').textContent=readerExpanded?'Volver a la mesa':'Ampliar lectura'};
+$('#expandReader').onclick=()=>{readerExpanded=!readerExpanded;renderReaderMode()};
 window.addEventListener('storage',event=>{if(event.key==='cronicas-pending'&&snapshot&&!busy){renderSyncStatus();renderComposerAvailability();renderSubmissionFeedback()}});
 let syncing=false;
 async function syncVisible(){

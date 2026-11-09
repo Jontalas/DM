@@ -20,6 +20,8 @@ Control de tamaño, medido sobre la revisión publicada7516f1c: aproximadamente1
 
 La entrada admite empezar solo con nombre. El creador permite nombre/estilo, revisión y confirmación, con personalización opcional. Las aventuras explican su experiencia y límites antes de comenzar. La mesa tiene un primer ajuste de presentación; conserva una cuadrícula provisional. Las copias incompatibles ya se rechazan antes de sustituir la partida y ofrecen un siguiente paso claro.
 
+Ya hay una primera vista reconocible de la dirección: tablero central con conversación al lado, personaje guiado, resultados comprensibles y recuperación sin perder la acción. Se han comprobado los caminos de acuerdo y combate con tregua, la investigación completa y la salida/reanudación del recorrido actual. En móvil, tablero y lectura dejan espacio a su tarea. La demostración mantiene datos de ejemplo, sin director ni almacenamiento remoto; sus manuales de producción no se abren ahí.
+
 Esto todavía no cierra la primera versión: falta completar la revisión de sus primeras decisiones, presentación de la mesa y errores del recorrido ofrecido. No equivale a mapa ilustrado, campañas abiertas ni nuevas clases o sistemas. El informe local contiene las capturas y sigue siendo el lugar para ver el avance.
 
 ## Experiencia objetivo
