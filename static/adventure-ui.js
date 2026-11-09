@@ -1,4 +1,9 @@
 /* Adventure preparation is an explicit action; rendering and reading stay local. */
+let preparedEncounterCatalog;
+function getPreparedEncounterCatalog(){
+ if(!preparedEncounterCatalog)preparedEncounterCatalog=api('/api/pf-encounters').catch(error=>{preparedEncounterCatalog=null;throw error});
+ return preparedEncounterCatalog;
+}
 function renderAdventure(){
  const s=snapshot.state, host=!!snapshot.me.host, active=!!s.adventure;
  const ready=s.characters.some(c=>!c.enemy&&c.creation&&!c.creation.manualOverride&&c.hp>0&&!c.conditions?.trim());
@@ -6,10 +11,11 @@ function renderAdventure(){
  entry.hidden=active||!s.characters.length;
  entry.innerHTML=active?'':`<div class="card"><div class="eyebrow">LA PRIMERA PÁGINA</div><h3>El mundo espera a tu personaje</h3><p>${host?'Elige una aventura preparada o pide al director que cree una a partir de tu idea. Tú decides cómo actuar.':'El anfitrión puede iniciar la aventura cuando haya un personaje listo.'}</p>${host?`<button id="beginAdventure" class="primary" ${!ready||s.board.active?'disabled':''}>Elegir aventura</button><small>${!ready?'Crea primero un personaje con el asistente.':s.board.active?'Finaliza el combate para comenzar.':!model.aiConfigured?'Puedes jugar una aventura preparada; crear o adaptar una nueva requiere al director.':'El comienzo se guarda para continuar en otra sesión.'}</small>`:''}</div>`;
  if($('#beginAdventure'))$('#beginAdventure').onclick=()=>{
-  modal(`<div class="eyebrow">UN NUEVO COMIENZO</div><h2>¿Qué historia te apetece vivir?</h2><form id="adventureForm"><label>Aventura<select name="source" aria-describedby="adventureSourceHint"><optgroup label="Aventuras preparadas"><option value="example">La carta perdida · investigación breve</option><option value="route">Los senderos del archivo · ruta individual</option></optgroup><optgroup label="Preparar otra historia"><option value="generated">Crear a partir de mi idea · usa IA</option><option value="text">Adaptar un texto breve · usa IA</option><option value="import">Usar una aventura JSON compatible</option></optgroup></select></label><p id="adventureChoiceDescription" role="status" aria-live="polite"></p><label id="premiseField">Premisa<textarea name="premise" required maxlength="2000" rows="4">${esc(s.goal)}</textarea></label><label id="moduleFileField" hidden>Archivo de aventura<input type="file" name="moduleFile" accept=".json,application/json"><small>Una escena cronicas-adventure-1 (64 KiB) o ruta individual cronicas-route-1 (192.000 bytes). Investigaciones tranquilas de Percepción. Usa contenido que tengas derecho a utilizar.</small></label><div id="sourceTextField" hidden><label>Texto de la aventura<textarea name="sourceText" maxlength="12000" rows="6" placeholder="Pega un fragmento de la aventura"></textarea></label><label>Cargar texto desde un archivo<input type="file" name="sourceFile" accept=".txt,.md,text/plain,text/markdown"></label><small>Hasta 12.000 caracteres en UTF-8. Usa contenido que tengas derecho a utilizar. La IA adaptará una sola situación a dos búsquedas de Percepción, sin peligros ni combate; no convierte la aventura completa. El texto se envía al director al comenzar y puede contener secretos. Se conserva la adaptación; guarda tu original aparte.</small></div><p id="adventureModeHint"></p><button class="primary">Preparar y comenzar</button><p id="adventureProgress" role="status" aria-live="polite"></p><small id="adventureSourceHint" role="status" aria-live="polite"></small></form>`);
+  modal(`<div class="eyebrow">UN NUEVO COMIENZO</div><h2>¿Qué historia te apetece vivir?</h2><form id="adventureForm"><label>Aventura<select name="source" aria-describedby="adventureSourceHint"><optgroup label="Aventuras preparadas"><option value="example">La carta perdida · investigación breve</option><option value="route">Los senderos del archivo · ruta individual</option>${$('#beginPreparedEncounter')?'<option value="encounter">El patio del peaje · hablar o combatir · experimental</option>':''}</optgroup><optgroup label="Preparar otra historia"><option value="generated">Crear a partir de mi idea · usa IA</option><option value="text">Adaptar un texto breve · usa IA</option><option value="import">Usar una aventura JSON compatible</option></optgroup></select></label><p id="adventureChoiceDescription" role="status" aria-live="polite"></p><label id="premiseField">Premisa<textarea name="premise" required maxlength="2000" rows="4">${esc(s.goal)}</textarea></label><label id="moduleFileField" hidden>Archivo de aventura<input type="file" name="moduleFile" accept=".json,application/json"><small>Una escena cronicas-adventure-1 (64 KiB) o ruta individual cronicas-route-1 (192.000 bytes). Investigaciones tranquilas de Percepción. Usa contenido que tengas derecho a utilizar.</small></label><div id="sourceTextField" hidden><label>Texto de la aventura<textarea name="sourceText" maxlength="12000" rows="6" placeholder="Pega un fragmento de la aventura"></textarea></label><label>Cargar texto desde un archivo<input type="file" name="sourceFile" accept=".txt,.md,text/plain,text/markdown"></label><small>Hasta 12.000 caracteres en UTF-8. Usa contenido que tengas derecho a utilizar. La IA adaptará una sola situación a dos búsquedas de Percepción, sin peligros ni combate; no convierte la aventura completa. El texto se envía al director al comenzar y puede contener secretos. Se conserva la adaptación; guarda tu original aparte.</small></div><p id="adventureModeHint"></p><button class="primary">Preparar y comenzar</button><p id="adventureProgress" role="status" aria-live="polite"></p><small id="adventureSourceHint" role="status" aria-live="polite"></small></form>`);
   const updateSource=()=>{
    const choice=$('#adventureForm [name=source]').value;
    $('#adventureChoiceDescription').textContent={
+    encounter:'Una guardiana corta el paso. Puedes proponer pasar sin luchar o elegir combatir. Después podrás investigar el patio y seguir sus pistas. Recorrido individual experimental; consulta su cobertura antes de entrar.',
     example:'Lucio ha perdido una carta en una posada. Una investigación tranquila en un único lugar: examina el entorno y decide qué hacer con lo que encuentres. Sin combate ni peligros.',
     route:'Busca un registro antiguo en un archivo. Elige entre salas, investiga y vuelve a lugares ya visitados. Ruta individual tranquila, sin combate ni peligros en los trayectos.',
     generated:'Describe qué te gustaría investigar. El director creará una sola situación tranquila con dos búsquedas de Percepción; todavía no genera una campaña completa ni un encuentro de combate.',
@@ -24,8 +30,9 @@ function renderAdventure(){
    $('#adventureForm [name=moduleFile]').required=choice==='import';
    const needsDirector=['generated','text'].includes(choice);
    $('#adventureForm button').disabled=needsDirector&&!model.aiConfigured;
-   $('#adventureModeHint').textContent=needsDirector?'El director preparará el comienzo sin decidir las acciones de tu personaje.':'Se conserva la presentación original. Las pistas siguen pendientes hasta que decidas investigarlas.';
-   $('#adventureSourceHint').textContent=needsDirector?(model.aiConfigured?'Crear o adaptar el comienzo usa el director de IA.':'El director no está disponible. Elige una aventura preparada.'):'El comienzo ya está escrito: no llama a IA. '+(model.aiConfigured?'Puedes pedir al director que intervenga durante la partida.':'Puedes investigar con las opciones de la escena; el director de IA no está disponible.');
+   $('#adventureForm button').textContent=choice==='encounter'?'Consultar el encuentro':'Preparar y comenzar';
+   $('#adventureModeHint').textContent=choice==='encounter'?'Primero verás la escena y su cobertura. Consultarla no inicia el combate ni cambia las fichas.':needsDirector?'El director preparará el comienzo sin decidir las acciones de tu personaje.':'Se conserva la presentación original. Las pistas siguen pendientes hasta que decidas investigarlas.';
+   $('#adventureSourceHint').textContent=choice==='encounter'?'El encuentro ya está preparado. Consultarlo y entrar no llama a IA.':needsDirector?(model.aiConfigured?'Crear o adaptar el comienzo usa el director de IA.':'El director no está disponible. Elige una aventura preparada.'):'El comienzo ya está escrito: no llama a IA. '+(model.aiConfigured?'Puedes pedir al director que intervenga durante la partida.':'Puedes investigar con las opciones de la escena; el director de IA no está disponible.');
   };
   $('#adventureForm [name=source]').onchange=updateSource;
   $('#adventureForm [name=source]').value='example';
@@ -38,7 +45,12 @@ function renderAdventure(){
    $('#adventureForm [name=sourceText]').value=text;
   });
   $('#adventureForm').onsubmit=run(async e=>{
-   const form=e.target,button=form.querySelector('button');button.disabled=true;
+   const form=e.target;
+   if(form.elements.source.value==='encounter'){
+    const trigger=$('#beginPreparedEncounter');if(!trigger)throw Error('La partida ha cambiado. Vuelve a elegir una aventura disponible.');
+    $('#modal').close();trigger.click();return;
+   }
+   const button=form.querySelector('button');button.disabled=true;
    $('#adventureProgress').textContent=['generated','text'].includes(form.elements.source.value)?'El director está preparando la aventura…':'Abriendo la aventura preparada…';
    try{
     const data={premise:form.elements.premise.value,structured:form.elements.source.value==='generated',worldMemoryContract:'structured-world-memory-1'};
@@ -149,7 +161,7 @@ function renderPreparedPathfinderEncounter(){
  if(s.mode!=='solo'||s.adventure||s.adventureModule||s.adventureRoute||s.board.active||s.characters.length!==1||own.length!==1)return;
  entry.insertAdjacentHTML('beforeend','<section class="card"><h3>Un encuentro preparado</h3><p>Habla o combate para conseguir el paso. Después puedes investigar el patio y seguir las pistas. El juego prepara las fichas y calcula las reglas cubiertas.</p><button id="beginPreparedEncounter">Consultar El patio del peaje</button></section>');
  $('#beginPreparedEncounter').onclick=run(async()=>{
-  const key=token+':'+snapshot.id,{encounters}=await api('/api/pf-encounters'),definition=encounters[0];
+  const key=token+':'+snapshot.id,{encounters}=await getPreparedEncounterCatalog(),definition=encounters[0];
   if(token+':'+snapshot.id!==key)throw Error('La campaña ha cambiado; vuelve a abrir el encuentro.');
   const scopeHint=definition.restScope?'Recorrido experimental: tras resolver el encuentro puedes investigar o elegir una noche de descanso si no hay heridas o efectos pendientes de seguimiento. La cobertura real se explica al elegir.':'Encuentro básico experimental. Consulta la cobertura del recorrido antes de empezar.';
   modal(`<div class="eyebrow">ESCENA ORIGINAL · PATHFINDER 1E</div><h2>${esc(definition.title)}</h2><p>${esc(definition.description)}</p><p>Al entrar se prepara la guardiana. Después eliges si hablar o combatir.</p><p class="notice">${esc(scopeHint)}</p><form id="pfEncounterEntry"><button class="primary">Entrar con ${esc(own[0].name)}</button></form>${preparedEncounterHelp(definition,own[0])}`);

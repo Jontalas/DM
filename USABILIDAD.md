@@ -128,3 +128,5 @@ La aceptación exige comprobar recorridos nuevos, teclado y móvil: decisiones r
 9nov: camino corto nombre/estilo→revisión→confirmar, con personalización completa opcional. Enter desde el nombre sigue ese camino. Concepto sin cifras prematuras, fórmulas del resumen plegadas; mismos cálculos y opciones. Teclado/móvil/dos aventuras/personalización verificados,0acciones antes deconfirmar y0API por consultar cálculos.
 
 9nov: ficha recién creada enlaza con Elegir aventura para anfitrión autorizado, oVolver a la mesa para otros casos; invitado conserva su papel. Navegación local0API porEnter, sin necesidad de descubrir lacruz de cierre; cierre clásico conservado. Puntos de golpe yclase de armadura con abreviaturas explícitas enresumen.
+
+9nov: elegir aventura reúne investigaciones ypatio individual experimental disponible. Consultar explica alcance ylleva a revisión antesdeentrar, sin cambio de partida. Catálogo público leído solo primera consulta porpágina, caché sinprivados niFirebase; reabrir sin descarga. Navegador verifica acceso nuevo/atajo ydecisiones originales.
