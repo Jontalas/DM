@@ -56,7 +56,7 @@ const path=require('node:path'),assert=require('node:assert/strict');
     assert.match(await page.locator('#party [data-character]').nth(1).textContent(),/Moribundo/);
     const attackRecord=await page.evaluate(()=>snapshot.state.messages.find(m=>m.combat)),beforeAudit=actions.length;
     assert.match(await page.locator('.combat-result').last().textContent(),/Impacto|Crítico confirmado/);assert.ok((await page.locator('.combat-result').last().textContent()).includes(attackRecord.combat.targetHp+' PG (moribundo)'));
-    const audit=page.locator('.combat-audit').last();assert.equal(await audit.evaluate(e=>e.open),false);await audit.locator('summary').focus();await page.keyboard.press('Enter');assert.equal(await audit.locator('p').textContent(),attackRecord.text);await page.keyboard.press('Enter');assert.equal(actions.length,beforeAudit);
+    const audit=page.locator('.combat-audit').last();assert.equal(await audit.evaluate(e=>e.open),false);assert.equal(await audit.locator('.rule-link').first().isVisible(),false);await audit.locator('summary').focus();await page.keyboard.press('Enter');assert.equal(await audit.locator('p').textContent(),attackRecord.text);assert.equal(await audit.locator('.rule-link').count(),attackRecord.refs.length);assert.ok(await audit.locator('.rule-link').first().evaluate(e=>e.getBoundingClientRect().height>=44));await page.keyboard.press('Enter');assert.equal(actions.length,beforeAudit);
     assert.equal(await page.evaluate(()=>snapshot.state.board.active),true);
     await page.locator('#nextTurn').click();await page.waitForFunction(()=>snapshot.state.characters[1].hp< -5&&!snapshot.state.board.spent[snapshot.state.characters[0].id]?.standard);
     const beforeAid=await page.evaluate(()=>snapshot.state.characters[1].hp);

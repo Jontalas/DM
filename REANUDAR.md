@@ -12,13 +12,13 @@ Comunicar qué puede hacer el jugador, qué falta y dónde verlo. No usar contad
 
 Siguiente trabajo autorizado:
 
-1. Publicar/verificar adventure-ui.js: estado de carga/error/reintento y protección de respuesta tardía al consultar encuentro. Baseline sustituyó biblioteca por consulta cancelada; ahora503/reintento Enter/cancelación/caché y aventura1.15 completa correctos, encuentro independiente correcto. Checkpoint66db221 solo en feature; siguiente publicación incluirá pruebas/docs. No hace falta releer campañas reales ni repetir Python945.
+1. Publicar/verificar fuentes del ataque agrupadas en el detalle de cálculo, app.js/tabletop.css. Mantiene referencias originales con44px/13px al abrir. Encuentro/declaración correctos; captura attack-result-mobile actualizada, revisar y regenerar informe. Catálogo cancelable ya publicado/verificadod88671b; Escape y recorridos completos1.10/1.15 correctos. Seguir cierre del recorrido individual sin ampliar alcance.
 2. Continuar la revisión de primeras decisiones, combate y recuperación del recorrido individual. Resolver fricciones observadas, conservando agencia y reglas; no expandir el alcance para producir más cambios.
 3. Conservar el progreso en estos archivos existentes. No crear un MD por corrección: PRODUCTO para alcance, REANUDAR para continuidad, TRABAJO para detalle, USABILIDAD para criterios/evidencia.
 
 ## Producción y verificación actual
 
-**306734b74593913900ff2765ad7a9a83c781f36e**, revisión/salud/app.js/tabletop.css exactos verificados públicamente; Render7659243154 success., ambas ramas publicadas. Revisión, salud y app.js/index.html/tabletop.css exactos comprobados públicamente. Descriptor Pathfinder **1.15.0**. Incluye navegación del tablero por flechas/unTab.
+**d88671bd737b64acb5462d9649a9189f7b6156a3**, Render7659467673 success, revisión/salud/adventure-ui.js exactos verificados públicamente., ambas ramas publicadas. Revisión, salud y app.js/index.html/tabletop.css exactos comprobados públicamente. Descriptor Pathfinder **1.15.0**. Incluye navegación del tablero por flechas/unTab.
 
 Motor desde **e174ea8ee0381f53b4953ac3b43e5db3b5fadce4**: **945 pruebas completas correctas, 300,506s**, .deps/copy-shape-final-suite.log, sesión21341 terminada. Ningún Python modificado después de ese arranque; cambios posteriores solo UI/pruebas/docs. No repetir suite completa sin cambio o preocupación concreta. No hay pruebas ni inferencias en curso.
 
@@ -34,7 +34,7 @@ El informe local incorpora capturas reales de combate/resultados (fixtures1.6 y 
 
 ## Ajuste local de consulta del encuentro
 
-adventure-ui.js: diálogo inmediato de carga, identidad del nodo+ámbito de acceso, descarta respuesta si se cerró/cambió ventana; conserva caché pública. Error persistente con Volver a intentar explícito, sin reintento automático. Reproducción real de GETretenido que sustituía biblioteca en encounter-catalog-late-baseline.log; corrección integrada1.15 con503/reintento Enter/cancelar/biblioteca/reabrir cacheado (2GET contando fallo provocado), aventura de ambos caminos hasta completar/regresar/salir/retomar correcta. Encuentro independiente también correcto. Solo código UI, pruebas/docs existentes;0IAreal/estado remoto y Python945 intacto. Publicar adventure-ui.js y verificar recurso exacto con verificador público.
+adventure-ui.js: diálogo inmediato de carga, identidad del nodo+ámbito de acceso, descarta respuesta si se cerró/cambió ventana; conserva caché pública. Error persistente con Volver a intentar explícito, sin reintento automático. Reproducción real de GETretenido que sustituía biblioteca en encounter-catalog-late-baseline.log; corrección integrada1.15 con503/reintento Enter/cancelar/biblioteca/reabrir cacheado (2GET contando fallo provocado), aventura de ambos caminos hasta completar/regresar/salir/retomar correcta. Encuentro independiente también correcto. Solo código UI, pruebas/docs existentes;0IAreal/estado remoto y Python945 intacto. Publicado/verificadod88671b. Ajuste posterior local de fuentes del ataque dentro de su detalle, botones44px; publicar app.js/tabletop.css.
 
 ## Qué está terminado en este bloque
 

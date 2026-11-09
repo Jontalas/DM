@@ -37,6 +37,7 @@ fieldset{border:1px solid var(--line);border-radius:6px;margin:16px 0;padding:16
 #composer>#playGuidance button{min-height:44px}
 .combat-result{font-size:14px;line-height:1.65}
 .combat-result strong{font-size:15px}
+.combat-audit .rule-link{min-height:44px;font-size:13px;line-height:1.4;padding:8px 10px;margin:4px 4px 0 0}
 .pill.pending{color:var(--gold);background:#342e21}
 .check-request p{margin:6px 0}
 .sheet-checks{border-bottom:1px solid var(--line);padding-bottom:14px;margin-bottom:20px}

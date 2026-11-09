@@ -161,3 +161,6 @@ Fuente consultada9nov: [W3C APG · interfaz de teclado](https://www.w3.org/WAI/A
 
 
 9 noviembre: consulta del encuentro explica carga y permite cerrar. Respuesta tardía no reabre consulta ni sustituye otra ventana. Error de catálogo permanece en diálogo con motivo, partida intacta y reintento explícito accesible por Enter; reapertura correcta reutiliza caché. Prueba503/cancelación/cambio a biblioteca/reapertura y aventura1.15 completa correcta, sin IA ni escrituras por consultar.
+
+
+9 noviembre: resumen de ataque reúne tirada, cálculo y fuentes en un único detalle. Los enlaces originales se conservan, con altura44px y letra13px al abrir; causa y consecuencias siguen visibles. Consulta Enter/tacto0acciones, declaración/encuentro/copias correctos. Catálogo cancelable también comprobado por Escape en versiones1.10 y1.15.
