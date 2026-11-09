@@ -35,6 +35,7 @@ const path=require('node:path'),assert=require('node:assert/strict');
   await b.locator('[data-check-key=str]').click();await b.waitForFunction(()=>snapshot.state.messages.at(-1).check?.total===16);
   await b.locator('#closeModal').click();await b.reload();await b.locator('.party-person').click();await b.locator('.sheet-checks').waitFor();
   assert.equal(await b.locator('#advancedCharacterEdit').count(),1);
+  assert.equal(await b.locator('#advancedCharacterEdit').isHidden(),true);const beforeCorrection=actions.length;await b.locator('#characterAdvanced > summary').focus();await b.keyboard.press('Enter');assert.equal(await b.locator('#advancedCharacterEdit').isVisible(),true);assert.match(await b.locator('#advancedEditHint').textContent(),/excepción/);await b.keyboard.press('Enter');assert.equal(actions.length,beforeCorrection);
   assert.equal(await b.locator('[data-sheet-check]').isVisible(),false);
   await b.setViewportSize({width:390,height:900});
   assert.equal(await b.locator('#modal').evaluate(el=>el.scrollWidth<=el.clientWidth),true);
@@ -60,6 +61,7 @@ const path=require('node:path'),assert=require('node:assert/strict');
   await b.locator('#attackButton').click();await b.waitForFunction(()=>snapshot.state.board.spent[snapshot.state.characters[0].id]?.standard);
   state=await (await guest.request.get(url+'/api/state',{headers:{Authorization:'Bearer '+player}})).json();
   assert.ok(state.state.characters[1].hp<state.state.characters[1].maxHp);
+  const beforeCombatSheet=actions.length;await b.locator('#party [data-character="'+character.id+'"]').click();await b.locator('#characterAdvanced > summary').focus();await b.keyboard.press('Enter');assert.equal(await b.locator('#advancedCharacterEdit').isDisabled(),true);assert.match(await b.locator('#advancedEditHint').textContent(),/durante el combate/);assert.equal(actions.length,beforeCombatSheet);
   assert.deepEqual(errors,[]);console.log('OK: zero manual statistics; guided creation, local invalid-budget preview, one save, sheet roll, reload, mobile wizard, generated adversary and real engine attack. No AI.');
  }finally{if(browser)await browser.close();fixture.kill()}
 })().catch(e=>{console.error(e);process.exitCode=1});

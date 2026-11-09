@@ -93,7 +93,7 @@ const path=require('node:path'),assert=require('node:assert/strict');
    assert.equal(await page.evaluate(()=>snapshot.state.characters[0].hp),-1);
    assert.equal(await page.evaluate(()=>snapshot.state.characters[0].recoveryState.conscious),true);
    assert.deepEqual(await page.evaluate(()=>snapshot.state.characters[0].recoveryState.lastCheck),recovered.characters[0].recoveryState.lastCheck);
-   await page.locator('#party [data-character]').first().click();await page.locator('#advancedCharacterEdit').click();
+   await page.locator('#party [data-character]').first().click();await page.locator('#characterAdvanced > summary').click();await page.locator('#advancedCharacterEdit').click();
    await page.locator('#characterForm [name=notes]').fill('Una nota posterior sin cambiar la salud');
    version=await page.evaluate(()=>snapshot.version);await page.locator('#characterForm button.primary').click();
    await page.waitForFunction(v=>snapshot.version>v&&!busy,version);

@@ -132,3 +132,5 @@ La aceptación exige comprobar recorridos nuevos, teclado y móvil: decisiones r
 9nov: elegir aventura reúne investigaciones ypatio individual experimental disponible. Consultar explica alcance ylleva a revisión antesdeentrar, sin cambio de partida. Catálogo público leído solo primera consulta porpágina, caché sinprivados niFirebase; reabrir sin descarga. Navegador verifica acceso nuevo/atajo ydecisiones originales.
 
 9nov: preparación sin cabecera de escena aún «Por decidir», atajo de patio compacto sin explicación repetida ypresupuesto de acciones solo encombate. Escenas reales conservan título; apertura/móvil/grupo sin patio cooperativo ygestos de mesa verificados.
+
+9nov: PNJ preparado se consulta en ficha compacta, sin formulario por defecto; origen/límites/licencias bajo demanda. Corrección excepcional plegada/confirmada yestado manual visible. Invitado no edita ni tira yrecibe causa; PC encombate explica bloqueo. Consulta0acciones, permisos/corrección real/estado clínico/móvil verificados confixtures.
