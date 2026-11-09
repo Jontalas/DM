@@ -12,7 +12,7 @@ Comunicar qué puede hacer el jugador, qué falta y dónde verlo. No usar contad
 
 Siguiente trabajo autorizado:
 
-1. Resumen de ataque306734b ya publicado/verificado. Guardar la prueba integrada actual1.15 y docs en rama de trabajo; no hace falta despliegue por pruebas/docs solamente. Entrada desde selector ya verificada en1.15. Revisar ahora espera/cancelación/error al consultar catálogo del encuentro: el clic cierra selector y carga asíncronamente, evitar que un resultado tardío reabra otro diálogo. Conservar alcance. Demo/informe local actualizados y verificados, no reiniciar demo.
+1. Publicar/verificar adventure-ui.js: estado de carga/error/reintento y protección de respuesta tardía al consultar encuentro. Baseline sustituyó biblioteca por consulta cancelada; ahora503/reintento Enter/cancelación/caché y aventura1.15 completa correctos, encuentro independiente correcto. Checkpoint66db221 solo en feature; siguiente publicación incluirá pruebas/docs. No hace falta releer campañas reales ni repetir Python945.
 2. Continuar la revisión de primeras decisiones, combate y recuperación del recorrido individual. Resolver fricciones observadas, conservando agencia y reglas; no expandir el alcance para producir más cambios.
 3. Conservar el progreso en estos archivos existentes. No crear un MD por corrección: PRODUCTO para alcance, REANUDAR para continuidad, TRABAJO para detalle, USABILIDAD para criterios/evidencia.
 
@@ -31,6 +31,10 @@ Producción306734b incluye: recuperación visible sin recarga, recibo confirmado
 Prueba integrada nueva en test_common_guard_browser.cjs: TEST_PF_ENCOUNTER_VERSION=1.15.0 (default conserva1.10). Perfil nuevo, creador legal, entrada pacífica desde Elegir aventura/selector y combate desde atajo; camino pacífico y camino combate hasta0PG/tregua/descanso, copia/recarga, cinco pistas en tres lugares, objetivo resuelto, regreso, salir/retomar/recargar con ficha y reloj intactos; PNJ permanece patio, sin ediciones manuales ni proveedor. current-release-journey-complete.log correcto. Fallos iniciales del guion corregidos (campo de pistas por visitedScenes, checkpoint después del regreso); no eran defectos de producto. Al probar selector se añadió espera explícita al formulario que llega tras catálogo asíncrono. Guardar en Git/prueba/docs, siguiente cambio de aplicación llevará este checkpoint a main; evitar build de Render solo por documentación.
 
 El informe local incorpora capturas reales de combate/resultados (fixtures1.6 y declaración original7PG, no confundir variante1.15 ni IA real). check_progress_page correcto tras adaptar selector a varias imágenes; check_current_preview correcto, demo preservada. No hay bloqueo imprescindible del usuario.
+
+## Ajuste local de consulta del encuentro
+
+adventure-ui.js: diálogo inmediato de carga, identidad del nodo+ámbito de acceso, descarta respuesta si se cerró/cambió ventana; conserva caché pública. Error persistente con Volver a intentar explícito, sin reintento automático. Reproducción real de GETretenido que sustituía biblioteca en encounter-catalog-late-baseline.log; corrección integrada1.15 con503/reintento Enter/cancelar/biblioteca/reabrir cacheado (2GET contando fallo provocado), aventura de ambos caminos hasta completar/regresar/salir/retomar correcta. Encuentro independiente también correcto. Solo código UI, pruebas/docs existentes;0IAreal/estado remoto y Python945 intacto. Publicar adventure-ui.js y verificar recurso exacto con verificador público.
 
 ## Qué está terminado en este bloque
 

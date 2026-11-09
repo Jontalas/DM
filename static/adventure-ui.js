@@ -161,8 +161,17 @@ function renderPreparedPathfinderEncounter(){
  if(s.mode!=='solo'||s.adventure||s.adventureModule||s.adventureRoute||s.board.active||s.characters.length!==1||own.length!==1)return;
  entry.insertAdjacentHTML('beforeend','<div class="prepared-encounter-shortcut"><p>O consulta el encuentro individual experimental:</p><button id="beginPreparedEncounter">Consultar El patio del peaje</button></div>');
  $('#beginPreparedEncounter').onclick=run(async()=>{
-  const key=token+':'+snapshot.id,{encounters}=await getPreparedEncounterCatalog(),definition=encounters[0];
-  if(token+':'+snapshot.id!==key)throw Error('La campaña ha cambiado; vuelve a abrir el encuentro.');
+  const key=token+':'+snapshot.id;
+  modal('<div id="pfEncounterLoading"><h2>Consultar el encuentro</h2><p role="status">Cargando la escena y sus opciones… Puedes cerrar esta ventana para volver a la mesa.</p></div>');
+  const waiting=$('#pfEncounterLoading'),stillWaiting=()=>token+':'+snapshot.id===key&&$('#modal').open&&waiting.isConnected;
+  let catalog;
+  try{catalog=await getPreparedEncounterCatalog()}catch(error){
+   if(!stillWaiting())return;
+   waiting.innerHTML=`<h2>No se pudo cargar el encuentro</h2><p role="alert">${esc(error.message)}</p><p>Tu partida sigue como estaba. Puedes volver a intentarlo o cerrar esta ventana.</p><button type="button" id="pfEncounterRetry">Volver a intentar</button>`;
+   $('#pfEncounterRetry').onclick=()=>$('#beginPreparedEncounter')?.click();return;
+  }
+  if(!stillWaiting())return;
+  const definition=catalog.encounters[0];
   const scopeHint=definition.restScope?'Recorrido experimental: tras resolver el encuentro puedes investigar o elegir una noche de descanso si no hay heridas o efectos pendientes de seguimiento. La cobertura real se explica al elegir.':'Encuentro básico experimental. Consulta la cobertura del recorrido antes de empezar.';
   modal(`<div class="eyebrow">ESCENA ORIGINAL · PATHFINDER 1E</div><h2>${esc(definition.title)}</h2><p>${esc(definition.description)}</p><p>Al entrar se prepara la guardiana. Después eliges si hablar o combatir.</p><p class="notice">${esc(scopeHint)}</p><form id="pfEncounterEntry"><button class="primary">Entrar con ${esc(own[0].name)}</button></form>${preparedEncounterHelp(definition,own[0])}`);
   $('#pfEncounterEntry').onsubmit=run(async()=>{

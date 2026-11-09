@@ -158,3 +158,6 @@ Fuente consultada9nov: [W3C APG · interfaz de teclado](https://www.w3.org/WAI/A
 
 
 9 noviembre: ataque muestra primero resultado, daño y PG/estado registrados, con cálculo original íntegro plegado. Consecuencia del atacante incapacitado queda visible (-1PG moribundo), incluso tras recuperación posterior: no se reescribe el historial desde ficha actual. Encuentro, declaración, copia/recarga y recuperación compartida correctos; consulta con Enter sin acciones. Datos sin estructura suficiente mantienen texto original.
+
+
+9 noviembre: consulta del encuentro explica carga y permite cerrar. Respuesta tardía no reabre consulta ni sustituye otra ventana. Error de catálogo permanece en diálogo con motivo, partida intacta y reintento explícito accesible por Enter; reapertura correcta reutiliza caché. Prueba503/cancelación/cambio a biblioteca/reapertura y aventura1.15 completa correcta, sin IA ni escrituras por consultar.
