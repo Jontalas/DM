@@ -10,6 +10,41 @@ import board_scenes
 
 def initial_state(config):
     return {'scene':1,'location':config.get('location','Por decidir'),'worldTime':'Comienzo de la aventura','goal':config.get('goal','Definir el objetivo con el grupo'),'objectives':[], 'allies':[],'enemies':[],'facts':{},'unknowns':[],'consequences':[], 'tokens':0,'threshold':int(config.get('threshold',15)),'turned':False,'voluntaryScene':0,'characters':[],'messages':[],'pending':[],'bookmarks':[],'private':{},'secrets':'','notes':'','tone':config.get('tone','Fantasía aventurera'),'limits':config.get('limits',''),'difficulty':config.get('difficulty','Estándar; encuentros pendientes de validar'),'mode':config.get('mode','solo'),'agreement':'Adaptación multijugador: reserva común de FH; el anfitrión registra el consentimiento unánime antes del gasto. Decisiones colectivas por consenso. No se alteran estadísticas para equilibrar encuentros.','criteria':['TREY p.25: el ejemplo d8=7 dice objetivo en curso; la tabla p.23 indica objetivo final. Se usa la tabla.','TREY p.25: ejemplo d6=5 dice retrasado; se aplica demorado, tabla p.23.','Pathfinder 1e: las ventajas de FH son una adaptación TREY; requieren adjudicación manual y registro.'],'board':{'active':False,'round':1,'turn':0,'order':[],'terrain':{},'spent':{}},'oracleLog':[]}
+def validate_copy_structure(state):
+    """Check client-required shapes, without recalculating or repairing manual sheets."""
+    for key,example in initial_state({}).items():
+        if key not in state:raise ValueError('Falta '+key)
+        if type(state[key]) is not type(example):raise ValueError('La copia contiene un campo inválido: '+key)
+    for key in ('objectives','allies','enemies','unknowns','criteria'):
+        if any(not isinstance(v,str) for v in state[key]):raise ValueError('La copia contiene una lista de texto inválida: '+key)
+    identities=set()
+    for c in state['characters']:
+        if not isinstance(c,dict):raise ValueError('La copia contiene una ficha inválida')
+        if not isinstance(c.get('id'),str) or not c['id'] or c['id'] in identities:raise ValueError('La copia contiene identidades de ficha inválidas o duplicadas')
+        identities.add(c['id'])
+        for key in ('name','owner','race','class','damage'):
+            if not isinstance(c.get(key),str):raise ValueError('La copia contiene un campo de ficha inválido: '+key)
+        for key in ('level','hp','maxHp','ac','speed','initiative','attack','x','y'):
+            if type(c.get(key)) is not int:raise ValueError('La copia contiene un número de ficha inválido: '+key)
+        for key,count in (('abilities',6),('saves',3)):
+            if not isinstance(c.get(key),list) or len(c[key])!=count or any(type(v) is not int for v in c[key]):raise ValueError('La copia contiene valores de ficha inválidos: '+key)
+        for key in ('skills','feats','equipment','spells','resources','conditions','load','notes'):
+            if key in c and not isinstance(c[key],str):raise ValueError('La copia contiene texto de ficha inválido: '+key)
+    board=state['board']
+    if (type(board.get('active')) is not bool or type(board.get('round')) is not int or board['round']<1
+        or type(board.get('turn')) is not int or board['turn']<0 or not isinstance(board.get('order'),list)
+        or not isinstance(board.get('spent'),dict)):raise ValueError('La copia contiene un tablero inválido')
+    board_scenes._terrain(board.get('terrain'))
+    for entry in board['order']:
+        if (not isinstance(entry,dict) or not isinstance(entry.get('id'),str)
+            or type(entry.get('roll')) is not int or type(entry.get('modifier')) is not int):raise ValueError('La copia contiene una iniciativa inválida')
+    if board['active'] and (not board['order'] or board['turn']>=len(board['order'])
+        or any(v['id'] not in identities for v in board['order'])
+        or len({v['id'] for v in board['order']})!=len(board['order'])):raise ValueError('La copia contiene un turno sin participante válido')
+    for message in state['messages']:
+        if not isinstance(message,dict) or any(not isinstance(message.get(k),str) for k in ('kind','speaker','text')):raise ValueError('La copia contiene un mensaje inválido')
+    if any(not isinstance(p,dict) for p in state['pending']):raise ValueError('La copia contiene una resolución pendiente inválida')
+
 def log(s,text,kind='rules',**extra):
     s['messages'].append({'kind':kind,'speaker':'Motor de reglas' if kind=='rules' else 'Mesa','text':text,'time':time.time(),**extra})
 def host(me):

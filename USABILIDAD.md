@@ -116,3 +116,5 @@ La aceptación exige comprobar recorridos nuevos, teclado y móvil: decisiones r
 9nov: mesa vacía muestra primero crear personaje; oculta elección prematura y cabecera de escena no iniciada, elimina instrucciones vacías repetidas. Tras crear aparece elegir aventura. Notas y herramientas conservadas; apertura, asistente e invitado verificados sin IA real.
 
 9nov: ayuda de búsquedas plegada, accesible con teclado/tacto, explica tres métodos y su esfuerzo sin elegir por el jugador ni prometer éxito. Contraste visual CorePDF87/101. Apertura/cierre0API verificado; referencia original disponible bajo demanda.
+
+9nov: copia incompatible muestra aviso persistente de conservación y siguiente paso útil, con motivo técnico plegado. JSON ilegible se explica localmente0acciones. Errores de red conservan su recuperación de envío sin prometer estado no comprobado. Biblioteca browser: teclado/escritorio/móvil/rechazo/copia válida/recarga correctos con datos desechables.

@@ -61,6 +61,25 @@ const path=require('node:path'),assert=require('node:assert/strict');
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
   assert.ok(await page.locator('#modal').evaluate(el=>el.scrollWidth<=el.clientWidth));
   await page.screenshot({path:'.deps/library-mobile.png',fullPage:true});
+  await page.locator('#closeModal').click();page.on('dialog',dialog=>dialog.accept());
+  const activeToken=await page.evaluate(()=>token),copyResponse=await context.request.post(url+'/api/export',{headers:{Authorization:'Bearer '+activeToken},data:{}});
+  assert.equal(copyResponse.ok(),true);const validCopy=await copyResponse.json();
+  await page.locator('[data-tab=journal]').click();
+  for(const text of ['{bad json','null','[]']){
+   const count=actions.length,version=await page.evaluate(()=>snapshot.version);await page.locator('#importFile').setInputFiles({name:'unreadable.json',mimeType:'application/json',buffer:Buffer.from(text)});await page.waitForFunction(()=>!document.querySelector('#copyImportStatus').hidden&&document.querySelector('#copyImportStatus').textContent.includes('No se puede leer'));
+   assert.equal(actions.length,count);assert.equal(await page.evaluate(()=>snapshot.version),version);assert.equal(await page.locator('#importFile').inputValue(),'');
+  }
+  for(const width of [390,1440]){
+   await page.setViewportSize({width,height:900});const before=await page.evaluate(()=>({version:snapshot.version,state:structuredClone(snapshot.state)}));
+   const damaged=structuredClone(validCopy);damaged.state.board.terrain=[];
+   const [rejected]=await Promise.all([page.waitForResponse(r=>r.url().endsWith('/api/action')&&r.status()===400),page.locator('#importFile').setInputFiles({name:'damaged-copy.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(damaged))})]);
+   assert.equal(rejected.status(),400);await page.waitForFunction(()=>!busy);assert.match(await page.locator('#toast').textContent(),/partida sigue/);assert.match(await page.locator('#copyImportStatus').textContent(),/Prueba con otra copia/);
+   const count=actions.length;await page.locator('#copyImportStatus summary').focus();await page.keyboard.press('Enter');assert.match(await page.locator('#copyImportStatus details').textContent(),/Terreno/);await page.keyboard.press('Enter');assert.equal(actions.length,count);
+   assert.deepEqual(await page.evaluate(()=>({version:snapshot.version,state:structuredClone(snapshot.state)})),before);assert.equal(await page.evaluate(()=>localStorage.getItem('cronicas-pending')),null);
+   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));if(width===390)await page.screenshot({path:'.deps/copy-rejected-current-game-mobile.png'});
+  }
+  const version=await page.evaluate(()=>snapshot.version);await page.locator('#importFile').setInputFiles({name:'valid-copy.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(validCopy))});await page.waitForFunction(v=>snapshot.version>v&&!busy,version);
+  await page.reload();await page.waitForFunction(()=>snapshot&&!busy);assert.equal(await page.evaluate(()=>snapshot.state.characters[0].hp),originalCharacter.maxHp-5);
   assert.deepEqual(errors,[]);
   console.log('OK: remembers multiple campaigns, copies initial choices with server calculation, original progression preserved, no AI, access backup, pending-action switch protection, reload and mobile.');
  }finally{if(browser)await browser.close();fixture.kill()}

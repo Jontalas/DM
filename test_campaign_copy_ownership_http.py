@@ -8,6 +8,7 @@ import server
 from firebase_store import FirestoreStore,Unavailable
 from test_character_builder import choices
 import test_group_director_concurrency_http as transport
+import test_pf_night_rest_http as empty_transport
 
 
 class CampaignCopyOwnershipHTTPTests(unittest.TestCase):
@@ -85,3 +86,42 @@ class CampaignCopyOwnershipHTTPTests(unittest.TestCase):
         before=self.state(other);exported=self.request('/api/export',{},other)
         with self.assertRaises(urllib.error.HTTPError) as error:self.action('restore_campaign_copy',other,campaign=exported)
         self.assertEqual(error.exception.code,400);error.exception.close();self.assertEqual(self.state(other),before)
+
+
+class CampaignCopyShapeHTTPTests(unittest.TestCase):
+    setUpClass=classmethod(empty_transport.NightRestHTTPTests.setUpClass.__func__)
+    tearDownClass=classmethod(empty_transport.NightRestHTTPTests.tearDownClass.__func__)
+    setUp=empty_transport.NightRestHTTPTests.setUp
+    request=empty_transport.NightRestHTTPTests.request
+    state=empty_transport.NightRestHTTPTests.state
+    action=empty_transport.NightRestHTTPTests.action
+
+    def test_malformed_copies_leave_the_current_campaign_unchanged(self):
+        changes={
+            'terrain-list':lambda s:s['board'].update(terrain=[]),
+            'duplicate-character':lambda s:s['characters'].append(copy.deepcopy(s['characters'][0])),
+            'missing-abilities':lambda s:s['characters'][0].update(abilities=[]),
+            'non-text-name':lambda s:s['characters'][0].update(name=None),
+            'non-text-message':lambda s:s.update(messages=[{'kind':'rules','speaker':'Motor','text':{}}]),
+            'objectives-object':lambda s:s.update(objectives={}),
+            'empty-active-order':lambda s:s['board'].update(active=True,order=[]),
+            'unknown-active-character':lambda s:s['board'].update(active=True,order=[{'id':'missing','roll':10,'modifier':0}]),
+            'nonfinite-extension':lambda s:s.update(futureExtension={'value':float('nan')}),
+        }
+        for route in ('import','restore_campaign_copy'):
+            for label,mutate in changes.items():
+                with self.subTest(route=route,shape=label):
+                    self.token=self.request('/api/create',{'player':'Ana'})['token']
+                    self.action('create_character',choices=choices())
+                    exported=self.request('/api/export',{});mutate(exported['state']);before=self.state()
+                    with (patch.object(server,'ai_reply',side_effect=AssertionError('Copy called provider')),
+                          patch('game_randomness.draw',side_effect=AssertionError('Copy rolled dice'))):
+                        with self.assertRaises(urllib.error.HTTPError) as error:self.action(route,campaign=exported)
+                    self.assertEqual(error.exception.code,400);error.exception.close();self.assertEqual(self.state(),before)
+
+    def test_legacy_manual_sheet_and_optional_fields_remain_importable(self):
+        self.action('character',character={'name':'Ficha manual','abilities':[10]*6,'maxHp':8,'hp':8})
+        exported=self.request('/api/export',{});exported.pop('sourceCampaignId',None)
+        exported['state'].pop('directorNotes',None);exported['state'].pop('directorMemory',None)
+        original=copy.deepcopy(exported['state']['characters']);self.action('import',campaign=exported)
+        self.assertEqual(self.state()['state']['characters'],original)

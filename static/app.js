@@ -325,11 +325,19 @@ $('#searchForm').onsubmit=run(()=>find($('#searchQuery').value));$('#indexBtn').
 $('#exportBtn').onclick=run(async()=>{const data=await api('/api/export',{});let url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));let a=document.createElement('a');a.href=url;a.download='cronica-'+snapshot.id+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)});
 $('#importFile').onchange=run(async e=>{
  const file=e.target.files[0];if(!file)return;
- const campaign=JSON.parse(await file.text()),sameCampaign=(!snapshot.state.ruleset||snapshot.state.ruleset==='pathfinder-1e')&&campaign.sourceCampaignId===snapshot.id;
+ const status=$('#copyImportStatus');status.hidden=true;
+ let campaign;
+ try{campaign=JSON.parse(await file.text());if(!campaign||Array.isArray(campaign)||campaign.format!=='cronicas-1')throw Error('Formato incompatible')}
+ catch{status.textContent='No se puede leer esta copia. Tu partida sigue como estaba. Elige una copia de campaña exportada desde la aplicación.';status.hidden=false;e.target.value='';throw Error('No se puede leer la copia. Elige otro archivo.')}
+ const sameCampaign=(!snapshot.state.ruleset||snapshot.state.ruleset==='pathfinder-1e')&&campaign.sourceCampaignId===snapshot.id;
  const ownership=sameCampaign?'Los personajes conservarán a sus propietarios si siguen en esta sala; los demás se asignarán al anfitrión.':'Los personajes se asignarán al anfitrión que importa.';
  const pendingGoal=campaign.state?.chapterGoalProposal?' El objetivo de grupo todavía pendiente deberá elegirse de nuevo.':'';
  if(!confirm('La copia sustituirá el estado de esta sala. '+ownership+pendingGoal+' Exporta antes si deseas conservar el estado actual.'))return;
- await act(sameCampaign?'restore_campaign_copy':'import',{campaign});toast('Copia recuperada');
+ try{await act(sameCampaign?'restore_campaign_copy':'import',{campaign});status.textContent='Copia recuperada. Puedes continuar con tu partida.';status.hidden=false;toast('Copia recuperada')}
+ catch(error){
+  if(error.status===400){status.innerHTML='<p>La copia no es compatible. Tu partida sigue como estaba. Prueba con otra copia.</p><details><summary>Ver el motivo</summary><p>'+esc(error.message)+'</p></details>';status.hidden=false;throw Error('Copia rechazada. Tu partida sigue como estaba.')}
+  throw error;
+ }finally{e.target.value=''}
 });
 async function loadSystemChoices(){
  const {systems}=await api('/api/systems');if(systems.length<2)return;

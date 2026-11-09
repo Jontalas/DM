@@ -6,7 +6,7 @@ import time
 from pathlib import Path
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
-from engine import apply_action, initial_state
+from engine import apply_action, initial_state, validate_copy_structure
 from firebase_store import BOOKS, FirestoreStore, Conflict, Unavailable
 from claude_dm import ai_reply, model_name
 import adventure
@@ -214,17 +214,20 @@ def execute_action(body,me):
         if body['type'] in ('import','restore_campaign_copy'):
             if not me['host']:raise PermissionError('Solo el anfitrión importa')
             data=body['campaign']
-            if data.get('format')!='cronicas-1':raise ValueError('Formato incompatible')
+            if not isinstance(data,dict) or data.get('format')!='cronicas-1':raise ValueError('Formato incompatible')
             preserve_owners=body['type']=='restore_campaign_copy'
             if preserve_owners and (state['ruleset']!='pathfinder-1e' or data.get('sourceCampaignId')!=cid):
                 raise ValueError('Esta restauración conserva propietarios solo en la misma campaña de Pathfinder; usa la importación para trasladar otra copia')
-            incoming=data['state'];rulesets.identify(incoming)
+            incoming=data['state']
+            if not isinstance(incoming,dict):raise ValueError('La copia no contiene un estado válido')
+            try:json.dumps(incoming,allow_nan=False)
+            except ValueError:raise ValueError('La copia contiene un número no finito; la partida anterior se conserva')
+            rulesets.identify(incoming)
             if incoming['ruleset']!=state['ruleset']:raise ValueError('Recupera la copia en una campaña del mismo sistema; no se convierten sus reglas')
             state=incoming
             if selected is not None:state=selected.import_campaign(state,me)
             else:
-                for key in initial_state({}):
-                    if key not in state:raise ValueError('Falta '+key)
+                validate_copy_structure(state)
                 # Editable copies never authorize a pending decision by another owner.
                 state.pop(adventure_goals.FIELD,None)
                 import npc_catalog
