@@ -38,7 +38,7 @@ const path=require('node:path'),assert=require('node:assert/strict');
   await guest.reload();await guest.waitForFunction(()=>snapshot?.state.messages.some(m=>m.text==='Mi decisión sigue pendiente.')&&!busy);
   assert.doesNotMatch(JSON.stringify(await guest.evaluate(()=>snapshot)),/PRIVATE-ANA-NOTE/);
   await guest.setViewportSize({width:390,height:1000});await guest.locator('[data-tab=story]').tap();assert.ok(await guest.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
-  await host.locator('#beginAdventure').click();await host.locator('#adventureForm [name=source]').selectOption('example');await host.locator('#adventureForm button').click();await host.waitForFunction(()=>snapshot?.state.adventureModuleView&&!busy);
+  await host.locator('#beginAdventure').click();assert.equal(await host.locator('#adventureForm option[value=encounter]').count(),0);await host.locator('#adventureForm [name=source]').selectOption('example');await host.locator('#adventureForm button').click();await host.waitForFunction(()=>snapshot?.state.adventureModuleView&&!busy);
   assert.deepEqual(await host.locator('#investigationForm [name=character] option').evaluateAll(items=>items.map(e=>e.value)),[hostId]);
   await guest.reload();await guest.waitForFunction(()=>snapshot?.state.adventureModuleView&&!busy);
   assert.deepEqual(await guest.locator('#investigationForm [name=character] option').evaluateAll(items=>items.map(e=>e.value)),[guestId]);

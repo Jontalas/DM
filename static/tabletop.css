@@ -123,7 +123,7 @@ body.reader-wide #composer{display:none}
 .entry-back{display:none;font-size:14px;margin-top:20px}
 body.joining-campaign .welcome-grid{grid-template-columns:minmax(0,1fr);max-width:620px;margin:auto}
 body.joining-campaign .entry-back{display:block}
-body.character-setup #story>.chapter{display:none}
+body.preparing-adventure #story>.chapter{display:none}
 @media(max-width:680px){#welcome h1{font-size:34px}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
 
@@ -162,6 +162,8 @@ body.character-setup #story>.chapter{display:none}
 #investigationPanel{margin-top:16px;padding:18px}
 #investigationPanel>.eyebrow{font-size:11px}
 #investigationPanel>h3{margin-top:8px}
+.prepared-encounter-shortcut{padding:0 4px 16px}
+.prepared-encounter-shortcut p{color:var(--muted);font-size:13px;margin:0 0 8px}
 .acting-character{font-size:13px;color:var(--muted);margin:0 0 8px}
 #investigationForm .toolbar{gap:6px;margin:12px 0}
 #investigationForm .toolbar button{padding:8px 10px;min-height:44px}

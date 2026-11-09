@@ -197,7 +197,7 @@ function render(){const importStatus=$('#copyImportStatus'),access=snapshot.id+'
  const area=$('#story'), near=area.scrollHeight-area.scrollTop-area.clientHeight<150;
  $('#messages').innerHTML=s.messages.map(messageEntry).join('');
  if(!available.length)$('#messages').insertAdjacentHTML('afterbegin','<div class="card"><div class="eyebrow">PASO 1 · TU PERSONAJE</div><h3>¿Quién vivirá esta aventura?</h3><p>Elige un estilo y un nombre. El creador calcula tu ficha; después podrás elegir la aventura.</p><button class="primary" data-create-hero>Crear mi personaje</button></div>');
- document.body.classList.toggle('character-setup',!s.characters.length&&!s.messages.length&&!s.adventure&&!s.board.active);document.body.classList.toggle('adventure-active',!!(s.adventure||s.pfEncounter));renderAdventure();renderChecks();renderPlayGuidance(s);if(near)area.scrollTop=area.scrollHeight;
+ document.body.classList.toggle('preparing-adventure',!s.adventure&&!s.pfEncounter&&!s.board.active&&s.location==='Por decidir');document.body.classList.toggle('adventure-active',!!(s.adventure||s.pfEncounter));renderAdventure();renderChecks();renderPlayGuidance(s);if(near)area.scrollTop=area.scrollHeight;
  renderJournalOverview(s);
  const jf=$('#journalForm');for(const key of ['location','worldTime','goal','notes','secrets','directorNotes','objectives','allies','enemies','unknowns']){const el=jf.elements[key];if(document.activeElement!==el)el.value=Array.isArray(s[key])?s[key].join('\n'):s[key]||'';el.disabled=!me.host}
  $$('.host-only').forEach(x=>x.hidden=!me.host);$('#inviteBtn').hidden=!me.host;$('#exportBtn').disabled=!me.host;
@@ -214,6 +214,7 @@ function renderBoard(){if(!snapshot)return;renderAttack();renderAutomation();con
 function openBook(book=$('#book').value,page=Number($('#page').value)){if(!token)return;$('#book').value=book;$('#page').value=page;bookReader.open(book,page)}
 function renderTabletopTools(){
  const board=snapshot.state.board,selected=$('#boardCharacter').value,spent=board.spent[selected]||{};
+ $('#actionBudget').hidden=!board.active;
  const moving=snapshot.state.characters.find(c=>c.id===selected),incapacitated=moving?.hp<=0&&characterIsConscious(moving);
  $('#actionBudget').textContent=board.active?(incapacitated?`Incapacitado · ${spent.standard||spent.move?'Acción usada':'Elige una acción estándar o de movimiento'} · Hasta ${characterMovementCells(moving)} casillas completas por movimiento`:`Estándar: ${spent.standard?'gastada':'disponible'} · Movimiento: ${spent.move?'gastado':'disponible'}`):'Exploración';
  const measuring=$('#tool').value==='measure';

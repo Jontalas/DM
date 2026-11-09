@@ -130,3 +130,5 @@ La aceptación exige comprobar recorridos nuevos, teclado y móvil: decisiones r
 9nov: ficha recién creada enlaza con Elegir aventura para anfitrión autorizado, oVolver a la mesa para otros casos; invitado conserva su papel. Navegación local0API porEnter, sin necesidad de descubrir lacruz de cierre; cierre clásico conservado. Puntos de golpe yclase de armadura con abreviaturas explícitas enresumen.
 
 9nov: elegir aventura reúne investigaciones ypatio individual experimental disponible. Consultar explica alcance ylleva a revisión antesdeentrar, sin cambio de partida. Catálogo público leído solo primera consulta porpágina, caché sinprivados niFirebase; reabrir sin descarga. Navegador verifica acceso nuevo/atajo ydecisiones originales.
+
+9nov: preparación sin cabecera de escena aún «Por decidir», atajo de patio compacto sin explicación repetida ypresupuesto de acciones solo encombate. Escenas reales conservan título; apertura/móvil/grupo sin patio cooperativo ygestos de mesa verificados.

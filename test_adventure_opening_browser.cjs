@@ -23,6 +23,7 @@ const path=require('node:path'),assert=require('node:assert/strict');
    await page.locator('#creatorFinish').click();await page.locator('.sheet-checks').waitFor();const followRequests=apiRequests.length;
    if(source==='example'){assert.equal(await page.locator('#creatorContinue').textContent(),'Elegir aventura');await page.locator('#creatorContinue').focus();await page.keyboard.press('Enter');assert.equal(apiRequests.length,followRequests)}else await page.locator('#closeModal').click();
    assert.equal(await page.evaluate(()=>model.aiConfigured),false);assert.equal(await page.locator('#beginAdventure').isEnabled(),true);
+   if(source==='route'){await page.setViewportSize({width:390,height:900});assert.equal(await page.locator('#story>.chapter').isVisible(),false);await page.locator('#beginAdventure').scrollIntoViewIfNeeded();await page.screenshot({path:'.deps/ready-to-choose-adventure-mobile.png'});await page.setViewportSize({width:1440,height:960})}
    const count=actions.length;if(source!=='example'){await page.locator('#beginAdventure').focus();await page.keyboard.press('Enter')}
    assert.equal(await page.locator('#adventureForm [name=source]').inputValue(),'example');assert.equal(actions.length,count);
    assert.match(await page.locator('#adventureChoiceDescription').textContent(),/Lucio/);assert.doesNotMatch(await page.locator('#adventureChoiceDescription').textContent(),/forro/);

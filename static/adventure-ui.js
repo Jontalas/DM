@@ -159,7 +159,7 @@ function renderPreparedPathfinderEncounter(){
   return;
  }
  if(s.mode!=='solo'||s.adventure||s.adventureModule||s.adventureRoute||s.board.active||s.characters.length!==1||own.length!==1)return;
- entry.insertAdjacentHTML('beforeend','<section class="card"><h3>Un encuentro preparado</h3><p>Habla o combate para conseguir el paso. Después puedes investigar el patio y seguir las pistas. El juego prepara las fichas y calcula las reglas cubiertas.</p><button id="beginPreparedEncounter">Consultar El patio del peaje</button></section>');
+ entry.insertAdjacentHTML('beforeend','<div class="prepared-encounter-shortcut"><p>O consulta el encuentro individual experimental:</p><button id="beginPreparedEncounter">Consultar El patio del peaje</button></div>');
  $('#beginPreparedEncounter').onclick=run(async()=>{
   const key=token+':'+snapshot.id,{encounters}=await getPreparedEncounterCatalog(),definition=encounters[0];
   if(token+':'+snapshot.id!==key)throw Error('La campaña ha cambiado; vuelve a abrir el encuentro.');
