@@ -1,5 +1,9 @@
 # Continuidad del desarrollo autónomo
 
+9nov:38de56a1690643d534d250af224537b386263a8e publicado, Render7652898426 success; lector capítulos exactSHA0POST/IA correcto.945motor intacto.
+
+Camino corto de creador: nombre/estilo → Revisar mi personaje → confirmar. Personalizar conserva secuencia completa;Enter desde nombre también va al resumen, sin guardar antes. Estadísticas ocultas solo en concepto, disponibles enrevisión; desglose de fórmulas plegado enresumen, conayuda teclado0API. No cambia presets, presupuesto, cálculos, opciones legales ni datos de creación. Creatorcustomizado yopeningambospreparados correctos; opening pruebaEnter desde nombre ybotón,0acciones antesdeconfirmar, ayuda0API yrevisiónmóvil. Un intento deguion confundió summaryexterior/interior, selectorcorregido >summary y luego correcto. Captura creator-quick-review-mobile revisada. Publicar yverificar recursos/release sin repetir lecturas de campañas para UI sola: prueba funcional nueva es local; lectores reales de motor ya correctos.
+
 9nov: ce5ec12bc049bf77d5294fac636812214c93b57f publicado Render7652848606 success; lector capítulos exactSHA0POST/IA correcto, demo8766 conservada porlector0POST yreporte local teclado/móvil0API correctos. Base945 sin cambios.
 
 Teclado creador: apertura enfoca nombre; elegir estilo conserva foco en ese botón; cambiar paso enfoca sección con nombre accesible/paso de4 yTab pasa al primer campo. No se vuelve al cierre del diálogo al reconstruir contenido. Sin cambios de reglas/draft/estado ni operaciones remotas. Navegador creator comprueba foco porEnter/Tab además de creación/adversario/validación/móvil correctos. Publicar junto con documentación, verificar ycontinuar cierre individual. Informe local incluye captura de concepto real de prueba desechable; no reiniciar demo ni invitación.

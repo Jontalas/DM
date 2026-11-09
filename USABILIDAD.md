@@ -124,3 +124,5 @@ La aceptación exige comprobar recorridos nuevos, teclado y móvil: decisiones r
 9nov: creador identifica el estilo elegido por texto yaria-pressed además de color; las herramientas de adversario/ficha manual quedan bajo avanzadas. No modifica opciones legales ni cálculos. Teclado/móvil/invitado/creación adversario/manual yrecorrido preparado correctos,0IAreal.
 
 9nov: asistente conserva foco al elegir estilo yorienta el foco al nuevo paso; nombre al abrir, sección con nombre accesible al cambiar yTab al primer campo. Comprobado porEnter/Tab ysin acciones de partida.
+
+9nov: camino corto nombre/estilo→revisión→confirmar, con personalización completa opcional. Enter desde el nombre sigue ese camino. Concepto sin cifras prematuras, fórmulas del resumen plegadas; mismos cálculos y opciones. Teclado/móvil/dos aventuras/personalización verificados,0acciones antes deconfirmar y0API por consultar cálculos.
