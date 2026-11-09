@@ -9,7 +9,7 @@ const path=require('node:path'),assert=require('node:assert/strict');
   const url=await new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(Error('Fixture timeout')),15000);createInterface({input:fixture.stdout}).once('line',line=>{clearTimeout(timer);resolve(line)});fixture.once('exit',()=>reject(Error('Fixture exited')))});
   browser=await chromium.launch({headless:true,executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe'});
   for(const choice of ['parley','combat']){
-   const context=await browser.newContext({acceptDownloads:true}),page=await context.newPage(),actions=[],errors=[];
+   const context=await browser.newContext({acceptDownloads:true,hasTouch:true}),page=await context.newPage(),actions=[],errors=[];
    page.on('dialog',d=>d.accept());page.on('pageerror',e=>errors.push(e.message));
    page.on('request',r=>{if(r.url().endsWith('/api/action'))actions.push(r.postDataJSON())});
    await page.goto(url);await page.locator('#createForm [name=player]').fill('Ana');
@@ -83,9 +83,16 @@ const path=require('node:path'),assert=require('node:assert/strict');
     assert.equal(await page.locator('[data-route-exit]').count(),0);
    }
    assert.deepEqual(final.characters.map(c=>c.hp),before.characters.map(c=>c.hp));assert.equal(final.characters[1].sceneId,'patio');
+   assert.equal(await page.locator('#party [data-character="'+final.characters[1].id+'"]').count(),0);const beforeConsult=actions.length;await page.locator('#otherSceneCharacters').focus();await page.keyboard.press('Enter');
    const npcRow=page.locator(`.party-person[data-character="${final.characters[1].id}"]`);
    if(choice==='combat')assert.match(await npcRow.textContent(),/Ha muerto/);
    else assert.doesNotMatch(await npcRow.textContent(),/Ha muerto|Inconsciente|Moribundo/);
+   await npcRow.focus();await page.keyboard.press('Enter');await page.locator('#npcSheetSource').waitFor();await page.locator('#closeModal').click();assert.equal(actions.length,beforeConsult);
+   // Render-only defensive cases: never install impossible remote patients in campaign state.
+   for(const health of [{hp:-1,stable:false,recoveryState:null,conditions:''},{hp:1,conditions:'Requiere seguimiento'}]){
+    await page.evaluate(({id,health})=>renderParty({...snapshot.state,characters:snapshot.state.characters.map(c=>c.id===id?{...c,...health}:c)}),{id:final.characters[1].id,health});assert.equal(await page.locator('#party [data-character="'+final.characters[1].id+'"]').isVisible(),true);
+   }
+   await page.evaluate(()=>renderParty(snapshot.state));assert.equal(actions.length,beforeConsult);
    assert.equal(final.worldTime,before.worldTime);assert.deepEqual(final.pfEncounter,before.pfEncounter);
    const count=actions.length;
    if(returning)await page.locator('[data-tab=journal]').click();
@@ -107,6 +114,7 @@ const path=require('node:path'),assert=require('node:assert/strict');
    assert.match(await page.locator('#board h2').textContent(),/Almacén/);assert.equal(await page.locator('#grid .token').count(),1);
    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
    await page.screenshot({path:'.deps/pf-route-'+(returning?'return-':'')+choice+'-board-mobile.png',fullPage:true});
+   const beforeMobileConsult=actions.length;await page.locator('#otherSceneCharacters').tap();await page.locator('#modalContent [data-character="'+final.characters[1].id+'"]').tap();await page.locator('#npcSheetSource').waitFor();if(choice==='combat'){assert.match(await page.locator('.sheet-checks .notice').textContent(),/Este PNJ ha muerto/);assert.doesNotMatch(await page.locator('.sheet-checks .notice').textContent(),/Tu personaje/)}assert.ok(await page.locator('#modal').evaluate(e=>e.scrollWidth<=e.clientWidth));await page.screenshot({path:'.deps/remote-npc-'+choice+'-mobile.png'});await page.locator('#closeModal').tap();assert.equal(actions.length,beforeMobileConsult);
    await page.locator('[data-tab=journal]').click();await page.locator('.visited-scene-notes > summary').click();
    await page.screenshot({path:'.deps/pf-route-'+(returning?'return-':'')+choice+'-journal-mobile.png',fullPage:true});
    assert.ok(!actions.some(a=>['manual','character','create_npc','start_adventure'].includes(a.type)));

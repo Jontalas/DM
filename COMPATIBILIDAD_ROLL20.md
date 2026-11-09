@@ -48,6 +48,8 @@ Las filas probadas indican cobertura de **nuestra** implementación frente al co
 | KEY-02 | Acceso por teclado a chat, diario y dados | C, J y D; doble C enfoca el chat. D abre nuestro panel de dados, no una ventana idéntica. Q es un acceso propio a medición; no implementa todas las secuencias Q de referencia | Navegador: paneles, foco e integridad del texto |
 | TOUCH-01 | Experiencia adaptable de mesa | Arrastre táctil de fichas controladas y mano para desplazar. Compatibilidad probada en Chromium emulando táctil; no en todos los dispositivos | Navegador: vista móvil y previsualización sin guardado |
 
+Revisión propia9nov: creador mantiene cuatro pasos de personalización yofrece camino nombre/estilo→revisión→confirmar. Fichas preparadas se consultan antes de editar; PNJde otra escena sin seguimiento se agrupan localmente ypacientes/jugadores siguen visibles. Son adaptaciones de claridad verificadas con nuestros navegadores, sin observación directa nueva ni filtrado servidor/niebla añadidos.
+
 ## Adaptaciones primordiales
 
 - El arrastre no altera inmediatamente posiciones ni consume movimiento. Tras confirmar, el servidor valida el recorrido y guarda una acción identificada. Los casos de ataques de oportunidad aún no automatizados requieren la revisión existente; no se ignoran por imitar un gesto.

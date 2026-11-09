@@ -134,3 +134,5 @@ La aceptación exige comprobar recorridos nuevos, teclado y móvil: decisiones r
 9nov: preparación sin cabecera de escena aún «Por decidir», atajo de patio compacto sin explicación repetida ypresupuesto de acciones solo encombate. Escenas reales conservan título; apertura/móvil/grupo sin patio cooperativo ygestos de mesa verificados.
 
 9nov: PNJ preparado se consulta en ficha compacta, sin formulario por defecto; origen/límites/licencias bajo demanda. Corrección excepcional plegada/confirmada yestado manual visible. Invitado no edita ni tira yrecibe causa; PC encombate explica bloqueo. Consulta0acciones, permisos/corrección real/estado clínico/móvil verificados confixtures.
+
+9nov: personajes de jugador ypacientes siguen visibles; PNJ conscientes/muertos sin condiciones deotraescena quedan bajo consulta local accesibleEnter/Tap. Aventura1.6 completa ycasos render-only de seguimiento correctos, sin mover fichas ocrear eventos. Avisos de salud identifican PNJ/propio/otro, evitando atribuir una muerte alpersonaje equivocado.

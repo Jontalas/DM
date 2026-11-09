@@ -45,6 +45,7 @@ fieldset{border:1px solid var(--line);border-radius:6px;margin:16px 0;padding:16
 #modalContent>.eyebrow:first-child{padding-right:36px}
 #characterAdvanced>summary,#npcSheetSource>summary{min-height:44px;align-content:center}
 #npcSheetSource .rule-link{min-height:44px;font-size:13px}
+#otherSceneCharacters{min-height:44px;min-width:140px;font-size:12px;align-self:start}
 .creator-stats>div{padding:12px;background:#202c2c;border-radius:5px}
 .creator-stats strong{display:block;font-size:22px;color:var(--gold)}
 .creator-abilities,.creator-choices{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}

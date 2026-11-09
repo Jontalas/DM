@@ -12,13 +12,13 @@ Comunicar qué puede hacer el jugador, qué falta y dónde verlo. No usar contad
 
 Siguiente trabajo autorizado:
 
-1. Publicar/verificar la ficha de consulta de PNJ yla corrección manual plegada (bloque local descrito abajo); mantener el informe local con capturas reales rotuladas.
+1. Publicar/verificar la consulta de personajes de otra escena yel aviso de salud inequívoco (bloque local abajo); mantener el informe local con capturas reales rotuladas.
 2. Continuar la revisión de primeras decisiones, combate y recuperación del recorrido individual. Resolver fricciones observadas, conservando agencia y reglas; no expandir el alcance para producir más cambios.
 3. Conservar el progreso en estos archivos existentes. No crear un MD por corrección: PRODUCTO para alcance, REANUDAR para continuidad, TRABAJO para detalle, USABILIDAD para criterios/evidencia.
 
 ## Producción y verificación actual
 
-**1c783e5dc229ed18918ca49e66c79293176fabd3**, Render **7653299618 success**, ambas ramas publicadas. Incluye 8bcb2af, que no tuvo despliegue individual. Revisión, salud y adventure-ui.js/app.js/tabletop.css idénticos al commit comprobados públicamente. Descriptor Pathfinder **1.15.0**.
+**00b3ae640983628c6fa173ffd6cd1273e1b03fdb**, Render **7653618090 success**, ambas ramas publicadas. Revisión, salud y character-creator.js/character-checks.js/tabletop.css exactos comprobados públicamente. Descriptor Pathfinder **1.15.0**. Incluye fichas de consulta ycontinuidad consolidada.
 
 Motor desde **e174ea8ee0381f53b4953ac3b43e5db3b5fadce4**: **945 pruebas completas correctas, 300,506s**, .deps/copy-shape-final-suite.log, sesión21341 terminada. Ningún Python modificado después de ese arranque; cambios posteriores solo UI/pruebas/docs. No repetir suite completa sin cambio o preocupación concreta. No hay pruebas ni inferencias en curso.
 
@@ -26,9 +26,9 @@ Lectores reales de capítulos y clínica correctos sobre esa base; revisiones UI
 
 ## Trabajo local listo para publicar
 
-Ficha de personaje: corrección manual bajo demanda, con causa de bloqueo y siguiente paso. PNJ preparado abre ficha de consulta compartiendo presentación, sin formulario editable por defecto; origen/capacidades pendientes/fuentes ylicencias bajo demanda con botones táctiles. Corrección del anfitrión explícita yconfirmada; manualOverride visible, sin presentar valores corregidos como reproducción automática. Invitado puede consultar, no editar ni tirar, con explicación. Sin cálculos, reglas, datos oservidor nuevos.
+Grupo lateral: NPC consciente o muerto de otra escena se consulta bajo botón «En otra escena»; personaje jugador, pacientes inconscientes/moribundos ycondiciones siguen visibles. Reutiliza plantilla de fila yconsulta de ficha, sin cambiar datos, posiciones, visibilidad servidor oreglas. Popup/consulta porEnter ytacto no genera acciones. Salud de ficha identifica «Este PNJ», «Tu personaje» o«Este personaje» para evitar atribuir muerte delPNJ aljugador; cálculos intactos.
 
-Navegadores npc_preparation (origen, nombre escapado,0acciones de consulta, confirmación, cambio real7→6, propietario director, aviso manual, invitado y móvil), creator (ayuda0acciones ybloqueo explícito encombate) ypf_recovery (edición excepcional posterior/estado/copia/recarga/móvil) correctos. Captura npc-preparation-mobile revisada. Nodecheck/diffcheck correctos. Cambios JS/CSS yguiones existentes; base945 intacta. Publicar ycomprobar character-creator.js,character-checks.js,tabletop.css con verificador público. Después seguir revisión acotada del recorrido individual, no ampliar reglas.
+Ruta navegador1.6 acuerdo/combate/5pistas/3escenas/regreso/copia/móvil correcta; NPCremoto consultable, estado yubicación conservados. Casos defensivos de render solamente (moribundo/condición) permanecen visibles sin instalar pacientes imposibles enel estado. Clínica navegador correctacontextosaludpropio/corrección/copia/recarga. Capturas pf-route-return-parley-board-mobile yremote-npc-combat-mobile revisadas. Nodecheck/diffcheck correctos;945Python intacto. Publicar yverificar app.js,character-checks.js,tabletop.css. Después continuar revisión acotada del recorrido individual yactualizar informe local, no ampliar reglas.
 
 ## Qué está terminado en este bloque
 
@@ -36,6 +36,7 @@ Navegadores npc_preparation (origen, nombre escapado,0acciones de consulta, conf
 - Personaje: nombre/estilo → revisión → confirmar, personalización completa opcional. Estilo elegido con texto/aria-pressed; herramientas de adversario/manual bajo avanzadas. Foco de teclado conservado. Fórmulas bajo demanda. Ficha recién creada enlaza con elegir aventura para anfitrión autorizado o volver a mesa para los demás.
 - Elección: ejemplos preparados primero, descripciones públicas sin secretos y límites expresos de generación/adaptación. Patio individual experimental disponible solo en su ámbito original, consulta antes de entrar. Catálogo público cacheado en memoria por página, sin datos privados/Firebase, reintento tras fallo.
 - Mesa: papel y controles verdes, fuentes locales, conversación más ancha, escena antes de acciones, ficha preparada plegada con contenido íntegro. Ayuda d20/10/20 local. Solicitud manual bajo excepciones. Preparación sin escena «Por decidir», atajo del patio compacto y presupuesto solo en combate. Cuadrícula aún provisional; sin mapas ilustrados, capas ni visión nueva.
+- Fichas: consulta por defecto también para PNJ preparados, fuente/límites/licencias bajo demanda; corrección excepcional plegada/confirmada, manualOverride visible, causas de no editar/tirar explícitas.
 - Copias: validación estructural antes de sustituir estado, sin recalcular/reparar fichas manuales. Rechaza tipos/IDs/turnos/mensajes dañados y números no finitos; conserva adaptadores y formatos legítimos comprobados. JSON ilegible se explica localmente; rechazo400 conserva partida y ofrece motivo plegado. Fallos de red mantienen recuperación de envío. Cambio de acceso durante lectura cancela importación y limpia avisos entre partidas. VALIDACION_COPIAS_PLAN.md.
 
 Evidencia UI: opening (nombre solo, camino corto Enter/botón, enlace poscreación0API, ejemplo/ruta, ayuda local, copia, móvil), creator (personalización, presupuesto, invitado/adversario, teclado, único guardado), patio (selector/atajo, catálogo una vez, acuerdo/combate/auxilio), grupo (sin patio cooperativo, permisos/copias y capítulos simulados), biblioteca (JSON ilegible0envíos, rechazo/estado intacto/copia válida/cambio durante lectura), mesa (gestos/permisos/móvil0escrituras locales y un movimiento confirmado) correctos. Pruebas de proveedor simuladas, **ninguna IA real nueva en este bloque**. Detalle cronológico y fallos de guiones corregidos en TRABAJO.md.
