@@ -234,7 +234,7 @@ function messageSources(message){
 function messageEntry(message){
  const label={rules:'Resolución',director:'Director de IA',scene:'Escena',action:'Acción',dialogue:'Diálogo',ooc:'Fuera de personaje',private:'Privado'}[message.kind]||'Registro';
  const heading=`<div class="speaker">${esc(message.speaker)}${message.kind==='scene'?'':' · '+esc(label)}</div>`;
- const content=checkMessage(message)+recoveryAudit(message)+messageSources(message);
+ const content=(combatMessage(message)??checkMessage(message))+recoveryAudit(message)+messageSources(message);
  if(message.kind==='rules'&&typeof message.text==='string'&&message.text.startsWith('Iniciativa d20 + modificador declarado: '))return `<article class="message rules initiative-result"><details><summary>Iniciativa · ver tiradas y orden de turnos</summary>${heading}${content}</details></article>`;
  if(message.kind==='rules'&&typeof message.text==='string'&&message.text.startsWith('PNJ preparado desde plantilla verificada: ')){
   const character=snapshot.state.characters.find(c=>message.text.startsWith('PNJ preparado desde plantilla verificada: '+c.name+'.'));
@@ -245,6 +245,13 @@ function messageEntry(message){
   return `<article class="message rules character-preparation"><details><summary>${esc(character?.name||'Personaje')} · ficha preparada</summary>${heading}${content}</details></article>`;
  }
  return `<article class="message ${esc(message.kind)}">${heading}${content}</article>`;
+}
+function combatMessage(message){
+ const result=message.combat;
+ if(message.kind!=='rules'||!result||typeof result.hit!=='boolean'||typeof result.critical!=='boolean'||(result.critical&&!result.hit)||!['damage','targetHp','attackerHp'].every(key=>Number.isFinite(result[key]))||typeof result.status!=='string'||typeof result.attackerStatus!=='string')return null;
+ const attacker=snapshot.state.characters.find(c=>c.id===result.attacker),target=snapshot.state.characters.find(c=>c.id===result.target);
+ const outcome=result.critical?'Crítico confirmado':result.hit?'Impacto':'Fallo';
+ return `<p class="combat-result"><strong>${outcome} · ${esc(attacker?.name||'Atacante')} → ${esc(target?.name||'Objetivo')}</strong><br>Daño: ${esc(result.damage)}. ${esc(target?.name||'Objetivo')}: ${esc(result.targetHp)} PG (${esc(result.status)}).${result.attackerHp<=0?`<br>${esc(attacker?.name||'Atacante')}: ${esc(result.attackerHp)} PG (${esc(result.attackerStatus)}).`:''}<br>Acción estándar gastada.</p><details class="combat-audit"><summary>Ver tirada y cálculo original</summary><p>${esc(message.text)}</p></details>`;
 }
 function recoveryAudit(message){
  if(!Array.isArray(message.recoveryChecks)||!message.recoveryChecks.length||message.recoveryChecks.length>40||message.recoveryChecks.some(check=>!check||typeof check!=='object'))return '';

@@ -155,3 +155,6 @@ Fuente consultada9nov: [W3C APG · interfaz de teclado](https://www.w3.org/WAI/A
 
 
 9 noviembre: iniciativa y preparación de PNJ aparecen como registros plegados reconocibles; abrirlos conserva el texto técnico íntegro y sus fuentes. Se comprueba apertura/cierre con Enter, sin requests de acción. La escena, el daño y los avisos de salud continúan visibles. Ajuste de presentación, no reglas ni cambio del registro persistido.
+
+
+9 noviembre: ataque muestra primero resultado, daño y PG/estado registrados, con cálculo original íntegro plegado. Consecuencia del atacante incapacitado queda visible (-1PG moribundo), incluso tras recuperación posterior: no se reescribe el historial desde ficha actual. Encuentro, declaración, copia/recarga y recuperación compartida correctos; consulta con Enter sin acciones. Datos sin estructura suficiente mantienen texto original.

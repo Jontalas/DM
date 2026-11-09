@@ -12,13 +12,13 @@ Comunicar qué puede hacer el jugador, qué falta y dónde verlo. No usar contad
 
 Siguiente trabajo autorizado:
 
-1. Verificar publicación móvil1cf7138286d97782c154d45aebd87c3640d6a7c3 (Render7659098103 en curso al consultar); publicar después presentación plegada de iniciativa/preparación PNJ (app.js). Recorrido1.6 y encuentro correctos. Mantener capturas/informe local. Después continuar revisión de primeras decisiones y combate, sin ampliar reglas o infraestructura.
+1. Publicar resumen de ataque local en app.js y tamaño de texto en tabletop.css.81bb05b ya verificado por revisión/salud/recurso público. Resumen usa combat histórico, cálculo original plegado y PG/estado del atacante incapacitado visibles. Navegadores encuentro/declaración/recuperación shared correctos,0IA real/Python intacto. Mantener capturas/informe local y continuar primeras decisiones/combate sin ampliar alcance.
 2. Continuar la revisión de primeras decisiones, combate y recuperación del recorrido individual. Resolver fricciones observadas, conservando agencia y reglas; no expandir el alcance para producir más cambios.
 3. Conservar el progreso en estos archivos existentes. No crear un MD por corrección: PRODUCTO para alcance, REANUDAR para continuidad, TRABAJO para detalle, USABILIDAD para criterios/evidencia.
 
 ## Producción y verificación actual
 
-**62bd6a132ffa382f7938007c1171ea35d8b24b51**, Render **7658993216 success**, ambas ramas publicadas. Revisión, salud y app.js/index.html/tabletop.css exactos comprobados públicamente. Descriptor Pathfinder **1.15.0**. Incluye navegación del tablero por flechas/unTab.
+**81bb05b0b2dc593bb07cc5d9e2b61e7870b084a1**, revisión/salud/app.js verificados públicamente (Render7659137360, estado final por consultar si se necesita)., ambas ramas publicadas. Revisión, salud y app.js/index.html/tabletop.css exactos comprobados públicamente. Descriptor Pathfinder **1.15.0**. Incluye navegación del tablero por flechas/unTab.
 
 Motor desde **e174ea8ee0381f53b4953ac3b43e5db3b5fadce4**: **945 pruebas completas correctas, 300,506s**, .deps/copy-shape-final-suite.log, sesión21341 terminada. Ningún Python modificado después de ese arranque; cambios posteriores solo UI/pruebas/docs. No repetir suite completa sin cambio o preocupación concreta. No hay pruebas ni inferencias en curso.
 
@@ -26,9 +26,9 @@ Lectores reales de capítulos y clínica correctos sobre esa base; revisiones UI
 
 ## Trabajo local listo para publicar
 
-El móvil oculta compositor habitual solo en pestaña Tablero; Conversación lo restaura y cualquier recibo pendiente prevalece. Espaciado reducido sin quitar controles44px; fichas visibles390x844. Escritorio conserva simultaneidad. Publicado1cf7138, pendiente verificar despliegue/recursos antes de anunciarlo confirmado.
+El móvil oculta compositor habitual solo en pestaña Tablero; Conversación lo restaura y cualquier recibo pendiente prevalece. Espaciado reducido sin quitar controles44px; fichas visibles390x844. Escritorio conserva simultaneidad. Publicado1cf7138 y verificado públicamente: revisión/salud/app.js/CSS exactos.
 
-Nuevo ajuste local: mensajes rules canónicos de Iniciativa d20 + modificador declarado y PNJ preparado desde plantilla verificada se muestran bajo detalles nativos, igual que preparación de personaje. No se parsea el str(order), no se reescribe historia con estado actual: texto/fuentes completos intactos, sin modificación del servidor ni mecánica. Prueba1.6: detalles cerrados, Enter abre/cierra, texto original íntegro,0acciones; acuerdo/combate/ruta/regreso/copia completos correctos. Encuentro actual también correcto. Capturas first-combat-mobile/desktop actualizadas y revisadas antes del plegado; escritorio posterior generado por prueba, inspeccionar si se usa públicamente. Registrar verificación/publicar app.js.
+Nuevo ajuste local: mensajes rules canónicos de Iniciativa d20 + modificador declarado y PNJ preparado desde plantilla verificada se muestran bajo detalles nativos, igual que preparación de personaje. No se parsea el str(order), no se reescribe historia con estado actual: texto/fuentes completos intactos, sin modificación del servidor ni mecánica. Prueba1.6: detalles cerrados, Enter abre/cierra, texto original íntegro,0acciones; acuerdo/combate/ruta/regreso/copia completos correctos. Encuentro actual también correcto. Capturas first-combat-mobile/desktop actualizadas y revisadas antes del plegado; escritorio posterior generado por prueba, inspeccionar si se usa públicamente. Publicado81bb05b, verificar estado final. Resumen de ataque posterior local: resultado/daño/PG históricos y coste del atacante incapacitado visibles, cálculo íntegro plegado. Encuentro, declaración y recuperación compartida correctos; publicar app.js.
 
 Recuperación de recibos ya publicada62bd6a1: confirmado con lectura fallida se recupera solo GET; desconocido reenvía cuerpo/ID exactos. Otra partida no puede sustituir pendiente; ofrece Abrir partida pendiente y preserva borrador. Reserva Web Locks en HTTPS/localhost probada con dos intentos simultáneos forzados, una petición abortada antes del servidor. Sin soporte de Web Locks/pestañas antiguas no se certifica ese caso simultáneo. Evento storage actualiza UI local sin API. No expandir más esta infraestructura sin una fricción demostrada del recorrido individual.
 

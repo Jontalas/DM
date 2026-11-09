@@ -37,6 +37,7 @@ const path=require('node:path'),assert=require('node:assert/strict');
    assert.match(await page.locator('#party [data-character]').first().textContent(),/Incapacitado/);
    await page.locator('#attackButton').click();
    await page.waitForFunction(()=>snapshot.state.pfEncounter.recoveryOutcome&&!busy);
+   assert.match(await page.locator('.combat-result').last().textContent(),/Aria: -1 PG \(moribundo\)/);
   }
   const recovered=await page.evaluate(()=>snapshot.state);
   if(armored){
