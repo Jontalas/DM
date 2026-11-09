@@ -1,5 +1,9 @@
 # Continuidad del desarrollo autónomo
 
+9nov: continuidad de vistas/despliegue guardada y respaldada en rama feature cdb38f2; sin despliegue de docs.
+
+Aclaración local de objetivo no positivo: UI filtraba hp>0 y decía que no había adversario consciente, aunque0PG sigue consciente. El servidor ya limita esos ataques a revisión excepcional; no se amplía cobertura ni se cambian reglas. Mensaje distingue consciencia/límite de esta versión y muestra adversario/PG/revisión en opción desactivada. Test general usa únicamente snapshots de presentación0PG/caído y los restaura exactamente, sin cambios remotos, luego completa ataque/permisos2jugadores. Baseline zero-target-hint-baseline.log, final zero-target-hint-browser.log correcto. Patio actual completo en móvil correcto, zero-target-patio-browser.log. No nuevos archivos app/dependencias ni Python.
+
 9nov: resultado de ataque publicado2cc14812b7b96e936fcb867934d0a28426451671, Render7667302608 success. app.js/tabletop.css/release/salud exactos,0campañas/POST/IA. Captura mobile-attack-result-focused revisada, PG1/estándar gastada/fuentes plegadas y actualiza informe visual.
 
 Vista funcional adicional8767 creada sin reiniciar8766: .deps/preview_courtyard.py (ignorado), TestStore, claves remotas retiradas, Aria legal16/guardiana6, patio1.16 ofrecido sin elegir por jugador. Primer chequeo read-only escritorio/móvil/teclado correcto,0POST/externos/IA, mismo estado/versión. Servidor72352, no reiniciar porque usuario puede interactuar. Enlace opcional comunicado sin invitación de hito ni pedir prueba; informe visual enlaza actual/anterior. Sin dependencia/archivo de aplicación nuevo ni coste remoto.

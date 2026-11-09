@@ -71,6 +71,18 @@ const assert=require('node:assert/strict');
   await b.reload();await b.locator('#app').waitFor({state:'visible'});
   assert.equal(await b.locator('#board').isVisible(),true);
   assert.equal(await b.locator('#attackButton').isEnabled(),true);
+  // Read-model presentation only: zero HP is conscious, while attacking any
+  // nonpositive target is still outside the existing automatic-attack scope.
+  const beforeTargetHelp=await b.evaluate(()=>structuredClone(snapshot.state));
+  const targetHelp=await b.evaluate(()=>{
+   const target=snapshot.state.characters.find(c=>c.enemy),hp=target.hp,views=[];
+   for(const value of [0,-target.abilities[2]]){target.hp=value;renderAttack();views.push({hint:document.querySelector('#attackHint').textContent,disabled:document.querySelector('#attackButton').disabled,option:document.querySelector('#attackTarget').textContent})}
+   target.hp=hp;renderAttack();return views;
+  });
+  assert.match(targetHelp[0].hint,/0 PG/);assert.match(targetHelp[0].hint,/consciente/);assert.match(targetHelp[0].hint,/versión.*excepcional/);
+  assert.match(targetHelp[0].option,/Bandido.*0 PG.*excepcional/);
+  assert.match(targetHelp[1].hint,/caído.*excepcional/);assert.ok(targetHelp.every(v=>v.disabled));
+  assert.deepEqual(await b.evaluate(()=>snapshot.state),beforeTargetHelp);
   await b.locator('#attackButton').click();
   await b.waitForFunction(()=>document.querySelector('#attackButton').disabled);
   await b.locator('[data-tab=story]').click();

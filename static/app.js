@@ -416,8 +416,9 @@ function meleeFields(c){const p=c.meleeProfile||{flatAc:c.ac,criticalMin:20,mult
 function renderAttack(){
  const s=snapshot.state,board=s.board,selected=$('#boardCharacter').value;
  const source=s.characters.find(c=>c.id===selected),previous=$('#attackTarget').value;
- const targets=boardCharacters(s).filter(c=>source&&c.enemy!==source.enemy&&c.hp>0);
- $('#attackTarget').innerHTML=targets.map(c=>`<option value="${esc(c.id)}">${esc(c.name)} · ${c.hp} PG</option>`).join('');
+ const opponents=boardCharacters(s).filter(c=>source&&c.enemy!==source.enemy),targets=opponents.filter(c=>c.hp>0);
+ const targetLimit=!opponents.length?'No hay un adversario presente en esta escena. Revisa el tablero.':opponents.some(c=>characterIsConscious(c))?'El adversario sigue consciente a 0 PG o menos. Esta versión requiere una resolución excepcional para atacarlo. Revisa su ficha o termina tu turno.':'El adversario está caído. Atacarlo requiere una resolución excepcional; revisa su ficha y las opciones de la aventura.';
+ $('#attackTarget').innerHTML=targets.map(c=>`<option value="${esc(c.id)}">${esc(c.name)} · ${c.hp} PG</option>`).join('')||`<option value="" disabled selected>${opponents.length===1?esc(opponents[0].name)+' · '+opponents[0].hp+' PG · revisión excepcional':'Sin adversarios disponibles'}</option>`;
  if(targets.some(c=>c.id===previous))$('#attackTarget').value=previous;
  const current=board.active&&board.order[board.turn]?.id===selected;
  const spent=board.spent[selected]||{};
@@ -426,7 +427,7 @@ function renderAttack(){
  $('#attackForm').hidden=!board.active;
  $('#attackButton').disabled=!current||!source?.meleeProfile||!characterIsConscious(source)||spent.standard||disabledMove||!adjacent;
  $('#attackButton').textContent=source?.hp<=0&&characterIsConscious(source)?'Atacar · perderás 1 PG':'Tirar ataque y resolver';
- $('#attackHint').textContent=!board.active?'El ataque estará disponible durante un combate.':!current?'Selecciona el personaje de tu turno.':!characterIsConscious(source)?'Tu personaje no puede atacar mientras está inconsciente.':!source?.meleeProfile?'El arma necesita un perfil preparado antes del combate.':spent.standard?'Ya has atacado o usado tu acción estándar. Puedes terminar el turno.':disabledMove?'Estás incapacitado y ya te has movido; termina el turno.':!targets.length?'No hay un adversario consciente disponible para este ataque básico.':!adjacent?'Acércate a una casilla junto al objetivo para atacar cuerpo a cuerpo.':source.hp<=0?'Si atacas, perderás 1 PG al terminar y '+(source.hp-1<=-source.abilities[2]?'morirás por tus heridas.':'volverás a quedar moribundo. El movimiento no causa esa pérdida de PG.'):'El juego tira, calcula el impacto y aplica el daño. No tienes que calcular modificadores.';
+ $('#attackHint').textContent=!board.active?'El ataque estará disponible durante un combate.':!current?'Selecciona el personaje de tu turno.':!characterIsConscious(source)?'Tu personaje no puede atacar mientras está inconsciente.':!source?.meleeProfile?'El arma necesita un perfil preparado antes del combate.':spent.standard?'Ya has atacado o usado tu acción estándar. Puedes terminar el turno.':disabledMove?'Estás incapacitado y ya te has movido; termina el turno.':!targets.length?targetLimit:!adjacent?'Acércate a una casilla junto al objetivo para atacar cuerpo a cuerpo.':source.hp<=0?'Si atacas, perderás 1 PG al terminar y '+(source.hp-1<=-source.abilities[2]?'morirás por tus heridas.':'volverás a quedar moribundo. El movimiento no causa esa pérdida de PG.'):'El juego tira, calcula el impacto y aplica el daño. No tienes que calcular modificadores.';
 }
 $('#attackTarget').onchange=renderAttack;
 function showAttackResult(action){

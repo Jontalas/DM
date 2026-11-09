@@ -1,5 +1,7 @@
 # Sencillez y orientación
 
+Objetivos a0PG9nov: no atribuir al adversario inconsciencia por el límite temporal del ataque automático. Mensaje de objetivo no positivo distingue el estado clínico, explica que esta versión necesita revisión excepcional y conserva ficha/opciones accesibles; selector desactivado muestra nombre/PG. Prueba UI con snapshots sintéticos0PG/caído y restauración exacta, además del recorrido general2jugadores. Sin cambio de reglas ni acciones remotas por ayuda.
+
 Resultado tras atacar9nov: desde tablero móvil se abre conversación y se enfoca el resumen del ataque guardado, con cálculo y fuentes plegados. Tablero sigue accesible sin enviar nada; escritorio conserva mesa/conversación. Recuperar respuesta perdida enseña el mismo registro, sin nueva tirada. Si el jugador navega, abre modal o mueve foco durante espera, se respeta ese contexto. Pruebas completas móviles1.16 con respuesta normal/perdida/retenida y mesa general correctas, sin IA real.
 
 Recuperación de movimiento9nov: si se pierde la respuesta de un paso ya confirmado, recuperar elimina su previsualización original y devuelve opciones de la mesa. Una ruta nueva preparada mientras tanto permanece. La intención se copia al pulsar, antes de esperar la reserva entre pestañas; no cambia por navegar/preparar otro destino durante espera. Casos de respuesta perdida, borrador posterior y cola retenida comprobados en navegador móvil con fixture, sin IA real ni nueva mecánica.
