@@ -141,7 +141,7 @@ function renderSubmissionFeedback(){
  const saved=JSON.parse(localStorage.getItem('cronicas-pending')||'null'),pending=!!saved,hadModal=$('#modal').open;
  if(pending){renderSyncStatus(true);if(hadModal)$('#modal').close();readerExpanded=false;renderReaderMode()}
  renderPlayGuidance(snapshot.state);
- if(pending&&(hadModal||document.activeElement===document.body||['send','confirmMove','confirmStep'].includes(document.activeElement.id)))$('#playGuidanceAction').focus();
+ if(pending&&(hadModal||document.activeElement===document.body||['send','confirmMove','confirmStep','attackButton'].includes(document.activeElement.id)))$('#playGuidanceAction').focus();
 }
 async function recoverPendingSubmission(){
  if(busy)throw Error('Hay una acción en curso');
@@ -149,7 +149,7 @@ async function recoverPendingSubmission(){
  if(!saved||saved.token!==token)throw Error('No hay un envío pendiente de esta partida');
  busy=true;$('#send').disabled=true;$('#playGuidanceAction').disabled=true;$('#sync').textContent='Recuperando envío…';
  let accepted,reading=false;
- try{accepted=await recoverSubmission(saved);clearSubmittedMovementPreview(accepted);reading=true;await refresh(true);clearSubmission(accepted);if(saved.body.type==='talk'&&$('#message').value===saved.body.text)$('#message').value='';if(saved.body.type==='check')chooseTab('story');toast('Envío recuperado')}
+ try{accepted=await recoverSubmission(saved);clearSubmittedMovementPreview(accepted);reading=true;await refresh(true);clearSubmission(accepted);if(saved.body.type==='talk'&&$('#message').value===saved.body.text)$('#message').value='';if(saved.body.type==='check')chooseTab('story');if(saved.body.type==='attack')showAttackResult(saved.body);toast('Envío recuperado')}
  catch(error){if(!reading&&error.confirmed)clearSubmission(saved);if(!reading){try{await refresh(true)}catch{}}throw error}
  finally{busy=false;renderComposerAvailability();$('#playGuidanceAction').disabled=false;renderSubmissionFeedback()}
 }
@@ -429,7 +429,16 @@ function renderAttack(){
  $('#attackHint').textContent=!board.active?'El ataque estará disponible durante un combate.':!current?'Selecciona el personaje de tu turno.':!characterIsConscious(source)?'Tu personaje no puede atacar mientras está inconsciente.':!source?.meleeProfile?'El arma necesita un perfil preparado antes del combate.':spent.standard?'Ya has atacado o usado tu acción estándar. Puedes terminar el turno.':disabledMove?'Estás incapacitado y ya te has movido; termina el turno.':!targets.length?'No hay un adversario consciente disponible para este ataque básico.':!adjacent?'Acércate a una casilla junto al objetivo para atacar cuerpo a cuerpo.':source.hp<=0?'Si atacas, perderás 1 PG al terminar y '+(source.hp-1<=-source.abilities[2]?'morirás por tus heridas.':'volverás a quedar moribundo. El movimiento no causa esa pérdida de PG.'):'El juego tira, calcula el impacto y aplica el daño. No tienes que calcular modificadores.';
 }
 $('#attackTarget').onchange=renderAttack;
-$('#attackForm').onsubmit=run(async()=>{await act('attack',{character:$('#boardCharacter').value,target:$('#attackTarget').value})});
+function showAttackResult(action){
+ chooseTab('story');
+ const index=snapshot.state.messages.findLastIndex(m=>m.combat?.attacker===action.character&&m.combat.target===action.target),result=$('#messages').children[index]?.querySelector('.combat-result');
+ if(result){result.tabIndex=-1;result.scrollIntoView({block:'center'});result.focus({preventScroll:true})}
+}
+$('#attackForm').onsubmit=run(async()=>{
+ const action={character:$('#boardCharacter').value,target:$('#attackTarget').value},tab=$('[data-tab].active')?.dataset.tab,focus=document.activeElement;
+ await act('attack',action);
+ if($('[data-tab].active')?.dataset.tab===tab&&!$('#modal').open&&(document.activeElement===focus||document.activeElement===document.body))showAttackResult(action);
+});
 function modal(html){$('#modalContent').innerHTML=html;$('#modal').showModal()}
 function npcProvenance(character){
  const source=character.npcCreation;if(!source)return '';

@@ -222,3 +222,4 @@ body.reader-wide.submission-pending #composer{display:block}
 #movementPreview.prepared{position:sticky;bottom:0;z-index:3;background:var(--panel);border-top:1px solid var(--line);padding:8px 0;flex-shrink:0}
 #movementPreview.prepared .toolbar{gap:6px;margin:6px 0 0}
 #board.preparing-move #attackForm,#board.preparing-move #boardGuidance{display:none}
+.combat-result:focus-visible{outline:2px solid var(--gold);outline-offset:4px}

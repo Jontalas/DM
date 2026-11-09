@@ -28,7 +28,23 @@ const path=require('node:path'),assert=require('node:assert/strict');
    assert.equal(await page.evaluate(()=>snapshot.state.pfEncounter.definition.version),encounterVersion);
    if(!wounded){await page.locator('#pfEncounterParley').click();await page.waitForFunction(()=>snapshot.state.pfEncounter.phase==='agreement'&&!busy);}
    else{
-    await page.locator('#pfEncounterCombat').click();await page.waitForFunction(()=>snapshot.state.board.active&&!busy);await page.locator('#attackButton').click();await page.waitForFunction(()=>snapshot.state.characters[1].hp===1&&!busy);
+    await page.locator('#pfEncounterCombat').click();await page.waitForFunction(()=>snapshot.state.board.active&&!busy);
+    if(process.env.TEST_PF_MOBILE_ATTACK==='1'){await page.setViewportSize({width:390,height:844});await page.locator('[data-tab=board]').tap();}
+    const recoverAttack=process.env.TEST_PF_ATTACK_RECOVERY==='1',navigateAttack=process.env.TEST_PF_ATTACK_NAVIGATION==='1';let releaseAttack,markAttack;
+    const attackRequested=new Promise(resolve=>{markAttack=resolve}),attackGate=new Promise(resolve=>{releaseAttack=resolve});
+    if(recoverAttack||navigateAttack)await page.route('**/api/action',async route=>{const response=await route.fetch();assert.equal(response.ok(),true);if(navigateAttack){markAttack();await attackGate;await route.fulfill({response})}else await route.abort('failed')},{times:1});
+    await page.locator('#attackButton').click();
+    if(navigateAttack){await attackRequested;await page.locator('[data-tab=journal]').tap();releaseAttack();}
+    await page.waitForFunction(()=>snapshot.state.characters[1].hp===1&&!busy);
+    if(recoverAttack){const original=actions.at(-1),version=await page.evaluate(()=>snapshot.version);await page.locator('#playGuidanceAction').click();await page.waitForFunction(()=>!localStorage.getItem('cronicas-pending')&&!busy);assert.deepEqual(actions.at(-1),original);assert.equal(await page.evaluate(()=>snapshot.version),version);}
+    if(process.env.TEST_PF_MOBILE_ATTACK==='1'){
+     if(navigateAttack){assert.equal(await page.locator('#journal').evaluate(e=>e.classList.contains('active')),true,'A late attack reply must preserve subsequent navigation');await page.locator('[data-tab=story]').tap();}
+     assert.equal(await page.locator('#story').evaluate(e=>e.classList.contains('active')),true,'An attack from the mobile board must show its result');
+     assert.match(await page.locator('.combat-result').last().textContent(),/Daño: 5/);assert.equal(await page.locator('.combat-audit').last().evaluate(e=>e.open),false);
+     if(!navigateAttack)assert.equal(await page.locator('.combat-result').last().evaluate(e=>e===document.activeElement),true);
+     if(!recoverAttack&&!navigateAttack){await page.locator('#toast').waitFor({state:'hidden'});await page.screenshot({path:'.deps/mobile-attack-result-focused.png',fullPage:true});}
+     const count=actions.length;await page.locator('[data-tab=board]').tap();assert.equal(actions.length,count);
+    }
     for(let turn=0;turn<4;turn++){await page.locator('#nextTurn').click();await page.waitForFunction(hp=>snapshot.state.characters[0].hp===hp&&!busy,12-turn*4);}
     if(encounterVersion==='1.16.0'){
      await page.setViewportSize({width:390,height:844});await page.locator('[data-tab=board]').tap();
