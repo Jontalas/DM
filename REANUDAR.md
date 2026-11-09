@@ -12,13 +12,13 @@ Comunicar qué puede hacer el jugador, qué falta y dónde verlo. No usar contad
 
 Siguiente trabajo autorizado:
 
-1. Publicar/verificar cancelación de copia en app.js/index.html/tabletop.css: limpia input, aviso de partida intacta y permite mismo archivo. Biblioteca completa correcta,0POST al cancelar y una recuperación posterior.0b150f1 de tiradas ya publicado/verificado. Después revisar biblioteca móvil: acciones de personajes ocultan otras partidas, priorizar volver a partida y personajes bajo demanda sin tocar credenciales.945Python intacto.
+1. Publicar/verificar biblioteca más clara en campaign-library-ui.js/tabletop.css: volver a partida primero, personajes bajo details local44px. Biblioteca/Cairn/capítulos/grupo/retorno a pendiente correctos; captura revisada. Después una comprobación conjunta de lectores protegidos reales de capítulos/clínica con POST bloqueado, sin productores ni nuevas IA, para cerrar aceptación de este batch UI amplio. No repetir por parches menores.945Python intacto.
 2. Continuar la revisión de primeras decisiones, combate y recuperación del recorrido individual. Resolver fricciones observadas, conservando agencia y reglas; no expandir el alcance para producir más cambios.
 3. Conservar el progreso en estos archivos existentes. No crear un MD por corrección: PRODUCTO para alcance, REANUDAR para continuidad, TRABAJO para detalle, USABILIDAD para criterios/evidencia.
 
 ## Producción y verificación actual
 
-**0b150f19d4c9ef3b6e5b330111aa395f026cd7a1**, Render7660435362 success, ambas ramas publicadas. Revisión/salud/app.js/character-checks.js/index.html/tabletop.css exactos verificados públicamente. Descriptor Pathfinder1.15.0.
+**4644a5f84bb8dd9da8b517e3d84ed2e8e67ecab0**, Render7660634423 success. Verificador público de app.js/index.html/tabletop.css ejecutado (registrar resultado); ramas publicadas. Descriptor1.15.0.
 
 Motor desde **e174ea8ee0381f53b4953ac3b43e5db3b5fadce4**: **945 pruebas completas correctas, 300,506s**, .deps/copy-shape-final-suite.log, sesión21341 terminada. Ningún Python modificado después de ese arranque; cambios posteriores solo UI/pruebas/docs. No repetir suite completa sin cambio o preocupación concreta. No hay pruebas ni inferencias en curso.
 
@@ -34,7 +34,10 @@ Regresiones UI: checks (permisos, ficha manual heredada y CD, selector de dados 
 
 Lector con páginas sintéticas verifica caché por sesión/revisión, no descargaPDF completo, carga tardía, error recuperable, herramientas0requests, página visible390x844 y recibo visible aun ampliado. Demo8766 conserva estado/versión, lectura sin POST; manuales reales inaccesibles por credenciales Firebase deliberadamente retiradas. No configurar ni reiniciar esa demo; no confundir página sintética con originales de producción.
 
-**Local pendiente publicar:** cancelar recuperación de copia antes dejaba archivo seleccionado. Baseline copy-cancel-baseline.log; ahora limpia selección y avisa partida intacta. Controles Guardar copia de la partida/Recuperar una copia y foco de etiqueta visible. Biblioteca:0POST/estado exacto al cancelar, mismo archivo recuperable después, rechazos JSON/400, permisos y cambio de acceso durante lectura conservados. app.js/index.html/tabletop.css. Después revisar biblioteca móvil: screenshot library-mobile muestra personajes/copias dominando antes de otras partidas; preparar disclosure local sin ampliar alcance.
+Cancelación de copia ya publicada4644a5f: limpia selección y avisa partida intacta;0POST al cancelar y mismo archivo recuperable. JSON/400/permisos/cambio de acceso conservados, controles guardar/recuperar copia directos y foco de etiqueta visible.
+
+**Local pendiente publicar:** biblioteca prioriza volver a partida, personajes/copias bajo details nativo sin nuevas operaciones. Nombre único/contador,44px, datos/botones idénticos; respaldo de accesos id libraryAccessTools. Biblioteca completa, Cairn experimental, capítulos, grupo y retorno a partida pendiente correctos. Captura library-mobile revisada con ambas partidas visibles. campaign-library-ui.js/tabletop.css. Después revisión protegida conjunta del batch UI sobre capítulos/clínica reales con POST bloqueados;0productores/IA. Mantener registro semántico fallido histórico, no convertir lectores en nuevas pruebas del modelo.
+
 
 Informe avance-local actualizado y verificado con capturas reales de entrada/combate/resultados/dados, etiquetas de fixture/director simulado y límites. Ya declara primera dirección visual disponible, sin presentar mesa final ni hito nuevo. No hay bloqueo imprescindible del usuario, pruebas ni inferencias en curso. Guardar continuidad en estos archivos, no nuevosMD por parche.
 

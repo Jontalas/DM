@@ -33,7 +33,11 @@ async function openSavedCampaign(id,characterId){
 }
 function libraryHtml(library,inCampaign=false){
  if(!library.entries.length)return '<p>Tus partidas y personajes aparecerán aquí al entrar en una campaña.</p>';
- return library.entries.map(entry=>`<article class="library-entry"><h3>${esc(entry.title)}</h3><small>${esc(entry.playerName)} · ${entry.ruleset==='pathfinder-1e'?'Pathfinder 1e':esc(entry.ruleset)} · ${entry.host?'Anfitrión':'Jugador'}</small><div class="toolbar"><button data-library-open="${esc(entry.id)}">Volver a esta partida</button></div>${entry.characters.map(c=>`<div class="library-character"><strong>${esc(c.name)}</strong><small>${entry.ruleset==='cairn-1e'?'Cairn 1e · '+esc(c.background):esc(c.race)+' · '+esc(c.class)+' '+c.level}</small><div class="toolbar"><button data-library-open="${esc(entry.id)}" data-library-character="${esc(c.id)}">Abrir personaje original</button>${inCampaign&&entry.ruleset==='pathfinder-1e'&&(snapshot.state.ruleset||'pathfinder-1e')===entry.ruleset&&c.choices?`<button data-library-copy="${esc(entry.id)}" data-library-character="${esc(c.id)}">Crear copia inicial aquí</button>`:''}</div></div>`).join('')}</article>`).join('');
+ return library.entries.map(entry=>{
+  const characters=entry.characters.map(c=>`<div class="library-character"><strong>${esc(c.name)}</strong><small>${entry.ruleset==='cairn-1e'?'Cairn 1e · '+esc(c.background):esc(c.race)+' · '+esc(c.class)+' '+esc(c.level)}</small><div class="toolbar"><button data-library-open="${esc(entry.id)}" data-library-character="${esc(c.id)}">Abrir personaje original</button>${inCampaign&&entry.ruleset==='pathfinder-1e'&&(snapshot.state.ruleset||'pathfinder-1e')===entry.ruleset&&c.choices?`<button data-library-copy="${esc(entry.id)}" data-library-character="${esc(c.id)}">Crear copia inicial aquí</button>`:''}</div></div>`).join('');
+  const summary=entry.characters.length===1?'Personaje · '+esc(entry.characters[0].name):'Personajes · '+entry.characters.length;
+  return `<article class="library-entry" data-library-entry="${esc(entry.id)}"><h3>${esc(entry.title)}</h3><small>${esc(entry.playerName)} · ${entry.ruleset==='pathfinder-1e'?'Pathfinder 1e':esc(entry.ruleset)} · ${entry.host?'Anfitrión':'Jugador'}</small><div class="toolbar"><button data-library-open="${esc(entry.id)}">Volver a esta partida</button></div>${entry.characters.length?`<details class="library-characters"><summary>${summary}</summary>${characters}</details>`:''}</article>`;
+ }).join('');
 }
 function renderSavedCampaigns(){
  const target=$('#savedCampaigns');if(!target)return;
@@ -46,7 +50,7 @@ function renderSavedCampaigns(){
 }
 function openCampaignLibrary(){
  const library=CampaignLibrary.read(localStorage);
- modal(`<div class="eyebrow">TUS CRÓNICAS</div><h2>Partidas y personajes</h2><p>Las partidas se guardan en el servidor. Esta lista de accesos pertenece a este perfil del navegador.</p>${libraryHtml(library,!!snapshot&&!$('#app').hidden)}<details><summary>Guardar o recuperar mis accesos</summary><p>El archivo permite entrar con tus permisos, incluidos los de anfitrión. Guárdalo en privado; no lo compartas ni lo subas al repositorio.</p><button id="exportAccesses">Guardar mis accesos</button><label>Recuperar accesos desde un archivo<input id="importAccesses" type="file" accept=".json,application/json"></label></details>`);
+ modal(`<div class="eyebrow">TUS CRÓNICAS</div><h2>Partidas y personajes</h2><p>Las partidas se guardan en el servidor. Esta lista de accesos pertenece a este perfil del navegador.</p>${libraryHtml(library,!!snapshot&&!$('#app').hidden)}<details id="libraryAccessTools"><summary>Guardar o recuperar mis accesos</summary><p>El archivo permite entrar con tus permisos, incluidos los de anfitrión. Guárdalo en privado; no lo compartas ni lo subas al repositorio.</p><button id="exportAccesses">Guardar mis accesos</button><label>Recuperar accesos desde un archivo<input id="importAccesses" type="file" accept=".json,application/json"></label></details>`);
  $('#exportAccesses').onclick=()=>{
   const url=URL.createObjectURL(new Blob([JSON.stringify(CampaignLibrary.read(localStorage))],{type:'application/json'}));
   const link=document.createElement('a');link.href=url;link.download='cronicas-accesos-privados.json';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);

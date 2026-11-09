@@ -176,3 +176,6 @@ Fuente consultada9nov: [W3C APG · interfaz de teclado](https://www.w3.org/WAI/A
 
 
 9 noviembre: cancelar recuperación limpia selector y confirma partida intacta, permitiendo elegir mismo archivo. Prueba0envíos/estado exacto al cancelar y una recuperación explícita posterior. Guardar copia/Recuperar copia usan lenguaje directo; foco visible en etiqueta del archivo. Biblioteca/rechazos/permisos/recarga/móvil conservados, sin nueva IA o mecánica.
+
+
+9 noviembre: Mis partidas prioriza volver a partida; personajes y copias se despliegan localmente por Enter/tacto con nombre o contador. Conserva botones y metadatos, no consulta ni guarda por abrir. Vista móvil con dos partidas muestra ambos botones de volver y respaldo. Biblioteca/permisos/cancelación/copia, Cairn experimental, capítulos y grupo correctos; no nueva cobertura de sistemas ni cambio de credenciales.

@@ -67,7 +67,7 @@ const path=require('node:path'),assert=require('node:assert/strict');
   assert.ok(await page.locator('#systemWorkspace').isHidden());
   assert.match(await page.locator('#campaignMeta').textContent(),/Pathfinder 1e/);
   await page.locator('#libraryBtn').click();
-  await page.locator(`#modal [data-library-open="${entry.id}"][data-library-character="${confirmed.id}"]`).click();
+  await page.locator(`#modal [data-library-entry="${entry.id}"] .library-characters>summary`).click();await page.locator(`#modal [data-library-open="${entry.id}"][data-library-character="${confirmed.id}"]`).click();
   await page.waitForFunction(id=>snapshot.id===id,entry.campaign);
   await page.locator('#modal').waitFor({state:'visible'});
   assert.equal(await page.locator('#modalContent > h2').textContent(),'Yslen Abernathy');
