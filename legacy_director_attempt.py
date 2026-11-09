@@ -41,7 +41,7 @@ def compatible_input(saved,current):
 
 def keyed_request(request):
     keyed=copy.deepcopy(request)
-    for name in ('routeTravelActor','preparedDecisions','availableMeleeAttack','availableTurnEnd','preparedSceneFacts','worldMemorySelection'):keyed['context'].pop(name,None)
+    for name in ('routeTravelActor','preparedDecisions','availableMeleeAttack','availableTurnEnd','preparedSceneFacts','worldMemorySelection','preparedEncounterProjection'):keyed['context'].pop(name,None)
     return keyed
 
 
@@ -54,6 +54,12 @@ def capture_input(prepared):
         raise ValueError('La entrada original no coincide con la huella de la captura')
     import campaign_world_context
     context=original['context'];world=context.get('directorKnowledge',{}).get('campaignWorld')
+    import director_prepared_facts
+    projection=context.get('preparedEncounterProjection')
+    if projection is not None:
+        record=context['state'].get('pfEncounter')
+        if projection!=director_prepared_facts.PRESENTATION_PROJECTION or director_prepared_facts.context_record(record)==record:
+            raise ValueError('La proyección del encuentro no corresponde a un original verificado')
     if world is not None:
         world_view,selection=campaign_world_context.select(world,context['request'],context['state']['location'])
         if context.get('worldMemorySelection') is not None:
@@ -69,6 +75,7 @@ def capture_input(prepared):
             medical=pf_medical_evolution.director_view(character)
             if medical is not None:character['recoveryState']=medical
         if world is not None:projected['context']['directorKnowledge']['campaignWorld']=world_view
+        if projection is not None:projected['context']['state']['pfEncounter']=director_prepared_facts.context_record(context['state']['pfEncounter'])
         if canonical(projected)!=canonical(prepared['request']):raise ValueError('El contexto reducido no corresponde a su entrada original')
     return original
 
@@ -81,6 +88,7 @@ def prepare(state,text,refs,check_actors=None,starting=False,source_text=None,ac
     request={'contract':CONTRACT,'context':copy.deepcopy(context),'transcriptLength':transcript_length}
     if action_identity is not None:request['actionIdentity']=copy.deepcopy(action_identity)
     capture=copy.deepcopy(request)
+    if context.get('preparedEncounterProjection') is not None:capture['context']['state']['pfEncounter']=copy.deepcopy(state['pfEncounter'])
     if claude_dm.campaign_world.enabled(state):capture['context']['directorKnowledge']['campaignWorld']=copy.deepcopy(state['campaignWorld'])
     # Preserve old paid keys while sending only a projection of archived maps.
     if 'boardScenes' in state:capture['context']['state']['boardScenes']=copy.deepcopy(state['boardScenes'])
@@ -97,6 +105,14 @@ def restore(prepared,payload,scheme):
     if scheme!=SCHEME or prepared['request'].get('contract')!=CONTRACT:raise ValueError('Contrato de captura Pathfinder incompatible')
     if not isinstance(payload,dict) or set(payload)!={'kind','value','latencyMs'}:raise ValueError('Captura Pathfinder inválida')
     context=prepared['request']['context'];state=copy.deepcopy(context['state'])
+    if context.get('preparedEncounterProjection') is not None:
+        import director_prepared_facts
+        original=prepared.get('captureRequest',{}).get('context',{}).get('state',{}).get('pfEncounter')
+        if context['preparedEncounterProjection']!=director_prepared_facts.PRESENTATION_PROJECTION or original is None:
+            raise ValueError('Falta el original de la proyección del encuentro')
+        if state.get('pfEncounter')!=original:
+            if director_prepared_facts.context_record(original)!=state.get('pfEncounter'):raise ValueError('El encuentro reducido no corresponde a su captura privada')
+            state['pfEncounter']=copy.deepcopy(original)
     module=context.get('directorKnowledge',{}).get('adventureModule')
     if module is not None:state['adventureModule']=copy.deepcopy(module)
     world=context.get('directorKnowledge',{}).get('campaignWorld')

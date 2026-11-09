@@ -55,6 +55,45 @@ class PreparedSceneFactsTests(unittest.TestCase):
             before=copy.deepcopy(self.state)
             with self.subTest(case=case):self.assertIsNone(facts.public_facts(self.state));self.assertEqual(self.state,before)
 
+    def test_step_help_projection_preserves_paid_keys_original_inputs_and_restoration(self):
+        self.setUp('1.16.0');before=copy.deepcopy(self.state)
+        for identity in (None,{'action':'projection-test','actor':'player','fingerprint':'a'*64,'version':7}):
+            with self.subTest(identity=identity),patch.object(facts,'context_record',side_effect=copy.deepcopy,create=True):
+                original=legacy.prepare(self.state,'Pregunta',[],action_identity=identity)
+            reduced=legacy.prepare(self.state,'Pregunta',[],action_identity=identity)
+            definition=reduced['request']['context']['state']['pfEncounter']['definition']
+            self.assertFalse('fiveFootStepPolicy' in definition);self.assertFalse('fiveFootStepSources' in definition)
+            self.assertEqual(reduced['request']['context']['preparedEncounterProjection'],'ui-help-omitted-1')
+            self.assertEqual(reduced['sha256'],original['sha256'])
+            self.assertTrue(legacy.compatible_input(original['captureRequest'],reduced['captureRequest']))
+            saved=legacy.capture_input(reduced)
+            self.assertEqual(saved['context']['state']['pfEncounter'],before['pfEncounter'])
+            expected={k:v for k,v in before['pfEncounter']['definition'].items() if k not in ('fiveFootStepPolicy','fiveFootStepSources')}
+            self.assertEqual(definition,expected)
+            payload={'kind':'report','value':{'narration':'La guardiana confirma el permiso ya concedido.','proposals':[]},'latencyMs':0}
+            with patch('claude_dm.parse_response',wraps=claude_dm.parse_response) as parse,patch('claude_dm.ai_reply',side_effect=AssertionError('Projection restored through provider')):
+                restored=legacy.restore(reduced,payload,legacy.SCHEME)
+                self.assertEqual(parse.call_args.args[0]['pfEncounter'],before['pfEncounter'])
+                self.assertEqual(restored,legacy.restore(original,payload,legacy.SCHEME))
+        self.assertEqual(self.state,before)
+
+    def test_rule_queries_and_unverified_definitions_keep_their_full_metadata(self):
+        self.setUp('1.16.0')
+        self.assertIn('fiveFootStepPolicy',claude_dm.build_context(self.state,'Regla',[],rules=True)['state']['pfEncounter']['definition'])
+        self.state['pfEncounter']['definition']['fiveFootStepPolicy']='Texto modificado sin verificar'
+        before=copy.deepcopy(self.state);context=claude_dm.build_context(self.state,'Pregunta',[])
+        self.assertEqual(context['state']['pfEncounter'],before['pfEncounter']);self.assertNotIn('preparedEncounterProjection',context)
+        self.assertEqual(self.state,before)
+
+    def test_reduced_input_cannot_hide_changed_game_facts(self):
+        self.setUp('1.16.0');prepared=legacy.prepare(self.state,'Pregunta',[])
+        damaged=copy.deepcopy(prepared);damaged['request']['context']['state']['pfEncounter']['definition']['conditions']['lighting']='dark'
+        with self.assertRaises(ValueError):legacy.capture_input(damaged)
+        damaged=copy.deepcopy(prepared);damaged['captureRequest']['context']['preparedEncounterProjection']='unknown-projection'
+        with self.assertRaises(ValueError):legacy.capture_input(damaged)
+        changed=copy.deepcopy(prepared['captureRequest']);changed['context']['state']['characters'][1]['hp']-=1
+        self.assertFalse(legacy.compatible_input(prepared['captureRequest'],changed))
+
     def test_derived_fact_keeps_old_capture_key_and_never_masks_changed_game_facts(self):
         prepared=legacy.prepare(self.state,'Pregunta',[]);old=copy.deepcopy(prepared['captureRequest']);old['context'].pop('preparedSceneFacts')
         self.assertEqual(legacy.request_sha(old),prepared['sha256']);self.assertTrue(legacy.compatible_input(old,prepared['captureRequest']))

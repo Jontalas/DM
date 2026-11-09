@@ -1,4 +1,5 @@
 import copy
+from contextlib import nullcontext
 import io
 import json
 import secrets
@@ -30,7 +31,10 @@ class PreparedFactsHTTPTests(unittest.TestCase):
         import pf_encounters
         self.verify_dialogue_recovery(pf_encounters.definition()['version'])
 
-    def verify_dialogue_recovery(self,version):
+    def test_historical_full_input_recovers_after_help_projection_is_enabled(self):
+        self.verify_dialogue_recovery('1.16.0',original_full=True)
+
+    def verify_dialogue_recovery(self,version,original_full=False):
         self.action('create_character',choices=choices());actor=self.state()['state']['characters'][0]['id']
         self.action('enter_pf_encounter',encounter='patio-del-peaje',encounterVersion=version,character=actor)
         self.action('choose_pf_encounter',choice='parley');before=self.state()
@@ -41,11 +45,26 @@ class PreparedFactsHTTPTests(unittest.TestCase):
             if getattr(request,'full_url','').startswith('https://api.anthropic.com/'):
                 sent.append(json.loads(request.data));return io.BytesIO(raw)
             return original_open(request,*args,**kwargs)
-        with patch.object(server,'search',return_value=[]),patch('urllib.request.urlopen',side_effect=dispatch),patch.object(server.STORE,'commit',side_effect=Unavailable('Interrupted dialogue')):
+        projection=patch('director_prepared_facts.context_record',side_effect=copy.deepcopy) if original_full else nullcontext()
+        with projection,patch.object(server,'search',return_value=[]),patch('urllib.request.urlopen',side_effect=dispatch),patch.object(server.STORE,'commit',side_effect=Unavailable('Interrupted dialogue')):
             with self.assertRaises(urllib.error.HTTPError) as error:self.request('/api/action',body)
             self.assertEqual(error.exception.code,503);error.exception.close()
         self.assertEqual(len(sent),1);context=json.loads(sent[0]['messages'][0]['content'])
         self.assertEqual(context['preparedSceneFacts']['publicDocumentsAccess'],'already-permitted')
+        if version=='1.16.0':
+            import legacy_director_attempt as legacy
+            import rule_preparation_attempt as attempts
+            if original_full:
+                self.assertNotIn('preparedEncounterProjection',context)
+                self.assertIn('fiveFootStepPolicy',context['state']['pfEncounter']['definition'])
+            else:
+                self.assertEqual(context['preparedEncounterProjection'],'ui-help-omitted-1')
+                self.assertFalse('fiveFootStepPolicy' in context['state']['pfEncounter']['definition'])
+                self.assertFalse('fiveFootStepSources' in context['state']['pfEncounter']['definition'])
+            binding={'action':body['id'],'actor':before['me']['id'],'fingerprint':server.fingerprint(body),'version':body['version']}
+            saved=server.STORE.read_rule_preparation(before['id'],before['me']['id'],legacy.request_sha({'actionIdentity':binding}))
+            original=attempts.unpack(saved['inputData'])
+            self.assertEqual(original['context']['state']['pfEncounter']['definition'],before['state']['pfEncounter']['definition'])
         self.assertNotIn('preparedDecision',sent[0]['output_config']['format']['schema']['properties'])
         self.assertIn('No niegues ni dejes pendiente ese permiso',sent[0]['system']);self.assertEqual(self.state(),before)
         previous=server.STORE

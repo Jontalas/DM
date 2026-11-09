@@ -1,5 +1,24 @@
 """Small, public authored facts; never action permissions or hidden clues."""
 
+PRESENTATION_PROJECTION='ui-help-omitted-1'
+
+
+def context_record(record):
+    """Omit only local step-help prose/provenance from a verified definition."""
+    if not isinstance(record,dict) or not isinstance(record.get('definition'),dict):return record
+    definition=record['definition']
+    import combat
+    if definition.get('fiveFootStepScope')!=combat.FIVE_FOOT_STEP_SCOPE:return record
+    import pf_encounters
+    from rule_pack_authoring import canonical
+    try:
+        if canonical(definition)!=canonical(pf_encounters.definition(definition['version'])):return record
+    except (KeyError,TypeError,ValueError):return record
+    import copy
+    projected=copy.deepcopy(record)
+    for field in ('fiveFootStepPolicy','fiveFootStepSources'):projected['definition'].pop(field,None)
+    return projected
+
 
 def public_facts(state):
     record=state.get('pfEncounter') or {};definition=record.get('definition') or {}
