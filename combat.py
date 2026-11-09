@@ -51,6 +51,57 @@ def movement_cells(character):
     return speed//2 if character['hp']<=0 else speed
 
 
+FIVE_FOOT_STEP_SCOPE='normal-light-ground-five-foot-step-1'
+
+
+def five_foot_step_enabled(state):
+    return (state.get('pfEncounter') or {}).get('definition',{}).get('fiveFootStepScope')==FIVE_FOOT_STEP_SCOPE
+
+
+def five_foot_step_used(board,identifier):
+    steps=board.get('fiveFootSteps',{})
+    if not isinstance(steps,dict) or any(type(value)!=bool for value in steps.values()):
+        raise ValueError('El registro de pasos necesita revisión antes de mover')
+    return steps.get(identifier,False)
+
+
+def five_foot_step_destination(state,source,path):
+    """Core PDF184/190/194: a chosen no-action step, not ordinary movement."""
+    record=state.get('pfEncounter') or {};board=state['board']
+    if not five_foot_step_enabled(state):raise ValueError('Este encuentro aún no ofrece el paso automático de 5 pies')
+    if (state.get('mode','solo')!='solo' or record.get('phase')!='combat' or not board.get('active')
+        or source['id']!=record.get('character') or len(state['characters'])!=2):
+        raise ValueError('El paso automático corresponde al PJ del combate individual preparado')
+    if board.get('autoPaused'):raise ValueError('Resuelve primero la pausa del turno automático')
+    if not board.get('order') or board['order'][board['turn']]['id']!=source['id']:raise ValueError('No es tu turno')
+    board_scenes.require_present(state,source)
+    opponent=next((c for c in state['characters'] if c['id']==record.get('npc')),None)
+    if opponent is None or not board_scenes.present(state,opponent) or health_status(opponent) in ('muerto','inconsciente estable'):
+        raise ValueError('Revisa primero el desenlace del encuentro preparado')
+    if not standing(source):raise ValueError('Un personaje inconsciente o muerto no puede dar el paso')
+    if source.get('conditions','').strip() or opponent.get('conditions','').strip():raise ValueError('Las condiciones requieren revisión antes del paso automático')
+    if record['definition'].get('conditions',{}).get('lighting')!='normal':raise ValueError('Este paso automático necesita luz normal verificada')
+    if state['pending'] or any(not isinstance(e,dict) or not e.get('interpreted') for e in state['consequences']):
+        raise ValueError('Resuelve primero las situaciones pendientes antes de automatizar el paso')
+    if type(source.get('speed'))!=int or not 2<=source['speed']<=100:
+        raise ValueError('El paso necesita una velocidad terrestre preparada superior a 5 pies')
+    if five_foot_step_used(board,source['id']):raise ValueError('Ya has dado tu paso de 5 pies este asalto')
+    spent=board['spent'].get(source['id'],{})
+    if not isinstance(spent,dict) or spent.get('move'):
+        raise ValueError('No se automatiza el paso tras una acción de movimiento registrada; si no hubo desplazamiento, requiere revisión excepcional')
+    if not isinstance(path,list) or len(path)!=1 or not isinstance(path[0],list) or len(path[0])!=2 or any(type(v)!=int for v in path[0]):
+        raise ValueError('Elige una única casilla para el paso de 5 pies')
+    x,y=source['x'],source['y'];nx,ny=path[0];dx,dy=abs(nx-x),abs(ny-y)
+    if not 0<=nx<20 or not 0<=ny<20 or max(dx,dy)!=1:raise ValueError('El paso necesita una casilla adyacente del tablero')
+    if any(board['terrain'].get(f'{px},{py}','clear')!='clear' for px,py in ((x,y),(nx,ny))):
+        raise ValueError('Esta versión solo automatiza el paso con origen y destino despejados')
+    if dx and dy and (board['terrain'].get(f'{x},{ny}')=='wall' or board['terrain'].get(f'{nx},{y}')=='wall'):
+        raise ValueError('No puedes dar el paso cortando la esquina de un muro')
+    if any(c['id']!=source['id'] and (c['x'],c['y'])==(nx,ny) for c in board_scenes.characters(state)):
+        raise ValueError('La casilla del paso está ocupada')
+    return nx,ny
+
+
 def adjacent(a,b):
     return a.get('sceneId')==b.get('sceneId') and max(abs(a['x']-b['x']),abs(a['y']-b['y']))==1
 

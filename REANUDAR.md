@@ -12,15 +12,15 @@ Comunicar qué puede hacer el jugador, qué falta y dónde verlo. No usar contad
 
 Siguiente trabajo autorizado:
 
-1. Publicar/verificar biblioteca más clara en campaign-library-ui.js/tabletop.css: volver a partida primero, personajes bajo details local44px. Biblioteca/Cairn/capítulos/grupo/retorno a pendiente correctos; captura revisada. Después una comprobación conjunta de lectores protegidos reales de capítulos/clínica con POST bloqueado, sin productores ni nuevas IA, para cerrar aceptación de este batch UI amplio. No repetir por parches menores.945Python intacto.
+1. Publicar/verificar paso5pies del patio1.16. Backend/UI listos:959Python correctos con emulador, sin omisiones,537,689s, .deps/five-foot-step-full-suite.log; sesión22242 terminada. Recorrido1.16 y1.15 completo correcto, mesa general, gestos/puntos intermedios/touch, recuperación de envíos y160000 rutas correctos. Nuevo paso elegido por propietario, sin gastar acciones/dados/IA; partida anterior sin migración. Confirmación preparada visible sin ocultar ficha en móvil, ataque/guía genérica temporalmente plegados; durante arrastre se conserva geometría hasta soltar. Capturas reales revisadas e informe local actualizado. Fuentes/scope en COMBATE.md. No hay pruebas ni inferencias en curso.
 2. Continuar la revisión de primeras decisiones, combate y recuperación del recorrido individual. Resolver fricciones observadas, conservando agencia y reglas; no expandir el alcance para producir más cambios.
 3. Conservar el progreso en estos archivos existentes. No crear un MD por corrección: PRODUCTO para alcance, REANUDAR para continuidad, TRABAJO para detalle, USABILIDAD para criterios/evidencia.
 
 ## Producción y verificación actual
 
-**4644a5f84bb8dd9da8b517e3d84ed2e8e67ecab0**, Render7660634423 success. Verificador público de app.js/index.html/tabletop.css ejecutado (registrar resultado); ramas publicadas. Descriptor1.15.0.
+**cf68cba3a87a14c8aa0ed0c241a679cb757e838f**, Render7660772203 success. Verificador público de campaign-library-ui.js/tabletop.css correcto; ramas publicadas. Descriptor público1.15.0; nuevo1.16 todavía local.
 
-Motor desde **e174ea8ee0381f53b4953ac3b43e5db3b5fadce4**: **945 pruebas completas correctas, 300,506s**, .deps/copy-shape-final-suite.log, sesión21341 terminada. Ningún Python modificado después de ese arranque; cambios posteriores solo UI/pruebas/docs. No repetir suite completa sin cambio o preocupación concreta. No hay pruebas ni inferencias en curso.
+Motor desde **e174ea8ee0381f53b4953ac3b43e5db3b5fadce4**: **945 pruebas completas correctas, 300,506s**, .deps/copy-shape-final-suite.log, sesión21341 terminada. La nueva base local del paso5pies ha completado959pruebas con emulador y sin omisiones en537,689s; fichero .deps/five-foot-step-full-suite.log. No hay prueba o inferencia en curso.
 
 Lectores reales de capítulos y clínica correctos sobre esa base; revisiones UI posteriores verificadas con .deps/verify_public_ui_release.cjs (release/salud/recursos contra Git, normaliza CRLF). Usa EXPECTED_RELEASE y VERIFY_UI_ASSETS. No lee campañas, ni envía POST o IA; /api/status mantiene tres lecturas existentes de metadatos de manuales y health su comprobación existente. Evitar releer campañas por cada cambio de presentación. Para cambios de estado, usar lectores protegidos con POST bloqueado y revisión exacta.
 
@@ -36,7 +36,7 @@ Lector con páginas sintéticas verifica caché por sesión/revisión, no descar
 
 Cancelación de copia ya publicada4644a5f: limpia selección y avisa partida intacta;0POST al cancelar y mismo archivo recuperable. JSON/400/permisos/cambio de acceso conservados, controles guardar/recuperar copia directos y foco de etiqueta visible.
 
-**Local pendiente publicar:** biblioteca prioriza volver a partida, personajes/copias bajo details nativo sin nuevas operaciones. Nombre único/contador,44px, datos/botones idénticos; respaldo de accesos id libraryAccessTools. Biblioteca completa, Cairn experimental, capítulos, grupo y retorno a partida pendiente correctos. Captura library-mobile revisada con ambas partidas visibles. campaign-library-ui.js/tabletop.css. Después revisión protegida conjunta del batch UI sobre capítulos/clínica reales con POST bloqueados;0productores/IA. Mantener registro semántico fallido histórico, no convertir lectores en nuevas pruebas del modelo.
+**Biblioteca publicada cf68cba**: volver a partida visible, personajes bajo details nativo. Revisión protegida conjunta correcta sobre capítulos y clínica reales: .deps/ui-batch-chapter-production-read.log y .deps/ui-batch-clinical-production-read.log. POST bloqueado,0IA nueva, campañas/versiones intactas. Capítulos/originales, clínica[-2,6], cinco pistas/tres escenas, copias, regreso/retomar y móvil comprobados. Los lectores privados se corrigieron para bloquear todo POST antes de abrir y no reescribir manifests. No volver a ejecutarlos por cada parche menor.
 
 
 Informe avance-local actualizado y verificado con capturas reales de entrada/combate/resultados/dados, etiquetas de fixture/director simulado y límites. Ya declara primera dirección visual disponible, sin presentar mesa final ni hito nuevo. No hay bloqueo imprescindible del usuario, pruebas ni inferencias en curso. Guardar continuidad en estos archivos, no nuevosMD por parche.

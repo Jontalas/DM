@@ -54,6 +54,7 @@ Teclado de casillas9nov: extensión propia conentradaTab única, flechas defoco,
 
 ## Adaptaciones primordiales
 
+- Adaptación propia de Pathfinder para patio1.16: paso de5pies escogido con botón tras marcar una casilla, validado por servidor y sin revisión genérica de AdO. Conserva acciones, impide otro desplazamiento ese asalto y persiste la marca en copias. Fuentes originales y límites en COMBATE.md; pruebas unitarias/HTTP y recorrido local móvil/teclado. No se atribuye este control a observación directa de Roll20.
 - El arrastre no altera inmediatamente posiciones ni consume movimiento. Tras confirmar, el servidor valida el recorrido y guarda una acción identificada. Los casos de ataques de oportunidad aún no automatizados requieren la revisión existente; no se ignoran por imitar un gesto.
 - El controlador de adversarios y las reglas automáticas siguen siendo deterministas y comparten la confirmación de campaña. La IA aporta ficción e interpretación donde corresponde, sin intervenir en zoom, selección o cada casilla.
 - No se copian atributos de integración, API de extensiones o formatos de objetos que no necesitamos. El objetivo de compatibilidad es la experiencia del jugador y la conducta de las herramientas.

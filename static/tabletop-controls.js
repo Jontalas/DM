@@ -42,6 +42,7 @@
    const previous=gesture;gesture=null;scroller.classList.remove('panning','dragging-token');
    if(previous&&scroller.hasPointerCapture(previous.pointerId))scroller.releasePointerCapture(previous.pointerId);
    if(clear)cancel();
+   else if(previous?.kind==='token'&&previous.active)options.gestureEnd?.();
   }
   scroller.addEventListener('contextmenu',event=>event.preventDefault());
   scroller.addEventListener('pointerdown',event=>{

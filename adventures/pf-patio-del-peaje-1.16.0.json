@@ -1,0 +1,61 @@
+{
+  "format": "cronicas-pf-encounter-1",
+  "id": "patio-del-peaje",
+  "version": "1.16.0",
+  "ruleset": "pathfinder-1e",
+  "title": "El patio del peaje",
+  "location": "Patio iluminado del peaje",
+  "description": "La noche acaba de comenzar en el patio del peaje, iluminado por faroles que mantienen una visibilidad normal. Una guardiana goblin con armadura de cuero, sin escudo y con la espada corta preparada espera ante la salida. Acaba de descansar y os habéis visto; no hay sorpresa. Te propone en Común hablar antes de disputar el paso. Tú decides cómo responder.",
+  "goal": "Resolver la disputa por el paso",
+  "npc": {
+    "template": "pf1-common-speaking-first-aid-guard-1",
+    "name": "Guardiana del patio"
+  },
+  "conditions": {
+    "lighting": "normal",
+    "surprise": false,
+    "terrain": "open",
+    "players": 1
+  },
+  "agreement": "La guardiana acepta dejarte pasar sin exigir dinero ni objetos. Has obtenido permiso; atravesar la salida sigue siendo una decisión tuya.",
+  "defeatPolicy": "Conducta original: la guardiana no quiere matar. Si conserva PG positivos y está junto al PJ cuando cae moribundo, intenta primeros auxilios en su próxima acción estándar disponible del primer combate corto. No se mueve ni vuelve a atacar al caído. Respeta las comprobaciones de estabilización del PJ en su propia iniciativa; puede estabilizarse o morir antes de que ella pueda ayudar. Si falla, vuelve a intentarlo en su siguiente turno mientras siga vivo y moribundo. No cura PG ni usa equipo de sanador. La frontera corta exige comienzo hasta asalto550, sin condiciones, terreno especial o situaciones pendientes; no es una regla de Pathfinder.",
+  "recoveryPolicy": "El patio permanece tranquilo tras el enfrentamiento. La guardiana consciente no remata ni vuelve a atacar. Su auxilio anterior queda registrado, sin garantizar éxito ni recuperar PG. Tras estabilizar, el motor comprueba la consciencia de los pacientes en sus instantes verificados, sin elegir acciones por el PJ. Un paciente asistido todavía inconsciente detiene el avance en la frontera de seis horas desde la estabilización del PJ, antes de cualquier descanso aún no cubierto. Es límite del motor, no regla de Pathfinder. Al despertar la guardiana permanece despierta y sin esfuerzo; permite retirarse y consultar los papeles públicos. No elige dormir, viajar o hablar por el PJ ni presta cuidados a largo plazo.",
+  "recoveryScope": "shared-patients-2",
+  "coverage": "Recorrido individual experimental con guardiana original6PG/CA15/Con10/Int12, sin escudo, Común y goblin; no es la entrada idéntica del Bestiario. Curar−1 sin entrenamiento, sin equipo de sanador: puede fallar y el PJ puede morir. Acuerdo, combate básico, tregua y auxilio conservan permisos, acciones, dados y heridas. Esta revisión permite auxilio automático del PNJ positivo y adyacente al PJ moribundo en el primer combate corto, con el orden real de estabilización y acciones. Los pacientes asistidos pueden comprobar consciencia hasta la frontera de seis horas, sin curarse ni asumir que inconsciencia es sueño. Fuera de esas condiciones se conserva el límite explícito; no se improvisa asistencia. Tras resolver puedes investigar cinco pistas en patio/cobertizo/almacén y regresar. A0 o con negativos conscientes se necesita ficha original y prueba médica actual verificada. Caminar y Percepción tranquilos no cuestan PG; no correr ni realizar esfuerzos fatigantes. La guardiana conserva su escena y heridas. La única noche opcional mantiene su alcance anterior: PJ positivo o0con ligera puesta, guardiana positiva o muerta; excluye pacientes negativos, fatiga y recursos diarios. No calendario general, cuidados a largo plazo, otras curaciones, recompensas, progresión, arco, mapas gráficos, capas o visión especial automatizados. Las comprobaciones horarias del PJ todavía requieren armadura ligera; la cota de escamas conserva su límite de recuperación por efectos de descanso pendientes. Es cobertura del motor, no una prohibición general de Pathfinder. La tregua voluntaria también está disponible con PJ a0PG aunque la guardiana siga ilesa. Aceptarla con unas palabras no cuesta PG ni decide investigar o descansar. No extiende la respuesta preparada a PG negativos ni a otras criaturas. Esta revisión añade únicamente el paso terrestre de 5 pies descrito en su política de movimiento; conserva los demás límites.",
+  "continuation": {
+    "id": "envio-del-peaje",
+    "version": "1.2.0"
+  },
+  "restScope": "courtyard-safe-night-3",
+  "restPolicy": "Ficción original de esta noche: tras resolver la disputa puedes elegir dormir ocho horas sin interrupciones bajo el tejadillo del banco del mismo patio. El intervalo completo está libre de peligros y sucesos pendientes, incluida la preparación de la armadura elegida. Si conserva PG positivos, la guardiana permanece despierta vigilando hasta que termines; no ayuda a quitar o poner armadura, no duerme, no cura ni gasta recursos. Si ha muerto, permanece muerta. El propietario puede elegir quitarse la armadura, dormir sin ella y volver a ponérsela normalmente, sin prisas y sin ayuda: se añaden los tiempos verificados de quitar y poner. No se decide esa preparación por el jugador, no se presta asistencia médica ni se conceden recursos o equipo. No se ofrece repetir la misma noche. No se resuelve dormir con armadura intermedia o pesada puesta. En esta revision, tras aceptar la tregua, la guardiana con PG positivos permanece despierta incluso si esta herida: no duerme ni recupera PG. El PJ a0PG puede elegir dormir con su armadura ligera puesta, sin realizar preparacion fatigosa; se excluye quitar y poner armadura a0PG. No cubre pacientes negativos ni recursos diarios.",
+  "ceasefireScope": "disabled-player-common-guard-truce-1",
+  "ceasefirePolicy": "Conducta original de esta guardiana: si ella está herida pero conserva PG positivos, o si el PJ está a0PG y puede responder aunque ella siga ilesa, ofrece en Común detener el combate y permitir el paso. El jugador decide si acepta o sigue luchando; no se acepta por terminar turno ni por preguntar. Una respuesta breve preparada requiere entender ese idioma, turno propio del primer combate corto y PJ con PG no negativos, sin condiciones, correcciones ni pendientes. No es Diplomacia ni obliga a otras criaturas; no cura, no mueve fichas, no consume acciones ni realiza esfuerzo fatigoso.",
+  "npcWaitScope": "npc-consciousness-wait-1",
+  "npcWaitPolicy": "Ficción original de este intervalo: si el personaje con PG positivos elige esperar junto a la guardiana estabilizada, el patio permanece tranquilo durante las comprobaciones cubiertas. El personaje no duerme ni recupera PG. Cuando ella despierta permanece sentada y despierta, sin acciones fatigosas, sin dormir, atacar ni viajar; permite que el personaje continúe investigando. Sus heridas se conservan. No se decide esperar por el jugador ni se presta curación. La espera se detiene al despertar, morir o alcanzar la frontera de seis comprobaciones desde la estabilización, anterior a un descanso todavía no integrado.",
+  "explorationScope": "conscious-assisted-light-exploration-1",
+  "explorationPolicy": "Ficción original: tras resolver el encuentro, la guardiana consciente permite consultar los papeles públicos y caminar sin prisa entre patio, cobertizo y almacén. No exige otro favor, justificación, pago o tirada para ese permiso. El propietario elige cada búsqueda y salida. El PJ a0PG o negativo consciente puede usar Percepción y caminar sin esfuerzo cuando las fichas y pruebas médicas actuales coinciden con el primer episodio verificado. La guardiana negativa consciente permanece sentada y despierta en el patio; no duerme ni viaja. No se omiten pacientes inconscientes ni se conceden curación, descanso, distancia o duración táctica por explorar.",
+  "npcAidScope": "npc-first-aid-on-defeat-1",
+  "npcAidPolicy": "Conducta original: la guardiana no quiere matar. Si conserva PG positivos y está junto al PJ cuando cae moribundo, intenta primeros auxilios en su próxima acción estándar disponible del primer combate corto. No se mueve ni vuelve a atacar al caído. Respeta las comprobaciones de estabilización del PJ en su propia iniciativa; puede estabilizarse o morir antes de que ella pueda ayudar. Si falla, vuelve a intentarlo en su siguiente turno mientras siga vivo y moribundo. No cura PG ni usa equipo de sanador. La frontera corta exige comienzo hasta asalto550, sin condiciones, terreno especial o situaciones pendientes; no es una regla de Pathfinder.",
+  "fiveFootStepScope": "normal-light-ground-five-foot-step-1",
+  "fiveFootStepPolicy": "En este encuentro el propietario del PJ puede elegir un paso terrestre de 5 pies durante su turno: una casilla despejada, también en diagonal sin cortar esquinas, con luz normal, velocidad terrestre superior a 5 pies y sin condiciones pendientes. No provoca ataques de oportunidad ni gasta acción estándar o de movimiento; no puede repetirse ni combinarse con otro desplazamiento en el mismo asalto. La aplicación no toma esa decisión por el propietario. La primera cobertura exige origen y destino despejados y no automatiza un paso después de una acción de movimiento o asalto completo registrada manualmente, porque no consta si incluyó desplazamiento; es un límite de verificación del motor, no una prohibición de Pathfinder. Los movimientos normales conservan su revisión de reglas pendientes. No se implementan ataques de oportunidad generales, retirada, carrera, movimiento difícil, oscuridad, movimiento especial ni acciones preparadas.",
+  "fiveFootStepSources": [
+    {
+      "book": "reglas",
+      "pdfPage": 184,
+      "printedPage": 183,
+      "section": "Tabla 8-2: ninguna acción y ataques de oportunidad"
+    },
+    {
+      "book": "reglas",
+      "pdfPage": 190,
+      "printedPage": 189,
+      "section": "Dar un paso de 5 pies"
+    },
+    {
+      "book": "reglas",
+      "pdfPage": 194,
+      "printedPage": 193,
+      "section": "Diagonales, terreno y obstáculos"
+    }
+  ]
+}

@@ -23,7 +23,9 @@ def participants_present(state,record):
         for identifier in (record['character'],record['npc']))
 
 
-def definition(version='1.15.0'):
+def definition(version='1.16.0'):
+    if version=='1.16.0':
+        return json.loads((Path(__file__).parent/'adventures/pf-patio-del-peaje-1.16.0.json').read_text(encoding='utf-8'))
     if version=='1.15.0':
         return json.loads((Path(__file__).parent/'adventures/pf-patio-del-peaje-1.15.0.json').read_text(encoding='utf-8'))
     if version=='1.14.0':

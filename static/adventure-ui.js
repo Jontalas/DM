@@ -93,7 +93,7 @@ function renderAdventure(){
 
 function preparedEncounterHelp(definition,actor){
  const limited=['single-unconscious-player-1','shared-patients-1','shared-patients-2'].includes(definition.recoveryScope)&&actor?.hp>=0&&actor?.creation?.choices?.armor==='scale';
- return `${limited?'<p class="notice recovery-limit">Si caes inconsciente con tu cota de escamas, la recuperación posterior necesitará una resolución excepcional. El juego conservará tu estado.</p>':''}<details class="encounter-help"><summary>Qué incluye este encuentro</summary><p>${esc(definition.coverage)}</p><p>Una persona juega con su personaje. Luz normal, patio abierto y sin sorpresa. La guardiana tiene su ficha preparada.</p><p>Su disposición a negociar pertenece a esta escena; otras conversaciones pueden necesitar una prueba de Diplomacia.</p></details>`;
+ return `${limited?'<p class="notice recovery-limit">Si caes inconsciente con tu cota de escamas, la recuperación posterior necesitará una resolución excepcional. El juego conservará tu estado.</p>':''}<details class="encounter-help"><summary>Qué incluye este encuentro</summary><p>${esc(definition.coverage)}</p>${definition.fiveFootStepPolicy?`<details><summary>Paso de 5 pies: reglas y límites</summary><p>${esc(definition.fiveFootStepPolicy)}</p>${definition.fiveFootStepSources.map(v=>ref(v.book,v.pdfPage)).join(" ")}</details>`:""}<p>Una persona juega con su personaje. Luz normal, patio abierto y sin sorpresa. La guardiana tiene su ficha preparada.</p><p>Su disposición a negociar pertenece a esta escena; otras conversaciones pueden necesitar una prueba de Diplomacia.</p></details>`;
 }
 
 function preparedEncounterHealthDescription(record,actor,npc){

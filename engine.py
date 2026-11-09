@@ -35,6 +35,11 @@ def validate_copy_structure(state):
         or type(board.get('turn')) is not int or board['turn']<0 or not isinstance(board.get('order'),list)
         or not isinstance(board.get('spent'),dict)):raise ValueError('La copia contiene un tablero inválido')
     board_scenes._terrain(board.get('terrain'))
+    if 'fiveFootSteps' in board:
+        steps=board['fiveFootSteps']
+        if (not isinstance(steps,dict) or len(steps)>400
+            or any(not isinstance(key,str) or not 1<=len(key)<=80 or type(value)!=bool for key,value in steps.items())
+            or board['active'] and not set(steps)<=identities):raise ValueError('La copia contiene un registro de pasos inválido')
     for entry in board['order']:
         if (not isinstance(entry,dict) or not isinstance(entry.get('id'),str)
             or type(entry.get('roll')) is not int or type(entry.get('modifier')) is not int):raise ValueError('La copia contiene una iniciativa inválida')
@@ -80,6 +85,9 @@ def event(s,exceptional=False,values=None,award=None):
 
 def begin_turn(s):
     board=s['board'];upcoming=board['order'][board['turn']]['id']
+    if combat.five_foot_step_enabled(s) and isinstance(board.get('fiveFootSteps'),dict):
+        board['fiveFootSteps'].pop(upcoming,None)
+        if not board['fiveFootSteps']:board.pop('fiveFootSteps')
     debt=board['spent'].get(upcoming,{}).get('swiftDebt')
     board['spent'][upcoming]={'swift':True} if debt else {}
     if 'acted' in board and upcoming not in board['acted']:board['acted'].append(upcoming)
@@ -381,6 +389,7 @@ def apply_action(s,b,me):
         if type(serial)!=int or not 0<=serial<1000000:raise ValueError('El historial temporal de combate necesita una revisión; no se han tirado dados')
         order=[{'id':c['id'],'roll':dice([20])[0],'modifier':c['initiative'],'dex':c['abilities'][1]} for c in participants]
         order.sort(key=lambda v:(v['roll']+v['modifier'],v['modifier'],game_randomness.initiative_tie()),reverse=True)
+        if combat.five_foot_step_enabled(s):s['board'].pop('fiveFootSteps',None)
         s['board'].update(active=True,round=1,turn=0,order=order,spent={},acted=[],autoEnemies=automatic,combatSerial=serial+1)
         s['board'].pop('autoPaused',None);begin_turn(s)
         log(s,'Iniciativa d20 + modificador declarado: '+str(order)+'. Empates: modificador total y después azar. Reglas básicas: Iniciativa, impresa p.178 / PDF p.179. Sorpresa: resolución excepcional. CA desprevenido automática en ataques básicos con perfil preparado.',refs=[{'book':'reglas','page':179}])
@@ -405,6 +414,13 @@ def apply_action(s,b,me):
         if not 0<=x<20 or not 0<=y<20 or t not in ['wall','difficult','clear']: raise ValueError('Terreno inválido')
         if t=='wall' and any(c['x']==x and c['y']==y for c in board_scenes.characters(s)): raise ValueError('Hay una ficha en esa casilla')
         s['board']['terrain'][f'{x},{y}']=t; log(s,f'Terreno {t} en {x},{y}; adjudicación de escenario manual')
+    elif kind=='five_foot_step':
+        if set(b)-{'type','id','version','character','path'}:raise ValueError('El paso solo admite personaje y casilla elegida')
+        c=char(s,b.get('character'),me)
+        if c['owner']!=me['id']:raise PermissionError('El propietario decide si su personaje da el paso')
+        x,y=combat.five_foot_step_destination(s,c,b.get('path'))
+        c.update(x=x,y=y);s['board'].setdefault('fiveFootSteps',{})[c['id']]=True
+        log(s,f"{c['name']} da un paso de 5 pies a ({x},{y}). No provoca ataques de oportunidad ni gasta acción estándar o de movimiento. No puede realizar otro desplazamiento este asalto.",refs=[{'book':'reglas','page':184},{'book':'reglas','page':190},{'book':'reglas','page':194}])
     elif kind=='move':
         c=char(s,b['character'],me); board=s['board']; path=b['path']
         board_scenes.require_present(s,c)
@@ -426,6 +442,7 @@ def apply_action(s,b,me):
             cost+=(3 if dx and dy else 2) if tile=='difficult' else step; x,y=nx,ny
         if board['active']:
             used=board['spent'].get(c['id'],{})
+            if combat.five_foot_step_enabled(s) and combat.five_foot_step_used(board,c['id']):raise ValueError('Después del paso de 5 pies no puedes realizar otro desplazamiento este asalto')
             if c['hp']<=0 and used.get('standard'):raise ValueError('Incapacitado: solo una acción estándar o de movimiento')
             if used.get('move'): raise ValueError('Acción de movimiento gastada. Más movimiento requiere resolución asistida')
             if cost>combat.movement_cells(c):raise ValueError('El recorrido supera tu movimiento reducido por incapacidad' if c['hp']<=0 else 'El recorrido supera una acción de movimiento')
@@ -467,3 +484,4 @@ def apply_action(s,b,me):
         pf_encounters.sync_outcome(s)
         pf_encounters.resolve_defeat(s)
         pf_encounters.resolve_recovery(s)
+    if combat.five_foot_step_enabled(s) and not s['board']['active']:s['board'].pop('fiveFootSteps',None)

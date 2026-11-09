@@ -2,6 +2,16 @@
 
 El tablero incorpora **Tirar ataque y resolver**. El jugador elige su personaje y un adversario adyacente; el servidor tira los dados, determina el impacto, confirma críticos, aplica daño y gasta la acción estándar en una sola acción persistida. No usa Claude ni consulta los manuales remotos para calcular reglas.
 
+## Paso de 5 pies elegido por el jugador · patio 1.16
+
+El propietario del PJ puede elegir «Dar paso de 5 pies» después de marcar una casilla adyacente. Es una acción explícita: un recorrido normal no se convierte silenciosamente en paso. El servidor valida la geometría, el turno, la propiedad y el estado; conserva las acciones estándar y de movimiento. No causa ataques de oportunidad, daño por incapacidad, tiradas ni avance del reloj. Una marca separada de las acciones gastadas impide repetirlo o realizar otro desplazamiento hasta el próximo turno propio; se conserva en copias y se elimina al cerrar el combate.
+
+Fuentes originales comprobadas visualmente: Reglas básicas en castellano, PDF184/folio183 (tabla8-2: ninguna acción, sin AdO), PDF190/folio189 (un paso por asalto sin otro movimiento, velocidad normal superior a5pies, terreno/visibilidad/modos) y PDF194/folio193 (diagonales y esquinas). La incapacidad reduce la distancia de una acción de movimiento, no la velocidad normal usada para este requisito.
+
+Cobertura acotada al nuevo patio1.16: combate individual preparado, luz normal, movimiento terrestre, origen y destino despejados, dos participantes presentes y sin condiciones o consecuencias pendientes. No automatiza el paso del PNJ. No ofrece pasos tras una acción de movimiento o asalto completo manual, porque no queda verificado si hubo desplazamiento: es un límite del motor, no una prohibición de Pathfinder. Retirada, AdO generales, oscuridad, terreno difícil, acciones preparadas y movimiento especial siguen pendientes. Versiones1.0–1.15 congeladas, sin migrar partidas.
+
+La previsualización, selección y ayuda usan el estado ya cargado: cero IA, dados o acceso remoto. Confirmar utiliza el circuito persistente existente, una actualización de estado con recibo idempotente; no se presenta como gratuito en Firestore. Pruebas locales: reglas/límites, permisos, fallo atómico y reintento frío, copia, combinación con ataque/auxilio y recorrido guiado completo con teclado/móvil.
+
 ## Preparación
 
 Fuera del combate, activar en las fichas participantes «Ataque cuerpo a cuerpo automático» y preparar los totales del arma: ataque, daño `NdM` o `NdM+bonificador`, CA normal, CA desprevenido, amenaza de crítico y multiplicador. Los totales ya incluyen los modificadores del arma y del personaje; no se añaden otra vez Fuerza ni ataque base. El perfil declara un arma empuñada de alcance de 5 pies, daño letal simple, criaturas de una casilla y ausencia de excepciones especiales.

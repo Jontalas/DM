@@ -218,3 +218,7 @@ body.reader-wide.submission-pending #composer{display:block}
 .library-characters{padding:4px 0 12px;border-top:0}
 .library-characters>summary{min-height:44px;align-content:center;overflow-wrap:anywhere}
 .library-entry h3,.library-character strong{overflow-wrap:anywhere}
+
+#movementPreview.prepared{position:sticky;bottom:0;z-index:3;background:var(--panel);border-top:1px solid var(--line);padding:8px 0;flex-shrink:0}
+#movementPreview.prepared .toolbar{gap:6px;margin:6px 0 0}
+#board.preparing-move #attackForm,#board.preparing-move #boardGuidance{display:none}

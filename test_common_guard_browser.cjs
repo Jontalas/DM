@@ -28,6 +28,26 @@ const path=require('node:path'),assert=require('node:assert/strict');
    else{
     await page.locator('#pfEncounterCombat').click();await page.waitForFunction(()=>snapshot.state.board.active&&!busy);await page.locator('#attackButton').click();await page.waitForFunction(()=>snapshot.state.characters[1].hp===1&&!busy);
     for(let turn=0;turn<4;turn++){await page.locator('#nextTurn').click();await page.waitForFunction(hp=>snapshot.state.characters[0].hp===hp&&!busy,12-turn*4);}
+    if(encounterVersion==='1.16.0'){
+     await page.setViewportSize({width:390,height:844});await page.locator('[data-tab=board]').tap();
+     const before=await page.evaluate(()=>structuredClone(snapshot)),count=actions.length;
+     await page.locator('#grid .cell[data-x="0"][data-y="0"]').focus();await page.keyboard.press('ArrowDown');await page.keyboard.press('Enter');
+     assert.equal(actions.length,count);assert.equal(await page.locator('#confirmStep').isEnabled(),true);
+     const confirmation=await page.locator('#confirmStep').boundingBox();assert.ok(confirmation.y>=0&&confirmation.y+confirmation.height<=844,'Movement confirmation must be visible after preparing the adjacent step');
+     assert.equal(await page.locator('#attackForm').isVisible(),false);
+     const origin=await page.locator('#grid .cell[data-x="0"][data-y="0"]').boundingBox(),preview=await page.locator('#movementPreview').boundingBox();assert.ok(origin.y>=0&&origin.y+origin.height<=preview.y,'Prepared move keeps the actor visible above its confirmation');
+     await page.locator('#toast').waitFor({state:'hidden'});
+     await page.locator('#confirmStep').focus();await page.locator('#confirmStep').scrollIntoViewIfNeeded();await page.screenshot({path:'.deps/five-foot-step-choice-mobile.png',fullPage:true});
+     await page.keyboard.press('Enter');await page.waitForFunction(()=>snapshot.state.board.fiveFootSteps?.[snapshot.state.characters[0].id]&&!busy);
+     assert.deepEqual(await page.evaluate(()=>snapshot.state.characters.map(c=>c.hp)),[0,1]);
+     assert.deepEqual(await page.evaluate(()=>snapshot.state.board.spent),before.state.board.spent);
+     assert.equal(actions.length,count+1);assert.equal(actions.at(-1).type,'five_foot_step');
+     assert.match(await page.locator('#boardGuidance').textContent(),/no puedes desplazarte más/);
+     assert.equal(await page.locator('#grid .cell[data-x="0"][data-y="1"]').evaluate(e=>e===document.activeElement),true);
+     await page.keyboard.press('ArrowDown');await page.keyboard.press('Enter');
+     assert.equal(await page.locator('#confirmStep').isEnabled(),false);assert.equal(await page.locator('#confirmMove').isEnabled(),false);
+     assert.match(await page.locator('#pathInfo').textContent(),/Ya has dado tu paso/);await page.locator('#clearPath').scrollIntoViewIfNeeded();await page.screenshot({path:'.deps/five-foot-step-mobile.png',fullPage:true});await page.locator('#clearPath').click();
+    }
     await page.locator('[data-tab=story]').click();assert.match(await page.locator('#adventureEntry').textContent(),/en común/);assert.equal(await page.locator('#pfAcceptCeasefire').isEnabled(),true);
     const count=actions.length;await page.locator('#playGuidanceAction').focus();await page.keyboard.press('Enter');assert.equal(actions.length,count);await page.keyboard.press('Enter');await page.waitForFunction(()=>snapshot.state.pfEncounter.phase==='agreement'&&!busy);
     assert.equal(await page.evaluate(()=>snapshot.state.pfEncounter.ceasefire.sharedLanguage),'Común');assert.deepEqual(await page.evaluate(()=>snapshot.state.characters.map(c=>c.hp)),[0,1]);

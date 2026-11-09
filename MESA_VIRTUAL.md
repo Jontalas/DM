@@ -20,7 +20,7 @@ En escritorio desde 1100 píxeles, el tablero permanece visible junto al panel d
 |---|---|
 | Mesa | Cuadrícula 20×20, zoom y desplazamiento por barras; muros y terreno difícil declarados |
 | Fichas | Selección pulsando una ficha controlada, PG en el tablero, señal de turno y acceso a la hoja desde el grupo |
-| Movimiento | Recorrido con coste, validación y confirmación; reglas especiales todavía limitadas |
+| Movimiento | Recorrido con coste, validación y confirmación; paso de5pies voluntario y validado en patio1.16, sin otros desplazamientos ese asalto; reglas especiales todavía limitadas |
 | Medición | Dos pulsaciones marcan origen y destino; distancia geométrica 5/10 pies, local, sin mover fichas ni guardar cambios |
 | Chat y dados | Conversación, narración del director, historial de reglas y dados rápidos sin activar IA |
 | Combate | Iniciativa, acción estándar/movimiento, ataque cuerpo a cuerpo básico y estados descritos en [COMBATE.md](COMBATE.md) |
