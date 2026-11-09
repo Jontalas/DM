@@ -146,3 +146,6 @@ Fuente consultada9nov: [W3C APG · interfaz de teclado](https://www.w3.org/WAI/A
 
 
 9 noviembre: confirmación recibida con resultado aún sin cargar muestra «Tu acción está guardada. Falta cargar el resultado» y «Recuperar resultado». Conserva el recibo hasta una lectura posterior válida; recuperación y recarga no reenvían la acción. Envío incierto sigue siendo distinto y conserva cuerpo original. Prueba de lectura fallida, unchanged, recarga y respuesta anterior tardía correcta en navegador local, sin IA real.
+
+
+9 noviembre: envío pendiente en otra partida muestra causa y Abrir partida pendiente; volver conserva cuerpo y acceso, sin enviar nada por navegar. Dos pestañas comparten disponibilidad mediante evento local. Recuperación exacta conserva un mensaje y permite continuar. Dos reservas simultáneas verificadas con Web Locks de Chrome en localhost; sin soporte del bloqueo no se certifica ese caso simultáneo. Consultas locales cero API; abrir la partida mantiene su lectura necesaria existente.

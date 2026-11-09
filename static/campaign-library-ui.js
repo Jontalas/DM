@@ -3,13 +3,20 @@ function rememberCampaign(){
  try{CampaignLibrary.record(localStorage,snapshot,token);renderSavedCampaigns()}
  catch(error){if(!libraryWarningShown){toast('No se pudo actualizar la lista local de accesos. La campaña sigue guardada en el servidor. '+error.message);libraryWarningShown=true}}
 }
-function ensureCampaignCanChange(){
- if(busy||JSON.parse(localStorage.getItem('cronicas-pending')||'null'))throw Error('Recupera o termina el envío pendiente antes de cambiar de campaña.');
+function ensureCampaignCanChange(destination){
+ const pending=JSON.parse(localStorage.getItem('cronicas-pending')||'null');
+ if(busy||(pending&&!(pending.token!==token&&pending.token===destination)))throw Error('Recupera o termina el envío pendiente antes de cambiar de campaña.');
+}
+async function openPendingCampaign(){
+ const pending=JSON.parse(localStorage.getItem('cronicas-pending')||'null');
+ const entry=CampaignLibrary.read(localStorage).entries.find(v=>v.token===pending?.token);
+ if(!entry)throw Error('Abre la pestaña de la partida que tiene el envío pendiente para recuperarlo.');
+ await openSavedCampaign(entry.id);
 }
 async function openSavedCampaign(id,characterId){
- ensureCampaignCanChange();
  const entry=CampaignLibrary.read(localStorage).entries.find(v=>v.id===id);
  if(!entry)throw Error('Acceso de campaña no encontrado');
+ ensureCampaignCanChange(entry.token);
  const previousToken=token;let next;
  try{
   token=entry.token;
@@ -18,7 +25,7 @@ async function openSavedCampaign(id,characterId){
   localStorage.setItem('cronicas-token',token);
  }catch(error){token=previousToken;throw error}
  bookReader.reset();document.body.classList.remove('reader-wide');readerExpanded=false;
- snapshot=next;snapshotToken=token;lastVersion=next.version;path=[];ruler=[];rememberCampaign();render();
+ snapshot=next;snapshotToken=token;lastVersion=next.version;path=[];ruler=[];rememberCampaign();renderSyncStatus();render();
  if($('#modal').open)$('#modal').close();
  if(characterId&&next.state.characters.some(c=>c.id===characterId&&c.owner===next.me.id)){
   if(next.state.ruleset==='rule-pack')RulePackUI.openCharacter(characterId);else if(next.state.ruleset==='cairn-1e')CairnUI.openCharacter(characterId);else characterForm(characterId);
