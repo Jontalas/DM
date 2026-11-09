@@ -194,3 +194,12 @@ body.preparing-adventure #story>.chapter{display:none}
  body.adventure-active #story>.chapter h2{font-size:23px;margin:0}
  body.adventure-active #story>.chapter p,body.adventure-active #story>.chapter .eyebrow{display:none}
 }
+
+/* Small screens give the selected board its full working height. Recovery remains visible. */
+@media(max-width:1099px){
+ body.board-tab-active:not(.submission-pending) #composer{display:none}
+ #board .panel-title h2{margin:4px 0 8px}
+ #board>.toolbar{margin:8px 0;gap:6px}
+ #board>#boardGuidance{margin:8px 0}
+ #board>#attackForm label{margin:4px 0}
+}

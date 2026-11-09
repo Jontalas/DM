@@ -24,6 +24,7 @@ const path=require('node:path'),assert=require('node:assert/strict');
     await page.locator('#pfEncounterParley').click();await page.waitForFunction(()=>snapshot.state.pfEncounter.phase==='agreement'&&!busy);
    }else{
     await page.locator('#pfEncounterCombat').click();await page.waitForFunction(()=>snapshot.state.board.active&&!document.querySelector('#attackButton').disabled&&!busy);
+    await page.setViewportSize({width:390,height:844});await page.locator('[data-tab=board]').tap();assert.equal(await page.locator('#composer').isVisible(),false);assert.equal(await page.locator('#grid .token').first().evaluate(e=>{const r=e.getBoundingClientRect();return r.top>=0&&r.bottom<=innerHeight}),true);await page.locator('#toast').waitFor({state:'hidden',timeout:8000});await page.screenshot({path:'.deps/first-combat-mobile.png'});await page.locator('[data-tab=story]').tap();assert.equal(await page.locator('#composer').isVisible(),true);await page.locator('[data-tab=board]').tap();await page.setViewportSize({width:1440,height:1000});await page.screenshot({path:'.deps/first-combat-desktop.png'});
     await page.locator('#attackButton').click();await page.waitForFunction(()=>snapshot.state.characters[1].hp<0&&!busy);
     await page.locator('#pfWaitStabilization').click();await page.waitForFunction(()=>snapshot.state.pfEncounter.phase==='resolved'&&!busy);
    }

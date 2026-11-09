@@ -100,7 +100,7 @@ async function refresh(force=false){
  snapshot=next;snapshotToken=requestedToken;rememberCampaign();renderSyncStatus();
  if(!force&&!completed&&lastVersion===next.version)return;lastVersion=next.version;render();
 }
-function chooseTab(id,loadDocument=true){if(id==='board'&&window.matchMedia('(min-width:1100px)').matches)id='story';$$('.tab').forEach(x=>x.classList.toggle('active',x.id===id));$$('[data-tab]').forEach(x=>x.classList.toggle('active',x.dataset.tab===id));document.body.classList.toggle('reader-wide',id==='books'&&readerExpanded);if(id==='books'&&loadDocument)openBook();}
+function chooseTab(id,loadDocument=true){if(id==='board'&&window.matchMedia('(min-width:1100px)').matches)id='story';document.body.classList.toggle('board-tab-active',id==='board');$$('.tab').forEach(x=>x.classList.toggle('active',x.id===id));$$('[data-tab]').forEach(x=>x.classList.toggle('active',x.dataset.tab===id));document.body.classList.toggle('reader-wide',id==='books'&&readerExpanded);if(id==='books'&&loadDocument)openBook();}
 function ref(book,page,label){return `<button type="button" class="rule-link" data-book="${esc(book)}" data-page="${Number(page)}">${esc(label||names[book]+' · PDF p.'+page)} ↗</button>`}
 function renderSpeakerChoices(){
  if(!snapshot)return;
@@ -117,7 +117,7 @@ function conversationUnavailable(){
 }
 function renderComposerAvailability(){
  if(!snapshot)return;
- const reason=conversationUnavailable(),saved=JSON.parse(localStorage.getItem('cronicas-pending')||'null'),pending=!!saved;$('#send').disabled=busy||pending||!!reason;
+ const reason=conversationUnavailable(),saved=JSON.parse(localStorage.getItem('cronicas-pending')||'null'),pending=!!saved;document.body.classList.toggle('submission-pending',pending);$('#send').disabled=busy||pending||!!reason;
  $('#message').setAttribute('aria-describedby','aiHint');
  $('#aiHint').textContent=busy?'Resolviendo tu envío…':pending?(saved.token===token?'Recupera el envío pendiente antes de enviar otra acción. Puedes seguir escribiendo tu borrador.':'Hay un envío pendiente en otra partida. Ábrela para recuperarlo. Tu borrador permanece aquí.'):reason||(model.aiConfigured?'El director responderá si activas «Responder con IA». Las tiradas y herramientas funcionan sin IA.':'El director no está disponible en esta mesa. Puedes usar las fichas, los dados y el tablero sin IA.');
 }

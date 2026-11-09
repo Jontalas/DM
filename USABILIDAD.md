@@ -149,3 +149,6 @@ Fuente consultada9nov: [W3C APG · interfaz de teclado](https://www.w3.org/WAI/A
 
 
 9 noviembre: envío pendiente en otra partida muestra causa y Abrir partida pendiente; volver conserva cuerpo y acceso, sin enviar nada por navegar. Dos pestañas comparten disponibilidad mediante evento local. Recuperación exacta conserva un mensaje y permite continuar. Dos reservas simultáneas verificadas con Web Locks de Chrome en localhost; sin soporte del bloqueo no se certifica ese caso simultáneo. Consultas locales cero API; abrir la partida mantiene su lectura necesaria existente.
+
+
+9 noviembre: pestaña Tablero móvil reserva espacio retirando compositor habitual; Conversación lo restaura. Si hay envío pendiente, el recuperador prevalece y compositor permanece visible en cualquier pestaña. Prueba390x844: fichas en ventana inicial y controles44px; escritorio conserva conversación simultánea. Aventura1.6 completa y recuperación correctas, capturas reales de fixture sin IA. El mapa sigue siendo cuadrícula provisional y requiere más revisión de densidad.
