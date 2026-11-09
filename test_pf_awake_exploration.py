@@ -13,8 +13,8 @@ import test_pf_light_exploration as zero_fixture
 class AwakeExplorationTests(unittest.TestCase):
     act=zero_fixture.LightExplorationTests.act
 
-    def setUp(self):
-        fixture=clinical_fixture.AwakePartyProofTests();fixture.encounter_version='1.13.0';fixture.setUp()
+    def setUp(self,version='1.13.0'):
+        fixture=clinical_fixture.AwakePartyProofTests();fixture.encounter_version=version;fixture.setUp()
         self.state,self.me,self.actor=fixture.state,fixture.me,fixture.actor
 
     def test_both_negative_awake_patients_can_complete_route_without_clinical_changes(self):
@@ -22,6 +22,12 @@ class AwakeExplorationTests(unittest.TestCase):
         zero_fixture.LightExplorationTests.test_zero_searches_walks_all_scenes_and_returns_without_healing_or_rest(self)
         self.assertEqual([c['hp'] for c in self.state['characters']],[-1,-2])
         self.assertTrue(light.eligible(self.state,self.state['characters'][0]))
+
+    def test_latest_catalog_revision_keeps_route_and_rejects_changed_medical_proofs(self):
+        import pf_encounters
+        version=pf_encounters.definition()['version'];self.setUp(version)
+        self.test_both_negative_awake_patients_can_complete_route_without_clinical_changes()
+        self.setUp(version);self.test_changed_or_sleeping_remote_patient_blocks_before_search_and_travel()
 
     def test_pending_perception_resolves_and_spends_no_hp_or_future_hourly_check(self):
         self.act('continue_pf_encounter');before=copy.deepcopy(self.state['characters'])

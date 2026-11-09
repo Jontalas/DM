@@ -11,10 +11,10 @@ from test_character_builder import choices
 
 
 class PreparedSceneFactsTests(unittest.TestCase):
-    def setUp(self):
+    def setUp(self,version='1.13.0'):
         self.me={'id':'player','name':'Ana','host':True};self.state=engine.initial_state({})
         self.act('create_character',choices=choices());self.actor=self.state['characters'][0]['id']
-        self.act('enter_pf_encounter',encounter='patio-del-peaje',encounterVersion='1.13.0',character=self.actor)
+        self.act('enter_pf_encounter',encounter='patio-del-peaje',encounterVersion=version,character=self.actor)
         self.act('choose_pf_encounter',choice='parley')
         self.state['messages'].append({'speaker':'Aria','owner':'player','kind':'dialogue','text':'¿Me dejas revisar el registro?'})
 
@@ -28,6 +28,18 @@ class PreparedSceneFactsTests(unittest.TestCase):
         self.assertNotIn('preparedSceneFacts',claude_dm.build_context(self.state,'Regla',[],rules=True))
         self.assertEqual(self.state,before)
         self.assertIn('No niegues ni dejes pendiente ese permiso',director_prompt.system_prompt())
+
+    def test_latest_catalog_revision_keeps_confirmed_permission_and_clinical_boundaries(self):
+        import pf_encounters
+        import test_pf_awake_party as clinical_fixture
+        version=pf_encounters.definition()['version'];self.setUp(version)
+        self.test_dialogue_receives_existing_permission_without_actions_clues_or_mutation()
+        fixture=clinical_fixture.AwakePartyProofTests();fixture.encounter_version=version;fixture.setUp()
+        before=copy.deepcopy(fixture.state)
+        self.assertEqual(facts.public_facts(fixture.state)['publicDocumentsAccess'],'already-permitted')
+        self.assertEqual(fixture.state,before)
+        fixture.state['characters'][1]['hp']+=1
+        self.assertIsNone(facts.public_facts(fixture.state))
 
     def test_other_definitions_changed_policy_combat_and_unconscious_npc_get_no_fact(self):
         baseline=copy.deepcopy(self.state)

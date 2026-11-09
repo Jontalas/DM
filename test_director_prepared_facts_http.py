@@ -24,8 +24,15 @@ class PreparedFactsHTTPTests(unittest.TestCase):
         transport.NightRestHTTPTests.setUp(self)
 
     def test_sdk_gets_permission_in_dialogue_and_failed_commit_restores_without_hint_or_second_call(self):
+        self.verify_dialogue_recovery('1.13.0')
+
+    def test_latest_catalog_revision_preserves_permission_in_sdk_and_recovered_capture(self):
+        import pf_encounters
+        self.verify_dialogue_recovery(pf_encounters.definition()['version'])
+
+    def verify_dialogue_recovery(self,version):
         self.action('create_character',choices=choices());actor=self.state()['state']['characters'][0]['id']
-        self.action('enter_pf_encounter',encounter='patio-del-peaje',encounterVersion='1.13.0',character=actor)
+        self.action('enter_pf_encounter',encounter='patio-del-peaje',encounterVersion=version,character=actor)
         self.action('choose_pf_encounter',choice='parley');before=self.state()
         body={'id':secrets.token_hex(12),'version':before['version'],'type':'talk','kind':'dialogue','character':actor,'text':'¿Me dejas revisar el registro?','director':True,'captureContract':'pf-director-action-1'}
         raw=json.dumps({'stop_reason':'end_turn','content':[{'type':'text','text':json.dumps({'narration':'La guardiana confirma que puedes consultar los papeles públicos. Tú decides si lo haces.','proposals':[]})}]}).encode()

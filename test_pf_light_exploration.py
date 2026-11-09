@@ -11,11 +11,11 @@ from test_character_builder import choices
 
 
 class LightExplorationTests(unittest.TestCase):
-    def setUp(self):
+    def setUp(self,version='1.12.0'):
         self.me={'id':'player','name':'Ana','host':True}
         self.state=engine.initial_state({})
         self.act('create_character',choices=choices());self.actor=self.state['characters'][0]['id']
-        self.act('enter_pf_encounter',encounter='patio-del-peaje',encounterVersion='1.12.0',character=self.actor)
+        self.act('enter_pf_encounter',encounter='patio-del-peaje',encounterVersion=version,character=self.actor)
         with patch('game_randomness.draw',side_effect=[20,1]),patch('game_randomness.initiative_tie',return_value=0):self.act('choose_pf_encounter',choice='combat')
         self.npc=self.state['characters'][1]['id']
         with patch('game_randomness.draw',side_effect=[12,1]):self.act('attack',character=self.actor,target=self.npc)
@@ -46,6 +46,11 @@ class LightExplorationTests(unittest.TestCase):
             self.assertEqual({k:v for k,v in new.items() if k!='sceneId'},old)
         self.assertNotIn('pfNightRest',self.state);self.assertNotIn('npcRecovery',self.state['pfEncounter'])
         pf_encounters.validate_restored(self.state);pf_scene_transition.validate_restored(self.state)
+
+    def test_latest_catalog_revision_keeps_zero_hp_route_and_pending_validation(self):
+        version=pf_encounters.definition()['version'];self.setUp(version)
+        self.test_zero_searches_walks_all_scenes_and_returns_without_healing_or_rest()
+        self.setUp(version);self.test_pending_search_revalidates_zero_and_does_not_deadlock_itself()
 
     def test_pending_search_revalidates_zero_and_does_not_deadlock_itself(self):
         self.act('continue_pf_encounter')

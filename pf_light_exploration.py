@@ -13,7 +13,7 @@ def can_remain_awake(state,character):
     import pf_npc_wait
     if pf_npc_wait.can_remain_awake(state,character):return True
     record=state.get('pfEncounter') or {}
-    if ((record.get('definition',{}).get('explorationScope'),record.get('definition',{}).get('version')) not in ((AWAKE_SCOPE,'1.13.0'),(ASSISTED_SCOPE,'1.14.0'),(ASSISTED_SCOPE,'1.15.0'))
+    if ((record.get('definition',{}).get('explorationScope'),record.get('definition',{}).get('version')) not in ((AWAKE_SCOPE,'1.13.0'),(ASSISTED_SCOPE,'1.14.0'),(ASSISTED_SCOPE,'1.15.0'),(ASSISTED_SCOPE,'1.16.0'))
         or character.get('id') not in (record.get('character'),record.get('npc'))):return False
     import pf_awake_party
     return pf_awake_party.verified(state)
@@ -22,7 +22,7 @@ def can_remain_awake(state,character):
 def eligible(state,character):
     record=state.get('pfEncounter') or {}
     definition=record.get('definition') or {}
-    if ((definition.get('explorationScope'),definition.get('version')) not in ((SCOPE,'1.12.0'),(AWAKE_SCOPE,'1.13.0'),(ASSISTED_SCOPE,'1.14.0'),(ASSISTED_SCOPE,'1.15.0'))
+    if ((definition.get('explorationScope'),definition.get('version')) not in ((SCOPE,'1.12.0'),(AWAKE_SCOPE,'1.13.0'),(ASSISTED_SCOPE,'1.14.0'),(ASSISTED_SCOPE,'1.15.0'),(ASSISTED_SCOPE,'1.16.0'))
         or record.get('phase') not in ('agreement','resolved','defeated')
         or state['board']['active'] or state['board']['terrain']
         or len(state['characters'])!=2 or character.get('id')!=record.get('character')

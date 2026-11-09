@@ -1,5 +1,7 @@
 # Sencillez y orientación
 
+Compatibilidad del patio1.16: la nueva revisión debe conservar permisos de papeles ya concedidos y acciones de pacientes conscientes con prueba clínica; no exigir otra negociación, curación o cálculo. Los filtros de versión omitidos se corrigieron sin ampliar reglas. Nueva aceptación usa la versión del catálogo actual además de las históricas, en unidades/HTTP/contextoSDK y browser0PG/negativos/auxilio; las cinco pistas, la ruta y copias conservan salud, reloj y agencia. Proveedor simulado, sin certificar una nueva narración real.
+
 Objetivos a0PG9nov: no atribuir al adversario inconsciencia por el límite temporal del ataque automático. Mensaje de objetivo no positivo distingue el estado clínico, explica que esta versión necesita revisión excepcional y conserva ficha/opciones accesibles; selector desactivado muestra nombre/PG. Prueba UI con snapshots sintéticos0PG/caído y restauración exacta, además del recorrido general2jugadores. Sin cambio de reglas ni acciones remotas por ayuda.
 
 Resultado tras atacar9nov: desde tablero móvil se abre conversación y se enfoca el resumen del ataque guardado, con cálculo y fuentes plegados. Tablero sigue accesible sin enviar nada; escritorio conserva mesa/conversación. Recuperar respuesta perdida enseña el mismo registro, sin nueva tirada. Si el jugador navega, abre modal o mueve foco durante espera, se respeta ese contexto. Pruebas completas móviles1.16 con respuesta normal/perdida/retenida y mesa general correctas, sin IA real.

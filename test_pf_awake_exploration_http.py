@@ -19,7 +19,7 @@ class AwakeExplorationHTTPTests(unittest.TestCase):
 
     def prepare(self):
         self.action('create_character',choices=choices());actor=self.state()['state']['characters'][0]['id']
-        self.action('enter_pf_encounter',encounter='patio-del-peaje',encounterVersion='1.13.0',character=actor)
+        self.action('enter_pf_encounter',encounter='patio-del-peaje',encounterVersion=getattr(self,'encounter_version','1.13.0'),character=actor)
         with patch('game_randomness.draw',side_effect=[20,1]),patch('game_randomness.initiative_tie',return_value=0):self.action('choose_pf_encounter',choice='combat')
         for _ in range(4):
             with patch('game_randomness.draw',side_effect=[19,1,4]):self.action('turn')
@@ -46,6 +46,11 @@ class AwakeExplorationHTTPTests(unittest.TestCase):
                 self.assertEqual(after['state']['characters'][1]['sceneId'],'patio')
                 self.action('import',campaign=self.request('/api/export',{}));self.assertEqual(self.state()['state']['characters'],after['state']['characters'])
             finally:server.STORE=previous
+
+    def test_latest_catalog_revision_preserves_clinical_travel_receipts_and_copy(self):
+        import pf_encounters
+        self.encounter_version=pf_encounters.definition()['version']
+        self.test_travel_failed_commit_new_client_duplicate_and_copy_keep_both_medical_proofs()
 
     def test_manual_correction_leaves_history_but_revokes_current_clinical_permission(self):
         actor,npc=self.prepare();self.action('travel_scene',exit='cobertizo');old_receipt=self.state()['state']['pfEncounter']['recoveryOutcome']

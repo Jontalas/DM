@@ -3,7 +3,8 @@ const {spawn}=require('node:child_process'),{createInterface}=require('node:read
 const path=require('node:path'),assert=require('node:assert/strict');
 (async()=>{
  const guest=process.env.TEST_GUEST_PLAYER==='1',disabledTruce=process.env.TEST_DISABLED_TRUCE==='1',awake=process.env.TEST_AWAKE_EXPLORATION==='1',aidCase=process.env.TEST_NPC_AID_CASE||'',npcAid=['success','boundary','natural','death'].includes(aidCase),falling=awake||npcAid;
- const fixture=spawn(path.resolve('.venv/Scripts/python.exe'),['test_browser_fixture.py'],{env:{...process.env,TEST_PF_ENCOUNTER_VERSION:disabledTruce?'1.15.0':npcAid?'1.14.0':awake?'1.13.0':'1.12.0',TEST_PF_CEASEFIRE_FIXTURE:'1',TEST_PF_TRUCE_NIGHT:'1',TEST_PF_DISABLED_TRUCE_FIXTURE:disabledTruce?'1':'0',TEST_PF_AWAKE_EXPLORATION_FIXTURE:awake?'1':'0',TEST_PF_NPC_AID_FIXTURE:aidCase},stdio:['ignore','pipe','inherit']});let browser;
+ const encounterVersion=process.env.TEST_PF_ENCOUNTER_VERSION||(disabledTruce?'1.15.0':npcAid?'1.14.0':awake?'1.13.0':'1.12.0');
+ const fixture=spawn(path.resolve('.venv/Scripts/python.exe'),['test_browser_fixture.py'],{env:{...process.env,TEST_PF_ENCOUNTER_VERSION:encounterVersion,TEST_PF_CEASEFIRE_FIXTURE:'1',TEST_PF_TRUCE_NIGHT:'1',TEST_PF_DISABLED_TRUCE_FIXTURE:disabledTruce?'1':'0',TEST_PF_AWAKE_EXPLORATION_FIXTURE:awake?'1':'0',TEST_PF_NPC_AID_FIXTURE:aidCase},stdio:['ignore','pipe','inherit']});let browser;
  try{
   const url=await new Promise((resolve,reject)=>{createInterface({input:fixture.stdout}).once('line',resolve);fixture.once('exit',()=>reject(Error('Fixture exited')))});
   browser=await chromium.launch({headless:true,executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe'});
@@ -16,7 +17,7 @@ const path=require('node:path'),assert=require('node:assert/strict');
    await page.waitForFunction(()=>snapshot?.me&&!snapshot.me.host&&!busy);
   }
   await page.locator('[data-create-hero]').click();await page.locator('[data-creator-preset=guardian]').click();await page.locator('#creatorName').fill('Aria');await page.locator('[data-creator-step="3"]').click();await page.locator('#creatorFinish').click();await page.locator('.sheet-checks').waitFor();await page.locator('#closeModal').click();
-  await page.locator('#beginPreparedEncounter').click();await page.locator('#pfEncounterEntry button').click();await page.locator('#pfEncounterCombat').click();await page.waitForFunction(()=>snapshot.state.board.active&&!busy);
+  await page.locator('#beginPreparedEncounter').click();await page.locator('#pfEncounterEntry button').click();await page.locator('#pfEncounterCombat').click();await page.waitForFunction(()=>snapshot.state.board.active&&!busy);assert.equal(await page.evaluate(()=>snapshot.state.pfEncounter.definition.version),encounterVersion);
   if(!falling&&!disabledTruce){await page.locator('#attackButton').click();await page.waitForFunction(()=>snapshot.state.characters[1].hp===1&&!busy)}
   for(let turn=0;turn<4;turn++){await page.locator('#nextTurn').click();await page.waitForFunction(hp=>snapshot.state.characters[0].hp===hp&&!busy,12-turn*4)}
   if(falling){

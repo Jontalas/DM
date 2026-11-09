@@ -4,7 +4,7 @@
 def public_facts(state):
     record=state.get('pfEncounter') or {};definition=record.get('definition') or {}
     if ((definition.get('version'),definition.get('explorationScope')) not in
-        (('1.12.0','zero-hp-light-exploration-1'),('1.13.0','conscious-light-exploration-1'),('1.14.0','conscious-assisted-light-exploration-1'),('1.15.0','conscious-assisted-light-exploration-1'))
+        (('1.12.0','zero-hp-light-exploration-1'),('1.13.0','conscious-light-exploration-1'),('1.14.0','conscious-assisted-light-exploration-1'),('1.15.0','conscious-assisted-light-exploration-1'),('1.16.0','conscious-assisted-light-exploration-1'))
         or record.get('phase') not in ('agreement','resolved','defeated') or state['board']['active']):return None
     import pf_encounters
     from rule_pack_authoring import canonical

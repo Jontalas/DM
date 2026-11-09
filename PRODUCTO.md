@@ -16,6 +16,8 @@ Resumen visible para el propietario: http://127.0.0.1:8766/avance-local.html, ju
 
 Control de tamaño, medido sobre la revisión publicada7516f1c: aproximadamente1MB/12.000líneas en107archivos propios de aplicación;201archivos de pruebas,84de documentación y202de recursos externos del visor por separado. La carpeta local de herramientas/consultas ronda1,6GB y predominan imágenes de manuales y herramientas de pruebas; no equivale al programa del jugador. Conservar trazabilidad y originales; ordenar el histórico sin crear un documento nuevo por cada corrección habitual. Usar PRODUCTO.md para alcance, REANUDAR.md para continuidad y TRABAJO.md para el detalle de ejecución. Nuevos documentos solo si constituyen un contrato o referencia independiente necesaria.
 
+Medición de control repetida sobre d081f2c: siguen107archivos propios (84Python/23interfaz),1.000.501bytes frente a954.468bytes de la medición anterior. El único archivo añadido desde aquella revisión es un recurso versionado del encuentro; no se han creado nuevos archivos de aplicación, pruebas o documentación. Método: árbol Git y mismas categorías, .deps/project-size-audit-current.json; no incluye manuales, herramientas ni dependencias como código propio. Estos datos miden tamaño, no porcentaje de producto terminado.
+
 ### Avance del cierre acotado · 9 de noviembre
 
 La entrada admite empezar solo con nombre. El creador permite nombre/estilo, revisión y confirmación, con personalización opcional. Las aventuras explican su experiencia y límites antes de comenzar. La mesa tiene un primer ajuste de presentación; conserva una cuadrícula provisional. Las copias incompatibles ya se rechazan antes de sustituir la partida y ofrecen un siguiente paso claro.
