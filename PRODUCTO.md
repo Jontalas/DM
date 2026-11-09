@@ -2,6 +2,20 @@
 
 Dirección acordada el 4 de noviembre de 2026. Este documento describe el objetivo; no certifica que esté implementado.
 
+## Cierre de una primera versión comprensible (revisión de ejecución, 9 de noviembre)
+
+El usuario ha señalado que el crecimiento del proyecto y los informes técnicos le impiden comprender el avance y valorar su tamaño. Se mantienen las premisas finales; se acota la primera entrega y se cambia la forma de mostrar el progreso. Este es un plan de ejecución de Codex, no una afirmación de que el usuario haya renunciado a las funciones finales.
+
+La primera entrega será una aventura corta **individual**, de principio a fin: personaje guiado dentro de las opciones verificadas, mesa clara con tablero/fichas/conversación, director de IA, reglas automatizadas del recorrido ofrecido, guardar/salir/retomar y recuperación de copia. La cooperación de dos personas sigue como recorrido experimental hasta validar su experiencia completa. Pathfinder completo, más clases/niveles/magia, campañas abiertas prolongadas, otros reglamentos completos y herramientas avanzadas de mesa quedan para entregas posteriores.
+
+**Próximo foco: una mesa e interacción visualmente coherentes y demostrables.** Cerrar y pulir el recorrido existente antes de ampliar catálogos, sistemas o casos mecánicos que no lo bloqueen. Después, cerrar fiabilidad/recuperación y preparar una entrega que el jugador pueda entender por sí mismo. El número de correcciones o pruebas no sustituye este criterio de producto.
+
+Rango inicial de planificación para ese alcance: **2–4 semanas de trabajo efectivo**, con primera revisión visual en **3–5 jornadas efectivas**. Es una estimación provisional, no una fecha comprometida; se revisa al cerrar la primera entrega visible y presupone mantener el alcance. La visión completa todavía no tiene una estimación temporal fiable. No comunicar porcentajes globales sin una base medible.
+
+Resumen visible para el propietario: http://127.0.0.1:8766/avance-local.html, junto a la demostración existente. Incluye estado, capturas reales rotuladas, alcance, próximos bloques y estimación; se ha comprobado en escritorio/móvil y no usa API, IA o recursos externos. Se genera con `.deps/build_progress_page.py`, queda fuera del despliegue y no añade código a la aplicación publicada. Actualizarlo con las entregas funcionales; los mensajes deben explicar «qué puede hacer el jugador, qué falta y dónde verlo». Las invitaciones personales siguen reservadas a hitos importantes y no son necesarias para consultar avances.
+
+Control de tamaño, medido sobre la revisión publicada7516f1c: aproximadamente1MB/12.000líneas en107archivos propios de aplicación;201archivos de pruebas,84de documentación y202de recursos externos del visor por separado. La carpeta local de herramientas/consultas ronda1,6GB y predominan imágenes de manuales y herramientas de pruebas; no equivale al programa del jugador. Conservar trazabilidad y originales; ordenar el histórico sin crear un documento nuevo por cada corrección habitual. Usar PRODUCTO.md para alcance, REANUDAR.md para continuidad y TRABAJO.md para el detalle de ejecución. Nuevos documentos solo si constituyen un contrato o referencia independiente necesaria.
+
 ## Experiencia objetivo
 
 **Directiva adicional del usuario, 6 de noviembre de 2026:** máxima sencillez de uso y orientación continua. Cada pantalla debe comunicar con claridad la situación, las decisiones actuales y el siguiente paso, sin abrumar con información u opciones. Revelar progresivamente lo secundario y avanzado; ofrecer ayuda contextual, tooltips accesibles y recorridos guiados cuando hagan falta. Revisar también las funciones existentes. La claridad forma parte de la aceptación de cada recorrido, en escritorio, teclado y móvil, y no requiere llamadas de IA ni operaciones remotas por consultar ayuda. Criterios y revisión en USABILIDAD.md.

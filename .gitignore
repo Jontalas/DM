@@ -1,4 +1,5 @@
 .deps/
+static/avance-local.html
 data/*.sqlite*
 __pycache__/
 .env
