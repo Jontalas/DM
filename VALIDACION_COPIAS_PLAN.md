@@ -1,6 +1,6 @@
 # Validación de copias antes de sustituir estado
 
-Estado 9nov: bloque acotado implementado y945pruebas generales correctas300,506s; listo para publicar/verificar. La reproducción HTTP limpia confirmó catorce aceptaciones indebidas entre siete estructuras dañadas y dos vías de recuperación. La validación final añade también referencias de iniciativa inexistentes y números no finitos. No se ha demostrado corrupción de una campaña personal ni una caída de interfaz para cada variante.
+Estado 9nov: bloque acotado implementado y945pruebas generales correctas300,506s; publicado/verificado ene174ea8 (Render7652700710), lectores0POST/IA correctos. La reproducción HTTP limpia confirmó catorce aceptaciones indebidas entre siete estructuras dañadas y dos vías de recuperación. La validación final añade también referencias de iniciativa inexistentes y números no finitos. No se ha demostrado corrupción de una campaña personal ni una caída de interfaz para cada variante.
 
 Se reutilizan engine/server y la comprobación de terreno existente; no hay archivo de aplicación ni dependencia nueva. Fichas manuales legítimas, PNJ, propietarios, privacidad y copias de otros adaptadores conservan sus recorridos. La interfaz rechaza JSON ilegible localmente y explica un rechazo confirmado sin perder la partida; motivo bajo demanda. Los fallos de red conservan el protocolo de recuperación de envío, sin prometer un resultado no confirmado. Evidencia y estado vigente en TRABAJO.md y REANUDAR.md.
 

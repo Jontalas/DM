@@ -80,6 +80,13 @@ const path=require('node:path'),assert=require('node:assert/strict');
   }
   const version=await page.evaluate(()=>snapshot.version);await page.locator('#importFile').setInputFiles({name:'valid-copy.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(validCopy))});await page.waitForFunction(v=>snapshot.version>v&&!busy,version);
   await page.reload();await page.waitForFunction(()=>snapshot&&!busy);assert.equal(await page.evaluate(()=>snapshot.state.characters[0].hp),originalCharacter.maxHp-5);
+  await page.locator('[data-tab=journal]').click();
+  await page.evaluate(()=>{const original=File.prototype.text;File.prototype.text=function(){if(this.name!=='slow-copy.json')return original.call(this);const file=this;return new Promise(resolve=>{window.releaseCopyRead=async()=>resolve(await original.call(file))})}});
+  await page.locator('#importFile').setInputFiles({name:'slow-copy.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(validCopy))});await page.waitForFunction(()=>typeof window.releaseCopyRead==='function');
+  await page.locator('#libraryBtn').click();await page.locator(`#modal [data-library-open="${second.id+':'+second.char.owner}"]:not([data-library-character])`).click();await page.waitForFunction(id=>snapshot.id===id&&!busy,second.id);
+  const beforeSwitch=await page.evaluate(()=>({version:snapshot.version,state:structuredClone(snapshot.state)})),count=actions.length;
+  await page.evaluate(()=>window.releaseCopyRead());await page.waitForFunction(()=>!busy&&document.querySelector('#toast').textContent.includes('partida ha cambiado'));
+  assert.equal(actions.length,count);assert.deepEqual(await page.evaluate(()=>({version:snapshot.version,state:structuredClone(snapshot.state)})),beforeSwitch);assert.equal(await page.locator('#copyImportStatus').isVisible(),false);
   assert.deepEqual(errors,[]);
   console.log('OK: remembers multiple campaigns, copies initial choices with server calculation, original progression preserved, no AI, access backup, pending-action switch protection, reload and mobile.');
  }finally{if(browser)await browser.close();fixture.kill()}

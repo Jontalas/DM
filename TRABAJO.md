@@ -1,5 +1,9 @@
 # Continuidad del desarrollo autónomo
 
+9nov: e174ea8ee0381f53b4953ac3b43e5db3b5fadce4 publicado, Render7652700710 success; lectores capítulos/auxilio exactSHA correctos0POST/IA.945completas300,506s son ahora base publicada, descriptor1.15.
+
+Cierre UI de copia por acceso: captura token/campaña al seleccionar archivo y cancela si cambia durante File.text, también en fallo de lectura; no se envía la copia a la nueva sala. Aviso persistente se limpia al cambiar campaña/propietario. Biblioteca browser usa lectura de archivo deliberadamente retenida, cambia de partida por biblioteca, libera lectura ycomprueba0acciones/nuevoestado intacto/aviso limpio; también rechazo/copia válida/recarga/móvil correctos. Baseline inicial solo agotó espera del aviso protector ausente (.deps/copy-switch-ui-baseline.log); no atribuir corrupción personal ni afirmar comparación de estado del baseline. No cambia Python ni exige repetir945; nodecheck/diffcheck correctos. Publicar yverificar lectores, después seguir claridad del recorrido individual sin ampliar reglas/sistemas.
+
 9nov:945 completas finales correctas300,506s, .deps/copy-shape-final-suite.log21341 terminada. Sin cambios Python desde arranque; UI después añade JSONilegible/raíz inválida0envíos ymensaje persistente, biblioteca rehecha correcta. Grupo compartido/clínica/paquetes correctos. Cerrar commit/publicación/lectores protegidos sin mutar ni inferir; después continuar el recorrido individual. Ninguna dependencia del usuario.
 
 9nov: validación de copias acotada implementada en engine/server existentes, sin módulos/dependencias nuevos. Reproducción HTTP limpia:14subcasos aceptaban estructuras dañadas en ambas vías; ficha manual válida sí importaba. Primer guion quedó insertado a mitad de otra clase y produjo2errores propios; corregida ubicación antes del baseline limpio (.deps/copy-shape-clean-baseline.log), no atribuir esos errores al producto.
