@@ -170,3 +170,6 @@ Fuente consultada9nov: [W3C APG · interfaz de teclado](https://www.w3.org/WAI/A
 
 
 9 noviembre: Reglamentos móvil entra ampliado, página primero y herramientas de búsqueda/consulta bajo demanda. Se puede cerrar vista ampliada con estado accesible; cualquier recibo pendiente conserva recuperación visible. IA indisponible deshabilitada con causa y alternativas. Navegador con páginas sintéticas: vista inicial, navegación/caché por sesión/revisión, errores, teclado,0operaciones al desplegar; director y general correctos. Demo local sin credenciales no abre originales remotos, se mantiene aislada y no requiere configurar nada.
+
+
+9 noviembre: Dados empieza en ficha propia, no en cálculo manual. Selector reutiliza modificadores guardados y advierte origen manual si corresponde; ficha completa consultable, herramientas genéricas/TREY plegadas. Apertura/elección/cancelación locales0acciones; confirmar check existente muestra conversación. Recuperar lectura de check confirmado no repite dado y muestra resultado. Navegador permisos/Enter/Esc/foco, suma+8 y CD, fuente heredada, salud/creador/general correctos; demo legal consultada en lectura. Ninguna mecánica nueva ni promesa de efectos por tirada libre.

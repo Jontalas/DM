@@ -12,13 +12,13 @@ Comunicar qué puede hacer el jugador, qué falta y dónde verlo. No usar contad
 
 Siguiente trabajo autorizado:
 
-1. Publicar/verificar lector móvil en app.js/index.html/tabletop.css: vista ampliada automática, herramientas plegadas, fuentes legibles, estado accesible y recuperador visible si hay recibo. Reader/director/capítulos/general correctos. General actualizado a resumen de ataque (dos expectativas de texto crudo antiguas).945Python intacto. Regenerar/verificar informe local y continuar cierre del recorrido sin ampliar reglas.
+1. Publicar/verificar entrada guiada a tiradas de ficha desde Dados: app.js, character-checks.js, index.html, tabletop.css. Herramientas manuales/TREY plegadas; selector sin edición ni API al abrir, Esc vuelve con foco, confirmar muestra resultado. Recuperar check ya confirmado usa GET y muestra conversación (una sola tirada). Checks/creador/salud/general/director correctos. Demo legal y capturas en lectura correctas; actualizar informe local.945Python intacto.
 2. Continuar la revisión de primeras decisiones, combate y recuperación del recorrido individual. Resolver fricciones observadas, conservando agencia y reglas; no expandir el alcance para producir más cambios.
 3. Conservar el progreso en estos archivos existentes. No crear un MD por corrección: PRODUCTO para alcance, REANUDAR para continuidad, TRABAJO para detalle, USABILIDAD para criterios/evidencia.
 
 ## Producción y verificación actual
 
-**2654acc948d96f36824b9aad7c132851a8a4912f**, Render7659748715 success; revisión/salud/app.js exactos verificados públicamente., ambas ramas publicadas. Revisión, salud y app.js/index.html/tabletop.css exactos comprobados públicamente. Descriptor Pathfinder **1.15.0**. Incluye navegación del tablero por flechas/unTab.
+**3de00e488ca320b4daf56d2bde4da2620113e44f**, Render7660050918 success; revisión/salud/app.js/index.html/tabletop.css exactos verificados públicamente., ambas ramas publicadas. Revisión, salud y app.js/index.html/tabletop.css exactos comprobados públicamente. Descriptor Pathfinder **1.15.0**. Incluye navegación del tablero por flechas/unTab.
 
 Motor desde **e174ea8ee0381f53b4953ac3b43e5db3b5fadce4**: **945 pruebas completas correctas, 300,506s**, .deps/copy-shape-final-suite.log, sesión21341 terminada. Ningún Python modificado después de ese arranque; cambios posteriores solo UI/pruebas/docs. No repetir suite completa sin cambio o preocupación concreta. No hay pruebas ni inferencias en curso.
 
@@ -43,6 +43,10 @@ Si existe formulario de primeros auxilios del encuentro y actor está consciente
 ## Lector móvil local listo
 
 Abrir Reglamentos en móvil usa vista ampliada existente; búsqueda/IA/índice bajo bookTools nativo. Cerrar vista ampliada y aria-pressed coherentes; cualquier recibo pendiente muestra compositor incluso dentro de vista ampliada. Consulta IA deshabilitada con motivo si director ausente; búsqueda y lectura disponibles. Reader con páginas sintéticas verifica vista inicial/caché/privacidad/errores/recuperación0IA/escrituras, director/capítulos/general correctos. Captura reader-mobile revisada (documento sintético). General necesitó adaptar dos aserciones al ataque plegado ya publicado; final correcto, no fallo del lector. Demo8766 conserva estado y versión; originales remotos no accesibles sin credenciales Firebase, mantener aislamiento, no configurar ni reiniciar. Publicar app.js/index.html/tabletop.css, no releer campañas reales por estos ajustes.
+
+## Dados: acceso a ficha local listo
+
+Dados prioriza personajes propios no adversarios y creador si faltan; manual/TREY bajo detalle conservando valores/formularios. Selector usa sheetChecks existente, abre/focaliza sin API, Esc devuelve foco; no contiene edición estadística y permite ficha completa. Origen manual se avisa. Confirmar check existente muestra resultado en conversación; sólo nuevo selector cierra tras tirar, ficha original conserva comportamiento. Recuperación de check confirmado desde Dice hace GET y cambia a conversación: baseline no la mostraba, final una petición check, Percepción+8/total20 y sin repetir dado. Permisos/creador/salud/general/director correctos. data-dice-create separado tras detectar colisión de selector de pruebas con data-create-hero. Capturas demo legal revisadas,0POST/estado intacto. Publicar app.js/character-checks.js/index.html/tabletop.css; sin Python/IA ni nuevas mecánicas.
 
 ## Qué está terminado en este bloque
 

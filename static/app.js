@@ -138,7 +138,7 @@ async function recoverPendingSubmission(){
  if(!saved||saved.token!==token)throw Error('No hay un envío pendiente de esta partida');
  busy=true;$('#send').disabled=true;$('#playGuidanceAction').disabled=true;$('#sync').textContent='Recuperando envío…';
  let accepted,reading=false;
- try{accepted=await recoverSubmission(saved);reading=true;await refresh(true);clearSubmission(accepted);if(saved.body.type==='talk'&&$('#message').value===saved.body.text)$('#message').value='';toast('Envío recuperado')}
+ try{accepted=await recoverSubmission(saved);reading=true;await refresh(true);clearSubmission(accepted);if(saved.body.type==='talk'&&$('#message').value===saved.body.text)$('#message').value='';if(saved.body.type==='check')chooseTab('story');toast('Envío recuperado')}
  catch(error){if(!reading&&error.confirmed)clearSubmission(saved);if(!reading){try{await refresh(true)}catch{}}throw error}
  finally{busy=false;renderComposerAvailability();$('#playGuidanceAction').disabled=false;renderSubmissionFeedback()}
 }
@@ -276,7 +276,7 @@ function renderParty(s){
  if($('#otherSceneCharacters'))$('#otherSceneCharacters').onclick=()=>modal(`<div class="eyebrow">OTROS PERSONAJES</div><h2>En otra escena</h2><p>Siguen en la partida, pero sus fichas no están en el tablero actual. Puedes consultarlas sin moverlas.</p>${elsewhere.map(partyPerson).join('')}`);
 }
 function render(){const importStatus=$('#copyImportStatus'),access=snapshot.id+':'+snapshot.me.id;if(importStatus.dataset.access!==access){importStatus.hidden=true;importStatus.dataset.access=access}if(snapshot.state.ruleset==='rule-pack'){RulePackUI.render();return}if($('#rulePackWorkspace'))$('#rulePackWorkspace').hidden=true;if(snapshot.state.ruleset==='cairn-1e'){$('#campaignTitle').textContent=snapshot.title;$('#campaignMeta').textContent='Cairn 1e';$('#inviteBtn').hidden=!snapshot.me.host;$('#welcome').hidden=true;$('#app').hidden=false;$('#app > .workspace').hidden=true;run(()=>CairnUI.render())();return}if($('#systemWorkspace'))$('#systemWorkspace').hidden=true;$('#app > .workspace').hidden=false;const s=snapshot.state, me=snapshot.me;$('#savedLibraryPanel').hidden=true;$('#welcome').hidden=true;$('#app').hidden=false;$('#campaignTitle').textContent=snapshot.title;$('#campaignMeta').textContent=`Pathfinder 1e · ${snapshot.players.length} ${snapshot.players.length===1?'jugador':'jugadores'} · ${s.characters.length} ${s.characters.length===1?'personaje':'personajes'}`;$('#place').textContent=s.location;$('#objective').textContent=s.goal;$('#sceneNum').textContent=s.scene;$('#tokenNum').textContent=`${s.tokens} / ${s.threshold}`;$('#phase').textContent=s.turned?'Punto de giro alcanzado · desenlace':'Desarrollo de la aventura';$('#sceneTitle').textContent=`Escena ${s.scene} · ${s.location}`;
- renderParty(s);
+ renderParty(s);renderDiceEntry();
  const available=s.characters.filter(c=>me.host||c.owner===me.id), boardPrev=$('#boardCharacter').value;
  renderSpeakerChoices();
  const boardAvailable=boardCharacters(s).filter(c=>me.host||c.owner===me.id);

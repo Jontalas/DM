@@ -1,16 +1,31 @@
 /* Character checks use existing campaign actions; opening a sheet is local. */
 const checkAbilities=[['str','Fuerza'],['dex','Destreza'],['con','Constitución'],['int','Inteligencia'],['wis','Sabiduría'],['cha','Carisma']];
 const checkSaves=[['fort','Fortaleza'],['ref','Reflejos'],['will','Voluntad']];
+function renderDiceEntry(){
+ const characters=snapshot.state.characters.filter(c=>c.owner===snapshot.me.id&&!c.enemy);
+ $('#diceCharacters').innerHTML='<h3>Tira desde tu ficha</h3>'+(characters.length?'<p>Elige qué quieres comprobar. El juego suma el modificador guardado en tu ficha; las tiradas solicitadas se resuelven en la conversación.</p>'+characters.map(c=>`<button type="button" data-dice-character="${esc(c.id)}">Abrir tiradas de ${esc(c.name)}</button>`).join(' '):'<p>Crea tu personaje para tirar con los valores de su ficha. Las herramientas manuales están disponibles más abajo.</p><button type="button" data-dice-create>Crear mi personaje</button>');
+}
+document.addEventListener('click',e=>{
+ const button=e.target.closest('[data-dice-character],[data-dice-create],[data-dice-view]');if(!button)return;
+ run(()=>{
+  if(button.hasAttribute('data-dice-create')){characterForm();return}
+  const character=snapshot.state.characters.find(c=>c.id===(button.dataset.diceCharacter||button.dataset.diceView)&&c.owner===snapshot.me.id&&!c.enemy);
+  if(!character)throw Error('Esta ficha ya no está disponible. Vuelve a elegir tu personaje.');
+  if(button.dataset.diceView){characterForm(character.id);return}
+  modal(`<div class="eyebrow">TIRADA DE TU PERSONAJE</div><h2>¿Qué quieres comprobar?</h2><p><strong>${esc(character.name)}</strong></p>${!character.creation||character.creation.manualOverride?'<p class="hint">Esta ficha contiene valores preparados manualmente. Puedes consultar su origen en la ficha completa.</p>':''}${sheetChecks(character,false)}<button type="button" data-dice-view="${esc(character.id)}">Ver ficha completa</button>`);
+  const details=$('#modal .sheet-free-roll');if(details){details.dataset.fromDice='1';details.open=true;details.querySelector('[data-sheet-selection]')?.focus()}
+ })(e);
+});
 function characterChecks(c){
  return [...checkAbilities.map(([key,name],i)=>({kind:'ability',key,name,total:Math.floor((c.abilities[i]-10)/2)})),...checkSaves.map(([key,name],i)=>({kind:'save',key,name,total:c.saves?.[i]})),...(c.skillTotals||[]).map(row=>({kind:'skill',key:row.name,name:row.name,total:row.total}))];
 }
-function sheetChecks(c){
+function sheetChecks(c,showEditReminder=true){
  const mayControl=snapshot.me.host||c.owner===snapshot.me.id,allowed=mayControl&&characterIsConscious(c);
  const subject=c.npcCreation?'Este PNJ':c.owner===snapshot.me.id&&!c.enemy?'Tu personaje':'Este personaje';
  const health=c.hp<=-c.abilities[2]?subject+' ha muerto. Las tiradas de esta ficha están desactivadas.':c.hp<0&&!characterIsConscious(c)?subject+' está inconsciente y no puede actuar.':c.hp<=0?subject+' está consciente, pero incapacitado. Puede moverse o usar una acción estándar, no ambas. Una acción fatigosa cuesta 1 PG y puede dejarlo moribundo.':'';
  const checks=characterChecks(c),canRoll=allowed&&!c.conditions?.trim();
  const groups=[['skill','Habilidades'],['save','Salvaciones'],['ability','Características']];
- return `<section class="sheet-checks" data-roll-allowed="${canRoll?'1':'0'}">${health?`<p class="notice">${esc(health)}</p>`:''}${c.conditions?.trim()?'<p class="notice">Revisa las condiciones mediante resolución asistida antes de tirar automáticamente.</p>':''}<details class="sheet-free-roll"><summary>Hacer una tirada libre</summary><p class="hint">${mayControl?'Elige qué quieres comprobar; el juego suma tu modificador guardado. Las tiradas solicitadas se resuelven directamente en la conversación. Guarda cualquier edición antes de tirar.':'No controlas esta ficha. Puedes consultar sus modificadores; las tiradas corresponden a su propietario o al anfitrión.'}</p><label>Qué quieres comprobar<select data-sheet-selection="${esc(c.id)}"><option value="" selected>Elige una opción</option>${groups.map(([kind,label])=>`<optgroup label="${label}">${checks.map((v,i)=>v.kind===kind?`<option value="${i}">${esc(v.name)} ${v.total>=0?'+':''}${Number(v.total)}</option>`:'').join('')}</optgroup>`).join('')}</select></label><button type="button" data-sheet-check="" data-check-character="${esc(c.id)}" data-check-key="" disabled>Tirar d20</button></details></section>`;
+ return `<section class="sheet-checks" data-roll-allowed="${canRoll?'1':'0'}">${health?`<p class="notice">${esc(health)}</p>`:''}${c.conditions?.trim()?'<p class="notice">Revisa las condiciones mediante resolución asistida antes de tirar automáticamente.</p>':''}<details class="sheet-free-roll"><summary>Hacer una tirada libre</summary><p class="hint">${mayControl?'Elige qué quieres comprobar; el juego suma tu modificador guardado. Las tiradas solicitadas se resuelven directamente en la conversación.'+(showEditReminder?' Guarda cualquier edición antes de tirar.':''):'No controlas esta ficha. Puedes consultar sus modificadores; las tiradas corresponden a su propietario o al anfitrión.'}</p><label>Qué quieres comprobar<select data-sheet-selection="${esc(c.id)}"><option value="" selected>Elige una opción</option>${groups.map(([kind,label])=>`<optgroup label="${label}">${checks.map((v,i)=>v.kind===kind?`<option value="${i}">${esc(v.name)} ${v.total>=0?'+':''}${Number(v.total)}</option>`:'').join('')}</optgroup>`).join('')}</select></label><button type="button" data-sheet-check="" data-check-character="${esc(c.id)}" data-check-key="" disabled>Tirar d20</button></details></section>`;
 }
 document.addEventListener('change',e=>{
  const select=e.target.closest('[data-sheet-selection]');if(!select)return;
@@ -63,7 +78,7 @@ function requestCheckForm(){
 document.addEventListener('click',e=>{
  const button=e.target.closest('[data-sheet-check],[data-resolve-check],[data-cancel-check]');if(!button)return;
  run(async()=>{
- if(button.dataset.sheetCheck){await act('check',{character:button.dataset.checkCharacter,checkKind:button.dataset.sheetCheck,key:button.dataset.checkKey});toast(snapshot.state.messages.at(-1).text)}
+ if(button.dataset.sheetCheck){await act('check',{character:button.dataset.checkCharacter,checkKind:button.dataset.sheetCheck,key:button.dataset.checkKey});if(button.closest('.sheet-free-roll')?.dataset.fromDice==='1'){$('#modal').close();chooseTab('story')}toast(snapshot.state.messages.at(-1).text)}
  else if(button.dataset.resolveCheck)await act('check',{request:button.dataset.resolveCheck,...(button.dataset.checkMethod?{method:button.dataset.checkMethod}:{})});
  else await act('cancel_check',{request:button.dataset.cancelCheck});
  })(e);
