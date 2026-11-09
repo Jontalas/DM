@@ -235,6 +235,11 @@ function messageEntry(message){
  const label={rules:'Resolución',director:'Director de IA',scene:'Escena',action:'Acción',dialogue:'Diálogo',ooc:'Fuera de personaje',private:'Privado'}[message.kind]||'Registro';
  const heading=`<div class="speaker">${esc(message.speaker)}${message.kind==='scene'?'':' · '+esc(label)}</div>`;
  const content=checkMessage(message)+recoveryAudit(message)+messageSources(message);
+ if(message.kind==='rules'&&typeof message.text==='string'&&message.text.startsWith('Iniciativa d20 + modificador declarado: '))return `<article class="message rules initiative-result"><details><summary>Iniciativa · ver tiradas y orden de turnos</summary>${heading}${content}</details></article>`;
+ if(message.kind==='rules'&&typeof message.text==='string'&&message.text.startsWith('PNJ preparado desde plantilla verificada: ')){
+  const character=snapshot.state.characters.find(c=>message.text.startsWith('PNJ preparado desde plantilla verificada: '+c.name+'.'));
+  return `<article class="message rules npc-preparation"><details><summary>${esc(character?.name||'PNJ')} · ficha preparada</summary>${heading}${content}</details></article>`;
+ }
  if(message.kind==='rules'&&typeof message.text==='string'&&message.text.startsWith('Personaje creado automáticamente: ')){
   const character=snapshot.state.characters.find(c=>message.text.startsWith('Personaje creado automáticamente: '+c.name+'.'));
   return `<article class="message rules character-preparation"><details><summary>${esc(character?.name||'Personaje')} · ficha preparada</summary>${heading}${content}</details></article>`;

@@ -152,3 +152,6 @@ Fuente consultada9nov: [W3C APG · interfaz de teclado](https://www.w3.org/WAI/A
 
 
 9 noviembre: pestaña Tablero móvil reserva espacio retirando compositor habitual; Conversación lo restaura. Si hay envío pendiente, el recuperador prevalece y compositor permanece visible en cualquier pestaña. Prueba390x844: fichas en ventana inicial y controles44px; escritorio conserva conversación simultánea. Aventura1.6 completa y recuperación correctas, capturas reales de fixture sin IA. El mapa sigue siendo cuadrícula provisional y requiere más revisión de densidad.
+
+
+9 noviembre: iniciativa y preparación de PNJ aparecen como registros plegados reconocibles; abrirlos conserva el texto técnico íntegro y sus fuentes. Se comprueba apertura/cierre con Enter, sin requests de acción. La escena, el daño y los avisos de salud continúan visibles. Ajuste de presentación, no reglas ni cambio del registro persistido.
