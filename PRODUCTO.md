@@ -16,6 +16,12 @@ Resumen visible para el propietario: http://127.0.0.1:8766/avance-local.html, ju
 
 Control de tamaño, medido sobre la revisión publicada7516f1c: aproximadamente1MB/12.000líneas en107archivos propios de aplicación;201archivos de pruebas,84de documentación y202de recursos externos del visor por separado. La carpeta local de herramientas/consultas ronda1,6GB y predominan imágenes de manuales y herramientas de pruebas; no equivale al programa del jugador. Conservar trazabilidad y originales; ordenar el histórico sin crear un documento nuevo por cada corrección habitual. Usar PRODUCTO.md para alcance, REANUDAR.md para continuidad y TRABAJO.md para el detalle de ejecución. Nuevos documentos solo si constituyen un contrato o referencia independiente necesaria.
 
+### Avance del cierre acotado · 9 de noviembre
+
+La entrada admite empezar solo con nombre. El creador permite nombre/estilo, revisión y confirmación, con personalización opcional. Las aventuras explican su experiencia y límites antes de comenzar. La mesa tiene un primer ajuste de presentación; conserva una cuadrícula provisional. Las copias incompatibles ya se rechazan antes de sustituir la partida y ofrecen un siguiente paso claro.
+
+Esto todavía no cierra la primera versión: falta completar la revisión de sus primeras decisiones, presentación de la mesa y errores del recorrido ofrecido. No equivale a mapa ilustrado, campañas abiertas ni nuevas clases o sistemas. El informe local contiene las capturas y sigue siendo el lugar para ver el avance.
+
 ## Experiencia objetivo
 
 **Directiva adicional del usuario, 6 de noviembre de 2026:** máxima sencillez de uso y orientación continua. Cada pantalla debe comunicar con claridad la situación, las decisiones actuales y el siguiente paso, sin abrumar con información u opciones. Revelar progresivamente lo secundario y avanzado; ofrecer ayuda contextual, tooltips accesibles y recorridos guiados cuando hagan falta. Revisar también las funciones existentes. La claridad forma parte de la aceptación de cada recorrido, en escritorio, teclado y móvil, y no requiere llamadas de IA ni operaciones remotas por consultar ayuda. Criterios y revisión en USABILIDAD.md.

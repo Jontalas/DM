@@ -28,6 +28,7 @@ const path=require('node:path'),assert=require('node:assert/strict');
   await b.locator('#creatorNext').click();assert.match(await b.locator('#creatorPreview').textContent(),/2d6\+6/);
   assert.equal(actions.length,0);await b.locator('#creatorFinish').click();await b.locator('.sheet-checks').waitFor();
   assert.equal(actions.length,1);assert.equal(actions[0].type,'create_character');assert.equal(await b.locator('#characterForm').count(),0);
+  assert.equal(await b.locator('#creatorContinue').textContent(),'Volver a la mesa');
   let state=await (await guest.request.get(url+'/api/state',{headers:{Authorization:'Bearer '+player}})).json();
   const character=state.state.characters[0];assert.equal(character.damage,'2d6+6');assert.equal(character.ac,16);assert.equal(character.maxHp,16);assert.ok(character.creation);
   await b.locator('.sheet-free-roll > summary').click();await b.locator('[data-sheet-selection]').selectOption('0');

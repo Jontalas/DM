@@ -5,12 +5,14 @@ async function getCreationCatalog(){
  if(!creationCatalog)creationCatalog=fetch('/creation-catalog.json?v=1').then(r=>{if(!r.ok)throw Error('No se pudo cargar el creador');return r.json()}).catch(e=>{creationCatalog=null;throw e});
  return creationCatalog;
 }
-function characterForm(cid){
+function characterForm(cid,afterCreation=false){
  if(!cid){run(()=>startCharacterCreator())();return}
  const c=snapshot.state.characters.find(v=>v.id===cid);
  if(!c?.creation||c.creation.manualOverride){manualCharacterForm(cid);return}
  const d=c.creation.details;
- modal(`<div class="eyebrow">TU PERSONAJE</div><h2>${esc(c.name)}</h2><p>Humano · Guerrero 1 · ${c.hp} / ${c.maxHp} PG</p>${sheetChecks(c)}<div class="creator-stats"><div><small>CA</small><strong>${c.ac}</strong></div><div><small>Ataque</small><strong>${c.attack>=0?'+':''}${c.attack}</strong></div><div><small>Daño</small><strong>${esc(c.damage)}</strong></div><div><small>Velocidad</small><strong>${c.speed*5} pies</strong></div></div><details><summary>Desglose calculado</summary>${creationSummary(c,d)}<p>${esc(c.feats)}</p><p>${esc(c.equipment)}</p><p>${esc(c.resources)} · ${esc(c.load)}</p><p>${esc(c.notes)}</p></details><p class="hint">Ficha calculada por el creador. La subida de nivel y el cambio automático de equipo aún están pendientes.</p><button id="advancedCharacterEdit">Edición manual avanzada</button>`);
+ const canBegin=afterCreation&&!c.enemy&&snapshot.me.host&&$('#beginAdventure')&&!$('#beginAdventure').disabled;
+ modal(`<div class="eyebrow">TU PERSONAJE</div><h2>${esc(c.name)}</h2><p>Humano · Guerrero 1 · ${c.hp} / ${c.maxHp} PG</p>${sheetChecks(c)}<div class="creator-stats"><div><small>Clase de armadura (CA)</small><strong>${c.ac}</strong></div><div><small>Ataque</small><strong>${c.attack>=0?'+':''}${c.attack}</strong></div><div><small>Daño</small><strong>${esc(c.damage)}</strong></div><div><small>Velocidad</small><strong>${c.speed*5} pies</strong></div></div><details><summary>Desglose calculado</summary>${creationSummary(c,d)}<p>${esc(c.feats)}</p><p>${esc(c.equipment)}</p><p>${esc(c.resources)} · ${esc(c.load)}</p><p>${esc(c.notes)}</p></details><p class="hint">Ficha calculada por el creador. La subida de nivel y el cambio automático de equipo aún están pendientes.</p>${afterCreation?`<p>${canBegin?'Tu personaje está listo. Ahora puedes elegir dónde comienza su aventura.':'Tu personaje está listo. Puedes volver a la mesa para continuar.'}</p><button type="button" class="primary" id="creatorContinue">${canBegin?'Elegir aventura':'Volver a la mesa'}</button>`:''}<button id="advancedCharacterEdit">Edición manual avanzada</button>`);
+ if($('#creatorContinue'))$('#creatorContinue').onclick=()=>{$('#modal').close();chooseTab('story');if(canBegin)$('#beginAdventure')?.click()};
  $('#advancedCharacterEdit').disabled=(!snapshot.me.host&&c.owner!==snapshot.me.id)||snapshot.state.board.active;
  $('#advancedCharacterEdit').onclick=()=>{if(confirm('Editar manualmente deja esta ficha fuera del cálculo automático. ¿Continuar?'))manualCharacterForm(cid)};
 }
@@ -29,7 +31,7 @@ async function startCharacterCreator(){
   const area=$('#creatorPreview'),notice=$('#creatorErrors');let result;
   try{
    result=CreationRules.calculate(catalog,choices);const c=result.data,d=result.details;
-   area.innerHTML=`<div class="creator-stats"><div><small>PG</small><strong>${c.maxHp}</strong></div><div><small>CA</small><strong>${c.ac}</strong></div><div><small>Ataque</small><strong>+${c.attack}</strong></div><div><small>Daño</small><strong>${esc(c.damage)}</strong></div></div><p>${c.speed*5} pies · ${d.coins[0]} po, ${d.coins[1]} pp, ${d.coins[2]} pc restantes</p>${step===3?'<details class="creator-calculation"><summary>Ver cómo se calcula la ficha</summary>'+creationSummary(c,d)+'</details>':''}`;
+   area.innerHTML=`<div class="creator-stats"><div><small>Puntos de golpe (PG)</small><strong>${c.maxHp}</strong></div><div><small>Clase de armadura (CA)</small><strong>${c.ac}</strong></div><div><small>Ataque</small><strong>+${c.attack}</strong></div><div><small>Daño</small><strong>${esc(c.damage)}</strong></div></div><p>${c.speed*5} pies · ${d.coins[0]} po, ${d.coins[1]} pp, ${d.coins[2]} pc restantes</p>${step===3?'<details class="creator-calculation"><summary>Ver cómo se calcula la ficha</summary>'+creationSummary(c,d)+'</details>':''}`;
    notice.textContent=result.errors.join('. ');$('#creatorFinish').disabled=!!result.errors.length||!choices.name.trim();if($('#creatorReview'))$('#creatorReview').disabled=!!result.errors.length;
    const points=$('#creatorPoints');if(points)points.textContent=`${d.pointCost} / 20 puntos · ${20-d.pointCost} disponibles`;
    const ranks=$('#creatorRanks');if(ranks)ranks.textContent=`${choices.skills.length} / ${d.skillPoints} rangos asignados · ${choices.feats.length} / 3 dotes · ${choices.languages.length} / ${Math.max(0,d.mods[3])} idiomas adicionales`;
@@ -64,7 +66,7 @@ async function startCharacterCreator(){
    if(step!==3){step=step===0?3:step+1;draw();return}
    const result=preview();if(!result||result.errors.length||!choices.name.trim())throw Error('Completa las elecciones antes de crear el personaje');
    await act('create_character',{choices,enemy});try{sessionStorage.removeItem(storageKey)}catch{}
-   const created=snapshot.state.characters.at(-1);$('#boardCharacter').value=created.id;$('#speaker').value=created.id;renderBoard();$('#modal').close();characterForm(created.id);toast('Personaje creado y listo para jugar');
+   const created=snapshot.state.characters.at(-1);$('#boardCharacter').value=created.id;$('#speaker').value=created.id;renderBoard();$('#modal').close();characterForm(created.id,true);toast('Personaje creado y listo para jugar');
   });preview();$(focus)?.focus();
  }
  draw(step===0?'#creatorName':'#creatorPage');

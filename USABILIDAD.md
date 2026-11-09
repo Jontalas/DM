@@ -126,3 +126,5 @@ La aceptación exige comprobar recorridos nuevos, teclado y móvil: decisiones r
 9nov: asistente conserva foco al elegir estilo yorienta el foco al nuevo paso; nombre al abrir, sección con nombre accesible al cambiar yTab al primer campo. Comprobado porEnter/Tab ysin acciones de partida.
 
 9nov: camino corto nombre/estilo→revisión→confirmar, con personalización completa opcional. Enter desde el nombre sigue ese camino. Concepto sin cifras prematuras, fórmulas del resumen plegadas; mismos cálculos y opciones. Teclado/móvil/dos aventuras/personalización verificados,0acciones antes deconfirmar y0API por consultar cálculos.
+
+9nov: ficha recién creada enlaza con Elegir aventura para anfitrión autorizado, oVolver a la mesa para otros casos; invitado conserva su papel. Navegación local0API porEnter, sin necesidad de descubrir lacruz de cierre; cierre clásico conservado. Puntos de golpe yclase de armadura con abreviaturas explícitas enresumen.
