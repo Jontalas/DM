@@ -1,5 +1,7 @@
 # Sencillez y orientación
 
+Señalar a la guardiana9nov: si el propietario tiene su PJ seleccionado en combate individual preparado, pulsar/Intro sobre PNJ lo toma como objetivo y conserva al PJ como actor. Se evita confundir rol de jugador con administración del anfitrión. Control manual explícito por selector conservado; no afecta otras mesas/roles ni cambia permisos. Teclado y toque apuntan sin POST/IA, recorrido completo1.16 correcto.
+
 Compatibilidad del patio1.16: la nueva revisión debe conservar permisos de papeles ya concedidos y acciones de pacientes conscientes con prueba clínica; no exigir otra negociación, curación o cálculo. Los filtros de versión omitidos se corrigieron sin ampliar reglas. Nueva aceptación usa la versión del catálogo actual además de las históricas, en unidades/HTTP/contextoSDK y browser0PG/negativos/auxilio; las cinco pistas, la ruta y copias conservan salud, reloj y agencia. Proveedor simulado, sin certificar una nueva narración real.
 
 Objetivos a0PG9nov: no atribuir al adversario inconsciencia por el límite temporal del ataque automático. Mensaje de objetivo no positivo distingue el estado clínico, explica que esta versión necesita revisión excepcional y conserva ficha/opciones accesibles; selector desactivado muestra nombre/PG. Prueba UI con snapshots sintéticos0PG/caído y restauración exacta, además del recorrido general2jugadores. Sin cambio de reglas ni acciones remotas por ayuda.

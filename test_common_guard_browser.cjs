@@ -29,7 +29,13 @@ const path=require('node:path'),assert=require('node:assert/strict');
    if(!wounded){await page.locator('#pfEncounterParley').click();await page.waitForFunction(()=>snapshot.state.pfEncounter.phase==='agreement'&&!busy);}
    else{
     await page.locator('#pfEncounterCombat').click();await page.waitForFunction(()=>snapshot.state.board.active&&!busy);
-    if(process.env.TEST_PF_MOBILE_ATTACK==='1'){await page.setViewportSize({width:390,height:844});await page.locator('[data-tab=board]').tap();}
+    const hero=await page.evaluate(()=>snapshot.state.pfEncounter.character),opponent=await page.evaluate(()=>snapshot.state.pfEncounter.npc),beforeTargeting=actions.length;
+    await page.locator('#grid .cell[data-x="0"][data-y="0"]').focus();await page.keyboard.press('ArrowRight');await page.keyboard.press('Enter');
+    assert.equal(await page.locator('#boardCharacter').inputValue(),hero,'The solo player targets the prepared opponent without taking control of its token');
+    assert.equal(await page.locator('#attackTarget').inputValue(),opponent);assert.equal(actions.length,beforeTargeting);
+    await page.locator('#boardCharacter').selectOption(opponent);assert.equal(await page.locator('#boardCharacter').inputValue(),opponent);
+    await page.locator('#boardCharacter').selectOption(hero);assert.equal(actions.length,beforeTargeting);
+    if(process.env.TEST_PF_MOBILE_ATTACK==='1'){await page.setViewportSize({width:390,height:844});await page.locator('[data-tab=board]').tap();await page.locator('#grid .cell[data-x="1"][data-y="0"]').tap();assert.equal(await page.locator('#boardCharacter').inputValue(),hero);assert.equal(actions.length,beforeTargeting);}
     const recoverAttack=process.env.TEST_PF_ATTACK_RECOVERY==='1',navigateAttack=process.env.TEST_PF_ATTACK_NAVIGATION==='1';let releaseAttack,markAttack;
     const attackRequested=new Promise(resolve=>{markAttack=resolve}),attackGate=new Promise(resolve=>{releaseAttack=resolve});
     if(recoverAttack||navigateAttack)await page.route('**/api/action',async route=>{const response=await route.fetch();assert.equal(response.ok(),true);if(navigateAttack){markAttack();await attackGate;await route.fulfill({response})}else await route.abort('failed')},{times:1});
