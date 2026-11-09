@@ -61,10 +61,13 @@ const path=require('node:path'),assert=require('node:assert/strict');
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
   assert.ok(await page.locator('#modal').evaluate(el=>el.scrollWidth<=el.clientWidth));
   await page.screenshot({path:'.deps/library-mobile.png',fullPage:true});
-  await page.locator('#closeModal').click();page.on('dialog',dialog=>dialog.accept());
+  let cancelNextCopy=false,resolveCancellation;await page.locator('#closeModal').click();page.on('dialog',async dialog=>{if(cancelNextCopy){cancelNextCopy=false;await dialog.dismiss();resolveCancellation()}else await dialog.accept()});
   const activeToken=await page.evaluate(()=>token),copyResponse=await context.request.post(url+'/api/export',{headers:{Authorization:'Bearer '+activeToken},data:{}});
   assert.equal(copyResponse.ok(),true);const validCopy=await copyResponse.json();
   await page.locator('[data-tab=journal]').click();
+  const beforeCancel=await page.evaluate(()=>({version:snapshot.version,state:structuredClone(snapshot.state)})),beforeCancelActions=actions.length,cancelled=new Promise(resolve=>{resolveCancellation=resolve});cancelNextCopy=true;
+  const chosenCopy={name:'valid-copy.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(validCopy))};await page.locator('#importFile').setInputFiles(chosenCopy);await cancelled;await page.evaluate(()=>0);assert.equal(await page.locator('#importFile').inputValue(),'');assert.match(await page.locator('#copyImportStatus').textContent(),/Recuperación cancelada.*partida sigue/);assert.equal(actions.length,beforeCancelActions);assert.deepEqual(await page.evaluate(()=>({version:snapshot.version,state:structuredClone(snapshot.state)})),beforeCancel);
+  await page.locator('#importFile').setInputFiles(chosenCopy);await page.waitForFunction(v=>snapshot.version>v&&!busy,beforeCancel.version);assert.equal(actions.length,beforeCancelActions+1);
   for(const text of ['{bad json','null','[]']){
    const count=actions.length,version=await page.evaluate(()=>snapshot.version);await page.locator('#importFile').setInputFiles({name:'unreadable.json',mimeType:'application/json',buffer:Buffer.from(text)});await page.waitForFunction(()=>!document.querySelector('#copyImportStatus').hidden&&document.querySelector('#copyImportStatus').textContent.includes('No se puede leer'));
    assert.equal(actions.length,count);assert.equal(await page.evaluate(()=>snapshot.version),version);assert.equal(await page.locator('#importFile').inputValue(),'');

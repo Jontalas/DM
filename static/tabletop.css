@@ -212,3 +212,5 @@ body.preparing-adventure #story>.chapter{display:none}
 body.reader-wide.submission-pending #composer{display:block}
 @media(min-width:1100px){body.reader-wide.submission-pending #composer{grid-column:1;grid-row:3}}
 @media(max-width:1099px){#books>h2{font-size:24px;margin:4px 0 12px}}
+
+.filebutton:focus-within{outline:2px solid var(--gold);outline-offset:3px}
