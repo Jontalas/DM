@@ -17,7 +17,9 @@ const path=require('node:path'),assert=require('node:assert/strict');
   await b.goto(url);await b.locator('#app').waitFor({state:'visible'});
   await b.locator('[data-create-hero]').click();await b.locator('#creatorForm').waitFor();
   assert.equal(await b.locator('#creatorEnemy').count(),0);
-  await b.locator('[data-creator-preset=vanguard]').click();await b.locator('#creatorName').fill('Aria');
+  assert.equal(await b.locator('[data-creator-preset=guardian]').getAttribute('aria-pressed'),'true');
+  await b.locator('[data-creator-preset=vanguard]').focus();await b.keyboard.press('Enter');await b.locator('#creatorName').fill('Aria');assert.equal(await b.locator('[data-creator-preset=vanguard]').getAttribute('aria-pressed'),'true');assert.equal(await b.locator('[data-creator-preset=guardian]').getAttribute('aria-pressed'),'false');assert.equal(actions.length,0);
+  await b.setViewportSize({width:390,height:900});assert.ok(await b.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await b.screenshot({path:'.deps/creator-concept-mobile.png'});await b.setViewportSize({width:1280,height:900});
   await b.locator('#creatorNext').click();await b.locator('[data-creator-ability="0"]').fill('18');
   assert.match(await b.locator('#creatorErrors').textContent(),/20 puntos/);
   await b.locator('[data-creator-ability="0"]').fill('16');await b.locator('#creatorNext').click();
@@ -38,7 +40,7 @@ const path=require('node:path'),assert=require('node:assert/strict');
   await b.locator('#closeModal').click();await b.setViewportSize({width:1280,height:900});
   // A host can create a usable opposing fighter through the same wizard.
   await a.goto(url);await a.locator('#app').waitFor({state:'visible'});await a.locator('#addCharacter').click();
-  await a.locator('#creatorName').fill('Bandido');await a.locator('#creatorEnemy').check();
+  await a.locator('#creatorName').fill('Bandido');assert.equal(await a.locator('#creatorEnemy').isHidden(),true);const beforeAdvanced=await a.evaluate(()=>snapshot.version);await a.locator('#creatorAdvanced summary').focus();await a.keyboard.press('Enter');assert.equal(await a.evaluate(()=>snapshot.version),beforeAdvanced);await a.locator('#creatorEnemy').check();
   await a.setViewportSize({width:390,height:844});
   for(let step=0;step<4;step++){
    await a.locator(`[data-creator-step="${step}"]`).click();

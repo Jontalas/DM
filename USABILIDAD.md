@@ -120,3 +120,5 @@ La aceptación exige comprobar recorridos nuevos, teclado y móvil: decisiones r
 9nov: copia incompatible muestra aviso persistente de conservación y siguiente paso útil, con motivo técnico plegado. JSON ilegible se explica localmente0acciones. Errores de red conservan su recuperación de envío sin prometer estado no comprobado. Biblioteca browser: teclado/escritorio/móvil/rechazo/copia válida/recarga correctos con datos desechables.
 
 9nov: cambiar de partida durante la lectura de una copia cancela esa importación yexplica elegirla otra vez en la sala deseada; no se arrastran avisos entre accesos. Comprobado mediante lectura retenida y cambio real por biblioteca,0acciones a la nueva sala.
+
+9nov: creador identifica el estilo elegido por texto yaria-pressed además de color; las herramientas de adversario/ficha manual quedan bajo avanzadas. No modifica opciones legales ni cálculos. Teclado/móvil/invitado/creación adversario/manual yrecorrido preparado correctos,0IAreal.
