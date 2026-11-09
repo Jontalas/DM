@@ -1,5 +1,9 @@
 # Continuidad del desarrollo autónomo
 
+9nov: ce5ec12bc049bf77d5294fac636812214c93b57f publicado Render7652848606 success; lector capítulos exactSHA0POST/IA correcto, demo8766 conservada porlector0POST yreporte local teclado/móvil0API correctos. Base945 sin cambios.
+
+Teclado creador: apertura enfoca nombre; elegir estilo conserva foco en ese botón; cambiar paso enfoca sección con nombre accesible/paso de4 yTab pasa al primer campo. No se vuelve al cierre del diálogo al reconstruir contenido. Sin cambios de reglas/draft/estado ni operaciones remotas. Navegador creator comprueba foco porEnter/Tab además de creación/adversario/validación/móvil correctos. Publicar junto con documentación, verificar ycontinuar cierre individual. Informe local incluye captura de concepto real de prueba desechable; no reiniciar demo ni invitación.
+
 9nov: de949955c2600e9b43dade598e0055583e919159 publicado Render7652774307 success; lectores capítulos/auxilio exactSHA0POST/IA correctos. Motor945 sigue intacto.
 
 Creador presentación: adversario del anfitrión pasa a Opciones avanzadas junto a ficha manual, dentro del formulario para conservar eventos; botón manual typebutton evita envío accidental. Estilo elegido expuesto con aria-pressed, borde ytexto Elegido, derivado de elecciones actuales ignorando nombre, sin añadir estado ni alterar cálculos/draft. Cabecera de diálogo reserva espacio para cerrar enmóvil. Navegadores creator (selección teclado0acciones, invitado sin checkbox, presupuesto inválido local, único guardado, adversario básico, móvil),browsergeneral manual yopening preparado/ruta correctos; captura creator-concept-mobile revisada. Sin cambios de mecánica/servidor ni dependencias/archivos app nuevos. Publicar yverificar, continuar recorrido individual; no repetir945 por solo JS/CSS.

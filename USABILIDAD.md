@@ -122,3 +122,5 @@ La aceptación exige comprobar recorridos nuevos, teclado y móvil: decisiones r
 9nov: cambiar de partida durante la lectura de una copia cancela esa importación yexplica elegirla otra vez en la sala deseada; no se arrastran avisos entre accesos. Comprobado mediante lectura retenida y cambio real por biblioteca,0acciones a la nueva sala.
 
 9nov: creador identifica el estilo elegido por texto yaria-pressed además de color; las herramientas de adversario/ficha manual quedan bajo avanzadas. No modifica opciones legales ni cálculos. Teclado/móvil/invitado/creación adversario/manual yrecorrido preparado correctos,0IAreal.
+
+9nov: asistente conserva foco al elegir estilo yorienta el foco al nuevo paso; nombre al abrir, sección con nombre accesible al cambiar yTab al primer campo. Comprobado porEnter/Tab ysin acciones de partida.

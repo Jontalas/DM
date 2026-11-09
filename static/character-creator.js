@@ -36,7 +36,7 @@ async function startCharacterCreator(){
   }catch(e){area.textContent='';notice.textContent=e.message;$('#creatorFinish').disabled=true}
   saveDraft();return result;
  }
- function draw(){
+ function draw(focus='#creatorPage'){
   const matchesPreset=id=>Object.entries(makePreset(id)).every(([key,value])=>key==='name'||JSON.stringify(choices[key])===JSON.stringify(value));
   const option=(group,selected)=>Object.entries(catalog[group]).map(([id,v])=>`<option value="${id}" ${selected===id?'selected':''}>${esc(v.name)}</option>`).join('');
   const checkboxes=(group,selected,kind)=>Object.entries(catalog[group]).map(([id,v])=>`<label class="check"><input type="checkbox" data-choice-list="${kind}" value="${esc(id)}" ${selected.includes(id)?'checked':''}>${esc(v.name)}${kind==='feats'&&v.combat?' · combate':''}${kind==='skills'&&v.class?' · de clase':''}</label>`).join('');
@@ -46,7 +46,7 @@ async function startCharacterCreator(){
    `<strong id="creatorRanks"></strong><h3>Dotes</h3><p>Elige tres distintas. Al menos una debe ser de combate para la dote adicional de guerrero.</p><div class="creator-choices">${checkboxes('feats',choices.feats,'feats')}</div><h3>Habilidades</h3><p>Asigna un rango a cada habilidad elegida. El +3 de clase y la armadura se calculan automáticamente.</p><div class="creator-choices">${checkboxes('skills',choices.skills,'skills')}</div><h3>Idiomas adicionales</h3><p>Común ya está incluido. Elige idiomas adicionales si tienes bonificador de Inteligencia.</p><div class="creator-choices">${catalog.languages.map(v=>`<label class="check"><input type="checkbox" data-choice-list="languages" value="${esc(v)}" ${choices.languages.includes(v)?'checked':''}>${esc(v)}</label>`).join('')}</div>`,
    `<div class="row"><label>Arma<select data-creator-field="weapon">${option('weapons',choices.weapon)}</select></label><label>Armadura<select data-creator-field="armor">${option('armors',choices.armor)}</select></label><label>Escudo<select data-creator-field="shield">${option('shields',choices.shield)}</select></label></div><p>175 po iniciales de media; incluye equipo de viaje y atuendo inicial. Precio, monedas, peso y carga se calculan juntos. El arma elegida queda equipada y lista para el combate básico.</p>`
   ];
-  modal(`<div class="eyebrow">CREADOR DE PERSONAJES · PATHFINDER 1e</div><h2>Tu aventurero, paso a paso</h2><nav class="creator-steps" aria-label="Pasos del creador">${['Concepto','Características','Elecciones','Equipo y resumen'].map((label,i)=>`<button type="button" data-creator-step="${i}" ${step===i?'aria-current="step"':''}>${i+1}. ${label}</button>`).join('')}</nav><form id="creatorForm"><section>${pages[step]}</section><p id="creatorErrors" role="status"></p><div id="creatorPreview" aria-live="polite"></div><div class="toolbar"><button type="button" id="creatorBack" ${step===0?'disabled':''}>Anterior</button><button type="button" id="creatorNext" ${step===3?'hidden':''}>Siguiente</button><button class="primary" id="creatorFinish" ${step!==3?'hidden':''}>Crear personaje y jugar</button></div><details id="creatorAdvanced"><summary>Opciones avanzadas</summary>${snapshot.me.host?`<label class="check"><input id="creatorEnemy" type="checkbox" ${enemy?'checked':''}> Crear un adversario para la mesa</label>`:''}<button type="button" id="creatorManual">Crear ficha manual avanzada</button></details></form>`);
+  modal(`<div class="eyebrow">CREADOR DE PERSONAJES · PATHFINDER 1e</div><h2>Tu aventurero, paso a paso</h2><nav class="creator-steps" aria-label="Pasos del creador">${['Concepto','Características','Elecciones','Equipo y resumen'].map((label,i)=>`<button type="button" data-creator-step="${i}" ${step===i?'aria-current="step"':''}>${i+1}. ${label}</button>`).join('')}</nav><form id="creatorForm"><section id="creatorPage" tabindex="-1" aria-label="Paso ${step+1} de 4 · ${['Concepto','Características','Elecciones','Equipo y resumen'][step]}">${pages[step]}</section><p id="creatorErrors" role="status"></p><div id="creatorPreview" aria-live="polite"></div><div class="toolbar"><button type="button" id="creatorBack" ${step===0?'disabled':''}>Anterior</button><button type="button" id="creatorNext" ${step===3?'hidden':''}>Siguiente</button><button class="primary" id="creatorFinish" ${step!==3?'hidden':''}>Crear personaje y jugar</button></div><details id="creatorAdvanced"><summary>Opciones avanzadas</summary>${snapshot.me.host?`<label class="check"><input id="creatorEnemy" type="checkbox" ${enemy?'checked':''}> Crear un adversario para la mesa</label>`:''}<button type="button" id="creatorManual">Crear ficha manual avanzada</button></details></form>`);
   $('#creatorForm').oninput=e=>{
    const el=e.target;if(el.id==='creatorName')choices.name=el.value;
    if(el.id==='creatorEnemy')enemy=el.checked;
@@ -56,7 +56,7 @@ async function startCharacterCreator(){
    preview();
   };
   $$('[data-creator-step]').forEach(el=>el.onclick=()=>{step=Number(el.dataset.creatorStep);draw()});
-  $$('[data-creator-preset]').forEach(el=>el.onclick=()=>{const name=choices.name;choices={...makePreset(el.dataset.creatorPreset),name};draw()});
+  $$('[data-creator-preset]').forEach(el=>el.onclick=()=>{const name=choices.name;choices={...makePreset(el.dataset.creatorPreset),name};draw('[data-creator-preset='+el.dataset.creatorPreset+']')});
   $('#creatorBack').onclick=()=>{step--;draw()};$('#creatorNext').onclick=()=>{step++;draw()};
   $('#creatorManual').onclick=()=>manualCharacterForm();
   $('#creatorForm').onsubmit=run(async()=>{
@@ -64,7 +64,7 @@ async function startCharacterCreator(){
    const result=preview();if(!result||result.errors.length||!choices.name.trim())throw Error('Completa las elecciones antes de crear el personaje');
    await act('create_character',{choices,enemy});try{sessionStorage.removeItem(storageKey)}catch{}
    const created=snapshot.state.characters.at(-1);$('#boardCharacter').value=created.id;$('#speaker').value=created.id;renderBoard();$('#modal').close();characterForm(created.id);toast('Personaje creado y listo para jugar');
-  });preview();
+  });preview();$(focus)?.focus();
  }
- draw();
+ draw(step===0?'#creatorName':'#creatorPage');
 }
