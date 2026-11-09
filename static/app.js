@@ -163,6 +163,10 @@ function renderPlayGuidance(s){
  }else if(s.board.active&&s.pfCeasefireView?.reason===null&&s.characters.some(c=>c.id===s.pfEncounter?.character&&c.owner===snapshot.me.id)){
   message='La guardiana ofrece detener el combate. Puedes aceptar la tregua o seguir luchando.';
   label='Ver la tregua';open=()=>{chooseTab('story');const target=$('#pfAcceptCeasefire');target?.scrollIntoView({block:'center'});target?.focus({preventScroll:true})};
+ }else if($('#pfFirstAidForm')&&!s.board.autoPaused&&characterIsConscious(s.characters.find(c=>c.id===s.pfEncounter?.character))){
+  const mine=s.characters.some(c=>c.id===s.pfEncounter.character&&c.owner===snapshot.me.id);
+  message=mine?'La guardiana necesita auxilio. Tú decides si ayudas o esperas; revisa las opciones.':'La guardiana necesita auxilio. El propietario del personaje decide si ayuda o espera.';
+  label='Ver opciones de auxilio';open=()=>{chooseTab('story');const target=$('#pfEncounterAid');if(target){target.tabIndex=-1;target.querySelector('h4')?.scrollIntoView({block:'center'});target.focus({preventScroll:true})}};
  }else if(s.board.active){
   const current=s.characters.find(c=>c.id===s.board.order[s.board.turn]?.id);
   message=s.board.autoPaused?'Un turno automático necesita revisión. Consulta el aviso de la mesa.':current?.owner===snapshot.me.id?(characterIsConscious(current)?'Es tu turno. Elige tu acción en el tablero.':'Tu personaje no puede actuar. Revisa su estado en la mesa.'):`Es el turno de ${current?.name||'otro participante'}. Puedes consultar la mesa mientras tanto.`;

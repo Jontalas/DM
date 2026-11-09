@@ -164,3 +164,6 @@ Fuente consultada9nov: [W3C APG · interfaz de teclado](https://www.w3.org/WAI/A
 
 
 9 noviembre: resumen de ataque reúne tirada, cálculo y fuentes en un único detalle. Los enlaces originales se conservan, con altura44px y letra13px al abrir; causa y consecuencias siguen visibles. Consulta Enter/tacto0acciones, declaración/encuentro/copias correctos. Catálogo cancelable también comprobado por Escape en versiones1.10 y1.15.
+
+
+9 noviembre: si el encuentro ya ofrece auxilio a guardiana moribunda, guía conduce a sus opciones antes que al tablero genérico. Explica ayudar/esperar sin escoger por jugador; consultar enfoca panel y no dispara botones. Conserva prioridad de envíos, tiradas, tregua y pausas; paciente/personaje inconsciente no se confunden. Baseline y corrección navegador, auxilio posterior y regresiones correctos,0acciones por navegar.

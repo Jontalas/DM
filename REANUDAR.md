@@ -12,13 +12,13 @@ Comunicar qué puede hacer el jugador, qué falta y dónde verlo. No usar contad
 
 Siguiente trabajo autorizado:
 
-1. Publicar/verificar fuentes del ataque agrupadas en el detalle de cálculo, app.js/tabletop.css. Mantiene referencias originales con44px/13px al abrir. Encuentro/declaración correctos; captura attack-result-mobile actualizada, revisar y regenerar informe. Catálogo cancelable ya publicado/verificadod88671b; Escape y recorridos completos1.10/1.15 correctos. Seguir cierre del recorrido individual sin ampliar alcance.
+1. Publicar/verificar guía de auxilio en app.js. Baseline daba Ver el tablero con guardiana moribunda; nueva guía lleva a opciones de ayuda/espera sin decidir ni activar acciones, foco/Enter0acciones. Conserva prioridad de recibos/tiradas/tregua/pausas. Encuentro, pendientes y tregua correctos, Python945 intacto. Registrar verificación pública deec1b308 y mantener informe local.
 2. Continuar la revisión de primeras decisiones, combate y recuperación del recorrido individual. Resolver fricciones observadas, conservando agencia y reglas; no expandir el alcance para producir más cambios.
 3. Conservar el progreso en estos archivos existentes. No crear un MD por corrección: PRODUCTO para alcance, REANUDAR para continuidad, TRABAJO para detalle, USABILIDAD para criterios/evidencia.
 
 ## Producción y verificación actual
 
-**d88671bd737b64acb5462d9649a9189f7b6156a3**, Render7659467673 success, revisión/salud/adventure-ui.js exactos verificados públicamente., ambas ramas publicadas. Revisión, salud y app.js/index.html/tabletop.css exactos comprobados públicamente. Descriptor Pathfinder **1.15.0**. Incluye navegación del tablero por flechas/unTab.
+**ec1b30848897c7b45e62160fc4d23226bae684ff**, Render7659618076 success; verificación pública app.js/tabletop.css ejecutada (registrar resultado)., ambas ramas publicadas. Revisión, salud y app.js/index.html/tabletop.css exactos comprobados públicamente. Descriptor Pathfinder **1.15.0**. Incluye navegación del tablero por flechas/unTab.
 
 Motor desde **e174ea8ee0381f53b4953ac3b43e5db3b5fadce4**: **945 pruebas completas correctas, 300,506s**, .deps/copy-shape-final-suite.log, sesión21341 terminada. Ningún Python modificado después de ese arranque; cambios posteriores solo UI/pruebas/docs. No repetir suite completa sin cambio o preocupación concreta. No hay pruebas ni inferencias en curso.
 
@@ -35,6 +35,10 @@ El informe local incorpora capturas reales de combate/resultados (fixtures1.6 y 
 ## Ajuste local de consulta del encuentro
 
 adventure-ui.js: diálogo inmediato de carga, identidad del nodo+ámbito de acceso, descarta respuesta si se cerró/cambió ventana; conserva caché pública. Error persistente con Volver a intentar explícito, sin reintento automático. Reproducción real de GETretenido que sustituía biblioteca en encounter-catalog-late-baseline.log; corrección integrada1.15 con503/reintento Enter/cancelar/biblioteca/reabrir cacheado (2GET contando fallo provocado), aventura de ambos caminos hasta completar/regresar/salir/retomar correcta. Encuentro independiente también correcto. Solo código UI, pruebas/docs existentes;0IAreal/estado remoto y Python945 intacto. Publicado/verificadod88671b. Ajuste posterior local de fuentes del ataque dentro de su detalle, botones44px; publicar app.js/tabletop.css.
+
+## Guía de auxilio local
+
+Si existe formulario de primeros auxilios del encuentro y actor está consciente, guía se centra en ayudar/esperar, sin elegir por el jugador. Enviar pendiente/tiradas/tregua/pausa automática conservan precedencia. Abrir lleva a conversación/encabezado y enfoca div de opciones sin pulsar acción. Baseline aid-guidance-baseline.log: Ver el tablero; final encuentro0acciones y auxilio posterior correctos; pendientes y tregua correctos. Publicar app.js. Ninguna regla ni Python modificados.
 
 ## Qué está terminado en este bloque
 
