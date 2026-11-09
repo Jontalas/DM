@@ -1,5 +1,14 @@
 # Continuidad del desarrollo autónomo
 
+9nov: concurrencia por campaña lista para publicar,914pruebas completas454,616s,5nuevas y3navegadores correctos, incluido dos perfiles GUI/privacidad/409/texto/reenvío explícito/teclado/móvil.0IAreal nueva. CONCURRENCIA_CAMPANAS.md y CONCURRENCIA_GRUPO_PLAN.md. Siguiente verificar despliegue y reproducir incorporación mientras espera director.
+
+9nov: **55eda87bd328c5422ba5c7ee1d8d8c827959303f**, Render**7643938990 success**, feature/main, descriptor1.15. **909 completas correctas434,705s**, `.deps/adventure-opening-protocol-final-tests.log`41038 terminada. Apertura preparada publicada y lectores protegidos esperaNPC/auxilio-diálogo correctos con revisión/salud/descriptor exactos,0POST/IA.
+
+**Ensayo real de dos capítulos cerrado:** CONTINUIDAD_REAL_2CAPITULOS.md. GUI desde perfil/asistente nuevo, apertura original0IA, dos investigaciones, salir/cerrar/reanudar y copia; una única respuesta real18175ms para el segundo objetivo aquí. Gaspar/carta/agencia y secretos iniciales revisados visualmente: passed-scoped. `.deps/chapter-continuity-live-session.json` verified, simulatedfalse, directorRequests1; lector escritorio/móvil/reanudación0POST/IA correcto. **No ejecutar de nuevo verify_chapter_continuity_live.cjs ni borrar/renombrar su sesión.** Solo lector protegido con EXPECTED_RELEASE; ninguna campaña personal ni invitación opcional tocada. No certifica campañas abiertas, grupos ni continuidad ilimitada.
+
+Concurrencia: bloqueo global reproducido en HTTP, cambio por campaña y5pruebas correctas; suite74944 en curso. CONCURRENCIA_CAMPANAS.md. Continuar sin repetir inferencias cerradas.
+
+
 9nov: apertura preparada lista para publicar,909completas finales correctas434,705s (.deps/adventure-opening-protocol-final-tests.log41038), tras908iniciales. Protocolo de noIA emparejado/header rechazado porservidorprevio,6HTTP8,694s/31puras y navegadores correctos. GuionGUI de continuidad ylector ensayados localmente, máximo1IA/0intro; aún sin campaña/inferencia de producción. APERTURA_PREPARADA.md yREANUDAR fijan protección.
 
 9nov: capítulos8ca256a publicados/verificados, Render7643497961,898completas433,452s. Apertura original local0IA: APERTURA_PREPARADA.md,5puras/5HTTP nuevas,26puras/9HTTP afectadas16,399s y navegadores offline/ejemplo/ruta/copia/chapters/memoria correctos. Suite inicial95688 en curso. Antesdepublicar cerrar protocolonoIA (headernuevo rechazadoporservidoranterior), detallado enREANUDAR.0IAreal nueva; no usar partida opcional delusuario.

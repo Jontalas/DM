@@ -1,5 +1,12 @@
 # Comenzar una aventura escrita sin volver a generarla
 
+Actualización9nov: **55eda87bd328c5422ba5c7ee1d8d8c827959303f**, Render**7643938990 success**, feature/main, descriptor1.15. **909 completas correctas434,705s**, `.deps/adventure-opening-protocol-final-tests.log`41038 terminada. Apertura preparada publicada y lectores protegidos esperaNPC/auxilio-diálogo correctos con revisión/salud/descriptor exactos,0POST/IA.
+
+**Ensayo real de dos capítulos cerrado:** CONTINUIDAD_REAL_2CAPITULOS.md. GUI desde perfil/asistente nuevo, apertura original0IA, dos investigaciones, salir/cerrar/reanudar y copia; una única respuesta real18175ms para el segundo objetivo aquí. Gaspar/carta/agencia y secretos iniciales revisados visualmente: passed-scoped. `.deps/chapter-continuity-live-session.json` verified, simulatedfalse, directorRequests1; lector escritorio/móvil/reanudación0POST/IA correcto. **No ejecutar de nuevo verify_chapter_continuity_live.cjs ni borrar/renombrar su sesión.** Solo lector protegido con EXPECTED_RELEASE; ninguna campaña personal ni invitación opcional tocada. No certifica campañas abiertas, grupos ni continuidad ilimitada.
+
+Las notas de preparación y simulación siguientes son históricas; el ensayo real ya está cerrado.
+
+
 Trabajo local9nov2026, posterior a capítulos8ca256a. Una aventura original o JSON compatible ya contiene presentación, preparación privada, pistas y conclusión. Su primera presentación se puede obtener de esos datos; no requiere otra inferencia. Crear desde una premisa o adaptar texto sigue usando el director real.
 
 `adventure_opening.py` devuelve exactamente description y preparation del módulo validado. La presentación aparece como «Escena preparada», kindscene; no se atribuye a Claude ni cuenta como respuesta del director. No confirma pistas, elige acciones, cambia fichas/recursos ni calcula tiempo. La memoria pública/privada usa el contenido del autor y se conserva la memoria del mundo existente; si no se pidió su contrato, no se activa implícitamente.

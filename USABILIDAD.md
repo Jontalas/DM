@@ -1,5 +1,8 @@
 # Sencillez y orientación
 
+9nov: apertura preparada y capítulos publicados55eda87. Recorrido real desde perfil nuevo: creador, primera investigación0IA, salir/cerrar/reanudar, objetivo propio aquí y segunda investigación con1respuesta real, copia/recarga/teclado/móvil. Gaspar/carta/agencia revisados, passed-scoped; CONTINUIDAD_REAL_2CAPITULOS.md. No nueva invitación personal ni garantía de campaña abierta. Las notas locales anteriores se conservan como historial.
+
+
 Apertura escrita local0IA: Elegiraventura funciona condirector ausente y eligeexample automáticamente; crear/adaptar explica dependencia, fuente preparada conserva texto y pistas pendientes. Presentación rotulada Escena preparada, no se atribuye aClaude. Hint dinámico asociado aselector y anunciado; leer/cambiaropción0IO. Creador/ejemploentero/rutasinclave, módulo/importación/copia/recarga/teclado/tacto/móvil correctos. CapítulosGUI ahora solo1respuesta simulada paraobjetivo nuevo. APERTURA_PREPARADA.md; aún pendiente protocolo ypublicación.
 
 Capítulos locales9nov: al completar una investigación genérica, guía ofrece elegir otro objetivo aquí mediante una sola premisa. Abrir/editar no llama IA; clave de campaña/capítulo impide confirmar un formulario desfasado. Draft/envío exacto sobreviven respuesta perdida y recarga, sin repetir apertura. Diario conserva antecedentes bajo detalle cerrado y reloj desconocido tras reset de búsquedas; también corrige referencia inicial tras búsquedas genéricas sin tablero. GUI creador/salir/reanudar/doscapítulos/copia/teclado/tacto/móvil verificados con proveedor simulado, publicación pendiente. CAPITULOS_AVENTURA.md.

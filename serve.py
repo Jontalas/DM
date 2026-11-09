@@ -1,4 +1,4 @@
-"""Servidor de producción, un proceso con varios hilos para conservar LOCK."""
+"""Servidor de producción: un proceso con cerrojos compartidos por campaña."""
 import os
 import server
 from wsgi import application

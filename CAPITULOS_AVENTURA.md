@@ -1,5 +1,12 @@
 # Otro objetivo aquí, en la misma partida
 
+Actualización9nov: **55eda87bd328c5422ba5c7ee1d8d8c827959303f**, Render**7643938990 success**, feature/main, descriptor1.15. **909 completas correctas434,705s**, `.deps/adventure-opening-protocol-final-tests.log`41038 terminada. Apertura preparada publicada y lectores protegidos esperaNPC/auxilio-diálogo correctos con revisión/salud/descriptor exactos,0POST/IA.
+
+**Ensayo real de dos capítulos cerrado:** CONTINUIDAD_REAL_2CAPITULOS.md. GUI desde perfil/asistente nuevo, apertura original0IA, dos investigaciones, salir/cerrar/reanudar y copia; una única respuesta real18175ms para el segundo objetivo aquí. Gaspar/carta/agencia y secretos iniciales revisados visualmente: passed-scoped. `.deps/chapter-continuity-live-session.json` verified, simulatedfalse, directorRequests1; lector escritorio/móvil/reanudación0POST/IA correcto. **No ejecutar de nuevo verify_chapter_continuity_live.cjs ni borrar/renombrar su sesión.** Solo lector protegido con EXPECTED_RELEASE; ninguna campaña personal ni invitación opcional tocada. No certifica campañas abiertas, grupos ni continuidad ilimitada.
+
+Las notas de preparación y simulación siguientes son históricas; el ensayo real ya está cerrado.
+
+
 Bloque local del9 de noviembre de2026. Después de terminar una investigación genérica Pathfinder de una sola escena, el propietario puede elegir otro objetivo en ese mismo lugar sin abrir otra campaña. No está publicado todavía; no se anuncia campaña abierta o multijugador terminado.
 
 El formulario «Elegir otro objetivo» es una decisión explícita del jugador. Abrirlo, escribir o consultar el diario no llama a IA ni modifica la partida. La confirmación usa la apertura narrativa ya existente: dos búsquedas tranquilas, Percepción calculada por el motor y CD dentro de la capacidad alcanzable del personaje. No introduce nuevas reglas. El alcance sigue fundamentado en las fuentes del módulo actual para búsquedas; este bloque es continuidad de contenido original, no una regla universal sobre campañas.

@@ -2,7 +2,6 @@
 import hashlib
 import json
 import os
-import threading
 import time
 from pathlib import Path
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
@@ -15,6 +14,7 @@ import adventure_modules
 import adventure_routes
 import rulesets
 from narrative_text import repair_text
+from campaign_locks import CampaignLocks
 
 ROOT=Path(__file__).resolve().parent
 # Local paths are only for extracting/importing PDF assets, never for databases.
@@ -23,7 +23,7 @@ INDEX_DIR=Path(os.environ.get('INDEX_DIR',str(DATA_DIR)))
 BOOKS_DIR=Path(os.environ.get('BOOKS_DIR',str(Path.home()/'Desktop')))
 STORE=None
 READER=None  # Explicit test injection only; production obtains private assets from Storage.
-LOCK=threading.RLock()
+CAMPAIGN_LOCKS=CampaignLocks()
 
 
 def static_cache_control(path):
@@ -167,7 +167,7 @@ def execute_action(body,me):
     aid=str(body['id'])
     if not aid or len(aid)>200:raise ValueError('Identificador de acción inválido')
     store=repository();cid=me['campaign'];signature=fingerprint(body)
-    with LOCK:
+    with CAMPAIGN_LOCKS.hold(cid):
         if store.completed(cid,aid,me['id'],signature):return {'duplicate':True}
         row,state=load(cid)
         if body.get('version')!=row['version']:raise Conflict('La mesa ha cambiado. Revisa tu acción antes de enviarla')
