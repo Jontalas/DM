@@ -1,5 +1,9 @@
 # Reanudar el desarrollo
 
+9nov: ayuda progresiva de investigación añadida bajo «¿Qué forma de buscar elijo?». Explica d20/10/20 más Percepción, ausencia de garantía al elegir10 y esfuerzo20x sin inventar duración. Originales CorePDF87/folio86 yPDF101/folio100 revisados visualmente de nuevo (.deps/reference-take10-87.png yreference-perception101.png). Botón al original87, sin cambiar reglas ni resultados. Apertura de ayuda con teclado0API comprobada dentro de recorrido ejemplo/ruta, móvil ycopias. Sin IAreal ni motor nuevo.
+
+Publicación a76ce31 enviada a ambas ramas pero Render aún no ha creado despliegue; main exactSHA confirmado. GitHub consulta read-only: sin estados/checks/deployment para ese SHA. Producción comprobada sigue7f9e663. Dos intentos del lector con SHAa76 rechazaron revisión anterior sin POST/IA; no afirmar publicado todavía. Publicar siguiente ayuda y comprobar si Render recoge nueva revisión antes de intervenir. Continuar trabajo independiente sin pedir al usuario.
+
 9nov: elección de aventuras7f9e6638ff6cd5a084507e48dbaeea3a3161cd7d publicada, Render7652382006 success; lector protegido de capítulos correcto, revisión exacta,0POST/IA. Entrada6278028 también conserva lectores clínicos.
 
 Orientación inicial siguiente: mesa nueva sin personajes oculta la elección de aventura prematura; muestra crear personaje y explica que después elegirá historia. Retirada tarjeta vacía repetida que volvía a pedir crear personaje después de hacerlo. Cabecera de escena aún no preparada se oculta solo en mesa vacía sin mensajes/aventura/combate, con CSS local. No se bloquean notas, dados ni herramientas. Asistente, apertura original/ruta/copias, invitado y permisos verificados en navegador; captura primer paso móvil revisada. Sin cambios de motor, nuevas dependencias, IA ni operaciones por navegar. Base943 preservada; publicar y continuar la claridad del recorrido individual.

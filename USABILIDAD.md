@@ -114,3 +114,5 @@ La aceptación exige comprobar recorridos nuevos, teclado y móvil: decisiones r
 9nov: selector de aventuras ordena preparadas primero y explica experiencia/límites de cada opción con texto público, sin pistas privadas. Cambios de selección no llaman API; estado sin IA ofrece las opciones de escena sin prometer un director disponible. Apertura de ambas opciones, generación explícita y memoria verificadas con fixtures locales; captura móvil revisada.
 
 9nov: mesa vacía muestra primero crear personaje; oculta elección prematura y cabecera de escena no iniciada, elimina instrucciones vacías repetidas. Tras crear aparece elegir aventura. Notas y herramientas conservadas; apertura, asistente e invitado verificados sin IA real.
+
+9nov: ayuda de búsquedas plegada, accesible con teclado/tacto, explica tres métodos y su esfuerzo sin elegir por el jugador ni prometer éxito. Contraste visual CorePDF87/101. Apertura/cierre0API verificado; referencia original disponible bajo demanda.
