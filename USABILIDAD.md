@@ -1,5 +1,9 @@
 # Sencillez y orientación
 
+9nov: grupoGUI repetido trasmarca deinstantánea correcto. Recuperación local mantiene petición sin pedir cambios deidentificador/cuerpo, mientras solo entraron participantes; si cambió el juego o esdecisión nueva antigua mantiene409 ytexto para revisión. VERSIONES_Y_RECUPERACION.md. No nueva opción técnica enpantalla ni sondeos adicionales.
+
+9nov: dos perfiles nuevos/fichas legales en modo online: nota privada aislada, hablantes propios,409 conserva texto y permite revisión/reenvío explícito, resultado único compartido tras recarga/teclado/móvil. test_group_conflict_browser.cjs correcto,0IA. No certifica campaña completa en grupo. Incorporación durante director en corrección local, INCORPORACION_Y_DIRECTOR.md.
+
 9nov: apertura preparada y capítulos publicados55eda87. Recorrido real desde perfil nuevo: creador, primera investigación0IA, salir/cerrar/reanudar, objetivo propio aquí y segunda investigación con1respuesta real, copia/recarga/teclado/móvil. Gaspar/carta/agencia revisados, passed-scoped; CONTINUIDAD_REAL_2CAPITULOS.md. No nueva invitación personal ni garantía de campaña abierta. Las notas locales anteriores se conservan como historial.
 
 

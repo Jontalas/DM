@@ -15,6 +15,7 @@ import adventure_routes
 import rulesets
 from narrative_text import repair_text
 from campaign_locks import CampaignLocks
+from campaign_versions import accepts_action
 
 ROOT=Path(__file__).resolve().parent
 # Local paths are only for extracting/importing PDF assets, never for databases.
@@ -170,7 +171,7 @@ def execute_action(body,me):
     with CAMPAIGN_LOCKS.hold(cid):
         if store.completed(cid,aid,me['id'],signature):return {'duplicate':True}
         row,state=load(cid)
-        if body.get('version')!=row['version']:raise Conflict('La mesa ha cambiado. Revisa tu acción antes de enviarla')
+        if not accepts_action(row,body.get('version')):raise Conflict('La mesa ha cambiado. Revisa tu acción antes de enviarla')
         selected=rulesets.adapter(state['ruleset'])
         if 'captureContract' in body:
             import legacy_director_attempt as legacy
@@ -178,6 +179,18 @@ def execute_action(body,me):
             authored_contract=(selected is None and body['type']=='start_adventure' and body['captureContract']==adventure_opening.ACTION_CONTRACT and body.get('openingContract')==adventure_opening.CONTRACT)
             if not authored_contract and (selected is not None or body['type'] not in ('talk','start_adventure','continue_adventure','next_adventure') or body['captureContract']!=legacy.ACTION_CONTRACT):
                 raise ValueError('Contrato de envío no disponible para esta acción')
+        if body['version']!=row['version']:
+            # Membership-only changes permit recovery of an existing request,
+            # never a new decision made against an old participant list.
+            reserved=None
+            if selected is None and body.get('captureContract')=='pf-director-action-1':
+                import legacy_director_attempt as legacy
+                binding={'action':aid,'actor':me['id'],'fingerprint':signature,'version':body['version']}
+                request_sha=legacy.request_sha({'actionIdentity':binding})
+                reserved=store.read_rule_preparation(cid,me['id'],request_sha)
+            if reserved is None:
+                reserved=store.check_action_random_seed(cid,aid,me['id'],signature,body['version'])
+            if reserved is None:raise Conflict('La mesa ha cambiado. Revisa tu acción antes de enviarla')
         workspace_readonly=False
         if state['ruleset']=='rule-pack' and me['host'] and body['type'] in ('prepare_rule_pack','install_prepared_rule_pack'):
             workspace_readonly=body['type']=='install_prepared_rule_pack' and state.get('authoringWorkspaceRef') is not None
@@ -188,7 +201,7 @@ def execute_action(body,me):
             nonlocal preparation_key
             import legacy_director_attempt as legacy
             import rule_preparation_attempt as attempts
-            binding={'action':aid,'actor':me['id'],'fingerprint':signature,'version':row['version']} if body.get('captureContract')==legacy.ACTION_CONTRACT else None
+            binding={'action':aid,'actor':me['id'],'fingerprint':signature,'version':body['version']} if body.get('captureContract')==legacy.ACTION_CONTRACT else None
             prepared=legacy.prepare(state,text,refs,**options,action_identity=binding)
             preparation_key=attempts.key(me['id'],prepared['sha256'])
             def convert(current,response_observer=None):return ai_reply(state,text,refs,**options,response_observer=response_observer)
@@ -254,7 +267,7 @@ def execute_action(body,me):
                 if body['type']=='resolve_pack_request':
                     from pending_randomness import describe
                     reservation=describe(state,body,me,selected.runtime(state,cid))
-                randomness=ActionRandomness(store,cid,aid,me['id'],signature,row['version'],reservation=reservation)
+                randomness=ActionRandomness(store,cid,aid,me['id'],signature,body['version'],reservation=reservation)
                 state=selected.execute_action(state,body,me,draw=randomness)
             else:state=selected.execute_action(state,body,me)
         elif body['type'] in ('start_adventure','next_adventure'):
@@ -328,7 +341,7 @@ def execute_action(body,me):
             if body.get('method') is not None:
                 from action_randomness import ActionRandomness
                 from game_randomness import using_random_source
-                randomness=ActionRandomness(store,cid,aid,me['id'],signature,row['version'])
+                randomness=ActionRandomness(store,cid,aid,me['id'],signature,body['version'])
                 with using_random_source(randomness):apply_action(state,{'type':'check','request':state['pending'][-1]['check']['id'],'method':body['method']},me)
         elif body['type']=='continue_adventure' or body['type']=='talk' and body.get('director',True):
             if body['type']=='continue_adventure':
@@ -361,7 +374,7 @@ def execute_action(body,me):
                 import director_prepared_decisions
                 from action_randomness import ActionRandomness
                 from game_randomness import using_random_source
-                randomness=ActionRandomness(store,cid,aid,me['id'],signature,row['version'])
+                randomness=ActionRandomness(store,cid,aid,me['id'],signature,body['version'])
                 with using_random_source(randomness):director_prepared_decisions.apply(state,result['preparedDecision'],body,me)
             if result.get('meleeAttack'):
                 if result.get('checks') or result.get('investigation') or result.get('proposals') or result.get('routeTravel') or result.get('preparedDecision'):
@@ -369,14 +382,14 @@ def execute_action(body,me):
                 from action_randomness import ActionRandomness
                 from game_randomness import using_random_source
                 import director_combat
-                randomness=ActionRandomness(store,cid,aid,me['id'],signature,row['version'])
+                randomness=ActionRandomness(store,cid,aid,me['id'],signature,body['version'])
                 with using_random_source(randomness):director_combat.apply(state,result['meleeAttack'],body,me)
             if result.get('turnEnd'):
                 if any(result.get(k) for k in ('checks','investigation','proposals','routeTravel','preparedDecision','meleeAttack')):raise ValueError('Terminar turno no se combina con otras resoluciones')
                 from action_randomness import ActionRandomness
                 from game_randomness import using_random_source
                 import director_turn
-                randomness=ActionRandomness(store,cid,aid,me['id'],signature,row['version'])
+                randomness=ActionRandomness(store,cid,aid,me['id'],signature,body['version'])
                 with using_random_source(randomness):director_turn.apply(state,result['turnEnd'],body,me)
             if 'worldUpdates' in result:
                 import campaign_world
@@ -400,7 +413,7 @@ def execute_action(body,me):
         else:
             from action_randomness import ActionRandomness
             from game_randomness import using_random_source
-            randomness=ActionRandomness(store,cid,aid,me['id'],signature,row['version'])
+            randomness=ActionRandomness(store,cid,aid,me['id'],signature,body['version'])
             with using_random_source(randomness):apply_action(state,body,me)
         # Firestore CAS + marker are atomic. A conflict never reruns RNG or the provider.
         if randomness is not None:randomness.verify_if_unused()
@@ -502,7 +515,10 @@ class Handler(BaseHTTPRequestHandler):
                 token=repository().create(str(body.get('title','Nueva crónica')),rulesets.new_campaign(body),str(body.get('player','Anfitrión')))
                 self.reply({'token':token});return
             if path=='/api/join':
-                self.reply({'token':repository().join(str(body['invite']),str(body['name']))});return
+                store=repository();invite=str(body['invite']);cid=store.invited_campaign(invite)
+                with CAMPAIGN_LOCKS.hold(cid):
+                    token=store.join(invite,str(body['name']),campaign=cid)
+                self.reply({'token':token});return
             if path=='/api/rule-pack/inspect':
                 if not isinstance(body,dict) or set(body)!={'package'}:raise ValueError('Inspección de paquete inválida')
                 from rule_pack_campaign import inspect_document

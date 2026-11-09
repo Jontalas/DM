@@ -1,5 +1,11 @@
 # Continuidad del desarrollo autónomo
 
+9nov: incorporación y recuperación listas para publicar,924completas finales correctas285,075s,39324 terminada.7HTTP/3puras nuevas;33focalizadas9,033s y3navegadores correctos, grupo repetido trasinstantánea0IA. Sin cambios de comportamiento después del arranque final. VERSIONES_Y_RECUPERACION.md. Publicar/verificar lectura yseguir dos propietarios concurrentes.
+
+9nov: recuperación tras incorporación local implementada con marca de versión ligada ainstantánea, solo reservas existentes/mismo cuerpo; rechaza decisión antigua y escritor anterior.33focalizadas correctas,917primerajuste y921iniciales correctas; final39324 en curso tras guardas. GrupoGUI repetido correcto,3navegadores0IA. VERSIONES_Y_RECUPERACION.md. Cuota de revisión temporal resuelta a04:58; publicar/verificar al cerrar suite ycontinuar.
+
+9nov:954dc6f publicado/verificado Render7644207916,914pruebas454,616s; lectores capítulos/auxilio0POST/IA correctos. Incorporación durante director: baseline409 reproducido, arreglo local con1lectura extra al entrar y3HTTP nuevas correctas; suite15562 en curso. INCORPORACION_Y_DIRECTOR.md. No repetir ensayos reales.
+
 9nov: concurrencia por campaña lista para publicar,914pruebas completas454,616s,5nuevas y3navegadores correctos, incluido dos perfiles GUI/privacidad/409/texto/reenvío explícito/teclado/móvil.0IAreal nueva. CONCURRENCIA_CAMPANAS.md y CONCURRENCIA_GRUPO_PLAN.md. Siguiente verificar despliegue y reproducir incorporación mientras espera director.
 
 9nov: **55eda87bd328c5422ba5c7ee1d8d8c827959303f**, Render**7643938990 success**, feature/main, descriptor1.15. **909 completas correctas434,705s**, `.deps/adventure-opening-protocol-final-tests.log`41038 terminada. Apertura preparada publicada y lectores protegidos esperaNPC/auxilio-diálogo correctos con revisión/salud/descriptor exactos,0POST/IA.

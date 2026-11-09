@@ -1,0 +1,13 @@
+# Incorporarse mientras responde el director
+
+9 de noviembre de 2026. Después del aislamiento de acciones por campaña, una prueba HTTP con Waitress y emulador reprodujo otro fallo anterior: un invitado entraba durante la espera simulada de IA, `join` incrementaba la versión y la confirmación de la respuesta recibía409. No se hizo ninguna llamada real ni se tocaron partidas existentes.
+
+La ruta de incorporación resuelve primero la campaña de la invitación y adquiere el mismo cerrojo que sus acciones. Dentro, `FirestoreStore.join` vuelve a comprobar la invitación en su transacción y exige que corresponda a la campaña resuelta. La incorporación espera la confirmación o el fallo de la acción anterior; no decide por ningún personaje. Una campaña distinta sigue entrando sin esperar ese director.
+
+Coste: una lectura adicional del documento de invitación exclusivamente por incorporación. Se conserva la validación transaccional original, sin lecturas de instantáneas ni consultas periódicas nuevas. Separar versiones de miembros y estado exigiría cambiar el protocolo de caché/sincronización y no elimina por sí solo todas las carreras de metadatos; esta corrección acotada reutiliza la coordinación existente. No añade servicios ni llamadas de IA.
+
+Tres pruebas nuevas correctas: incorporación espera una respuesta, confirma una sola narración y el reenvío exacto sigue siendo duplicado tras cambiar la versión; una invitación que cambie de campaña entre lectura y transacción no crea acceso ni cambia versión, invitación inexistente conserva estado; incorporación a otra campaña termina antes de liberar el director. Se comprueban también privacidad del nuevo invitado y limpieza de cerrojos. Baseline409 guardado privadamente en `.deps/campaign-join-baseline.log`; resultados en `.deps/campaign-join-targeted-tests.log`.
+
+La garantía es local al proceso de producción actual. CAS/transacciones persistentes siguen siendo autoridad; no certifica exclusión entre varias réplicas. El primer ajuste no resolvía la incorporación posterior a una confirmación fallida: ese segundo caso quedó reproducido y está implementado localmente en VERSIONES_Y_RECUPERACION.md, preservando petición original y sin repetir inferencias. Dos propietarios declarando a la vez siguen pendientes antes de certificar grupo.
+
+917 completas correctas446,136s: `.deps/campaign-join-final-tests.log`, sesión15562 terminada. Producción anterior954dc6f/Render7644207916 success verificada en lectura: dos capítulos e historia/pistas/reanudación y ensayo clínico−2/6 conservados,0POST/IA. El ajuste de incorporación y su recuperación ampliada todavía son locales; prevalece la suite final de VERSIONES_Y_RECUPERACION.md.

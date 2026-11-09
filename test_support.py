@@ -4,6 +4,7 @@ import secrets
 import threading
 import os
 from firebase_store import Conflict, FirestoreStore, digest, words
+from campaign_versions import state_version
 
 
 class TestStore:
@@ -14,14 +15,22 @@ class TestStore:
     def create(self,title,state,name):
         cid=secrets.token_hex(12);pid=secrets.token_hex(8);token=secrets.token_hex(32);invite=secrets.token_hex(24)
         state=self._light_state(cid,state)
-        self.campaigns[cid]=({'id':cid,'title':title,'invite':invite,'version':0},copy.deepcopy(state))
+        self.campaigns[cid]=({'id':cid,'title':title,'invite':invite,'version':0,'stateVersion':0,
+                            'snapshot':'state-0','stateVersionSnapshot':'state-0'},copy.deepcopy(state))
         me={'id':pid,'name':name,'host':1,'campaign':cid};self.sessions[digest(token)]=me;self.members[cid]=[me];self.invites[invite]=cid
         return token
-    def join(self,invite,name):
+    def invited_campaign(self,invite):
+        if invite not in self.invites:raise ValueError('Invitación no válida')
+        return self.invites[invite]
+    def join(self,invite,name,*,campaign=None):
         with self.lock:
             if invite not in self.invites:raise ValueError('Invitación no válida')
-            cid=self.invites[invite];token=secrets.token_hex(32);me={'id':secrets.token_hex(8),'name':name,'host':0,'campaign':cid}
-            self.sessions[digest(token)]=me;self.members[cid].append(me);self.campaigns[cid][0]['version']+=1
+            cid=self.invites[invite]
+            if campaign is not None and cid!=campaign:raise Conflict('La invitación ha cambiado; vuelve a entrar')
+            token=secrets.token_hex(32);me={'id':secrets.token_hex(8),'name':name,'host':0,'campaign':cid}
+            self.sessions[digest(token)]=me;self.members[cid].append(me)
+            meta=self.campaigns[cid][0];meta['stateVersion']=state_version(meta)
+            meta['stateVersionSnapshot']=meta['snapshot'];meta['version']+=1
             return token
     def identity(self,token):
         if digest(token) not in self.sessions:raise PermissionError('Sesión desconocida')
@@ -104,7 +113,8 @@ class TestStore:
         with self.lock:
             if self.completed(cid,aid,actor,fingerprint):return True
             if self.campaigns[cid][0]['version']!=version:raise Conflict('Estado antiguo')
-            meta=copy.deepcopy(self.campaigns[cid][0]);meta['version']+=1
+            meta=copy.deepcopy(self.campaigns[cid][0]);meta['version']+=1;meta['stateVersion']=meta['version']
+            meta['snapshot']='state-'+str(meta['version']);meta['stateVersionSnapshot']=meta['snapshot']
             if title is not None:meta['title']=title
             self.campaigns[cid]=(meta,copy.deepcopy(self._light_state(cid,state)));self.actions[cid,aid]=(actor,fingerprint)
             if preparation_key is not None:self.preparations[cid,preparation_key]={'actor':actor,'phase':'confirmed'}

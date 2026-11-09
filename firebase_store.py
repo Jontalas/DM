@@ -8,6 +8,7 @@ import threading
 import time
 import unicodedata
 import zlib
+from campaign_versions import state_version
 from collections import OrderedDict
 
 BOOKS = {'trey': 'Trey.pdf', 'reglas': 'Pathfinder_en_escastellano_subido para_elgrimorio.pdf', 'bestiario': 'bestiario pathfinder spanish [Unlocked by www.freemypdf.com].pdf'}
@@ -188,26 +189,38 @@ class FirestoreStore:
         snapshot=self._stage(cid,state)
         person={'campaign':cid,'id':pid,'name':name[:80],'host':1}
         batch=self.client.batch()
-        batch.create(self.campaign(cid),{'title':title[:120],'invite':invite,'version':0,**snapshot})
+        batch.create(self.campaign(cid),{'title':title[:120],'invite':invite,'version':0,'stateVersion':0,
+                                      'stateVersionSnapshot':snapshot['snapshot'],**snapshot})
         batch.create(self.collection('sessions').document(digest(token)),person)
         batch.create(self.campaign(cid).collection('members').document(pid),person)
         batch.create(self.collection('invites').document(digest(invite)),{'campaign':cid})
         batch.commit()
         return token
 
-    def join(self,invite,name):
+    def invited_campaign(self,invite):
+        invitation=self.collection('invites').document(digest(invite)).get()
+        if not invitation.exists:raise ValueError('Invitación no válida')
+        cid=invitation.to_dict().get('campaign')
+        if not isinstance(cid,str) or not cid:raise Unavailable('La invitación no está íntegra')
+        return cid
+
+    def join(self,invite,name,*,campaign=None):
         from google.cloud import firestore
         token=secrets.token_urlsafe(32);pid=secrets.token_urlsafe(10)
         @firestore.transactional
         def commit(tx):
             invitation=self.collection('invites').document(digest(invite)).get(transaction=tx)
             if not invitation.exists: raise ValueError('Invitación no válida')
-            cid=invitation.to_dict()['campaign'];ref=self.campaign(cid);meta=ref.get(transaction=tx)
+            cid=invitation.to_dict()['campaign']
+            if campaign is not None and cid!=campaign:raise Conflict('La invitación ha cambiado; vuelve a entrar')
+            ref=self.campaign(cid);meta=ref.get(transaction=tx)
             if not meta.exists: raise ValueError('Campaña inexistente')
             person={'campaign':cid,'id':pid,'name':str(name)[:80],'host':0}
             tx.create(self.collection('sessions').document(digest(token)),person)
             tx.create(ref.collection('members').document(pid),person)
-            tx.update(ref,{'version':meta.to_dict()['version']+1})
+            previous=meta.to_dict()
+            tx.update(ref,{'version':previous['version']+1,'stateVersion':state_version(previous),
+                           'stateVersionSnapshot':previous['snapshot']})
         commit(self.client.transaction())
         return token
 
@@ -304,7 +317,7 @@ class FirestoreStore:
         if not meta.exists:raise ValueError('Campaña inexistente')
         if meta.to_dict()['version']!=version:raise Conflict('La mesa ha cambiado. Revisa tu acción antes de enviarla')
         staged=self._stage(cid,state)
-        update={'version':version+1,**staged}
+        update={'version':version+1,'stateVersion':version+1,'stateVersionSnapshot':staged['snapshot'],**staged}
         if title is not None:update['title']=str(title)[:120]
         batch=self.client.batch()
         batch.update(ref,update,option=firestore.LastUpdateOption(meta.update_time))
