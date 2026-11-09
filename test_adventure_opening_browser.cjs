@@ -15,6 +15,8 @@ const path=require('node:path'),assert=require('node:assert/strict');
    if(source==='route')await page.locator('#createForm [name=goal]').fill('Jugar una aventura preparada');
    await page.setViewportSize({width:390,height:844});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await page.screenshot({path:'.deps/entry-simplified-mobile.png',fullPage:true});await page.setViewportSize({width:1440,height:960});
    await page.locator('#createForm button').click();await page.waitForFunction(()=>snapshot&&!busy);assert.ok(await page.evaluate(()=>snapshot.state.goal.trim()));
+   assert.equal(await page.locator('#adventureEntry').isVisible(),false);assert.equal(await page.locator('[data-create-hero]').count(),1);assert.equal(await page.locator('#messages .empty').count(),0);
+   if(source==='example'){await page.setViewportSize({width:390,height:844});await page.locator('[data-create-hero]').scrollIntoViewIfNeeded();await page.screenshot({path:'.deps/first-character-step-mobile.png'});await page.setViewportSize({width:1440,height:960})}
    await page.locator('[data-create-hero]').click();await page.locator('[data-creator-preset=guardian]').click();await page.locator('#creatorName').fill('Aria');await page.locator('[data-creator-step="3"]').click();await page.locator('#creatorFinish').click();await page.locator('.sheet-checks').waitFor();await page.locator('#closeModal').click();
    assert.equal(await page.evaluate(()=>model.aiConfigured),false);assert.equal(await page.locator('#beginAdventure').isEnabled(),true);
    const count=actions.length;await page.locator('#beginAdventure').focus();await page.keyboard.press('Enter');

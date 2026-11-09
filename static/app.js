@@ -195,9 +195,9 @@ function render(){if(snapshot.state.ruleset==='rule-pack'){RulePackUI.render();r
  const boardAvailable=boardCharacters(s).filter(c=>me.host||c.owner===me.id);
  $('#boardCharacter').innerHTML=boardAvailable.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('');if(boardAvailable.some(c=>c.id===boardPrev))$('#boardCharacter').value=boardPrev;
  const area=$('#story'), near=area.scrollHeight-area.scrollTop-area.clientHeight<150;
- $('#messages').innerHTML=s.messages.map(messageEntry).join('')||`<div class="empty"><div class="icon">✧</div><h3>Una página todavía en blanco</h3><p>Crea un personaje y presenta la situación inicial.<br>${model.aiConfigured?'El director está configurado; su disponibilidad se comprobará al enviar.':'Puedes crear tu personaje, consultar libros y usar el tablero. El director no está disponible en esta mesa.'}</p></div>`;
- if(!available.length)$('#messages').insertAdjacentHTML('afterbegin','<div class="card"><h3>Tu personaje es el primer paso</h3><p>Elige sus opciones; el creador calcula la ficha y la deja lista para jugar.</p><button class="primary" data-create-hero>Crear mi personaje</button></div>');
- document.body.classList.toggle('adventure-active',!!(s.adventure||s.pfEncounter));renderAdventure();renderChecks();renderPlayGuidance(s);if(near)area.scrollTop=area.scrollHeight;
+ $('#messages').innerHTML=s.messages.map(messageEntry).join('');
+ if(!available.length)$('#messages').insertAdjacentHTML('afterbegin','<div class="card"><div class="eyebrow">PASO 1 · TU PERSONAJE</div><h3>¿Quién vivirá esta aventura?</h3><p>Elige un estilo y un nombre. El creador calcula tu ficha; después podrás elegir la aventura.</p><button class="primary" data-create-hero>Crear mi personaje</button></div>');
+ document.body.classList.toggle('character-setup',!s.characters.length&&!s.messages.length&&!s.adventure&&!s.board.active);document.body.classList.toggle('adventure-active',!!(s.adventure||s.pfEncounter));renderAdventure();renderChecks();renderPlayGuidance(s);if(near)area.scrollTop=area.scrollHeight;
  renderJournalOverview(s);
  const jf=$('#journalForm');for(const key of ['location','worldTime','goal','notes','secrets','directorNotes','objectives','allies','enemies','unknowns']){const el=jf.elements[key];if(document.activeElement!==el)el.value=Array.isArray(s[key])?s[key].join('\n'):s[key]||'';el.disabled=!me.host}
  $$('.host-only').forEach(x=>x.hidden=!me.host);$('#inviteBtn').hidden=!me.host;$('#exportBtn').disabled=!me.host;

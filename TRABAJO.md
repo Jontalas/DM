@@ -1,5 +1,9 @@
 # Continuidad del desarrollo autónomo
 
+9nov: elección de aventuras7f9e6638ff6cd5a084507e48dbaeea3a3161cd7d publicada, Render7652382006 success; lector protegido de capítulos correcto, revisión exacta,0POST/IA. Entrada6278028 también conserva lectores clínicos.
+
+Orientación inicial siguiente: mesa nueva sin personajes oculta la elección de aventura prematura; muestra crear personaje y explica que después elegirá historia. Retirada tarjeta vacía repetida que volvía a pedir crear personaje después de hacerlo. Cabecera de escena aún no preparada se oculta solo en mesa vacía sin mensajes/aventura/combate, con CSS local. No se bloquean notas, dados ni herramientas. Asistente, apertura original/ruta/copias, invitado y permisos verificados en navegador; captura primer paso móvil revisada. Sin cambios de motor, nuevas dependencias, IA ni operaciones por navegar. Base943 preservada; publicar y continuar la claridad del recorrido individual.
+
 9nov: entrada62780289ec9ed097a88f1d12c74afaa1ee4ae7d4 publicada, Render7652324340 success; lectores capítulos/auxilio exactSHA correctos0POST/IA. Primer lector se ejecutó antes de terminar Render y rechazó la revisión antigua; repetido solo tras success, correcto, ninguna acción ni inferencia.
 
 Siguiente ajuste visual verificado: selector de aventura agrupa opciones preparadas primero; descripción pública explica experiencia y límites por elección, sin secretos. IA expresa alcance de una situación/dos búsquedas, no campaña completa; estado sin director ya no invita a pedirle intervención. Navegadores apertura (ambas opciones, cambios0API, sin secreto del forro, móvil) y memoria con generación explícita simulada correctos. Capturas adventure-choice-example/route-mobile revisadas. Sin motor ni dependencias nuevas. Corregidos acentos de notas de entrada dañados al escribir desde stdin de PowerShell; código de aplicación y experiencia no afectados. Publicar este ajuste y continuar con orientación dentro de mesa.

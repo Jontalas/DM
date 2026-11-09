@@ -121,6 +121,7 @@ body.reader-wide #composer{display:none}
 .entry-back{display:none;font-size:14px;margin-top:20px}
 body.joining-campaign .welcome-grid{grid-template-columns:minmax(0,1fr);max-width:620px;margin:auto}
 body.joining-campaign .entry-back{display:block}
+body.character-setup #story>.chapter{display:none}
 @media(max-width:680px){#welcome h1{font-size:34px}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
 
