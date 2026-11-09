@@ -1,5 +1,9 @@
 # Continuidad del desarrollo autónomo
 
+9nov: investigación compartida lista para publicar,928completas correctas288,084s,97901 terminada.4HTTP nuevas/26afectadas y3navegadores correctos,0IAreal. Sin cambios de comportamiento desdearranque final. INVESTIGACION_COMPARTIDA.md; después de verificar lectores continuar COPIAS_Y_PROPIETARIOS_PLAN.md.
+
+9nov:7a0534d publicado/verificado Render7646753908,924finales285,075s; lectores protegidos0POST/IA correctos. Grupo:4HTTP nuevas/26afectadas y navegador ampliado correctos; propietario elige/resuelve búsqueda, avisos locales. Suite97901 en curso. INVESTIGACION_COMPARTIDA.md. Vista actual8766 comunicada/verificada, demo sinIA/Firebase. Seguir copia con propietarios, no pedir intervención.
+
 9nov: incorporación y recuperación listas para publicar,924completas finales correctas285,075s,39324 terminada.7HTTP/3puras nuevas;33focalizadas9,033s y3navegadores correctos, grupo repetido trasinstantánea0IA. Sin cambios de comportamiento después del arranque final. VERSIONES_Y_RECUPERACION.md. Publicar/verificar lectura yseguir dos propietarios concurrentes.
 
 9nov: recuperación tras incorporación local implementada con marca de versión ligada ainstantánea, solo reservas existentes/mismo cuerpo; rechaza decisión antigua y escritor anterior.33focalizadas correctas,917primerajuste y921iniciales correctas; final39324 en curso tras guardas. GrupoGUI repetido correcto,3navegadores0IA. VERSIONES_Y_RECUPERACION.md. Cuota de revisión temporal resuelta a04:58; publicar/verificar al cerrar suite ycontinuar.

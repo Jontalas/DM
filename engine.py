@@ -233,6 +233,8 @@ def apply_action(s,b,me):
             pending=next((p for p in s['pending'] if p.get('check',{}).get('id')==b['request']),None)
             if pending is None:raise ValueError('Esta prueba ya fue resuelta o cancelada')
             spec=pending['check'];c=char(s,spec['character'],me);dc=spec['dc']
+            if pending.get('investigation') and c['owner']!=me['id']:
+                raise PermissionError('Solo el propietario resuelve la búsqueda de su personaje y elige cómo tirar')
         else:
             c=char(s,b['character'],me);spec={'kind':b['checkKind'],'key':b['key']};dc=None
         checks.modifier(c,spec['kind'],spec['key'])  # Validate before generating any dice.

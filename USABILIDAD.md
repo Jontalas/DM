@@ -1,5 +1,7 @@
 # Sencillez y orientación
 
+9nov: investigación compartida local: solo fichas propias, ayuda asociada a selectores/botones y causa sin personaje; pendiente ajena explica esperar a su propietario y bloquea resoluciones del anfitrión. Dos participantes, pista propia cada uno y progreso común, teclado/móvil correctos0IA. INVESTIGACION_COMPARTIDA.md; suite97901 en curso.
+
 9nov: grupoGUI repetido trasmarca deinstantánea correcto. Recuperación local mantiene petición sin pedir cambios deidentificador/cuerpo, mientras solo entraron participantes; si cambió el juego o esdecisión nueva antigua mantiene409 ytexto para revisión. VERSIONES_Y_RECUPERACION.md. No nueva opción técnica enpantalla ni sondeos adicionales.
 
 9nov: dos perfiles nuevos/fichas legales en modo online: nota privada aislada, hablantes propios,409 conserva texto y permite revisión/reenvío explícito, resultado único compartido tras recarga/teclado/móvil. test_group_conflict_browser.cjs correcto,0IA. No certifica campaña completa en grupo. Incorporación durante director en corrección local, INCORPORACION_Y_DIRECTOR.md.

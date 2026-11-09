@@ -30,6 +30,7 @@ function parseSkillTotals(text){
 }
 function pendingCheckUnavailable(p,c){
  if(!c)return 'El personaje ya no está disponible en esta mesa.';
+ if(p.investigation&&c.owner!==snapshot.me.id)return 'Esta búsqueda la resuelve su propietario. Espera su tirada.';
  if(!characterIsConscious(c))return 'El personaje no puede tirar mientras esté inconsciente o muerto.';
  if(c.conditions?.trim())return 'Hay condiciones que requieren revisar esta prueba antes de resolverla.';
  if(p.investigation&&snapshot.state.board.active)return 'La investigación automática no está disponible durante el combate.';

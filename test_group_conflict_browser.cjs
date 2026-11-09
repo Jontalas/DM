@@ -37,7 +37,24 @@ const path=require('node:path'),assert=require('node:assert/strict');
   await guest.reload();await guest.waitForFunction(()=>snapshot?.state.messages.some(m=>m.text==='Mi decisión sigue pendiente.')&&!busy);
   assert.doesNotMatch(JSON.stringify(await guest.evaluate(()=>snapshot)),/PRIVATE-ANA-NOTE/);
   await guest.setViewportSize({width:390,height:1000});await guest.locator('[data-tab=story]').tap();assert.ok(await guest.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+  await host.locator('#beginAdventure').click();await host.locator('#adventureForm [name=source]').selectOption('example');await host.locator('#adventureForm button').click();await host.waitForFunction(()=>snapshot?.state.adventureModuleView&&!busy);
+  assert.deepEqual(await host.locator('#investigationForm [name=character] option').evaluateAll(items=>items.map(e=>e.value)),[hostId]);
+  await guest.reload();await guest.waitForFunction(()=>snapshot?.state.adventureModuleView&&!busy);
+  assert.deepEqual(await guest.locator('#investigationForm [name=character] option').evaluateAll(items=>items.map(e=>e.value)),[guestId]);
+  // Technical owner-authenticated HTTP setup for a pending search; the rest is GUI.
+  const queued=await guestContext.request.post(url+'/api/action',{headers:{Authorization:'Bearer '+await guest.evaluate(()=>token)},data:{id:crypto.randomUUID(),version:await guest.evaluate(()=>snapshot.version),type:'investigate',character:guestId,opportunity:'rastro'}});assert.equal(queued.status(),200);
+  await host.reload();await host.waitForFunction(()=>snapshot?.state.pending.some(p=>p.investigation)&&!busy);
+  assert.match(await host.locator('#checkRequests').textContent(),/propietario.*Espera su tirada/);
+  for(const button of await host.locator('#checkRequests [data-resolve-check]').all())assert.equal(await button.isDisabled(),true);
+  await guest.reload();await guest.waitForFunction(()=>snapshot?.state.pending.some(p=>p.investigation)&&!busy);
+  await guest.locator('#checkRequests [data-check-method=take20]').focus();await guest.keyboard.press('Enter');await guest.waitForFunction(()=>snapshot.state.moduleProgress.discoveries.length===1&&!busy);
+  await host.reload();await host.waitForFunction(()=>snapshot?.state.moduleProgress.discoveries.length===1&&!busy);
+  await host.locator('#investigationForm button[value=take20]').click();await host.waitForFunction(()=>snapshot.state.moduleProgress.completed&&!busy);
+  await guest.reload();await guest.waitForFunction(()=>snapshot?.state.moduleProgress.completed&&!busy);
+  assert.deepEqual(await guest.evaluate(()=>snapshot.state.moduleProgress.discoveries.map(d=>d.character)),[guestId,hostId]);
+  assert.doesNotMatch(JSON.stringify(await guest.evaluate(()=>snapshot)),/PRIVATE-ANA-NOTE/);
+  assert.ok(await guest.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
   assert.ok(!actions.some(a=>a.body.director===true));assert.deepEqual(errors,[]);
-  console.log('Two-participant GUI: legal owned characters, private note isolation, stale action rejected with text retained, explicit resubmission once, shared result after reload, keyboard/mobile; zero inference. Not group campaign certification.');
+  console.log('Two-participant GUI: legal owned characters, private notes, stale draft/review/resubmit, own search selectors, pending-owner explanation/disabled host controls, two shared clues and completed investigation, reload/keyboard/mobile; one pending-search HTTP setup, zero inference. Not group campaign certification.');
  }finally{await browser?.close();fixture.kill()}
 })().catch(e=>{console.error(e);process.exitCode=1});

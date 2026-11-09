@@ -1,0 +1,16 @@
+# Siguiente bloque: copia de la misma campaña sin perder propietarios
+
+9 de noviembre de 2026. La importación actual reasigna todos los personajes sin npcCreation al anfitrión y lo avisa expresamente. Es adecuada para una copia trasladada a otra sala, pero no acredita recuperar una campaña de grupo con sus accesos originales. No cambiar silenciosamente el significado de import ni atribuir identidades de otras campañas a participantes actuales.
+
+Contrato propuesto para el siguiente bloque:
+
+- Exportación autorizada añade el identificador de campaña de origen, nunca tokens, invitaciones ni credenciales. No altera originales, personajes ni progreso.
+- Una acción nueva, por ejemplo restore_campaign_copy, solo para anfitrión y Pathfinder, exige que ese origen coincida exactamente con la campaña actual. Un servidor anterior rechazará un tipo de acción desconocido; no reinterpretará silenciosamente una restauración que promete conservar propietarios como importación que los reasigna.
+- El servidor consulta los miembros de esta campaña, conserva el propietario de cada PJ si su acceso sigue siendo miembro y mantiene las identidades de PNJ verificadas. Si un propietario no pertenece a esta sala, asigna ese personaje al anfitrión con una advertencia explícita previa; nunca crea sesiones o miembros desde datos de la copia. El identificador de origen no certifica autoría ni firma: el anfitrión ya tiene permiso de importar y editar la copia.
+- Copia antigua sin origen o trasladada a otra campaña conserva la acción import y su aviso de asignación al anfitrión. No migrar propietarios por coincidencias de nombres. Otros módulos mantienen su contrato actual hasta tener un recorrido comprobado.
+- La confirmación distingue ambos resultados antes de sustituir estado. Tras restaurar, cada participante sigue controlando su ficha, las notas privadas del registro conservan su visibilidad y las investigaciones/capítulos mantienen validación y trazabilidad. No prometer recuperar el campo privado antiguo hoy descartado si no se implementa expresamente.
+- Reutilizar confirmación atómica, versión, identificador y recuperación de duplicados.503 no modifica estado ni propietarios; reenvío exacto tras cliente nuevo confirma una sola restauración. No IA, dados ni búsquedas remotas; una lectura de miembros solo para esta restauración es justificable para validar accesos vigentes. No añadirla al resto de acciones ni a navegar.
+
+Primero pruebas HTTP/emulador con dos propietarios y estado legal, antes/después de fallo de confirmación y copia misma campaña; comparar con traslado a otra sala y copia sin origen. Verificar invitado403, origen ajeno rechazado para la acción nueva, propietarios ausentes acotados y PNJ intactos. Luego navegador desde perfiles/asistentes nuevos, investigación compartida, exportar/recuperar con confirmación correcta, cada acceso reanuda su propia ficha en móvil/teclado. Mantener pruebas del import antiguo y su aviso.
+
+No implementado todavía. INVESTIGACION_COMPARTIDA.md está cerrando su suite97901; no mezclar cambios de comportamiento de copias durante esa validación. Producción7a0534d/924pruebas ya verificada en lectura. No repetir ensayos reales ni usar invitación opcional del usuario.

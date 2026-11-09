@@ -189,7 +189,7 @@ def investigation(state,body,me):
     character=next((c for c in state['characters'] if c['id']==body.get('character')),None)
     if not character or character.get('enemy'):raise ValueError('Selecciona un personaje jugador')
     board_scenes.require_present(state,character)
-    if not me['host'] and character['owner']!=me['id']:raise PermissionError('No controlas este personaje')
+    if character['owner']!=me['id']:raise PermissionError('Solo el propietario elige qué investiga su personaje')
     if state.get('pfContinuation',{}).get('format')=='cronicas-pf-continuation-2' and character['owner']!=me.get('id'):
         raise PermissionError('Solo el propietario elige qué investiga su personaje en esta ruta')
     import pf_light_exploration
