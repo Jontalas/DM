@@ -1,5 +1,9 @@
 # Reanudar el desarrollo
 
+9nov: entrada simplificada verificada: nombre ?nico obligatorio, premisa opcional con valor seguro local al crear; t?tulo/modo bajo personalizaci?n. Invitaci?n oculta creaci?n y abre uni?n antes del estado remoto; al entrar limpia URL y restablece bienvenida. Ejemplo preparado predeterminado incluso con director configurado; generar sigue expl?cito. No cambios de motor, dependencias, lecturas ni IA por navegaci?n. Navegadores apertura (nombre solo, teclado/m?vil/0API en ayuda), biblioteca, grupo con cap?tulo simulado, aventura generada expl?cita, encuentro y paquetes correctos. Capturas entry-simplified-mobile y entry-invitation-desktop revisadas; publicaci?n pendiente. Base motor943 sin repetir por UI.
+
+La presentaci?n anterior est? publicada en94e24879c6ac68e7307d32c570142044fccff589, Render7652044192 success; lectores cap?tulos/auxilio exactSHA correctos0POST/IA. Continuar cerrando recorrido individual visible; no expandir reglas ni sistemas.
+
 Estado9 noviembre2026. Desarrollo activo, sin dependencia del usuario. Una entrega/checkpoint no termina el trabajo autorizado. No crear goal inferido ni subagentes sin instrucción aplicable. AGENTS.md, PRODUCTO.md y USABILIDAD.md son autoridad.
 
 ## Directivas permanentes

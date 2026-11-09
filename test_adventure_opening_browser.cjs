@@ -9,7 +9,12 @@ const path=require('node:path'),assert=require('node:assert/strict');
   for(const source of ['example','route']){
    const context=await browser.newContext({hasTouch:true,acceptDownloads:true}),page=await context.newPage(),actions=[],errors=[],apiRequests=[];
    page.on('dialog',d=>d.accept());page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>{if(r.url().includes('/api/'))apiRequests.push(r.url());if(r.url().endsWith('/api/action'))actions.push(r.postDataJSON())});
-   await page.goto(url);await page.locator('#createForm [name=player]').fill('Ana');await page.locator('#createForm [name=goal]').fill('Jugar una aventura preparada');await page.locator('#createForm button').click();
+   await page.goto(url);await page.locator('#createForm [name=player]').fill('Ana');
+   assert.equal(await page.locator('#campaignOptions').evaluate(e=>e.open),false);
+   const entryRequests=apiRequests.length;await page.locator('#campaignOptions > summary').focus();await page.keyboard.press('Enter');await page.keyboard.press('Enter');assert.equal(apiRequests.length,entryRequests);
+   if(source==='route')await page.locator('#createForm [name=goal]').fill('Jugar una aventura preparada');
+   await page.setViewportSize({width:390,height:844});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await page.screenshot({path:'.deps/entry-simplified-mobile.png',fullPage:true});await page.setViewportSize({width:1440,height:960});
+   await page.locator('#createForm button').click();await page.waitForFunction(()=>snapshot&&!busy);assert.ok(await page.evaluate(()=>snapshot.state.goal.trim()));
    await page.locator('[data-create-hero]').click();await page.locator('[data-creator-preset=guardian]').click();await page.locator('#creatorName').fill('Aria');await page.locator('[data-creator-step="3"]').click();await page.locator('#creatorFinish').click();await page.locator('.sheet-checks').waitFor();await page.locator('#closeModal').click();
    assert.equal(await page.evaluate(()=>model.aiConfigured),false);assert.equal(await page.locator('#beginAdventure').isEnabled(),true);
    const count=actions.length;await page.locator('#beginAdventure').focus();await page.keyboard.press('Enter');

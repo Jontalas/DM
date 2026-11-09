@@ -10,6 +10,7 @@ const path=require('node:path'),fs=require('node:fs'),assert=require('node:asser
   const page=await context.newPage(),actions=[],inspections=[],errors=[];
   page.on('pageerror',e=>errors.push(e.stack));page.on('request',r=>{if(r.url().endsWith('/api/action'))actions.push(r.postDataJSON());if(r.url().endsWith('/api/rule-pack/inspect'))inspections.push(r.postDataJSON())});
   await page.goto(url);await page.locator('#systemPicker select').selectOption('rule-pack');
+  await page.locator('#campaignOptions > summary').click();
   await page.locator('#createForm [name=title]').fill('Reglas importadas');
   await page.locator('#createForm [name=player]').fill('Ana');
   await page.locator('#createForm [name=goal]').fill('Probar las reglas de la linterna');

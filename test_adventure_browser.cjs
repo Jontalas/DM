@@ -28,6 +28,8 @@ const path=require('node:path'),assert=require('node:assert/strict');
   await a.goto(url);await a.locator('#beginAdventure').waitFor();
   await a.locator('#beginAdventure').click();await a.locator('#adventureForm').waitFor();
   assert.equal(actions.length,0);
+  assert.equal(await a.locator('#adventureForm [name=source]').inputValue(),'example');
+  await a.locator('#adventureForm [name=source]').selectOption('generated');
   await a.locator('#adventureForm [name=premise]').fill('Investigar las luces del molino');
   await a.locator('#adventureForm button').click();await a.locator('#modal').waitFor({state:'hidden'});
   assert.equal(actions.length,1);assert.equal(actions[0].type,'start_adventure');

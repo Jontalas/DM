@@ -107,3 +107,6 @@ Verificación: la prueba de dos jugadores reproduce el enlace de invitación y r
 - Errores y recuperación: explicar qué ocurrió y el siguiente paso, conservando la acción pendiente cuando proceda.
 
 La aceptación exige comprobar recorridos nuevos, teclado y móvil: decisiones relevantes visibles, ayuda fácil de encontrar, sin pérdida de agencia ni promesas de funciones pendientes. Documentar evidencia por recorrido; no considerar que una ayuda añadida certifica toda la usabilidad.
+
+
+9nov: entrada con nombre como ?nico requisito, premisa opcional y t?tulo/modo dentro de personalizaci?n. Enlace de invitaci?n da prioridad a entrar, sin formulario competidor; tras unirse se restablece bienvenida. Aventura preparada como primera opci?n tambi?n con IA disponible, generaci?n por elecci?n expresa. Verificado desde sesi?n nueva teclado/m?vil, biblioteca, encuentro, paquetes y dos jugadores con proveedor simulado. Abrir ayudas no produce API/IA. No ampl?a cobertura reglamentaria.

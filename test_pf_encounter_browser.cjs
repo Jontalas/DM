@@ -10,7 +10,7 @@ const path=require('node:path'),assert=require('node:assert/strict');
    const context=await browser.newContext({hasTouch:true}),page=await context.newPage(),actions=[],errors=[];
    page.on('dialog',dialog=>dialog.accept());
    page.on('pageerror',e=>errors.push(e.stack));page.on('request',r=>{if(r.url().endsWith('/api/action'))actions.push(r.postDataJSON())});
-   await page.goto(url);await page.locator('#createForm [name=title]').fill('Patio · '+choice);
+   await page.goto(url);await page.locator('#campaignOptions > summary').click();await page.locator('#createForm [name=title]').fill('Patio · '+choice);
    await page.locator('#createForm [name=player]').fill('Ana');await page.locator('#createForm [name=goal]').fill('Conseguir permiso para pasar');
    await page.locator('#createForm button').click();await page.locator('[data-create-hero]').click();
    await page.locator('[data-creator-preset=guardian]').click();await page.locator('#creatorName').fill('Aria');

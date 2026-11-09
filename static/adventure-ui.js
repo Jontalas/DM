@@ -21,7 +21,7 @@ function renderAdventure(){
    $('#adventureSourceHint').textContent=needsDirector?(model.aiConfigured?'Crear o adaptar el comienzo usa el director de IA.':'El director no está disponible. Elige una aventura preparada.'):'El comienzo ya está escrito: no llama a IA. Puedes pedir al director que intervenga durante la partida.';
   };
   $('#adventureForm [name=source]').onchange=updateSource;
-  if(!model.aiConfigured)$('#adventureForm [name=source]').value='example';
+  $('#adventureForm [name=source]').value='example';
   updateSource();
   $('#adventureForm [name=sourceFile]').onchange=run(async e=>{
    const file=e.target.files[0];if(!file)return;

@@ -21,6 +21,7 @@ const path=require('node:path'),assert=require('node:assert/strict');
   await page.locator('#app').waitFor({state:'visible'});await page.locator('#exitBtn').click();
   assert.equal(await page.locator('#savedLibraryPanel').evaluate(el=>el.open),true);
   assert.match(await page.locator('#savedCampaigns').textContent(),/Aria/);
+  await page.locator('#campaignOptions > summary').click();
   await page.locator('#createForm [name=title]').fill('La segunda campaña');
   await page.locator('#createForm [name=player]').fill('Ana');await page.locator('#createForm [name=goal]').fill('Otra historia');
   await page.locator('#createForm button').click();await page.locator('#app').waitFor({state:'visible'});

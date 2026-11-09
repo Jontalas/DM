@@ -110,6 +110,18 @@ body.reader-wide #composer{display:none}
  #board button,#board select{min-height:44px}
  #board .cell{min-height:0}
 }
+#welcome h1{font-size:44px;margin:8px 0 16px}
+#welcome .sigil{font-size:28px;margin-top:8px}
+#welcome>.intro{font-size:17px;margin-bottom:24px}
+#createForm>h2{font-size:28px}
+#createForm>p{color:var(--muted);font-size:15px}
+#campaignOptions{margin-top:16px}
+#campaignOptions>summary{min-height:44px;align-content:center}
+#joinPanel>summary{min-height:44px;align-content:center}
+.entry-back{display:none;font-size:14px;margin-top:20px}
+body.joining-campaign .welcome-grid{grid-template-columns:minmax(0,1fr);max-width:620px;margin:auto}
+body.joining-campaign .entry-back{display:block}
+@media(max-width:680px){#welcome h1{font-size:34px}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
 
 #adventureSummary, #directorMemoryText { white-space: pre-wrap; }
