@@ -13,4 +13,4 @@ Contrato propuesto para el siguiente bloque:
 
 Primero pruebas HTTP/emulador con dos propietarios y estado legal, antes/después de fallo de confirmación y copia misma campaña; comparar con traslado a otra sala y copia sin origen. Verificar invitado403, origen ajeno rechazado para la acción nueva, propietarios ausentes acotados y PNJ intactos. Luego navegador desde perfiles/asistentes nuevos, investigación compartida, exportar/recuperar con confirmación correcta, cada acceso reanuda su propia ficha en móvil/teclado. Mantener pruebas del import antiguo y su aviso.
 
-No implementado todavía. INVESTIGACION_COMPARTIDA.md está cerrando su suite97901; no mezclar cambios de comportamiento de copias durante esa validación. Producción7a0534d/924pruebas ya verificada en lectura. No repetir ensayos reales ni usar invitación opcional del usuario.
+Actualización: investigación compartida publicada/verificada b6d5845/928pruebas. Plan implementado localmente en COPIAS_CON_PROPIETARIOS.md después de cerrar esa suite; nueva suite79101 en curso. No repetir ensayos reales ni usar invitación opcional del usuario.

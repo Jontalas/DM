@@ -303,7 +303,13 @@ $('#openPage').onclick=()=>openBook();$('#book').onchange=()=>openBook($('#book'
 async function find(q){const data=await api('/api/search?q='+encodeURIComponent(q)+'&book='+$('#book').value);$('#searchResults').innerHTML=data.map(r=>`<div class="result">${ref(r.book,r.page)}<p>${esc(r.text)}</p></div>`).join('')||'<p>No hay coincidencias fiables en el texto extraído. Consulta el original; puede requerir OCR.</p>'}
 $('#searchForm').onsubmit=run(()=>find($('#searchQuery').value));$('#indexBtn').onclick=run(()=>find('índice contenido'));$('#askRule').onclick=run(async()=>{$('#ruleAnswer').textContent='Consultando fuentes y servicio de IA…';try{let r=await api('/api/rules',{q:$('#searchQuery').value});$('#ruleAnswer').innerHTML='<p>'+esc(r.answer)+'</p>'+r.refs.map(v=>ref(v.book,v.page)).join('')}catch(e){$('#ruleAnswer').textContent=e.message}});
 $('#exportBtn').onclick=run(async()=>{const data=await api('/api/export',{});let url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));let a=document.createElement('a');a.href=url;a.download='cronica-'+snapshot.id+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)});
-$('#importFile').onchange=run(async e=>{const file=e.target.files[0];if(!file)return;if(!confirm('La copia sustituirá el estado de esta sala. Los personajes se asignarán al anfitrión que importa. Exporta antes si deseas conservar el estado actual.'))return;await act('import',{campaign:JSON.parse(await file.text())});toast('Copia recuperada')});
+$('#importFile').onchange=run(async e=>{
+ const file=e.target.files[0];if(!file)return;
+ const campaign=JSON.parse(await file.text()),sameCampaign=(!snapshot.state.ruleset||snapshot.state.ruleset==='pathfinder-1e')&&campaign.sourceCampaignId===snapshot.id;
+ const ownership=sameCampaign?'Los personajes conservarán a sus propietarios si siguen en esta sala; los demás se asignarán al anfitrión.':'Los personajes se asignarán al anfitrión que importa.';
+ if(!confirm('La copia sustituirá el estado de esta sala. '+ownership+' Exporta antes si deseas conservar el estado actual.'))return;
+ await act(sameCampaign?'restore_campaign_copy':'import',{campaign});toast('Copia recuperada');
+});
 async function loadSystemChoices(){
  const {systems}=await api('/api/systems');if(systems.length<2)return;
  const form=$('#createForm'),label=document.createElement('label');label.id='systemPicker';

@@ -206,10 +206,13 @@ def execute_action(body,me):
             preparation_key=attempts.key(me['id'],prepared['sha256'])
             def convert(current,response_observer=None):return ai_reply(state,text,refs,**options,response_observer=response_observer)
             return attempts.run(store,cid,me['id'],prepared,converter=convert,restore=legacy.restore)
-        if body['type']=='import':
+        if body['type'] in ('import','restore_campaign_copy'):
             if not me['host']:raise PermissionError('Solo el anfitrión importa')
             data=body['campaign']
             if data.get('format')!='cronicas-1':raise ValueError('Formato incompatible')
+            preserve_owners=body['type']=='restore_campaign_copy'
+            if preserve_owners and (state['ruleset']!='pathfinder-1e' or data.get('sourceCampaignId')!=cid):
+                raise ValueError('Esta restauración conserva propietarios solo en la misma campaña de Pathfinder; usa la importación para trasladar otra copia')
             incoming=data['state'];rulesets.identify(incoming)
             if incoming['ruleset']!=state['ruleset']:raise ValueError('Recupera la copia en una campaña del mismo sistema; no se convierten sus reglas')
             state=incoming
@@ -227,8 +230,10 @@ def execute_action(body,me):
                 pf_night_rest.validate_restored(state)
                 import pf_recovery
                 pf_recovery.validate_restored(state)
+                current_members={p['id'] for p in store.players(cid)} if preserve_owners else set()
                 for character in state['characters']:
-                    if not character.get('npcCreation'):character['owner']=me['id']
+                    if not character.get('npcCreation') and character.get('owner') not in current_members:
+                        character['owner']=me['id']
                 adventure_modules.validate_restored(state)
                 import pf_scene_transition
                 pf_scene_transition.validate_restored(state)
@@ -542,7 +547,7 @@ class Handler(BaseHTTPRequestHandler):
                 if state.get('ruleset')=='rule-pack':
                     state=attach_workspace(state,me,clear_reference=True)
                     state=attach_adventure_source(state,me,clear_reference=True)
-                payload={'format':'cronicas-1','title':row['title'],'state':state}
+                payload={'format':'cronicas-1','title':row['title'],'state':state,'sourceCampaignId':row['id']}
                 import npc_catalog
                 notices=npc_catalog.export_notices(state)
                 if notices:payload['licenses']=notices

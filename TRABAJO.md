@@ -1,5 +1,9 @@
 # Continuidad del desarrollo autónomo
 
+9nov:copia misma sala lista para publicar,932completas293,788s,79101 terminada;4HTTP nuevas y3navegadores correctos0IA. Propietarios actuales/privacidad/pendientes/PNJ, legacy/traslado con aviso. Sin cambios de comportamiento desdearranque final. COPIAS_CON_PROPIETARIOS.md; después de verificar seguir CAPITULOS_COMPARTIDOS_PLAN.md.
+
+9nov:b6d5845 publicado/verificado Render7646913169,928correctas288,084s, lectoresprotegidos0POST/IA. Copia misma sala local conserva propietarios válidos, pendientes yprivacidad; trasladolegacyavisa/reasigna.4HTTP nuevas y3navegadores correctos0IA, suite79101 en curso. COPIAS_CON_PROPIETARIOS.md; seguir objetivo colectivo/continuidad de dos propietarios.
+
 9nov: investigación compartida lista para publicar,928completas correctas288,084s,97901 terminada.4HTTP nuevas/26afectadas y3navegadores correctos,0IAreal. Sin cambios de comportamiento desdearranque final. INVESTIGACION_COMPARTIDA.md; después de verificar lectores continuar COPIAS_Y_PROPIETARIOS_PLAN.md.
 
 9nov:7a0534d publicado/verificado Render7646753908,924finales285,075s; lectores protegidos0POST/IA correctos. Grupo:4HTTP nuevas/26afectadas y navegador ampliado correctos; propietario elige/resuelve búsqueda, avisos locales. Suite97901 en curso. INVESTIGACION_COMPARTIDA.md. Vista actual8766 comunicada/verificada, demo sinIA/Firebase. Seguir copia con propietarios, no pedir intervención.

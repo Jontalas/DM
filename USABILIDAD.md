@@ -1,5 +1,7 @@
 # Sencillez y orientación
 
+9nov: al recuperar copia se explica antes de confirmar si conserva propietarios de la misma sala o reasigna al anfitrión. Grupo mantiene cada ficha/notas/progreso tras copia y reanudación del invitado por biblioteca; traslado a otra sala no altera acceso original. Navegadores teclado/móvil correctos0IA; COPIAS_CON_PROPIETARIOS.md, suite79101 en curso.
+
 9nov: investigación compartida local: solo fichas propias, ayuda asociada a selectores/botones y causa sin personaje; pendiente ajena explica esperar a su propietario y bloquea resoluciones del anfitrión. Dos participantes, pista propia cada uno y progreso común, teclado/móvil correctos0IA. INVESTIGACION_COMPARTIDA.md; suite97901 en curso.
 
 9nov: grupoGUI repetido trasmarca deinstantánea correcto. Recuperación local mantiene petición sin pedir cambios deidentificador/cuerpo, mientras solo entraron participantes; si cambió el juego o esdecisión nueva antigua mantiene409 ytexto para revisión. VERSIONES_Y_RECUPERACION.md. No nueva opción técnica enpantalla ni sondeos adicionales.
