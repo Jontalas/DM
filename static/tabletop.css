@@ -32,6 +32,10 @@ fieldset{border:1px solid var(--line);border-radius:6px;margin:16px 0;padding:16
 #playGuidance{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:12px;justify-content:space-between;background:var(--panel);box-shadow:0 -18px 0 var(--bg);border:1px solid var(--line);border-left:2px solid var(--gold);padding:10px 12px;margin:0 0 14px}
 #playGuidance p{margin:0;font-size:12px;line-height:1.5}
 #playGuidance button{flex-shrink:0;max-width:46%;font-size:12px;padding:8px 10px}
+#composer>#playGuidance{position:static;box-shadow:none;margin:0 0 12px}
+#composer>#playGuidance p{font-size:13px}
+#composer>#playGuidance button{min-height:44px}
+.pill.pending{color:var(--gold);background:#342e21}
 .check-request p{margin:6px 0}
 .sheet-checks{border-bottom:1px solid var(--line);padding-bottom:14px;margin-bottom:20px}
 .sheet-checks .toolbar{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr))}

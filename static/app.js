@@ -36,8 +36,15 @@ async function recoverSubmission(saved){
   await api('/api/action',body);
  }
 }
-async function act(type,data={}){if(JSON.parse(localStorage.getItem('cronicas-pending')||'null')?.token===token)throw Error('Recarga la mesa para recuperar el envio pendiente antes de otra accion');if(busy)throw Error('Hay una acción en curso');busy=true;$('#send').disabled=true;$('#sync').textContent='Resolviendo…';const body={...data,type,id:crypto.randomUUID(),version:snapshot.version};if((!snapshot.state.ruleset||snapshot.state.ruleset==='pathfinder-1e')&&['talk','start_adventure','continue_adventure','next_adventure'].includes(type))body.captureContract=type==='start_adventure'&&body.openingContract==='authored-opening-1'?'pf-authored-opening-1':'pf-director-action-1';try{localStorage.setItem('cronicas-pending',JSON.stringify({token,body}));await api('/api/action',body);localStorage.removeItem('cronicas-pending');path=[];await refresh(true)}catch(e){if(e.name==='QuotaExceededError')throw Error('No hay espacio en el navegador para conservar este envio. No se ha enviado al servidor; libera espacio o importa una copia mas pequena.');if(e.confirmed)localStorage.removeItem('cronicas-pending');try{await refresh(true)}catch{}throw e}finally{busy=false;renderComposerAvailability()}}
+function ensureSubmissionCanStart(){
+ if(busy)throw Error('Hay una acción en curso');
+ if(JSON.parse(localStorage.getItem('cronicas-pending')||'null')?.token===token){renderSubmissionFeedback();throw Error('Recupera el envío pendiente antes de realizar otra acción.')}
+}
+async function act(type,data={}){ensureSubmissionCanStart();busy=true;renderComposerAvailability();$('#sync').textContent='Resolviendo…';const body={...data,type,id:crypto.randomUUID(),version:snapshot.version};if((!snapshot.state.ruleset||snapshot.state.ruleset==='pathfinder-1e')&&['talk','start_adventure','continue_adventure','next_adventure'].includes(type))body.captureContract=type==='start_adventure'&&body.openingContract==='authored-opening-1'?'pf-authored-opening-1':'pf-director-action-1';try{localStorage.setItem('cronicas-pending',JSON.stringify({token,body}));await api('/api/action',body);localStorage.removeItem('cronicas-pending');path=[];await refresh(true)}catch(e){if(e.name==='QuotaExceededError')throw Error('No hay espacio en el navegador para conservar este envio. No se ha enviado al servidor; libera espacio o importa una copia mas pequena.');if(e.confirmed)localStorage.removeItem('cronicas-pending');try{await refresh(true)}catch{}throw e}finally{busy=false;renderComposerAvailability();renderSubmissionFeedback()}}
 function run(fn){return async e=>{e?.preventDefault();try{await fn(e)}catch(err){toast(err.message)}}}
+function renderSyncStatus(waiting=JSON.parse(localStorage.getItem('cronicas-pending')||'null')?.token===token){
+ $('#sync').textContent=waiting?'Envío pendiente':'● Guardado en Firebase';$('#sync').classList.toggle('pending',waiting);
+}
 async function refresh(force=false){
  if(!token)return;
  const requestedToken=token,previous=snapshot,params=new URLSearchParams();
@@ -46,13 +53,13 @@ async function refresh(force=false){
  if(cached)params.set('workspace',cached);
  const next=await api('/api/state'+(params.size?'?'+params:''));
  if(token!==requestedToken)return;
- if(next.unchanged){$('#sync').textContent='Guardado en Firebase';return}
+ if(next.unchanged){renderSyncStatus();return}
  if(next.workspaceUnchanged){
   if(!cached||next.workspaceUnchanged!==cached||next.id!==previous.id||next.me.id!==previous.me.id||!next.me.host)throw Error('La caché privada no corresponde a este acceso; recarga para recuperarla.');
   next.state.authoringWorkspace=previous.state.authoringWorkspace;
  }
  if(previous?.state.boardScenes?.current!==next.state.boardScenes?.current){path=[];ruler=[];}
- snapshot=next;snapshotToken=requestedToken;rememberCampaign();$('#sync').textContent='● Guardado en Firebase';
+ snapshot=next;snapshotToken=requestedToken;rememberCampaign();renderSyncStatus();
  if(!force&&lastVersion===next.version)return;lastVersion=next.version;render();
 }
 function chooseTab(id,loadDocument=true){if(id==='board'&&window.matchMedia('(min-width:1100px)').matches)id='story';$$('.tab').forEach(x=>x.classList.toggle('active',x.id===id));$$('[data-tab]').forEach(x=>x.classList.toggle('active',x.dataset.tab===id));document.body.classList.toggle('reader-wide',id==='books'&&readerExpanded);if(id==='books'&&loadDocument)openBook();}
@@ -72,9 +79,16 @@ function conversationUnavailable(){
 }
 function renderComposerAvailability(){
  if(!snapshot)return;
- const reason=conversationUnavailable();$('#send').disabled=busy||!!reason;
+ const reason=conversationUnavailable(),pending=JSON.parse(localStorage.getItem('cronicas-pending')||'null')?.token===token;$('#send').disabled=busy||pending||!!reason;
  $('#message').setAttribute('aria-describedby','aiHint');
- $('#aiHint').textContent=reason||(model.aiConfigured?'El director responderá si activas «Responder con IA». Las tiradas y herramientas funcionan sin IA.':'El director no está disponible en esta mesa. Puedes usar las fichas, los dados y el tablero sin IA.');
+ $('#aiHint').textContent=busy?'Resolviendo tu envío…':pending?'Recupera el envío pendiente antes de enviar otra acción. Puedes seguir escribiendo tu borrador.':reason||(model.aiConfigured?'El director responderá si activas «Responder con IA». Las tiradas y herramientas funcionan sin IA.':'El director no está disponible en esta mesa. Puedes usar las fichas, los dados y el tablero sin IA.');
+}
+function renderSubmissionFeedback(){
+ if(!snapshot||(snapshot.state.ruleset&&snapshot.state.ruleset!=='pathfinder-1e'))return;
+ const saved=JSON.parse(localStorage.getItem('cronicas-pending')||'null'),pending=saved?.token===token,hadModal=$('#modal').open;
+ if(pending){renderSyncStatus(true);if(hadModal)$('#modal').close();document.body.classList.remove('reader-wide');readerExpanded=false}
+ renderPlayGuidance(snapshot.state);
+ if(pending&&(hadModal||document.activeElement===document.body||['send','confirmMove'].includes(document.activeElement.id)))$('#playGuidanceAction').focus();
 }
 async function recoverPendingSubmission(){
  if(busy)throw Error('Hay una acción en curso');
@@ -83,13 +97,14 @@ async function recoverPendingSubmission(){
  busy=true;$('#send').disabled=true;$('#playGuidanceAction').disabled=true;$('#sync').textContent='Recuperando envío…';
  try{await recoverSubmission(saved);localStorage.removeItem('cronicas-pending');if(saved.body.type==='talk'&&$('#message').value===saved.body.text)$('#message').value='';toast('Envío recuperado')}
  catch(error){if(error.confirmed)localStorage.removeItem('cronicas-pending');throw error}
- finally{try{await refresh(true)}catch{}busy=false;renderComposerAvailability();$('#playGuidanceAction').disabled=false}
+ finally{try{await refresh(true)}catch{}busy=false;renderComposerAvailability();$('#playGuidanceAction').disabled=false;renderSubmissionFeedback()}
 }
 function renderPlayGuidance(s){
  const panel=$('#playGuidance'),text=$('#playGuidanceText'),button=$('#playGuidanceAction');
  const checks=s.pending.filter(p=>p.check),mine=checks.filter(p=>s.characters.some(c=>c.id===p.check.character&&c.owner===snapshot.me.id)),own=mine.filter(p=>!pendingCheckUnavailable(p,s.characters.find(c=>c.id===p.check.character)));
  let message='',label='',open;
  const saved=JSON.parse(localStorage.getItem('cronicas-pending')||'null');
+ if(saved?.token===token){if(panel.parentElement!==$('#composer'))$('#composer').prepend(panel)}else if(panel.parentElement!==$('#story'))$('#adventureEntry').before(panel);
  if(saved?.token===token){
   message='Tu último envío aún no está confirmado. Recupéralo antes de continuar.';
   label='Recuperar envío';open=run(recoverPendingSubmission);
@@ -131,7 +146,7 @@ function renderPlayGuidance(s){
  panel.hidden=!message;
  if(text.textContent!==message)text.textContent=message;
  if(button.textContent!==label)button.textContent=label;
- button.onclick=open||null;
+ button.classList.toggle('primary',saved?.token===token);button.onclick=open||null;
 }
 function renderCampaignWorld(s){
  let details=$('#campaignWorldJournal');
@@ -329,7 +344,7 @@ $('#libraryBtn').onclick=run(()=>openCampaignLibrary());$('#manageAccesses').onc
 $('#inviteBtn').onclick=run(async()=>{const link=location.origin+'/?invite='+encodeURIComponent(snapshot.invite);modal('<h2>Reunir al grupo</h2><p>Comparte este código con quienes tengan acceso al servidor. El nombre de jugador no sustituye la credencial de reconexión guardada en su navegador.</p><label>Código<input readonly value="'+esc(snapshot.invite)+'"></label><label>Enlace<input readonly value="'+esc(link)+'"></label><p class="hint">127.0.0.1 solo abre en este ordenador. Para red local inicia con HOST=0.0.0.0 y usa la dirección del servidor. Para Internet se requiere alojamiento, HTTPS y configuración de acceso.</p>')});
 $('#addCharacter').onclick=()=>characterForm();$('#manualBtn').onclick=()=>manualForm();
 $('#composer').onsubmit=run(async()=>{const reason=conversationUnavailable();if(reason)throw Error(reason);let text=$('#message').value;await act('talk',{text,character:$('#speaker').value||null,kind:$('#messageKind').value,director:$('#useAI').checked&&$('#messageKind').value!=='private'});$('#message').value='';$('#story').scrollTop=$('#story').scrollHeight});
-$('#message').onkeydown=e=>{if(e.ctrlKey&&e.key==='Enter')$('#composer').requestSubmit()};
+$('#message').onkeydown=e=>{if(e.ctrlKey&&e.key==='Enter'){e.preventDefault();if(!$('#send').disabled)$('#composer').requestSubmit()}};
 $('#speaker').addEventListener('change',renderComposerAvailability);
 $('#messageKind').onchange=()=>{if($('#messageKind').value==='private')$('#useAI').checked=false;renderSpeakerChoices()};
 $('#journalForm').onsubmit=run(async e=>{const d=values(e.target);for(const key of ['objectives','allies','enemies','unknowns'])d[key]=d[key].split('\n').filter(Boolean);await act('journal',d);toast('Diario guardado')});
@@ -352,7 +367,17 @@ $('#grid').onkeydown=e=>{
  const next=$(`#grid .cell[data-x="${x}"][data-y="${y}"]`);rememberGridFocus(next);next?.focus();
 };
 $('#grid').onclick=run(async e=>{const cell=e.target.closest('[data-x]');if(!cell)return;const x=+cell.dataset.x,y=+cell.dataset.y,tool=$('#tool').value;if(tool==='pan')return;if(tool==='measure'){ruler=ruler.length===1?[ruler[0],[x,y]]:[[x,y]];renderBoard();return}if(tool!=='move'){await act('terrain',{x,y,terrain:tool});return}const clicked=boardCharacters(snapshot.state).find(c=>c.x===x&&c.y===y);if(clicked){if(snapshot.me.host||clicked.owner===snapshot.me.id){if($('#boardCharacter').value!==clicked.id||path.length){$('#boardCharacter').value=clicked.id;path=[];renderBoard()}}else{$('#attackTarget').value=clicked.id;renderAttack();toast('Objetivo seleccionado: '+clicked.name)}return}const ch=snapshot.state.characters.find(c=>c.id===$('#boardCharacter').value);if(!ch)throw Error('Crea y selecciona una ficha');let prev=path.length?path[path.length-1]:[ch.x,ch.y];if(Math.max(Math.abs(prev[0]-x),Math.abs(prev[1]-y))!==1)throw Error('Selecciona una casilla adyacente al último punto');path.push([x,y]);renderBoard()});
-$('#clearPath').onclick=()=>{path=[];renderBoard()};$('#confirmMove').onclick=run(async()=>{if(!path.length)throw Error('Traza un recorrido primero');if(!confirm($('#pathInfo').textContent+'\n¿Has revisado las consecuencias conocidas y las reglas pendientes con la mesa?'))return;await act('move',{character:$('#boardCharacter').value,path,acknowledge:true})});
+$('#clearPath').onclick=()=>{path=[];renderBoard()};
+$('#confirmMove').onclick=run(async()=>{
+ ensureSubmissionCanStart();
+ if(!path.length)throw Error('Traza un recorrido primero');
+ const action=$('#confirmMove'),returnFocus=action.matches(':focus-visible'),characterId=$('#boardCharacter').value;
+ if(!confirm($('#pathInfo').textContent+'\n¿Has revisado las consecuencias conocidas y las reglas pendientes con la mesa?'))return;
+ await act('move',{character:characterId,path,acknowledge:true});
+ if(returnFocus&&(document.activeElement===action||document.activeElement===document.body)){
+  const c=boardCharacters(snapshot.state).find(c=>c.id===characterId),cell=c&&$(`#grid .cell[data-x="${c.x}"][data-y="${c.y}"]`);rememberGridFocus(cell);cell?.focus();
+ }
+});
 $('#openPage').onclick=()=>openBook();$('#book').onchange=()=>openBook($('#book').value,1);$('#bookmark').onclick=run(async()=>{const label=prompt('Nombre del marcador',names[$('#book').value]+' · p.'+$('#page').value);if(label)await act('bookmark',{book:$('#book').value,page:+$('#page').value,label})});
 async function find(q){const data=await api('/api/search?q='+encodeURIComponent(q)+'&book='+$('#book').value);$('#searchResults').innerHTML=data.map(r=>`<div class="result">${ref(r.book,r.page)}<p>${esc(r.text)}</p></div>`).join('')||'<p>No hay coincidencias fiables en el texto extraído. Consulta el original; puede requerir OCR.</p>'}
 $('#searchForm').onsubmit=run(()=>find($('#searchQuery').value));$('#indexBtn').onclick=run(()=>find('índice contenido'));$('#askRule').onclick=run(async()=>{$('#ruleAnswer').textContent='Consultando fuentes y servicio de IA…';try{let r=await api('/api/rules',{q:$('#searchQuery').value});$('#ruleAnswer').innerHTML='<p>'+esc(r.answer)+'</p>'+r.refs.map(v=>ref(v.book,v.page)).join('')}catch(e){$('#ruleAnswer').textContent=e.message}});

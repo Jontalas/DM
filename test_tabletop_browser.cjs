@@ -115,6 +115,7 @@ const assert=require('node:assert/strict');
   await page.waitForFunction(()=>document.querySelector('.cell[data-x="2"][data-y="1"] .token')!==null);
   const after=await saved();assert.equal(after.version,before.version+1);assert.equal(writes,1);
   const hero=after.state.characters.find(c=>c.name==='Aria');assert.deepEqual([hero.x,hero.y],[2,1]);
+  assert.equal(await cell(2,1).evaluate(e=>e===document.activeElement),true);assert.equal(await page.locator('#grid .cell[tabindex="0"]').count(),1);
   await cell(1,0).dragTo(cell(4,2));
   const unchanged=await saved();assert.equal(unchanged.version,after.version);
   assert.equal(unchanged.state.characters.find(c=>c.name==='Bandido').x,1);

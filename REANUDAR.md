@@ -12,13 +12,13 @@ Comunicar qué puede hacer el jugador, qué falta y dónde verlo. No usar contad
 
 Siguiente trabajo autorizado:
 
-1. Publicar/verificar la navegación del tablero por teclado (bloque local abajo); mantener el informe local con capturas reales rotuladas.
+1. Publicar/verificar la recuperación visible sin recarga yel foco tras movimiento (bloque local abajo); mantener el informe local con capturas reales rotuladas.
 2. Continuar la revisión de primeras decisiones, combate y recuperación del recorrido individual. Resolver fricciones observadas, conservando agencia y reglas; no expandir el alcance para producir más cambios.
 3. Conservar el progreso en estos archivos existentes. No crear un MD por corrección: PRODUCTO para alcance, REANUDAR para continuidad, TRABAJO para detalle, USABILIDAD para criterios/evidencia.
 
 ## Producción y verificación actual
 
-**20bf73943f820a2ea89b9cc21ec886183c6b3cf0**, Render **7653819093 success**, ambas ramas publicadas. Revisión, salud y app.js/character-checks.js/tabletop.css exactos comprobados públicamente. Descriptor Pathfinder **1.15.0**. Incluye consulta de otras escenas yavisos de salud que identifican al sujeto.
+**5260f8751daa430bb60226d63f296ef22fbe289d**, Render **7657535570 success**, ambas ramas publicadas. Revisión, salud y app.js/index.html/tabletop.css exactos comprobados públicamente. Descriptor Pathfinder **1.15.0**. Incluye navegación del tablero por flechas/unTab.
 
 Motor desde **e174ea8ee0381f53b4953ac3b43e5db3b5fadce4**: **945 pruebas completas correctas, 300,506s**, .deps/copy-shape-final-suite.log, sesión21341 terminada. Ningún Python modificado después de ese arranque; cambios posteriores solo UI/pruebas/docs. No repetir suite completa sin cambio o preocupación concreta. No hay pruebas ni inferencias en curso.
 
@@ -26,11 +26,11 @@ Lectores reales de capítulos y clínica correctos sobre esa base; revisiones UI
 
 ## Trabajo local listo para publicar
 
-Teclado de tablero: una sola entradaTab, flechas enfocan casillas sin seleccionar/mover, Intro usa herramienta actual yconTrazarrecorrido prepara pasos; Tab lleva aConfirmar cuando hayruta, Esc cancela yShiftTab regresa al último foco. Movimiento sigue confirmación explícita/servidor. Conserva foco alrepintar, sin robar foco dechat, reinicia punto porcampaña/propietario/escena ydescribe terreno/ficha/PG/salud/turno conetiquetas accesibles. Caché local delista visible porrepintado, sin operaciones remotas nuevas.
+Respuesta perdida ylectura deestado fallida: recuperador existente visible enelcompositor, también desde diario/tablero, sin recargar. Si acción incierta venía deun diálogo, se cierra preservando DOM/borrador/cuerpo original; lectura ampliada vuelve a vista conrecuperación. Enviar/CtrlEnter bloqueados mientraspendiente, textarea admite borrador nuevo. Admisión separa ocupado deenvíoincierto yevita otro diálogo deconfirmación demovimiento antesderecuperar. Estado pendiente persiste también trasGETsin cambios. No nuevos requests automáticos/IA ni cambios deprotocolo/servidor. Confirmar movimiento conteclado devuelve foco alactor ensudestino.
 
-Baseline .deps/tabletop-keyboard-baseline.log confirmó400entradasTab. Navegador final correcto: flechas/bordes/ruta0acciones, Tab/ShiftTab, repintado/focochat, ficha/muroetiquetados, confirmación porEnter unúnico movimiento, ratón/puntos/regla/pan/zoom/atajos/permisos/táctil conservados. Openingambospreparados/copia/teclado/móvil correcto. Captura tabletop-keyboard-focus revisada, foco distinto deselección. Fallo intermedio: onfocusin propiedad no enlazaba listener, corregido addEventListener ytabindex antes de focus. Logs de depuración retirados. Nodecheck/diffcheck correctos;945Python intacto.
+Baseline offline-guidance-baseline.log reprodujo ausencia deaviso trasPOSTconfirmado conrespuesta perdida yGETabortado. Browserdirector final: cuerpo/ID exactos, recupera sinrecarga, unmensaje/respuesta porintención, nuevo borrador conservado, CtrlEnter0envíos, estado pendiente aguanta lecturas sin cambios; legacy sincontrato conserva recarga. Capítulos: diálogo cierra a recuperación, draft original intacto, reintento frío exacto. Mesa: foco destino ygestos/permiso/táctil correctos. Checks, biblioteca, paquete ysync correctos. Proveedores simulados;0IAreal. Captura pending-recovery-offline-mobile revisada.945Python intacto.
 
-Consultar fuente W3CAPG enUSABILIDAD; adaptación propia conbotones nativos/grupo, no certificar auditoría conlectores depantalla ni nuevo contrato Roll20. Publicar/verificar app.js,index.html,tabletop.css públicamente yseguir cierre individual. La revisión automática bloqueó unaejecución porcuota hasta15:00; trasnuevaorden yhora local posterior se reintentó porvía normal yfunciona, sin bypass ni bloqueo actual.
+Publicar/verificar app.js,index.html,tabletop.css. Después reproducir caso distinto: POST200 recibido peroGETposterior falla; no confundirlo conrespuesta perdida ni repetir acción facturable. Revisar también retención deenvíos pendientes endos pestañas/campañas antes de cambiar almacenamiento; aún no se ha hecho esa reproducción. Seguir alcance individual, no expandir reglas. No bloqueo deaprobación vigente.
 
 ## Qué está terminado en este bloque
 

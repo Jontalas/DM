@@ -25,6 +25,7 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
   await page.locator('#nextAdventureForm button').click();await page.waitForFunction(()=>snapshot?.state.adventureChaptersView?.current===2&&!busy&&JSON.parse(localStorage.getItem('cronicas-pending')||'null'));
   assert.equal(await page.locator('#nextAdventureForm [name=premise]').inputValue(),premise);
   const pending=await page.evaluate(()=>JSON.parse(localStorage.getItem('cronicas-pending')));assert.equal(pending.body.premise,premise);assert.equal(pending.body.captureContract,'pf-director-action-1');
+  assert.equal(await page.locator('#modal').evaluate(e=>e.open),false);assert.equal(await page.locator('#playGuidance').isVisible(),true);assert.equal(await page.locator('#playGuidance').evaluate(e=>e.parentElement.id),'composer');
   await page.reload();await page.waitForFunction(()=>snapshot?.state.adventureChaptersView?.current===2&&!busy&&!localStorage.getItem('cronicas-pending'));
   const retries=actions.filter(a=>a.type==='next_adventure');assert.equal(retries.length,2);assert.deepEqual(retries[0],retries[1]);
   const second=await page.evaluate(()=>structuredClone(snapshot));assert.equal(second.id,id);assert.deepEqual(second.state.characters,characters);assert.equal(second.state.worldTime,first.state.worldTime);
