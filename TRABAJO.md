@@ -1,5 +1,9 @@
 # Continuidad del desarrollo autónomo
 
+9nov: resultado de ataque publicado2cc14812b7b96e936fcb867934d0a28426451671, Render7667302608 success. app.js/tabletop.css/release/salud exactos,0campañas/POST/IA. Captura mobile-attack-result-focused revisada, PG1/estándar gastada/fuentes plegadas y actualiza informe visual.
+
+Vista funcional adicional8767 creada sin reiniciar8766: .deps/preview_courtyard.py (ignorado), TestStore, claves remotas retiradas, Aria legal16/guardiana6, patio1.16 ofrecido sin elegir por jugador. Primer chequeo read-only escritorio/móvil/teclado correcto,0POST/externos/IA, mismo estado/versión. Servidor72352, no reiniciar porque usuario puede interactuar. Enlace opcional comunicado sin invitación de hito ni pedir prueba; informe visual enlaza actual/anterior. Sin dependencia/archivo de aplicación nuevo ni coste remoto.
+
 9nov: recuperación de movimientos publicada6bc38f04454977246225e3ffcb4321eaa91b9058, Render7667117917 success, app.js/salud/release exactos y0campañas/POST/IA.
 
 Resultado de ataque móvil: baseline mobile-attack-result-baseline.log mostró conversación oculta tras ataque desde tablero. Ajuste local abre conversación y enfoca resumen del ataque guardado con cálculo plegado; recuperación del ataque confirmado muestra el mismo registro, sin repetir dados. Se respeta navegación, modal y foco posterior durante espera. Prueba móvil completa1.16 normal, respuesta perdida con duplicado mismo cuerpo/versión y navegación a diario con respuesta retenida correctas; mesa general2jugadores correcta. Un fallo de guion intentaba usar guía para volver a tablero, pero ofrecía legítimamente tregua; cambiado a pestaña Tablero,0acciones. No cambia guía ni agencia. Solo UI, basePython959 vigente. Publicar/verificar app.js/tabletop.css después de conservar captura.

@@ -22,6 +22,8 @@ La entrada admite empezar solo con nombre. El creador permite nombre/estilo, rev
 
 Ya hay una primera vista reconocible de la dirección: tablero central con conversación al lado, personaje guiado, resultados comprensibles y recuperación sin perder la acción. Se han comprobado los caminos de acuerdo y combate con tregua, la investigación completa y la salida/reanudación del recorrido actual. En móvil, tablero y lectura dejan espacio a su tarea. La demostración mantiene datos de ejemplo, sin director ni almacenamiento remoto; sus manuales de producción no se abren ahí.
 
+Vista funcional adicional: http://127.0.0.1:8767, patio1.16 con personaje preparado y elección hablar/combate. Demostración local independiente, sin IA ni guardado remoto, comprobada en lectura escritorio/móvil/teclado sin alterar decisiones. La vista8766 permanece intacta; no reiniciar ninguna si el usuario puede estar interactuando. Informe de avances enlaza ambas y conserva capturas rotuladas.
+
 Esto todavía no cierra la primera versión: falta completar la revisión de sus primeras decisiones, presentación de la mesa y errores del recorrido ofrecido. No equivale a mapa ilustrado, campañas abiertas ni nuevas clases o sistemas. El informe local contiene las capturas y sigue siendo el lugar para ver el avance.
 
 ## Experiencia objetivo
