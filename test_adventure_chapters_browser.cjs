@@ -29,7 +29,7 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
   const retries=actions.filter(a=>a.type==='next_adventure');assert.equal(retries.length,2);assert.deepEqual(retries[0],retries[1]);
   const second=await page.evaluate(()=>structuredClone(snapshot));assert.equal(second.id,id);assert.deepEqual(second.state.characters,characters);assert.equal(second.state.worldTime,first.state.worldTime);
   assert.equal(second.state.moduleProgress.searchActions,0);assert.equal(second.state.adventureModule.premise,premise);assert.equal(second.state.location,first.state.location);
-  assert.equal(second.state.messages.filter(m=>m.kind==='director').length,2);assert.equal(second.state.messages.filter(m=>m.kind==='action'&&m.text.includes(premise)).length,1);
+  assert.equal(second.state.messages.filter(m=>m.kind==='director').length,1);assert.equal(second.state.messages.filter(m=>m.kind==='scene'&&m.preparedOpeningSha256).length,1);assert.equal(second.state.messages.filter(m=>m.kind==='action'&&m.text.includes(premise)).length,1);
   await page.locator('[data-tab=journal]').click();assert.match(await page.locator('#journalOverview').textContent(),/Hora no registrada/);assert.equal(await page.locator('#chapterHistory').evaluate(e=>e.open),false);
   const historyCount=actions.length;await page.locator('#chapterHistory > summary').focus();await page.keyboard.press('Enter');assert.equal(actions.length,historyCount);assert.match(await page.locator('#chapterHistoryNotes').textContent(),/carta perdida/i);
   assert.doesNotMatch(await page.locator('#chapterHistoryNotes').textContent(),/PRIVATE/);

@@ -1,5 +1,9 @@
 # Continuidad del desarrollo autónomo
 
+9nov: apertura preparada lista para publicar,909completas finales correctas434,705s (.deps/adventure-opening-protocol-final-tests.log41038), tras908iniciales. Protocolo de noIA emparejado/header rechazado porservidorprevio,6HTTP8,694s/31puras y navegadores correctos. GuionGUI de continuidad ylector ensayados localmente, máximo1IA/0intro; aún sin campaña/inferencia de producción. APERTURA_PREPARADA.md yREANUDAR fijan protección.
+
+9nov: capítulos8ca256a publicados/verificados, Render7643497961,898completas433,452s. Apertura original local0IA: APERTURA_PREPARADA.md,5puras/5HTTP nuevas,26puras/9HTTP afectadas16,399s y navegadores offline/ejemplo/ruta/copia/chapters/memoria correctos. Suite inicial95688 en curso. Antesdepublicar cerrar protocolonoIA (headernuevo rechazadoporservidoranterior), detallado enREANUDAR.0IAreal nueva; no usar partida opcional delusuario.
+
 9nov2026: capítulos locales listos para publicar:898completas finales correctas433,452s (.deps/adventure-chapters-bounds-final-tests.log95896), tras896iniciales y dos guardas de archivo/cupo.28puras/8HTTP afectadas17,168s y navegador de dos capítulos correctos.16pruebas nuevas,0IAreal nueva, campaña opcional intocable. CAPITULOS_AVENTURA.md conserva evidencia. Siguiente publicar/verificar y ahorrar llamada de IA en inicio de aventuras ya escritas, preservando contratos antiguos.
 
 9nov2026: producción2c123cd/Render7642948638,882pruebas393,132s, contexto seleccionado verificado en lectura. Continuación local de investigaciones aquí en misma campaña:14nuevas pruebas/30puras afectadas/3HTTP correctas y navegador GUI de dos capítulos, sesiones y respuesta perdida correcto. Suite inicial15486 en curso; CAPITULOS_AVENTURA.md y REANUDAR.md detallan límites y dos ajustes preflight/schema pendientes antes de publicar.0IAreal nueva, no invitación rutinaria ni uso de campaña opcional del usuario.

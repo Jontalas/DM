@@ -61,6 +61,7 @@ def source_text(body):
 
 def validate_start(state,body,me):
     if not me['host']:raise PermissionError('Solo el anfitrión inicia la aventura compartida')
+    if state.get('preparedOpening'):raise ValueError('Conserva la apertura original de esta campaña; continúa su investigación')
     if state.get('pfEncounter'):raise ValueError('La escena preparada usa su propio recorrido; no se mezcla con una investigación tranquila')
     if state.get('adventure'):raise ValueError('La aventura ya está iniciada; continúa en la conversación')
     if state['board']['active']:raise ValueError('Finaliza el combate antes de iniciar la aventura')

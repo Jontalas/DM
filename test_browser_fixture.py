@@ -154,7 +154,7 @@ def main():
                 updates={'npcs':[],'places':[],'relationships':[]}
                 if os.environ.get('TEST_CAMPAIGN_WORLD_FIXTURE')=='1':
                     from test_rule_pack_world import npc,place,relationship
-                    if state.get('adventureChapterTransition'):updates={'npcs':[npc(public='Arda recuerda la investigación de la carta y el nuevo objetivo.')],'places':[],'relationships':[]}
+                    if state.get('adventureChapterTransition'):updates={'npcs':[npc('gaspar',name='Gaspar',public='Gaspar sigue atendiendo la barra de la posada.',private='')],'places':[],'relationships':[]}
                     elif options.get('starting'):updates={'npcs':[npc(),npc('oculta',name='SECRET-NAME',known=False,public='')],'places':[place()],'relationships':[]}
                     else:updates={'npcs':[npc(public='Arda recuerda vuestra conversación junto al archivo.')],'places':[],'relationships':[relationship()]}
                 result={**result,'worldUpdates':updates}

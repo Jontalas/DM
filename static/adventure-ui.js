@@ -4,17 +4,25 @@ function renderAdventure(){
  const ready=s.characters.some(c=>!c.enemy&&c.creation&&!c.creation.manualOverride&&c.hp>0&&!c.conditions?.trim());
  const entry=$('#adventureEntry');
  entry.hidden=active;
- entry.innerHTML=active?'':`<div class="card"><div class="eyebrow">LA PRIMERA PÁGINA</div><h3>El mundo espera a tu personaje</h3><p>${host?'La IA preparará un comienzo, personajes y secretos a partir de la premisa de tu campaña. Después, tú decides cómo actuar.':'El anfitrión puede iniciar la aventura cuando haya un personaje listo.'}</p>${host?`<button id="beginAdventure" class="primary" ${!ready||!model.aiConfigured||s.board.active?'disabled':''}>Iniciar aventura con IA</button><small>${!ready?'Crea primero un personaje con el asistente.':!model.aiConfigured?'El director no está disponible en esta mesa.':s.board.active?'Finaliza el combate para comenzar.':'El comienzo se guarda para continuar en otra sesión.'}</small>`:''}</div>`;
+ entry.innerHTML=active?'':`<div class="card"><div class="eyebrow">LA PRIMERA PÁGINA</div><h3>El mundo espera a tu personaje</h3><p>${host?'Elige una aventura preparada o pide al director que cree una a partir de tu idea. Tú decides cómo actuar.':'El anfitrión puede iniciar la aventura cuando haya un personaje listo.'}</p>${host?`<button id="beginAdventure" class="primary" ${!ready||s.board.active?'disabled':''}>Elegir aventura</button><small>${!ready?'Crea primero un personaje con el asistente.':s.board.active?'Finaliza el combate para comenzar.':!model.aiConfigured?'Puedes jugar una aventura preparada; crear o adaptar una nueva requiere al director.':'El comienzo se guarda para continuar en otra sesión.'}</small>`:''}</div>`;
  if($('#beginAdventure'))$('#beginAdventure').onclick=()=>{
-  modal(`<div class="eyebrow">UN NUEVO COMIENZO</div><h2>¿Qué historia te apetece vivir?</h2><form id="adventureForm"><label>Aventura<select name="source"><option value="generated">Crear a partir de mi premisa</option><option value="text">Adaptar un texto o documento breve</option><option value="example">La carta perdida · investigación breve</option><option value="route">Los senderos del archivo · ruta individual</option><option value="import">Usar una aventura JSON compatible</option></select></label><label id="premiseField">Premisa<textarea name="premise" required maxlength="2000" rows="4">${esc(s.goal)}</textarea></label><label id="moduleFileField" hidden>Archivo de aventura<input type="file" name="moduleFile" accept=".json,application/json"><small>Una escena cronicas-adventure-1 (64 KiB) o ruta individual cronicas-route-1 (192.000 bytes). Investigaciones tranquilas de Percepción. Usa contenido que tengas derecho a utilizar.</small></label><div id="sourceTextField" hidden><label>Texto de la aventura<textarea name="sourceText" maxlength="12000" rows="6" placeholder="Pega un fragmento de la aventura"></textarea></label><label>Cargar texto desde un archivo<input type="file" name="sourceFile" accept=".txt,.md,text/plain,text/markdown"></label><small>Hasta 12.000 caracteres en UTF-8. Usa contenido que tengas derecho a utilizar. La IA adaptará una sola situación a dos búsquedas de Percepción, sin peligros ni combate; no convierte la aventura completa. El texto se envía al director al comenzar y puede contener secretos. Se conserva la adaptación; guarda tu original aparte.</small></div><p>El director respetará el tono y los límites de tu campaña. Preparará la aventura sin decidir las acciones de tu personaje.</p><button class="primary">Preparar y comenzar</button><p id="adventureProgress" role="status" aria-live="polite"></p><small>Se utiliza la IA configurada. El combate y las reglas aún tienen cobertura limitada.</small></form>`);
-  $('#adventureForm [name=source]').onchange=e=>{
-   $('#premiseField').hidden=e.target.value!=='generated';
-   $('#adventureForm [name=premise]').required=e.target.value==='generated';
-   $('#sourceTextField').hidden=e.target.value!=='text';
-   $('#adventureForm [name=sourceText]').required=e.target.value==='text';
-   $('#moduleFileField').hidden=e.target.value!=='import';
-   $('#adventureForm [name=moduleFile]').required=e.target.value==='import';
+  modal(`<div class="eyebrow">UN NUEVO COMIENZO</div><h2>¿Qué historia te apetece vivir?</h2><form id="adventureForm"><label>Aventura<select name="source" aria-describedby="adventureSourceHint"><option value="generated">Crear a partir de mi premisa</option><option value="text">Adaptar un texto o documento breve</option><option value="example">La carta perdida · investigación breve</option><option value="route">Los senderos del archivo · ruta individual</option><option value="import">Usar una aventura JSON compatible</option></select></label><label id="premiseField">Premisa<textarea name="premise" required maxlength="2000" rows="4">${esc(s.goal)}</textarea></label><label id="moduleFileField" hidden>Archivo de aventura<input type="file" name="moduleFile" accept=".json,application/json"><small>Una escena cronicas-adventure-1 (64 KiB) o ruta individual cronicas-route-1 (192.000 bytes). Investigaciones tranquilas de Percepción. Usa contenido que tengas derecho a utilizar.</small></label><div id="sourceTextField" hidden><label>Texto de la aventura<textarea name="sourceText" maxlength="12000" rows="6" placeholder="Pega un fragmento de la aventura"></textarea></label><label>Cargar texto desde un archivo<input type="file" name="sourceFile" accept=".txt,.md,text/plain,text/markdown"></label><small>Hasta 12.000 caracteres en UTF-8. Usa contenido que tengas derecho a utilizar. La IA adaptará una sola situación a dos búsquedas de Percepción, sin peligros ni combate; no convierte la aventura completa. El texto se envía al director al comenzar y puede contener secretos. Se conserva la adaptación; guarda tu original aparte.</small></div><p id="adventureModeHint"></p><button class="primary">Preparar y comenzar</button><p id="adventureProgress" role="status" aria-live="polite"></p><small id="adventureSourceHint" role="status" aria-live="polite"></small></form>`);
+  const updateSource=()=>{
+   const choice=$('#adventureForm [name=source]').value;
+   $('#premiseField').hidden=choice!=='generated';
+   $('#adventureForm [name=premise]').required=choice==='generated';
+   $('#sourceTextField').hidden=choice!=='text';
+   $('#adventureForm [name=sourceText]').required=choice==='text';
+   $('#moduleFileField').hidden=choice!=='import';
+   $('#adventureForm [name=moduleFile]').required=choice==='import';
+   const needsDirector=['generated','text'].includes(choice);
+   $('#adventureForm button').disabled=needsDirector&&!model.aiConfigured;
+   $('#adventureModeHint').textContent=needsDirector?'El director preparará el comienzo sin decidir las acciones de tu personaje.':'Se conserva la presentación original. Las pistas siguen pendientes hasta que decidas investigarlas.';
+   $('#adventureSourceHint').textContent=needsDirector?(model.aiConfigured?'Crear o adaptar el comienzo usa el director de IA.':'El director no está disponible. Elige una aventura preparada.'):'El comienzo ya está escrito: no llama a IA. Puedes pedir al director que intervenga durante la partida.';
   };
+  $('#adventureForm [name=source]').onchange=updateSource;
+  if(!model.aiConfigured)$('#adventureForm [name=source]').value='example';
+  updateSource();
   $('#adventureForm [name=sourceFile]').onchange=run(async e=>{
    const file=e.target.files[0];if(!file)return;
    if(!/\.(txt|md)$/i.test(file.name)||file.size>48000)throw Error('Elige un archivo .txt o .md UTF-8 de hasta 48.000 bytes.');
@@ -24,7 +32,7 @@ function renderAdventure(){
   });
   $('#adventureForm').onsubmit=run(async e=>{
    const form=e.target,button=form.querySelector('button');button.disabled=true;
-   $('#adventureProgress').textContent='El director está preparando la aventura…';
+   $('#adventureProgress').textContent=['generated','text'].includes(form.elements.source.value)?'El director está preparando la aventura…':'Abriendo la aventura preparada…';
    try{
     const data={premise:form.elements.premise.value,structured:form.elements.source.value==='generated',worldMemoryContract:'structured-world-memory-1'};
     if(form.elements.source.value==='text'){
@@ -32,6 +40,7 @@ function renderAdventure(){
      if(!data.sourceText||[...data.sourceText].length>12000)throw Error('Aporta entre 1 y 12.000 caracteres de texto.');
      data.structured=true;
     }
+    if(['example','route','import'].includes(form.elements.source.value))data.openingContract='authored-opening-1';
     if(form.elements.source.value==='route')data.moduleId='senderos-del-archivo';
     if(form.elements.source.value==='example')data.moduleId='la-carta-perdida';
     if(form.elements.source.value==='import'){
@@ -41,7 +50,7 @@ function renderAdventure(){
     await act('start_adventure',data);$('#modal').close();chooseTab('story');
    }
    catch(error){$('#adventureProgress').textContent=error.message;throw error;}
-   finally{button.disabled=false;}
+   finally{updateSource();}
   });
  };
  const memory=$('#adventureMemory');memory.hidden=!active;

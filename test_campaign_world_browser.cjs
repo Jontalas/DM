@@ -10,7 +10,7 @@ const path=require('node:path'),assert=require('node:assert/strict');
   const track=page=>{page.on('request',r=>{if(r.url().endsWith('/api/action'))actions.push(r.postDataJSON())});page.on('pageerror',e=>errors.push(e.message));page.on('dialog',d=>d.accept())};track(page);
   await page.goto(url);await page.locator('#createForm [name=player]').fill('Ana');await page.locator('#createForm [name=goal]').fill('Recordar a las personas del viaje');await page.locator('#createForm button').click();
   await page.locator('[data-create-hero]').click();await page.locator('[data-creator-preset=guardian]').click();await page.locator('#creatorName').fill('Aria');await page.locator('[data-creator-step="3"]').click();await page.locator('#creatorFinish').click();await page.locator('.sheet-checks').waitFor();await page.locator('#closeModal').click();
-  await page.locator('#beginAdventure').click();await page.locator('#adventureForm [name=source]').selectOption('example');await page.locator('#adventureForm button').click();
+  await page.locator('#beginAdventure').click();await page.locator('#adventureForm [name=source]').selectOption('generated');await page.locator('#adventureForm button').click();
   await page.waitForFunction(()=>snapshot?.state.campaignWorldView?.revision===1&&!busy);
   const id=await page.evaluate(()=>snapshot.id),characters=await page.evaluate(()=>structuredClone(snapshot.state.characters)),invite=await page.evaluate(()=>snapshot.invite);
   await page.locator('[data-tab=journal]').click();assert.equal(await page.locator('#campaignWorldJournal').evaluate(e=>e.open),false);

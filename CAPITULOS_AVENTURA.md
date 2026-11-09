@@ -27,3 +27,6 @@ Navegador desde perfil nuevo y creador GUI: terminar la primera investigación, 
 Suite inicial:896correctas en433,607s, `.deps/adventure-chapters-final-tests.log` sesión15486 terminada. Después se cerró la disponibilidad anticipada al superar archivo y se restringió el esquema a IDs existentes cuando están llenos los cupos de memoria;28puras/8HTTP y navegador de dos capítulos correctos. Regresión final de esa versión:898completas correctas en433,452s, `.deps/adventure-chapters-bounds-final-tests.log` sesión95896 terminada. Ningún cambio de motor tras arrancar la suite final; documentación posterior solamente. Lista para publicar/verificar, no ensayo real todavía.
 
 El hito2 sigue pendiente: esto no prueba una campaña de grupo, alternativas abiertas, personajes reutilizables compatibles ni continuidad narrativa real durante varias sesiones. La invitación excepcional del hito1 ya se comunicó una vez y no se repite ni condiciona este trabajo.
+
+
+Publicada8ca256a1580556b32a8ee71c8bb1ade01de6e086, Render7643497961 success. Revisión/salud/descriptor1.15 y lectores protegidos correctos,0POST/IA. Sin ensayo real de capítulos todavía; siguiente bloque reduce la apertura ya escrita a0IA antes de probar continuidadGUI con máximo1inferenciaparaobjetivonuevo.
