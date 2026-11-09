@@ -3,6 +3,8 @@ const {spawn}=require('node:child_process'),{createInterface}=require('node:read
 const path=require('node:path'),assert=require('node:assert/strict');
 (async()=>{
  const encounterVersion=process.env.TEST_PF_ENCOUNTER_VERSION||'1.10.0';
+ const recoverStep=process.env.TEST_PF_STEP_RECOVERY==='1';
+ const reservedPreview=process.env.TEST_PF_STEP_RESERVED_PREVIEW==='1';
  const fixture=spawn(path.resolve('.venv/Scripts/python.exe'),['test_browser_fixture.py'],{env:{...process.env,TEST_PF_ENCOUNTER_VERSION:encounterVersion,TEST_PF_CEASEFIRE_FIXTURE:'1',TEST_PF_TRUCE_NIGHT:'1'},stdio:['ignore','pipe','inherit']});let browser;
  try{
   const url=await new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(Error('Fixture timeout')),15000);createInterface({input:fixture.stdout}).once('line',line=>{clearTimeout(timer);resolve(line)});fixture.once('exit',()=>reject(Error('Fixture exited')))});
@@ -38,12 +40,30 @@ const path=require('node:path'),assert=require('node:assert/strict');
      const origin=await page.locator('#grid .cell[data-x="0"][data-y="0"]').boundingBox(),preview=await page.locator('#movementPreview').boundingBox();assert.ok(origin.y>=0&&origin.y+origin.height<=preview.y,'Prepared move keeps the actor visible above its confirmation');
      await page.locator('#toast').waitFor({state:'hidden'});
      await page.locator('#confirmStep').focus();await page.locator('#confirmStep').scrollIntoViewIfNeeded();await page.screenshot({path:'.deps/five-foot-step-choice-mobile.png',fullPage:true});
-     await page.keyboard.press('Enter');await page.waitForFunction(()=>snapshot.state.board.fiveFootSteps?.[snapshot.state.characters[0].id]&&!busy);
+     if(recoverStep)await page.route('**/api/action',async route=>{const response=await route.fetch();assert.equal(response.ok(),true);await route.abort('failed')},{times:1});
+     if(reservedPreview)await page.evaluate(()=>new Promise(started=>{navigator.locks.request('cronicas-pending',()=>new Promise(release=>{window.releaseMovementReservation=release;started()}))}));
+     await page.keyboard.press('Enter');
+     if(reservedPreview){
+      await page.waitForFunction(()=>busy);await page.locator('#clearPath').click();await page.locator('#grid .cell[data-x="0"][data-y="0"]').focus();await page.keyboard.press('ArrowDown');await page.keyboard.press('ArrowRight');await page.keyboard.press('Enter');await page.evaluate(()=>window.releaseMovementReservation());
+     }
+     await page.waitForFunction(()=>snapshot.state.board.fiveFootSteps?.[snapshot.state.characters[0].id]&&!busy);
      assert.deepEqual(await page.evaluate(()=>snapshot.state.characters.map(c=>c.hp)),[0,1]);
      assert.deepEqual(await page.evaluate(()=>snapshot.state.board.spent),before.state.board.spent);
      assert.equal(actions.length,count+1);assert.equal(actions.at(-1).type,'five_foot_step');
      assert.match(await page.locator('#boardGuidance').textContent(),/no puedes desplazarte más/);
-     assert.equal(await page.locator('#grid .cell[data-x="0"][data-y="1"]').evaluate(e=>e===document.activeElement),true);
+     if(recoverStep){
+      const accepted=await page.evaluate(()=>structuredClone(snapshot)),original=actions.at(-1);
+      const keepPreview=process.env.TEST_PF_KEEP_STEP_PREVIEW==='1';
+      if(keepPreview){await page.locator('#clearPath').click();await page.locator('#grid .cell[data-x="0"][data-y="1"]').focus();await page.keyboard.press('ArrowDown');await page.keyboard.press('Enter');}
+      assert.equal(await page.locator('#playGuidanceAction').isVisible(),true);await page.locator('#playGuidanceAction').click();await page.waitForFunction(()=>!localStorage.getItem('cronicas-pending')&&!busy);
+      assert.deepEqual(actions.at(-1),original);assert.equal(actions.length,count+2);assert.equal(await page.evaluate(()=>snapshot.version),accepted.version);
+      assert.deepEqual(await page.evaluate(()=>snapshot.state.characters),accepted.state.characters);
+      assert.equal(await page.locator('#grid .path').count(),keepPreview?1:0,'Recovering a committed movement clears only its original preview');
+      if(keepPreview){assert.deepEqual(await page.evaluate(()=>path),[[0,2]]);await page.locator('#clearPath').click();}
+      await page.locator('#grid .cell[data-x="0"][data-y="1"]').focus();
+     }else if(reservedPreview){
+      assert.deepEqual(actions.at(-1).path,[[0,1]]);assert.deepEqual(await page.evaluate(()=>path),[[1,1]]);assert.equal(await page.locator('#grid .cell[data-x="1"][data-y="1"]').evaluate(e=>e===document.activeElement),true);await page.locator('#clearPath').click();await page.locator('#grid .cell[data-x="0"][data-y="1"]').focus();
+     }else assert.equal(await page.locator('#grid .cell[data-x="0"][data-y="1"]').evaluate(e=>e===document.activeElement),true);
      await page.keyboard.press('ArrowDown');await page.keyboard.press('Enter');
      assert.equal(await page.locator('#confirmStep').isEnabled(),false);assert.equal(await page.locator('#confirmMove').isEnabled(),false);
      assert.match(await page.locator('#pathInfo').textContent(),/Ya has dado tu paso/);await page.locator('#clearPath').scrollIntoViewIfNeeded();await page.screenshot({path:'.deps/five-foot-step-mobile.png',fullPage:true});await page.locator('#clearPath').click();

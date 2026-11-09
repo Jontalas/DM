@@ -1,5 +1,6 @@
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 let token=localStorage.getItem('cronicas-token'), model={}, snapshot, snapshotToken, path=[], ruler=[], lastVersion=-1, busy=false, toastTimer, gridFocus=[0,0], gridFocusKey;
+let submittedMovementPreview;
 const names={reglas:'Reglas básicas',bestiario:'Bestiario',trey:'TREY'};
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const characterIsConscious=c=>!!c&&(c.hp>=0||(c.hp>-c.abilities[2]&&c.stable===true&&c.recoveryState?.conscious===true));
@@ -44,6 +45,13 @@ function clearSubmission(saved){
  if(current?.token!==saved.token||current.body?.id!==saved.body.id)return false;
  localStorage.removeItem('cronicas-pending');return true;
 }
+function clearSubmittedMovementPreview(saved){
+ const previous=submittedMovementPreview;
+ if(previous?.id!==saved.body.id)return;
+ submittedMovementPreview=undefined;
+ if(path!==previous.path||$('#boardCharacter').value!==saved.body.character||JSON.stringify(path)!==JSON.stringify(saved.body.path))return;
+ path=[];renderBoard();
+}
 function acknowledgeSubmission(saved){
  const accepted={...saved,confirmed:true},current=JSON.parse(localStorage.getItem('cronicas-pending')||'null');
  if(current?.token===saved.token&&current.body?.id===saved.body.id){try{localStorage.setItem('cronicas-pending',JSON.stringify(accepted))}catch{}}
@@ -64,11 +72,14 @@ async function reserveSubmission(saved){
 async function act(type,data={}){
  ensureSubmissionCanStart();busy=true;renderComposerAvailability();$('#sync').textContent='Resolviendo…';
  const body={...data,type,id:crypto.randomUUID(),version:snapshot.version};
+ const movement=['move','five_foot_step'].includes(type),preparedPath=path;
+ if(movement)body.path=structuredClone(data.path);
  if((!snapshot.state.ruleset||snapshot.state.ruleset==='pathfinder-1e')&&['talk','start_adventure','continue_adventure','next_adventure'].includes(type))body.captureContract=type==='start_adventure'&&body.openingContract==='authored-opening-1'?'pf-authored-opening-1':'pf-director-action-1';
  let saved={token,body},stored=false,accepted=false;
  try{
   await reserveSubmission(saved);stored=true;
-  await api('/api/action',body);accepted=true;saved=acknowledgeSubmission(saved);path=[];
+  if(movement)submittedMovementPreview={id:body.id,path:preparedPath};
+  await api('/api/action',body);accepted=true;saved=acknowledgeSubmission(saved);if(movement)clearSubmittedMovementPreview(saved);else path=[];
   await refresh(true);clearSubmission(saved);
  }catch(e){
   if(!stored&&e.name==='QuotaExceededError')throw Error('No hay espacio en el navegador para conservar este envío. No se ha enviado al servidor; libera espacio o importa una copia más pequeña.');
@@ -130,7 +141,7 @@ function renderSubmissionFeedback(){
  const saved=JSON.parse(localStorage.getItem('cronicas-pending')||'null'),pending=!!saved,hadModal=$('#modal').open;
  if(pending){renderSyncStatus(true);if(hadModal)$('#modal').close();readerExpanded=false;renderReaderMode()}
  renderPlayGuidance(snapshot.state);
- if(pending&&(hadModal||document.activeElement===document.body||['send','confirmMove'].includes(document.activeElement.id)))$('#playGuidanceAction').focus();
+ if(pending&&(hadModal||document.activeElement===document.body||['send','confirmMove','confirmStep'].includes(document.activeElement.id)))$('#playGuidanceAction').focus();
 }
 async function recoverPendingSubmission(){
  if(busy)throw Error('Hay una acción en curso');
@@ -138,7 +149,7 @@ async function recoverPendingSubmission(){
  if(!saved||saved.token!==token)throw Error('No hay un envío pendiente de esta partida');
  busy=true;$('#send').disabled=true;$('#playGuidanceAction').disabled=true;$('#sync').textContent='Recuperando envío…';
  let accepted,reading=false;
- try{accepted=await recoverSubmission(saved);reading=true;await refresh(true);clearSubmission(accepted);if(saved.body.type==='talk'&&$('#message').value===saved.body.text)$('#message').value='';if(saved.body.type==='check')chooseTab('story');toast('Envío recuperado')}
+ try{accepted=await recoverSubmission(saved);clearSubmittedMovementPreview(accepted);reading=true;await refresh(true);clearSubmission(accepted);if(saved.body.type==='talk'&&$('#message').value===saved.body.text)$('#message').value='';if(saved.body.type==='check')chooseTab('story');toast('Envío recuperado')}
  catch(error){if(!reading&&error.confirmed)clearSubmission(saved);if(!reading){try{await refresh(true)}catch{}}throw error}
  finally{busy=false;renderComposerAvailability();$('#playGuidanceAction').disabled=false;renderSubmissionFeedback()}
 }
