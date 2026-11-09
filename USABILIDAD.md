@@ -1,5 +1,7 @@
 # Sencillez y orientación
 
+9nov: siguiente objetivo de dos propietarios: autor espera, otro acepta/continúa o propone alternativa. Guía muestra objetivo sin aceptarlo; abrir/editar0IO. Copia avisa descarte de propuesta pendiente; sin director se permite proponer y se explica porqué no continuar. Dos modos navegador, móvil/teclado/privacidad/copia/reanudación correctos,1respuesta simulada enmodo conectado,0real. CAPITULOS_COMPARTIDOS.md; suite49516 en curso.
+
 9nov: al recuperar copia se explica antes de confirmar si conserva propietarios de la misma sala o reasigna al anfitrión. Grupo mantiene cada ficha/notas/progreso tras copia y reanudación del invitado por biblioteca; traslado a otra sala no altera acceso original. Navegadores teclado/móvil correctos0IA; COPIAS_CON_PROPIETARIOS.md, suite79101 en curso.
 
 9nov: investigación compartida local: solo fichas propias, ayuda asociada a selectores/botones y causa sin personaje; pendiente ajena explica esperar a su propietario y bloquea resoluciones del anfitrión. Dos participantes, pista propia cada uno y progreso común, teclado/móvil correctos0IA. INVESTIGACION_COMPARTIDA.md; suite97901 en curso.

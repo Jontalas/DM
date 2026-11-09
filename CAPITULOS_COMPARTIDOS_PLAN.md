@@ -1,5 +1,7 @@
 # Próximo bloque: objetivo acordado por dos propietarios
 
+Actualización: implementado localmente en CAPITULOS_COMPARTIDOS.md,943completas297,019s yrecorridos de navegador correctos; listo para publicar/verificar. El diseño siguiente se conserva como referencia.
+
 9 de noviembre de 2026. Propuesta de implementación después de cerrar COPIAS_CON_PROPIETARIOS.md. La continuación actual sigue siendo individual; no quitar su restricción para simular soporte colectivo. Primer alcance propuesto: dos participantes con una ficha legal positiva cada uno, propietarios distintos, investigación genérica completada en el mismo lugar, sin combate, pendientes, condiciones, correcciones, rutas ni patio. Reutilizar límites de archivo, fuentes y memoria existentes.
 
 Cada propietario puede proponer un objetivo aquí. Proponer implica únicamente su propia aceptación. El otro ve el texto exacto, puede proponer una alternativa o aceptar y continuar. La aceptación final expresa su decisión y solicita la única apertura de IA en la misma acción; no añadir un trámite administrativo del anfitrión después de que ambos hayan elegido. El proponente espera al otro y no puede aceptarse por los dos. Observadores sin ficha no deciden por personajes ajenos. No ampliar todavía a más propietarios ni al dispositivo compartido.

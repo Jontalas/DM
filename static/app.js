@@ -113,6 +113,10 @@ function renderPlayGuidance(s){
  }else if(s.adventureRouteView?.completed){
   message='Has completado la ruta preparada. Puedes revisar los hallazgos en el diario; otros viajes aún no están disponibles.';
   label='Revisar el diario';open=()=>chooseTab('journal');
+ }else if(s.adventureModuleView?.completed&&s.nextAdventureView?.kind==='group'){
+  const proposal=s.nextAdventureView.proposal;
+  message=proposal?(proposal.author===snapshot.me.id?'Tu propuesta espera la decisión del otro propietario.':'Hay un objetivo propuesto. Revísalo antes de decidir si continúas.'):'La investigación está resuelta. Podéis elegir juntos el próximo objetivo aquí.';
+  label='Ver siguiente objetivo';open=()=>{chooseTab('story');$('#sharedNextAdventure')?.scrollIntoView({block:'center'});const target=$('#acceptAdventureGoal:not(:disabled)')||$('#proposeAdventureGoal:not(:disabled)')||$('#sharedGoalHint');target?.focus({preventScroll:true})};
  }else if(s.adventureModuleView?.completed){
   const next=s.nextAdventureView?.reason===null&&model.aiConfigured;
   message=next?'La investigación está resuelta. Puedes elegir otro objetivo aquí conservando tu personaje y lo descubierto.':'La investigación está resuelta. Puedes revisar lo descubierto y decidir tu siguiente acción.';
@@ -307,7 +311,8 @@ $('#importFile').onchange=run(async e=>{
  const file=e.target.files[0];if(!file)return;
  const campaign=JSON.parse(await file.text()),sameCampaign=(!snapshot.state.ruleset||snapshot.state.ruleset==='pathfinder-1e')&&campaign.sourceCampaignId===snapshot.id;
  const ownership=sameCampaign?'Los personajes conservarán a sus propietarios si siguen en esta sala; los demás se asignarán al anfitrión.':'Los personajes se asignarán al anfitrión que importa.';
- if(!confirm('La copia sustituirá el estado de esta sala. '+ownership+' Exporta antes si deseas conservar el estado actual.'))return;
+ const pendingGoal=campaign.state?.chapterGoalProposal?' El objetivo de grupo todavía pendiente deberá elegirse de nuevo.':'';
+ if(!confirm('La copia sustituirá el estado de esta sala. '+ownership+pendingGoal+' Exporta antes si deseas conservar el estado actual.'))return;
  await act(sameCampaign?'restore_campaign_copy':'import',{campaign});toast('Copia recuperada');
 });
 async function loadSystemChoices(){

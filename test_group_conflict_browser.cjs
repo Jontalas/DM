@@ -2,7 +2,8 @@ const {chromium}=require('./.deps/browser-tests/node_modules/playwright');
 const {spawn}=require('node:child_process'),{createInterface}=require('node:readline');
 const path=require('node:path'),assert=require('node:assert/strict');
 (async()=>{
- const fixture=spawn(path.resolve('.venv/Scripts/python.exe'),['test_browser_fixture.py'],{stdio:['ignore','pipe','inherit']});let browser;
+ const sharedChapters=process.env.TEST_SHARED_CHAPTERS==='1';
+ const fixture=spawn(path.resolve('.venv/Scripts/python.exe'),['test_browser_fixture.py'],{env:{...process.env,...(sharedChapters?{TEST_ADVENTURE_FIXTURE:'1',TEST_CAMPAIGN_WORLD_FIXTURE:'1'}:{})},stdio:['ignore','pipe','inherit']});let browser;
  try{
   const url=await new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(Error('Fixture timeout')),15000);createInterface({input:fixture.stdout}).once('line',line=>{clearTimeout(timer);resolve(line)});fixture.once('exit',()=>reject(Error('Fixture exited')))});
   browser=await chromium.launch({headless:true,executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe'});
@@ -70,7 +71,7 @@ const path=require('node:path'),assert=require('node:assert/strict');
   assert.equal(await guest.evaluate(id=>snapshot.state.characters.find(c=>c.id===id).owner===snapshot.me.id,guestId),true);
   assert.match(JSON.stringify(await guest.evaluate(()=>snapshot)),/PRIVATE-LUIS-NOTE/);assert.doesNotMatch(JSON.stringify(await guest.evaluate(()=>snapshot)),/PRIVATE-ANA-NOTE/);
   const campaignId=await guest.evaluate(()=>snapshot.id);await guest.locator('#exitBtn').click();const storage=await guestContext.storageState();await guestContext.close();
-  const resumedContext=await browser.newContext({storageState:storage,hasTouch:true}),resumed=await resumedContext.newPage();resumed.on('pageerror',e=>errors.push(e.message));
+  const resumedContext=await browser.newContext({storageState:storage,hasTouch:true}),resumed=await resumedContext.newPage();resumed.on('pageerror',e=>errors.push(e.message));resumed.on('request',r=>{if(r.url().endsWith('/api/action'))actions.push({page:'guest-resumed',body:r.postDataJSON()})});
   await resumed.goto(url);await resumed.locator('#savedCampaigns [data-library-open]:not([data-library-character])').focus();await resumed.keyboard.press('Enter');await resumed.waitForFunction(()=>snapshot?.state.moduleProgress.completed&&!busy);
   assert.equal(await resumed.evaluate(()=>snapshot.id),campaignId);assert.equal(await resumed.evaluate(id=>snapshot.state.characters.find(c=>c.id===id).owner===snapshot.me.id,guestId),true);
   await resumed.setViewportSize({width:390,height:1000});await resumed.locator('[data-tab=story]').tap();assert.ok(await resumed.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
@@ -81,6 +82,45 @@ const path=require('node:path'),assert=require('node:assert/strict');
   assert.match(movedConfirmation,/se asignarán al anfitrión que importa/);assert.doesNotMatch(movedConfirmation,/conservarán a sus propietarios/);assert.equal(movedActions.at(-1).type,'import');
   assert.equal(await moved.evaluate(()=>snapshot.state.characters.every(c=>c.owner===snapshot.me.id)),true);assert.equal(await moved.evaluate(()=>snapshot.players.length),1);
   await resumed.reload();await resumed.waitForFunction(()=>snapshot?.state.moduleProgress.completed&&!busy);assert.equal(await resumed.evaluate(id=>snapshot.state.characters.find(c=>c.id===id).owner===snapshot.me.id,guestId),true);
+  if(sharedChapters){
+   await host.reload();await host.waitForFunction(()=>snapshot?.state.moduleProgress.completed&&!busy);
+   const count=actions.length;await host.locator('#playGuidanceAction').focus();await host.keyboard.press('Enter');assert.equal(actions.length,count);
+   const propose=async(page,text)=>{await page.locator('#proposeAdventureGoal').click();await page.locator('#sharedGoalForm [name=premise]').fill(text);await page.locator('#sharedGoalForm button').click();await page.waitForFunction(()=>snapshot?.state.nextAdventureView?.proposal&&!busy)};
+   const firstGoal='Investigar aquí la historia de Gaspar sin recoger, abrir ni entregar la carta.';
+   await propose(host,firstGoal);const firstProposal=await host.evaluate(()=>snapshot.state.nextAdventureView.proposal.id);
+   assert.equal(await host.locator('#acceptAdventureGoal').count(),0);assert.match(await host.locator('#sharedGoalHint').textContent(),/espera la decisión del otro propietario/);
+   await resumed.reload();await resumed.waitForFunction(()=>snapshot?.state.nextAdventureView?.proposal?.canAccept&&!busy);
+   await propose(resumed,'Averiguar aquí el origen de las placas sin tocar la carta.');assert.notEqual(await resumed.evaluate(()=>snapshot.state.nextAdventureView.proposal.id),firstProposal);
+   await host.reload();await host.waitForFunction(()=>snapshot?.state.nextAdventureView?.proposal?.canAccept&&!busy);
+   await host.locator('[data-tab=journal]').click();const [pendingCopy]=await Promise.all([host.waitForEvent('download'),host.locator('#exportBtn').click()]);
+   const version=await host.evaluate(()=>snapshot.version);await host.locator('#importFile').setInputFiles(await pendingCopy.path());await host.waitForFunction(v=>snapshot.version>v&&!busy,version);
+   assert.match(confirmation,/objetivo de grupo todavía pendiente deberá elegirse de nuevo/);assert.equal(await host.evaluate(()=>snapshot.state.nextAdventureView.proposal),null);
+   assert.equal(actions.filter(a=>a.body.type==='next_adventure').length,0);
+   await host.locator('[data-tab=story]').click();await propose(host,firstGoal);
+   await resumed.reload();await resumed.waitForFunction(()=>snapshot?.state.nextAdventureView?.proposal?.canAccept&&!busy);
+   await resumed.locator('#sharedNextAdventure').scrollIntoViewIfNeeded();assert.ok(await resumed.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await resumed.locator('#sharedNextAdventure').screenshot({path:'.deps/shared-goal-proposal-mobile.png'});
+   let interrupt=true;await resumed.route('**/api/action',async route=>{if(interrupt&&route.request().postDataJSON().type==='next_adventure'){interrupt=false;await route.fetch();return route.abort('connectionreset')}await route.continue()});
+   await resumed.locator('#acceptAdventureGoal').focus();await resumed.keyboard.press('Enter');await resumed.waitForFunction(()=>snapshot?.state.adventureChaptersView?.current===2&&!busy&&localStorage.getItem('cronicas-pending')!==null);
+   const saved=await resumed.evaluate(()=>JSON.parse(localStorage.getItem('cronicas-pending')).body);
+   assert.equal(saved.premise,firstGoal);assert.equal(saved.captureContract,'pf-director-action-1');assert.ok(saved.proposalId);
+   await resumed.reload();await resumed.waitForFunction(()=>snapshot?.state.adventureChaptersView?.current===2&&!busy&&localStorage.getItem('cronicas-pending')===null);
+   const continuations=actions.filter(a=>a.body.type==='next_adventure');assert.equal(continuations.length,2);assert.deepEqual(continuations[0].body,continuations[1].body);
+   assert.equal(await resumed.evaluate(()=>snapshot.state.messages.filter(m=>m.kind==='director').length),1);assert.doesNotMatch(JSON.stringify(await resumed.evaluate(()=>snapshot)),/PRIVATE-ANA-NOTE|PRIVATE-NEW-CHAPTER/);
+   assert.deepEqual(await resumed.evaluate(()=>snapshot.state.characters),copiedCharacters);
+   await resumed.locator('#investigationForm button[value=take20]').click();await resumed.waitForFunction(()=>snapshot.state.moduleProgress.discoveries.length===1&&!busy);
+   await host.reload();await host.waitForFunction(()=>snapshot?.state.moduleProgress.discoveries.length===1&&!busy);await host.locator('#investigationForm button[value=take20]').click();await host.waitForFunction(()=>snapshot.state.moduleProgress.completed&&!busy);
+   await host.locator('[data-tab=journal]').click();await host.locator('#chapterHistory > summary').focus();await host.keyboard.press('Enter');assert.match(await host.locator('#chapterHistory').textContent(),/La carta perdida/);
+   const [completedCopy]=await Promise.all([host.waitForEvent('download'),host.locator('#exportBtn').click()]);const completedVersion=await host.evaluate(()=>snapshot.version);await host.locator('#importFile').setInputFiles(await completedCopy.path());await host.waitForFunction(v=>snapshot.version>v&&!busy,completedVersion);
+   await resumed.reload();await resumed.waitForFunction(()=>snapshot?.state.adventureChaptersView?.current===2&&snapshot.state.moduleProgress.completed&&!busy);
+   assert.equal(await resumed.evaluate(id=>snapshot.state.characters.find(c=>c.id===id).owner===snapshot.me.id,guestId),true);
+   await resumed.locator('#exitBtn').click();const finalStorage=await resumedContext.storageState();await resumedContext.close();const finalContext=await browser.newContext({storageState:finalStorage,hasTouch:true}),finalPage=await finalContext.newPage();finalPage.on('pageerror',e=>errors.push(e.message));
+   await finalPage.goto(url);await finalPage.locator('#savedCampaigns [data-library-open]:not([data-library-character])').focus();await finalPage.keyboard.press('Enter');await finalPage.waitForFunction(()=>snapshot?.state.adventureChaptersView?.current===2&&snapshot.state.moduleProgress.completed&&!busy);
+   await finalPage.setViewportSize({width:390,height:1000});await finalPage.locator('[data-tab=journal]').tap();assert.ok(await finalPage.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));assert.equal(await finalPage.evaluate(()=>snapshot.id),campaignId);
+   console.log('Shared chapters: proposal/alternative require other owner, pending consent discarded on copy, final acceptance requests one simulated opening, lost reply replays identical body, two completed group investigations, same-room owners/history/copy/guest library resume/keyboard/mobile. Zero real inference.');
+  }else{
+   await host.reload();await host.waitForFunction(()=>snapshot?.state.moduleProgress.completed&&!busy);await host.locator('#proposeAdventureGoal').click();await host.locator('#sharedGoalForm [name=premise]').fill('Investigar aquí la historia de Gaspar, cuando vuelva el director.');await host.locator('#sharedGoalForm button').click();await host.waitForFunction(()=>snapshot?.state.nextAdventureView?.proposal&&!busy);
+   await resumed.reload();await resumed.waitForFunction(()=>snapshot?.state.nextAdventureView?.proposal?.canAccept&&!busy);assert.equal(await resumed.locator('#acceptAdventureGoal').isDisabled(),true);assert.match(await resumed.locator('#sharedDirectorHint').textContent(),/director no está disponible/);assert.equal(actions.filter(a=>a.body.type==='next_adventure').length,0);
+  }
   assert.ok(!actions.some(a=>a.body.director===true));assert.deepEqual(errors,[]);
   console.log('Two-participant GUI: owned characters/private notes/concurrent draft review/shared searches; same-room copy preserves owners/privacy/progress and guest library rejoin; foreign-room import warns/reassigns without creating members or changing original access; keyboard/mobile, one pending-search HTTP setup, zero inference. Not group campaign certification.');
  }finally{await browser?.close();fixture.kill()}

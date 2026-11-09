@@ -12,6 +12,7 @@ from claude_dm import ai_reply, model_name
 import adventure
 import adventure_modules
 import adventure_routes
+import adventure_goals
 import rulesets
 from narrative_text import repair_text
 from campaign_locks import CampaignLocks
@@ -97,14 +98,18 @@ def view(row,state,me,known_workspace=None):
         if workspace_unavailable:result['workspaceUnavailable']=True
         return result
     state=json.loads(json.dumps(state))
+    module_view=adventure_modules.public_view(state)
+    import adventure_chapters
+    next_view=None
+    if module_view and module_view['completed']:
+        next_view=adventure_goals.public_view(state,me) if state.get('mode')=='online' else {'reason':adventure_chapters.limitation(state,me)}
     import campaign_world
     state.pop('campaignWorldView',None)
     if 'campaignWorld' in state:state['campaignWorldView']=campaign_world.public_view(state.pop('campaignWorld'))
-    module_view=adventure_modules.public_view(state)
     route_view=adventure_routes.public_view(state)
-    import adventure_chapters
     state.pop('adventureChaptersView',None);state.pop('nextAdventureView',None)
-    if module_view and module_view['completed']:state['nextAdventureView']={'reason':adventure_chapters.limitation(state,me)}
+    state.pop(adventure_goals.FIELD,None)
+    if next_view is not None:state['nextAdventureView']=next_view
     if state.get('adventureChapters'):state['adventureChaptersView']=adventure_chapters.public_view(state['adventureChapters'])
     state.pop('adventureChapters',None)
     # Repair historical model prose on the copy, preserving originals in storage/export.
@@ -220,6 +225,8 @@ def execute_action(body,me):
             else:
                 for key in initial_state({}):
                     if key not in state:raise ValueError('Falta '+key)
+                # Editable copies never authorize a pending decision by another owner.
+                state.pop(adventure_goals.FIELD,None)
                 import npc_catalog
                 npc_catalog.validate_restored(state)
                 import board_scenes
@@ -275,6 +282,12 @@ def execute_action(body,me):
                 randomness=ActionRandomness(store,cid,aid,me['id'],signature,body['version'],reservation=reservation)
                 state=selected.execute_action(state,body,me,draw=randomness)
             else:state=selected.execute_action(state,body,me)
+        elif body['type']==adventure_goals.PROPOSE:
+            state=adventure_goals.propose(state,body,me)
+            actor=next(c for c in state['characters'] if not c.get('enemy') and c['owner']==me['id'])
+            proposal=state[adventure_goals.FIELD]
+            state['messages'].append({'kind':'action','speaker':actor['name'],'owner':me['id'],
+                'text':'Propongo que averigüemos aquí: '+proposal['premise'],'chapterGoalProposed':proposal['id'],'time':time.time()})
         elif body['type'] in ('start_adventure','next_adventure'):
             next_chapter=body['type']=='next_adventure'
             authored_opening='openingContract' in body
@@ -332,8 +345,11 @@ def execute_action(body,me):
                 state['campaignWorld']=campaign_world.validate_turn(state,result['worldUpdates'],starting=True,result=result)
             marker=state.pop('adventureChapterTransition') if next_chapter else None
             if marker:
-                actor=state['characters'][0]
-                state['messages'].append({'kind':'action','speaker':actor['name'],'owner':me['id'],'text':'Próximo objetivo aquí: '+marker['premise'],'time':time.time()})
+                shared=state.get('mode')=='online'
+                actor=next(c for c in state['characters'] if c['owner']==me['id']) if shared else state['characters'][0]
+                state['messages'].append({'kind':'action','speaker':actor['name'],'owner':me['id'],
+                    'text':('Objetivo acordado aquí: ' if shared else 'Próximo objetivo aquí: ')+marker['premise'],
+                    **({'chapterGoalAgreement':sorted(c['owner'] for c in state['characters'])} if shared else {}),'time':time.time()})
             state['messages'].append({'kind':'scene' if authored_opening else 'director','speaker':'Escena preparada' if authored_opening else 'Director · Claude Haiku','text':result['narration'],
                                       'time':time.time(),**({'adventureChapterStart':{'number':marker['to'],'previousSha256':marker['previousSha256']}} if marker else {'adventureStart':True}),
                                       **({'preparedOpeningSha256':state['preparedOpening']['moduleSha256']} if authored_opening else {})})

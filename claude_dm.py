@@ -91,6 +91,7 @@ def build_context(state,text,refs,rules=False,check_actors=None,starting=False,s
     boards=board_scenes.director_view(state)
     public.pop('campaignWorld',None);public.pop('campaignWorldView',None)
     public.pop('adventureChapters',None);public.pop('adventureChaptersView',None);public.pop('nextAdventureView',None)
+    public.pop('chapterGoalProposal',None)
     if not rules and state.get('adventureChapters'):
         chapters=adventure_chapters.public_view(state['adventureChapters'])
         public['adventureChaptersView']={**chapters,'completed':chapters['completed'][-3:],
@@ -106,7 +107,7 @@ def build_context(state,text,refs,rules=False,check_actors=None,starting=False,s
     history=[{'speaker':m['speaker'],'kind':m['kind'],'text':repair_text(m['text']) if m.get('kind')=='director' else m['text'],
               **({'check':m['check']} if m.get('kind')=='rules' and m.get('check') else {}),
               **({'routeTransition':m['routeTransition']} if m.get('kind')=='rules' and m.get('routeTransition') else {})} for m in state['messages'][-30:]
-             if m.get('visibility','public')=='public' and m.get('kind')!='private']
+             if m.get('visibility','public')=='public' and m.get('kind')!='private' and 'chapterGoalProposed' not in m]
     context={'state':public,'history':history,'sources':[{'book':r['book'],'pdf_page':r['page'],'text':r['text'][:6500]} for r in refs],
              'request':text,'rulesOnly':rules,'checkActors':check_actors or [],
              'operation':'rules' if rules else 'startAdventure' if starting else 'narrate'}

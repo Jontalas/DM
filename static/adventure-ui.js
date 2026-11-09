@@ -157,6 +157,7 @@ function canExplorePrepared(c){return c.hp>0||(snapshot.state.pfLightExploration
 
 function renderNextAdventure(panel,s){
  if(!s.nextAdventureView||s.pfEncounter||s.adventureRoute)return;
+ if(s.nextAdventureView.kind==='group'){renderSharedNextAdventure(panel,s);return}
  const reason=s.nextAdventureView.reason||(!model.aiConfigured?'El director no está disponible en esta mesa.':'');
  panel.insertAdjacentHTML('beforeend',`<section class="card"><h4>Seguir la aventura aquí</h4><p>La investigación ha terminado. Puedes elegir otro objetivo en este lugar conservando tu personaje, sus heridas y lo descubierto.</p><p id="nextAdventureHint">${esc(reason||'Tú decides qué quieres averiguar. Empezar no cura ni mueve tu personaje.')}</p><button id="nextAdventure" aria-describedby="nextAdventureHint" ${reason?'disabled':''}>Elegir otro objetivo</button><details><summary>Qué cubre la continuación</summary><p>Otra investigación tranquila en el mismo lugar, para un personaje con PG positivos. No prepara viajes, combates, descansos ni recompensas. El juego conserva los capítulos anteriores y no calcula un salto de tiempo.</p></details></section>`);
  $('#nextAdventure').onclick=()=>{
@@ -170,6 +171,33 @@ function renderNextAdventure(panel,s){
    finally{button.disabled=false}
   });
  };
+}
+
+function renderSharedNextAdventure(panel,s){
+ const view=s.nextAdventureView,proposal=view.proposal,mine=proposal?.author===snapshot.me.id;
+ const reason=view.reason||proposal?.reason||view.proposalReason||'';
+ const hint=reason||(proposal?(mine?'Tu propuesta espera la decisión del otro propietario.':'Revisa el objetivo. Aceptar y continuar pide al director la siguiente investigación aquí.'):'Cada propietario elige por su personaje. Proponer no llama al director.');
+ const needsDirector=!model.aiConfigured?'El director no está disponible. Podéis guardar una propuesta y continuar cuando esté conectado.':'';
+ panel.insertAdjacentHTML('beforeend',`<section class="card" id="sharedNextAdventure"><h4>Elegir juntos el siguiente objetivo</h4>${proposal?`<p>${esc(proposal.authorName)} propone:</p><blockquote>${esc(proposal.premise)}</blockquote>`:'<p>La investigación está resuelta. Uno propone qué averiguar aquí y el otro decide si continúa.</p>'}<p id="sharedGoalHint" role="status" aria-live="polite" tabindex="-1">${esc(hint)}</p>${needsDirector?`<p id="sharedDirectorHint">${esc(needsDirector)}</p>`:''}<div class="toolbar"><button id="proposeAdventureGoal" aria-describedby="sharedGoalHint" ${!view.canPropose?'disabled':''}>${proposal?(mine?'Cambiar mi propuesta':'Proponer otro objetivo'):'Proponer un objetivo'}</button>${proposal&&!mine&&view.canPropose?`<button class="primary" id="acceptAdventureGoal" aria-describedby="sharedGoalHint${needsDirector?' sharedDirectorHint':''}" ${!proposal.canAccept||!model.aiConfigured?'disabled':''}>Aceptar y continuar</button>`:''}</div><details><summary>Qué cubre la continuación</summary><p>Dos propietarios con una ficha lista cada uno. Otra investigación tranquila en el mismo lugar; conserva las fichas y los capítulos anteriores. No aplica viajes, curación, descansos, recompensas ni un salto de tiempo.</p></details></section>`);
+ const campaign=token+':'+snapshot.id,chapter=s.adventureChaptersView?.current||1;
+ $('#proposeAdventureGoal').onclick=()=>{
+  const previous=proposal?.id||null;
+  modal('<h2>¿Qué propones averiguar juntos?</h2><form id="sharedGoalForm"><label>Objetivo que propones<textarea name="premise" required maxlength="2000" rows="4"></textarea></label><p>El otro propietario podrá aceptarlo o proponer una alternativa. Guardar esta propuesta no llama al director.</p><button class="primary">Guardar mi propuesta</button><p id="sharedGoalProgress" role="status" aria-live="polite"></p></form>');
+  $('#sharedGoalForm [name=premise]').value=proposal?.premise||'';
+  $('#sharedGoalForm').onsubmit=run(async e=>{
+   if(token+':'+snapshot.id!==campaign||(snapshot.state.adventureChaptersView?.current||1)!==chapter||(snapshot.state.nextAdventureView?.proposal?.id||null)!==previous)throw Error('La propuesta ha cambiado. Revisa el objetivo del grupo antes de enviar.');
+   const button=e.target.querySelector('button');button.disabled=true;
+   try{await act('propose_adventure_goal',{premise:e.target.elements.premise.value});$('#modal').close();chooseTab('story')}
+   catch(error){$('#sharedGoalProgress').textContent=error.message;throw error}
+   finally{button.disabled=false}
+  });
+ };
+ if($('#acceptAdventureGoal'))$('#acceptAdventureGoal').onclick=run(async()=>{
+  if(token+':'+snapshot.id!==campaign||(snapshot.state.adventureChaptersView?.current||1)!==chapter||snapshot.state.nextAdventureView?.proposal?.id!==proposal.id)throw Error('La propuesta ha cambiado. Revisa el objetivo antes de aceptarlo.');
+  const button=$('#acceptAdventureGoal');button.disabled=true;$('#sharedGoalHint').textContent='El director está preparando el siguiente objetivo acordado…';
+  try{await act('next_adventure',{premise:proposal.premise,proposalId:proposal.id,worldMemoryContract:'structured-world-memory-1'});chooseTab('story')}
+  finally{if(button.isConnected)button.disabled=!model.aiConfigured||!snapshot.state.nextAdventureView?.proposal?.canAccept}
+ });
 }
 
 function renderInvestigation(){

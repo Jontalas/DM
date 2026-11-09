@@ -85,17 +85,16 @@ def _next_record(state):
     return current,entry,record
 
 
-def limitation(state,me):
-    if state.get('ruleset','pathfinder-1e')!='pathfinder-1e' or state.get('mode','solo')!='solo':return 'Esta continuación cubre una investigación individual de Pathfinder.'
-    if not me.get('host'):return 'El propietario inicia esta continuación desde su campaña individual.'
+def _context_limitation(state):
     if not state.get('adventure') or not state.get('adventureModule') or not state.get('moduleProgress',{}).get('completed'):
         return 'Termina la investigación actual antes de elegir otro objetivo.'
     if any(state.get(key) for key in ('pfEncounter','pfContinuation','adventureRoute','boardScenes')):
         return 'Esta continuación todavía no cubre rutas ni el encuentro preparado del patio.'
     if state['board']['active'] or state['pending'] or any(not e.get('interpreted') for e in state['consequences']):return 'Resuelve primero el combate o las situaciones pendientes.'
-    if len(state['characters'])!=1:return 'Esta primera continuación requiere un único personaje jugador.'
-    actor=state['characters'][0]
-    if actor.get('enemy') or actor.get('owner')!=me['id']:return 'Solo el propietario elige el siguiente objetivo de su personaje.'
+    return None
+
+
+def _actor_limitation(actor):
     if (not actor.get('creation') or actor['creation'].get('manualOverride') or actor.get('conditions','').strip()
         or type(actor.get('hp'))!=int or not 0<actor['hp']<=actor['maxHp']):
         return 'Esta continuación requiere una ficha del asistente con PG positivos y sin efectos pendientes.'
@@ -103,6 +102,12 @@ def limitation(state,me):
         built,_=character_builder.build(actor['creation']['choices'])
         if any(actor.get(key)!=built[key] for key in ('abilities','maxHp','level','speed','skillTotals','ac','attack','damage','saves','meleeProfile')):
             return 'La ficha necesita revisar sus cambios antes de este recorrido preparado.'
+    except (ValueError,TypeError,KeyError):return 'Revisa el registro de la investigación antes de continuar.'
+    return None
+
+
+def _history_limitation(state):
+    try:
         copy_state=copy.deepcopy(state);modules.validate_restored(copy_state);validate_restored(copy_state)
     except (ValueError,TypeError,KeyError):return 'Revisa el registro de la investigación antes de continuar.'
     if state['location']!=state['adventureModule']['location']:return 'Revisa el lugar actual antes de continuar aquí.'
@@ -113,18 +118,54 @@ def limitation(state,me):
     return None
 
 
+def limitation(state,me):
+    if state.get('ruleset','pathfinder-1e')!='pathfinder-1e' or state.get('mode','solo')!='solo':return 'Esta continuación cubre una investigación individual de Pathfinder.'
+    if not me.get('host'):return 'El propietario inicia esta continuación desde su campaña individual.'
+    reason=_context_limitation(state)
+    if reason:return reason
+    if len(state['characters'])!=1:return 'Esta primera continuación requiere un único personaje jugador.'
+    actor=state['characters'][0]
+    if actor.get('enemy') or actor.get('owner')!=me['id']:return 'Solo el propietario elige el siguiente objetivo de su personaje.'
+    return _actor_limitation(actor) or _history_limitation(state)
+
+
+def group_limitation(state,me):
+    if state.get('ruleset','pathfinder-1e')!='pathfinder-1e' or state.get('mode')!='online':
+        return 'Esta continuación compartida cubre dos jugadores de Pathfinder en sus propios dispositivos.'
+    reason=_context_limitation(state)
+    if reason:return reason
+    actors=state['characters']
+    if len(actors)!=2 or any(c.get('enemy') for c in actors):return 'Esta continuación cubre dos personajes jugadores.'
+    owners=[c.get('owner') for c in actors]
+    if any(not isinstance(owner,str) or not owner for owner in owners) or len(set(owners))!=2:
+        return 'Cada personaje necesita un propietario distinto para elegir el objetivo juntos.'
+    if me['id'] not in owners:return 'Solo los propietarios eligen el siguiente objetivo de sus personajes.'
+    for actor in actors:
+        reason=_actor_limitation(actor)
+        if reason:return reason
+    return _history_limitation(state)
+
+
 def prepare_next(state,body,me):
-    if (body.get('type')!='next_adventure' or set(body)-{'type','id','version','premise','worldMemoryContract','captureContract'}):
+    shared=state.get('mode')=='online'
+    allowed={'type','id','version','premise','worldMemoryContract','captureContract'}|({'proposalId'} if shared else set())
+    if body.get('type')!='next_adventure' or set(body)-allowed:
         raise ValueError('Elige otro objetivo sin añadir consecuencias arbitrarias')
     if body.get('worldMemoryContract')!=campaign_world.CONTRACT:raise ValueError('Contrato de continuidad del mundo no disponible')
     if body.get('captureContract','pf-director-action-1')!='pf-director-action-1':raise ValueError('Contrato de captura no disponible')
-    if not me.get('host') or any(c.get('owner')!=me['id'] for c in state['characters'] if not c.get('enemy')):
-        raise PermissionError('Solo el propietario inicia el siguiente objetivo de su campaña individual')
-    reason=limitation(state,me)
-    if reason:raise ValueError(reason)
-    premise=adventure.text(body.get('premise'),2000,'nuevo objetivo')
+    if shared:
+        import adventure_goals as goals
+        if body.get('captureContract')!='pf-director-action-1':raise ValueError('La continuación compartida requiere conservar el envío original')
+        premise=goals.accept(state,body,me)['premise']
+    else:
+        if not me.get('host') or any(c.get('owner')!=me['id'] for c in state['characters'] if not c.get('enemy')):
+            raise PermissionError('Solo el propietario inicia el siguiente objetivo de su campaña individual')
+        reason=limitation(state,me)
+        if reason:raise ValueError(reason)
+        premise=adventure.text(body.get('premise'),2000,'nuevo objetivo')
     current,entry,record=_next_record(state)
     result=copy.deepcopy(state);result['adventureChapters']=record
+    result.pop('chapterGoalProposal',None)
     if 'campaignWorld' not in result:result['campaignWorld']=campaign_world.empty()
     else:campaign_world.validate(result['campaignWorld'])
     result.pop('adventureModule');result.pop('moduleProgress');result.pop('adventureModuleView',None)
