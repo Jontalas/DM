@@ -622,6 +622,8 @@ function renderTabletopTools(){
   if(stepped)guidance=spent.standard?'Ya has dado el paso y usado tu acción estándar. Puedes terminar el turno.':'Ya has dado el paso. Puedes atacar a un objetivo cercano o terminar el turno; no puedes desplazarte más este asalto.';
   else if(spent.standard&&!spent.move)guidance='Ya has usado tu acción estándar. Puedes preparar un paso de 5 pies en una casilla despejada o terminar el turno.';
  }
+ const coverageReason=$('#attackButton').dataset.coverageReason;
+ if(mine&&current.id===selected&&!unableToAct&&!spent.standard&&!(incapacitated&&spent.move)&&coverageReason)guidance=coverageReason;
  if($('#boardGuidance').textContent!==guidance)$('#boardGuidance').textContent=guidance;
 }
 $('#requestCheck').onclick=requestCheckForm;
@@ -640,6 +642,15 @@ function renderAutomation(){
 $('#autoEnemies').onchange=run(async()=>{if(snapshot.state.board.active)await act('automation',{enabled:$('#autoEnemies').checked})});
 $('#resumeEnemies').onclick=run(()=>act('automation',{enabled:true}));
 function meleeFields(c){const p=c.meleeProfile||{flatAc:c.ac,criticalMin:20,multiplier:2};return `<fieldset><legend>Ataque cuerpo a cuerpo automático</legend><label class="check"><input type="checkbox" name="basicMelee" ${c.meleeProfile?'checked':''}> Arma empuñada de alcance 5 pies, daño letal simple; sin aptitudes, resistencia ni ocultación especiales</label><p class="hint">Prepara una vez los totales de ataque y daño de esta arma, incluido su modificador. Se aplicarán automáticamente durante el combate. Perfil para criaturas de una casilla; usa una resolución excepcional para otros casos.</p><div class="row"><label>CA desprevenido<input type="number" name="flatAc" min="0" value="${Number(p.flatAc)}" required></label><label>Amenaza desde d20<select name="criticalMin">${[20,19,18].map(n=>`<option ${n===p.criticalMin?'selected':''}>${n}</option>`).join('')}</select></label><label>Multiplicador crítico<select name="multiplier">${[2,3,4].map(n=>`<option ${n===p.multiplier?'selected':''}>${n}</option>`).join('')}</select></label></div></fieldset>`}
+function attackCoverageReason(source,target,board){
+ if(!source||!target)return '';
+ const missing=[source,target].filter(c=>!c.meleeProfile);
+ if(missing.length)return `Faltan datos de combate de ${missing.map(c=>c.name).join(' y ')}. Consulta su ficha o registra una resolución excepcional.`;
+ const affected=[source,target].filter(c=>c.conditions?.trim());
+ if(affected.length)return `${affected.map(c=>c.name).join(' y ')}: hay condiciones anotadas. Hace falta una resolución excepcional antes del ataque automático.`;
+ const nearWall=[source,target].some(c=>[-1,0,1].some(dx=>[-1,0,1].some(dy=>board.terrain[(c.x+dx)+','+(c.y+dy)]==='wall')));
+ return nearWall?'Esta versión necesita revisar la cobertura de un muro cercano mediante una resolución excepcional. Consulta las reglas cubiertas y excepciones del tablero.':'';
+}
 function renderAttack(){
  const s=snapshot.state,board=s.board,selected=$('#boardCharacter').value;
  const source=s.characters.find(c=>c.id===selected),previous=$('#attackTarget').value;
@@ -651,12 +662,13 @@ function renderAttack(){
  const spent=board.spent[selected]||{};
  const target=targets.find(c=>c.id===$('#attackTarget').value),adjacent=source&&target&&Math.max(Math.abs(source.x-target.x),Math.abs(source.y-target.y))===1;
  const disabledMove=source?.hp<=0&&spent.move;
+ const coverageReason=attackCoverageReason(source,target,board);$('#attackButton').dataset.coverageReason=coverageReason;
  $('#attackForm').hidden=!board.active;
- $('#attackButton').disabled=!current||!source?.meleeProfile||!characterIsConscious(source)||spent.standard||disabledMove||!adjacent;
+ $('#attackButton').disabled=!current||!source?.meleeProfile||!characterIsConscious(source)||spent.standard||disabledMove||!adjacent||!!coverageReason;
  $('#attackButton').textContent=source?.hp<=0&&characterIsConscious(source)?'Atacar · perderás 1 PG':'Tirar ataque y resolver';
- $('#attackHint').textContent=!board.active?'El ataque estará disponible durante un combate.':!current?'Selecciona el personaje de tu turno.':!characterIsConscious(source)?'Tu personaje no puede atacar mientras está inconsciente.':!source?.meleeProfile?'El arma necesita un perfil preparado antes del combate.':spent.standard?'Ya has atacado o usado tu acción estándar. Puedes terminar el turno.':disabledMove?'Estás incapacitado y ya te has movido; termina el turno.':!targets.length?targetLimit:!adjacent?'Acércate a una casilla junto al objetivo para atacar cuerpo a cuerpo.':source.hp<=0?'Si atacas, perderás 1 PG al terminar y '+(source.hp-1<=-source.abilities[2]?'morirás por tus heridas.':'volverás a quedar moribundo. El movimiento no causa esa pérdida de PG.'):'El juego tira, calcula el impacto y aplica el daño. No tienes que calcular modificadores.';
+ $('#attackHint').textContent=!board.active?'El ataque estará disponible durante un combate.':!current?'Selecciona el personaje de tu turno.':!characterIsConscious(source)?'Tu personaje no puede atacar mientras está inconsciente.':!source?.meleeProfile?'El arma necesita un perfil preparado antes del combate.':spent.standard?'Ya has atacado o usado tu acción estándar. Puedes terminar el turno.':disabledMove?'Estás incapacitado y ya te has movido; termina el turno.':!targets.length?targetLimit:coverageReason?coverageReason:!adjacent?'Acércate a una casilla junto al objetivo para atacar cuerpo a cuerpo.':source.hp<=0?'Si atacas, perderás 1 PG al terminar y '+(source.hp-1<=-source.abilities[2]?'morirás por tus heridas.':'volverás a quedar moribundo. El movimiento no causa esa pérdida de PG.'):'El juego tira, calcula el impacto y aplica el daño. No tienes que calcular modificadores.';
 }
-$('#attackTarget').onchange=renderAttack;
+$('#attackTarget').onchange=()=>{renderAttack();renderTabletopTools()};
 function showAttackResult(action){
  chooseTab('story');
  const index=snapshot.state.messages.findLastIndex(m=>m.combat?.attacker===action.character&&m.combat.target===action.target),result=$('#messages').children[index]?.querySelector('.combat-result');
@@ -749,7 +761,7 @@ $('#grid').onkeydown=e=>{
  e.preventDefault();const x=Math.max(0,Math.min(19,Number(cell.dataset.x)+step[0])),y=Math.max(0,Math.min(19,Number(cell.dataset.y)+step[1]));
  const next=$(`#grid .cell[data-x="${x}"][data-y="${y}"]`);rememberGridFocus(next);next?.focus();
 };
-$('#grid').onclick=run(async e=>{const cell=e.target.closest('[data-x]');if(!cell)return;const x=+cell.dataset.x,y=+cell.dataset.y,tool=$('#tool').value;if(tool==='pan')return;if(tool==='measure'){ruler=ruler.length===1?[ruler[0],[x,y]]:[[x,y]];renderBoard();return}if(tool!=='move'){await act('terrain',{x,y,terrain:tool});return}const clicked=boardCharacters(snapshot.state).find(c=>c.x===x&&c.y===y);if(clicked){if(!preparedOpponentTarget(clicked)&&(snapshot.me.host||clicked.owner===snapshot.me.id)){if($('#boardCharacter').value!==clicked.id||path.length){$('#boardCharacter').value=clicked.id;path=[];renderBoard()}}else{$('#attackTarget').value=clicked.id;renderAttack();toast('Objetivo seleccionado: '+clicked.name)}return}const ch=snapshot.state.characters.find(c=>c.id===$('#boardCharacter').value);if(!ch)throw Error('Crea y selecciona una ficha');let prev=path.length?path[path.length-1]:[ch.x,ch.y];if(Math.max(Math.abs(prev[0]-x),Math.abs(prev[1]-y))!==1)throw Error('Selecciona una casilla adyacente al último punto');path.push([x,y]);renderBoard()});
+$('#grid').onclick=run(async e=>{const cell=e.target.closest('[data-x]');if(!cell)return;const x=+cell.dataset.x,y=+cell.dataset.y,tool=$('#tool').value;if(tool==='pan')return;if(tool==='measure'){ruler=ruler.length===1?[ruler[0],[x,y]]:[[x,y]];renderBoard();return}if(tool!=='move'){await act('terrain',{x,y,terrain:tool});return}const clicked=boardCharacters(snapshot.state).find(c=>c.x===x&&c.y===y);if(clicked){if(!preparedOpponentTarget(clicked)&&(snapshot.me.host||clicked.owner===snapshot.me.id)){if($('#boardCharacter').value!==clicked.id||path.length){$('#boardCharacter').value=clicked.id;path=[];renderBoard()}}else{$('#attackTarget').value=clicked.id;renderAttack();renderTabletopTools();toast('Objetivo seleccionado: '+clicked.name)}return}const ch=snapshot.state.characters.find(c=>c.id===$('#boardCharacter').value);if(!ch)throw Error('Crea y selecciona una ficha');let prev=path.length?path[path.length-1]:[ch.x,ch.y];if(Math.max(Math.abs(prev[0]-x),Math.abs(prev[1]-y))!==1)throw Error('Selecciona una casilla adyacente al último punto');path.push([x,y]);renderBoard()});
 function preparedOpponentTarget(character){
  const s=snapshot.state,encounter=s.pfEncounter;
  return s.mode==='solo'&&s.board.active&&encounter?.phase==='combat'&&character.id===encounter.npc&&$('#boardCharacter').value===encounter.character&&s.characters.some(c=>c.id===encounter.character&&c.owner===snapshot.me.id);

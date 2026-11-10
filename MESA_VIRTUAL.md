@@ -38,6 +38,8 @@ Prioridad visual propia10nov: mapa antes del formulario de ataque, con confirmac
 
 Coherencia propia10nov: guía y presupuesto no anuncian acciones para una ficha inconsciente o muerta; explican consulta de ficha sin tocar reglas. Incapacitado consciente, incluso con PG negativos, conserva las decisiones soportadas y avisos de coste. board-health-states-current-final.log1.16, legado1.11 y conversación verifican presentación con estado real y probes locales; no nueva autoridad reglamentaria ni observación de Roll20.
 
+Límites anticipados10nov: la interfaz refleja guardas existentes del ataque básico (perfiles, condiciones, revisión de posible cobertura por muro), explica el motivo antes del POST y actualiza al seleccionar objetivo sin tomar su control. No declara que todo muro prohíba atacar según Pathfinder: es el alcance conservador del motor actual. Probes de interfaz1.11/1.16 y recorridos válidos2jugadores/patio con recuperación correctos; sin cambiar reglas ni operaciones remotas por consultar.
+
 ## Adversarios automáticos
 
 La opción aparece activada al preparar un combate nuevo desde la interfaz; el anfitrión puede desactivarla o tomar el control durante el combate. Las partidas anteriores no cambian de modo automáticamente. Los clientes API anteriores que no envíen `automateEnemies` mantienen control manual.
