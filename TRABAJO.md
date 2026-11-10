@@ -1,5 +1,11 @@
 # Continuidad del desarrollo autónomo
 
+## Mapa antes de los controles de ataque (10 de noviembre de 2026)
+
+Baseline board-map-first-baseline.log: sólo57,55px de mapa visibles al entrar en combate390×844, sin scroll preparado. El mismo formulario de ataque se sitúa tras mapa+confirmación de recorrido y antes de excepciones. Orden visual y DOM coinciden, sin duplicar controles, cambiar gestos ni introducir posiciones/obstáculos. Guía dirige al ataque bajo el mapa, manteniendo turno/ficha/herramientas presentes.
+
+board-map-first-guidance-final.log1.16 y board-map-first-fixed.log con iniciativa correctos: primera vista≥3filas, objetivo/ataque alcanzables con Tab desde tablero y botón visible al enfocar, sin POST/estado por consulta; ambos caminos, ataque/paso/confirmación/descanso/investigación/cierre/hallazgos/copia/salir/retomar. Captura board-map-first-mobile.png revisada. board-map-first-tabletop-regression.log gestos/permisos/zoom/regla/móvil correcto; board-map-first-legacy-encounter.log1.9 correcto. Adaptación propia de prioridad visual, no observación nueva ni equivalencia Roll20; sin reglas/Python/archivos/dependencias/IA nuevos. Iniciativa192f6ff publicada/verificada Render7678698735 success, initiative-production-public.log app.js/CSS/salud/release exactos,0campañas/POST/IA. Desplazamiento táctil nativo CDP desde la guía alcanza el botón sin scroll programático: board-map-first-native-touch.log1.16 correcto, sin POST/estado por acceder; no prueba de todos los dispositivos físicos.
+
 ## Turno primero y orden consultable (10 de noviembre de 2026)
 
 renderTurnInfo sustituye cadena de todos los participantes por resumen nativo Asalto/Turno actual/Orden de turnos. Al abrir muestra lista en el orden ya validado por motor, total existente y d20/modificador, marca actual con aria-current. No reordena ni vuelve a tirar. Details/summary/foco se conservan al repintar/cambiar asalto; contexto nuevo lo cierra y combate terminado elimina orden. Presentación local propia, sin nuevos datos, reglas, activos, dependencia o llamadas.

@@ -70,6 +70,8 @@ Estos elementos no están certificados como implementados. La matriz se ampliar�
 
 Adaptación propia de orientación10nov: asalto y turno actual primero (texto Asalto en interfaz); orden íntegro ya validado por motor bajo consulta nativa, con total/dados y participante actual. Teclado/táctil, foco y apertura conservados durante asaltos, sin operaciones remotas por consultar. initiative-disclosure-local-final.log1.16 e initiative-tabletop-regression.log verifican nuestra app; no se ha realizado observación nueva del tracker de Roll20 ni se afirma reproducirlo por completo. Sin nuevas reglas ni tiradas. Véase MESA_VIRTUAL.md.
 
+Presentación propia10nov: tablero antes de ataque y confirmación de movimiento junto al recorrido, sin cambiar MOV-01/TOK-01/KEY-01/TOUCH-01 ni duplicar controles. board-map-first-guidance-final.log1.16 verifica primera vista móvil≥3filas y Tab a objetivo/ataque; board-map-first-tabletop-regression.log gestos intactos y legado1.9 correcto. No nueva observación ni afirmación de igualdad visual con Roll20. Desplazamiento táctil nativo CDP desde la guía alcanza el botón sin scroll programático: board-map-first-native-touch.log1.16 correcto, sin POST/estado por acceder; no prueba de todos los dispositivos físicos.
+
 ## Reproducción de las pruebas
 
 ```powershell

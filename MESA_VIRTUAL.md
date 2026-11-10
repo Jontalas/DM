@@ -34,6 +34,8 @@ Navegación propia de teclado9nov: Tab entra una vez enel tablero, flechas recor
 
 Orientación propia10nov: el tablero muestra primero asalto y turno actual. El orden completo de iniciativa, total y dados se despliega localmente con teclado o toque; conserva consulta/foco mientras avanzan asaltos y desaparece al terminar el combate. Respeta orden validado por motor, sin nueva tirada ni cálculo de reglas. initiative-disclosure-local-final.log y initiative-tabletop-regression.log; captura móvil en informe. No observación nueva ni equivalencia directa con tracker de Roll20.
 
+Prioridad visual propia10nov: mapa antes del formulario de ataque, con confirmación de recorrido inmediata tras la superficie. Mismo DOM/controles/reglas, sin nuevas posiciones ni obstáculos. Primera vista móvil390×844 pasó de57,55px de mapa a varias filas visibles; Tab conduce del tablero a objetivo/ataque, y la guía indica dónde encontrarlos. board-map-first-guidance-final.log1.16, gestos y legado1.9 correctos; no observación nueva de Roll20. Desplazamiento táctil nativo CDP desde la guía alcanza el botón sin scroll programático: board-map-first-native-touch.log1.16 correcto, sin POST/estado por acceder; no prueba de todos los dispositivos físicos.
+
 ## Adversarios automáticos
 
 La opción aparece activada al preparar un combate nuevo desde la interfaz; el anfitrión puede desactivarla o tomar el control durante el combate. Las partidas anteriores no cambian de modo automáticamente. Los clientes API anteriores que no envíen `automateEnemies` mantienen control manual.
