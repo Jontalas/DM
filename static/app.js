@@ -1,6 +1,6 @@
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 let token=localStorage.getItem('cronicas-token'), model={}, snapshot, snapshotToken, path=[], ruler=[], lastVersion=-1, busy=false, toastTimer, gridFocus=[0,0], gridFocusKey;
-let submittedMovementPreview;
+let submittedMovementPreview,messageRevision=0,submittedMessage;
 const names={reglas:'Reglas básicas',bestiario:'Bestiario',trey:'TREY'};
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const characterIsConscious=c=>!!c&&(c.hp>=0||(c.hp>-c.abilities[2]&&c.stable===true&&c.recoveryState?.conscious===true));
@@ -27,6 +27,13 @@ function prepareEntryInvitation(invite){
 }
 function physical(d){if(d.physical?.trim())d.physical=d.physical.split(',').map(Number);else delete d.physical;return d}
 async function recoverSubmission(saved){
+ saved=await withSubmissionLock(cell=>{
+  const outcome=cell.outcome(saved);
+  if(outcome==='accepted')return {...saved,confirmed:true};
+  if(outcome==='discarded'){const error=Error('Este envío ya se descartó. No se ha repetido; revisa la partida antes de elegir otra acción.');error.confirmed=true;throw error;}
+  if(!sameSubmission(cell.value,saved))throw Error('El envío pendiente cambió en otra pestaña. Revisa el aviso antes de recuperarlo.');
+  return cell.value;
+ },[saved]);
  if(saved.confirmed===true)return saved;
  try{await api('/api/action',saved.body)}catch(error){
   if(error.status!==409||saved.body.type!=='resolve_pack_request')throw error;
@@ -42,22 +49,112 @@ async function recoverSubmission(saved){
  }
  return acknowledgeSubmission(saved);
 }
-async function withSubmissionLock(change){
- return navigator.locks?navigator.locks.request('cronicas-pending',change):change();
+let submissionDatabase;
+function openSubmissionDatabase(){
+ if(!submissionDatabase)submissionDatabase=new Promise((resolve,reject)=>{
+  const request=indexedDB.open('cronicas-pending-v1',1);let failed=false;
+  request.onupgradeneeded=()=>request.result.createObjectStore('outbox');
+  request.onerror=()=>{failed=true;reject(request.error)};
+  request.onblocked=()=>{failed=true;reject(Error('Otra pestaña está actualizando los envíos. Ciérrala y vuelve a intentarlo.'))};
+  request.onsuccess=()=>{const db=request.result;if(failed){db.close();return}db.onversionchange=()=>{db.close();submissionDatabase=undefined};resolve(db)};
+ }).catch(error=>{submissionDatabase=undefined;throw error});
+ return submissionDatabase;
+}
+function submissionIdentity(receipt){return JSON.stringify([receipt.token,receipt.body.id])}
+function submissionBodyIdentity(receipt){
+ const ordered=value=>Array.isArray(value)?value.map(ordered):value&&typeof value==='object'?Object.fromEntries(Object.keys(value).sort().map(key=>[key,ordered(value[key])])):value;
+ return JSON.stringify([receipt.token,ordered(receipt.body)]);
+}
+function sameSubmission(left,right){return !!left&&!!right&&submissionBodyIdentity(left)===submissionBodyIdentity(right)}
+async function submissionEntry(receipt){
+ const copy=JSON.parse(JSON.stringify(receipt));
+ if(typeof copy.token!=='string'||!copy.body||typeof copy.body.id!=='string')throw Error('No se puede leer el envío guardado. Conserva los datos del navegador y vuelve a abrir la partida.');
+ const hashes=await Promise.all([submissionIdentity(copy),submissionBodyIdentity(copy)].map(identity=>crypto.subtle.digest('SHA-256',new TextEncoder().encode(identity))));
+ const hex=hash=>Array.from(new Uint8Array(hash),byte=>byte.toString(16).padStart(2,'0')).join('');
+ return {key:hex(hashes[0]),bodyKey:hex(hashes[1]),receipt:copy};
+}
+async function submissionTransaction(change,candidates=[],depth=0){
+ const mirrorText=localStorage.getItem('cronicas-pending'),mirror=mirrorText?JSON.parse(mirrorText):null;
+ const entries=await Promise.all([mirror,...candidates].filter(Boolean).map(submissionEntry));
+ const mirrorEntry=mirror?entries[0]:null,known=new Map(entries.map(entry=>[submissionIdentity(entry.receipt),entry]));
+ const db=await openSubmissionDatabase();
+ return new Promise((resolve,reject)=>{
+  const transaction=db.transaction('outbox','readwrite',{durability:'strict'}),store=transaction.objectStore('outbox'),request=store.get('state');
+  let record,result,operationError,storageError;
+  request.onsuccess=()=>{
+   try{
+    const previous=JSON.stringify(request.result||null);
+    record=request.result||{format:'cronicas-pending-outbox-3',queue:[],completed:[]};
+    if(record.format==='cronicas-pending-outbox-1'&&Array.isArray(record.completed))record={...record,format:'cronicas-pending-outbox-3',completed:record.completed.map(key=>({key,kind:'legacy-id',status:'unknown'}))};
+    if(record.format==='cronicas-pending-outbox-2'&&Array.isArray(record.completed))record={...record,format:'cronicas-pending-outbox-3',completed:record.completed.map(entry=>({key:entry.key,kind:'legacy-id',status:'unknown'}))};
+    if(record.format!=='cronicas-pending-outbox-3'||!Array.isArray(record.queue)||!Array.isArray(record.completed))throw Error('No se puede leer la recuperación local de envíos. Conserva los datos del navegador.');
+    if(record.queue.some(entry=>!entry||!/^[a-f0-9]{64}$/.test(entry.key)||typeof entry.receipt?.token!=='string'||typeof entry.receipt?.body?.id!=='string'||(entry.bodyKey!==undefined&&!/^[a-f0-9]{64}$/.test(entry.bodyKey)))||record.completed.some(entry=>!entry||!/^[a-f0-9]{64}$/.test(entry.key)||!['accepted','discarded','unknown'].includes(entry.status)||!['body','legacy-id'].includes(entry.kind)))throw Error('No se puede leer la recuperación local de envíos. Conserva los datos del navegador.');
+    record.completed=record.completed.slice(-128);
+    const mirrorOutcome=mirrorEntry&&record.completed.find(entry=>entry.kind==='body'&&entry.key===mirrorEntry.bodyKey)?.status;
+    if(mirrorEntry&&(!mirrorOutcome||mirrorOutcome==='unknown')){
+     const existing=record.queue.find(entry=>entry.key===mirrorEntry.key);
+     if(!existing)record.queue.push(mirrorEntry);
+     else if(mirrorEntry.receipt.confirmed===true&&sameSubmission(existing.receipt,mirrorEntry.receipt))existing.receipt.confirmed=true;
+    }
+    for(const entry of record.queue){const prepared=known.get(submissionIdentity(entry.receipt));if(prepared&&sameSubmission(entry.receipt,prepared.receipt)){if(entry.bodyKey&&entry.bodyKey!==prepared.bodyKey)throw Error('La recuperación local no coincide con el envío guardado. Conserva los datos del navegador.');entry.bodyKey=prepared.bodyKey}}
+    const originalQueue=record.queue.slice(),originalCompleted=record.completed.slice(),head=record.queue[0];
+    const lookup=receipt=>known.get(submissionIdentity(receipt))||record.queue.find(entry=>submissionIdentity(entry.receipt)===submissionIdentity(receipt));
+    const cell={value:head?.receipt||null,outcome:receipt=>record.completed.find(entry=>entry.kind==='body'&&entry.key===lookup(receipt)?.bodyKey)?.status};
+    try{
+     result=change(cell);
+     if(result&&typeof result.then==='function')throw Error('La actualización local del envío debe terminar antes de continuar.');
+     if(cell.value!==head?.receipt&&!(cell.value===null&&!head)){
+      const next=cell.value?lookup(cell.value):null;
+      if(cell.value&&!next)throw Error('El envío cambió antes de guardarse. Vuelve a intentarlo.');
+      if(head&&next?.key===head.key&&!sameSubmission(head.receipt,cell.value))throw Error('El contenido del envío cambió. Se conserva el original; revisa el aviso de recuperación.');
+      if(head){record.queue.shift();if(!next||next.key!==head.key){const key=head.bodyKey||head.key,kind=head.bodyKey?'body':'legacy-id';record.completed=record.completed.filter(entry=>entry.key!==key||entry.kind!==kind);record.completed.push({key,kind,status:head.bodyKey?(head.receipt.confirmed===true?'accepted':'discarded'):'unknown'})}}
+      if(next){record.queue=record.queue.filter(entry=>entry.key!==next.key);record.queue.unshift({key:next.key,bodyKey:next.bodyKey,receipt:JSON.parse(JSON.stringify(cell.value))});record.completed=record.completed.filter(entry=>entry.kind!=='body'||entry.key!==next.bodyKey)}
+      record.completed=record.completed.slice(-128);
+     }
+    }catch(error){operationError=error;record.queue=originalQueue;record.completed=originalCompleted}
+    if(JSON.stringify(record)!==previous)store.put(record,'state');
+   }catch(error){storageError=error;transaction.abort()}
+  };
+  transaction.onabort=()=>reject(storageError||transaction.error||Error('No se pudo guardar el envío en este navegador. No se ha enviado al servidor.'));
+  transaction.oncomplete=async()=>{
+   try{
+    const next=record.queue[0]?.receipt,value=next?JSON.stringify(next):null,current=localStorage.getItem('cronicas-pending');
+    if(current&&current!==mirrorText&&current!==value){
+     if(depth>=4)throw Error('Otra pestaña sigue cambiando el envío. Espera un momento y vuelve a recuperarlo.');
+     await submissionTransaction(()=>{},[],depth+1);
+    }else if(current!==value){
+     if(value===null)localStorage.removeItem('cronicas-pending');else localStorage.setItem('cronicas-pending',value);
+     if(snapshot&&!busy){renderSyncStatus();renderComposerAvailability();renderPlayGuidance(snapshot.state)}
+    }
+    if(operationError)reject(operationError);else resolve(result);
+   }catch(error){error.persistedSubmission=record.queue[0]?.receipt.body.id;reject(error)}
+  };
+ });
+}
+async function withSubmissionLock(change,candidates=[]){
+ try{
+  if(!globalThis.indexedDB||!globalThis.crypto?.subtle)throw new DOMException('Local recovery unavailable','NotSupportedError');
+  const update=()=>submissionTransaction(change,candidates);
+  return await (navigator.locks?navigator.locks.request('cronicas-pending',update):update());
+ }catch(error){
+  const messages={QuotaExceededError:'No hay espacio para guardar la recuperación del envío. Conserva tus datos y vuelve a intentarlo cuando haya espacio disponible.',SecurityError:'El navegador no permite guardar la recuperación del envío. Permite el almacenamiento de datos de esta aplicación y vuelve a intentarlo.',NotSupportedError:'Este navegador no permite guardar la recuperación del envío. Abre la partida con un navegador compatible.',UnknownError:'No se pudo actualizar la recuperación local. Conserva los datos del navegador y vuelve a abrir la partida.',AbortError:'No se pudo actualizar la recuperación local. Conserva los datos del navegador y vuelve a abrir la partida.',InvalidStateError:'No se pudo actualizar la recuperación local. Conserva los datos del navegador y vuelve a abrir la partida.'};
+  if(messages[error.name]){const explained=Error(messages[error.name]);explained.name=error.name;if(error.persistedSubmission)explained.persistedSubmission=error.persistedSubmission;throw explained}
+  throw error;
+ }
 }
 async function replaceSubmission(saved,next){
- return withSubmissionLock(()=>{
-  const current=JSON.parse(localStorage.getItem('cronicas-pending')||'null');
-  if(current?.token!==saved.token||current?.body?.id!==saved.body.id)return false;
-  localStorage.setItem('cronicas-pending',JSON.stringify(next));return true;
- });
+ return withSubmissionLock(cell=>{
+  const current=cell.value;
+  if(!sameSubmission(current,saved))return false;
+  cell.value=next;return true;
+ },[saved,next]);
 }
 async function clearSubmission(saved){
- return withSubmissionLock(()=>{
-  const current=JSON.parse(localStorage.getItem('cronicas-pending')||'null');
-  if(current?.token!==saved.token||current?.body?.id!==saved.body.id)return false;
-  localStorage.removeItem('cronicas-pending');return true;
- });
+ return withSubmissionLock(cell=>{
+  const current=cell.value;
+  if(!sameSubmission(current,saved))return false;
+  cell.value=null;return true;
+ },[saved]);
 }
 function clearSubmittedMovementPreview(saved){
  const previous=submittedMovementPreview;
@@ -68,10 +165,10 @@ function clearSubmittedMovementPreview(saved){
 }
 async function acknowledgeSubmission(saved){
  const accepted={...saved,confirmed:true};
- await withSubmissionLock(()=>{
-  const current=JSON.parse(localStorage.getItem('cronicas-pending')||'null');
-  if(current?.token===saved.token&&current?.body?.id===saved.body.id){try{localStorage.setItem('cronicas-pending',JSON.stringify(accepted))}catch{}}
- });
+ await withSubmissionLock(cell=>{
+  const current=cell.value;
+  if(sameSubmission(current,saved))cell.value=accepted;
+ },[accepted]);
  return accepted;
 }
 function ensureSubmissionCanStart(){
@@ -80,26 +177,28 @@ function ensureSubmissionCanStart(){
  if(saved){renderSubmissionFeedback();throw Error(saved.token===token?'Recupera el envío pendiente antes de realizar otra acción.':'Hay un envío pendiente en otra partida. Ábrela para recuperarlo antes de enviar otra acción.')}
 }
 async function reserveSubmission(saved){
- const reserve=()=>{
-  if(localStorage.getItem('cronicas-pending'))throw Error('Hay un envío pendiente. Recupéralo antes de enviar otra acción.');
-  localStorage.setItem('cronicas-pending',JSON.stringify(saved));
+ const reserve=cell=>{
+  if(cell.value)throw Error('Hay un envío pendiente. Recupéralo antes de enviar otra acción.');
+  cell.value=saved;
  };
- await withSubmissionLock(reserve);
+ await withSubmissionLock(reserve,[saved]);
 }
 async function act(type,data={}){
  ensureSubmissionCanStart();busy=true;renderComposerAvailability();$('#sync').textContent='Resolviendo…';
- const body={...data,type,id:crypto.randomUUID(),version:snapshot.version};
+ const body={...data,type,id:crypto.randomUUID(),version:snapshot.version},draftRevision=messageRevision;
  const movement=['move','five_foot_step'].includes(type),preparedPath=path;
  if(movement)body.path=structuredClone(data.path);
  if((!snapshot.state.ruleset||snapshot.state.ruleset==='pathfinder-1e')&&['talk','start_adventure','continue_adventure','next_adventure'].includes(type))body.captureContract=type==='start_adventure'&&body.openingContract==='authored-opening-1'?'pf-authored-opening-1':'pf-director-action-1';
  let saved={token,body},stored=false,accepted=false;
  try{
   await reserveSubmission(saved);stored=true;
+  if(type==='talk')submittedMessage={token:saved.token,id:body.id,revision:draftRevision};
   if(movement)submittedMovementPreview={id:body.id,path:preparedPath};
   await api('/api/action',body);accepted=true;saved=await acknowledgeSubmission(saved);if(movement)clearSubmittedMovementPreview(saved);else path=[];
   await refresh(true);await clearSubmission(saved);
  }catch(e){
-  if(!stored&&e.name==='QuotaExceededError')throw Error('No hay espacio en el navegador para conservar este envío. No se ha enviado al servidor; libera espacio o importa una copia más pequeña.');
+  if(!stored&&type==='talk'&&e.persistedSubmission===body.id)submittedMessage={token:saved.token,id:body.id,revision:draftRevision};
+  if(!stored&&e.name==='QuotaExceededError')throw Error('No hay espacio en el navegador para conservar este envío. No se ha enviado al servidor; conserva tus accesos y vuelve a intentarlo cuando haya espacio disponible.');
   if(!accepted&&e.confirmed)await clearSubmission(saved);
   if(stored&&!accepted){try{await refresh(true)}catch{}}
   throw e;
@@ -195,7 +294,9 @@ async function recoverPendingSubmission(){
  let accepted,reading=false;
  try{
   accepted=await recoverSubmission(saved);clearSubmittedMovementPreview(accepted);reading=true;await refresh(true);await clearSubmission(accepted);
-  if(saved.body.type==='talk'&&$('#message').value===saved.body.text)$('#message').value='';
+  const revision=submittedMessage?.token===saved.token&&submittedMessage.id===saved.body.id?submittedMessage.revision:0;
+  if(saved.body.type==='talk'&&revision===messageRevision&&$('#message').value===saved.body.text)$('#message').value='';
+  if(submittedMessage?.id===saved.body.id)submittedMessage=undefined;
   if(unchanged()){
    if(saved.body.type==='check')chooseTab('story');
    if(saved.body.type==='attack')showAttackResult(saved.body);
@@ -549,7 +650,16 @@ $('#joinForm').onsubmit=run(async e=>{await enterCampaign(e.target,'/api/join',v
 $('#libraryBtn').onclick=run(()=>openCampaignLibrary());$('#manageAccesses').onclick=run(()=>openCampaignLibrary());$('#resume').onclick=run(async()=>{if(busy)throw Error('Espera a que termine la operación actual antes de volver a la partida.');busy=true;$('#resume').disabled=true;try{await refresh(true)}finally{busy=false;$('#resume').disabled=false;renderComposerAvailability()}});$('#exitBtn').onclick=run(async()=>{ensureCampaignCanChange();bookReader.reset();document.body.classList.remove('reader-wide');$('#app').hidden=true;$('#welcome').hidden=false;$('#resume').hidden=!token;$('#savedLibraryPanel').hidden=false;renderSavedCampaigns()});
 $('#inviteBtn').onclick=run(async()=>{const link=location.origin+'/?invite='+encodeURIComponent(snapshot.invite);modal('<h2>Reunir al grupo</h2><p>Comparte este código con quienes tengan acceso al servidor. El nombre de jugador no sustituye la credencial de reconexión guardada en su navegador.</p><label>Código<input readonly value="'+esc(snapshot.invite)+'"></label><label>Enlace<input readonly value="'+esc(link)+'"></label><p class="hint">127.0.0.1 solo abre en este ordenador. Para red local inicia con HOST=0.0.0.0 y usa la dirección del servidor. Para Internet se requiere alojamiento, HTTPS y configuración de acceso.</p>')});
 $('#addCharacter').onclick=()=>characterForm();$('#manualBtn').onclick=()=>manualForm();
-$('#composer').onsubmit=run(async()=>{const reason=conversationUnavailable();if(reason)throw Error(reason);let text=$('#message').value;await act('talk',{text,character:$('#speaker').value||null,kind:$('#messageKind').value,director:$('#useAI').checked&&$('#messageKind').value!=='private'});$('#message').value='';$('#story').scrollTop=$('#story').scrollHeight});
+$('#composer').addEventListener('input',()=>{messageRevision++});
+$('#composer').addEventListener('change',()=>{messageRevision++});
+$('#composer').onsubmit=run(async()=>{
+ const reason=conversationUnavailable();if(reason)throw Error(reason);
+ const text=$('#message').value,revision=messageRevision,access=token;
+ const data={text,character:$('#speaker').value||null,kind:$('#messageKind').value,director:$('#useAI').checked&&$('#messageKind').value!=='private'};
+ await showActionResult('talk',data,()=>{if($('#story').classList.contains('active'))$('#story').scrollTop=$('#story').scrollHeight});
+ if(token===access&&revision===messageRevision&&$('#message').value===text)$('#message').value='';
+ submittedMessage=undefined;
+});
 $('#message').onkeydown=e=>{if(e.ctrlKey&&e.key==='Enter'){e.preventDefault();if(!$('#send').disabled)$('#composer').requestSubmit()}};
 $('#speaker').addEventListener('change',renderComposerAvailability);
 $('#messageKind').onchange=()=>{if($('#messageKind').value==='private')$('#useAI').checked=false;renderSpeakerChoices()};
@@ -632,7 +742,7 @@ async function loadSystemChoices(){
   $('#systemChoiceHint').textContent=selected.status==='experimental'?'Experimental: recorrido en pruebas, con límites indicados al entrar.':(selected.coverage||[]).join(' · ');
  };label.querySelector('select').onchange();
 }
-async function init(){renderSavedCampaigns();const invite=new URLSearchParams(location.search).get('invite');prepareEntryInvitation(invite);try{model=await api('/api/status');await loadSystemChoices();$('#capabilities').innerHTML=`<p><strong>● Guardado persistente</strong><br>${esc(model.storage)}</p><p>${model.aiConfigured?'● IA configurada: '+esc(model.model):'○ Director de IA sin configurar'}<br>Conexión real a Claude Haiku; sin respuestas prefijadas.</p><p>${Object.entries(model.books).map(([k,n])=>esc(names[k])+': '+n+' páginas indexadas').join('<br>')}</p>`;$('#aiHint').textContent=model.aiConfigured?'El director responderá si activas «Responder con IA». Las tiradas y herramientas funcionan sin IA.':'El director no está disponible en esta mesa. Puedes usar las fichas, los dados y el tablero sin IA.';$('#askRule').disabled=!model.aiConfigured;$('#ruleAIHint').textContent=model.aiConfigured?'Consultar a la IA usa el servicio del director. Buscar en el texto y leer páginas no llama a IA.':'El director no está disponible. Puedes buscar en el texto y leer el manual.';$('#useAI').disabled=!model.aiConfigured;if(!model.aiConfigured)$('#useAI').checked=false;$('#resume').hidden=!token;if(token&&!invite){let accepted;const pending=JSON.parse(localStorage.getItem('cronicas-pending')||'null');if(pending&&pending.token===token){try{busy=true;accepted=await recoverSubmission(pending)}catch(e){if(e.confirmed)clearSubmission(pending);toast(e.message)}finally{busy=false}}await refresh(true);if(accepted){await clearSubmission(accepted);if(token===accepted.token){renderSyncStatus();renderComposerAvailability();renderSubmissionFeedback();toast('Envío recuperado')}}}}catch(e){toast(e.message)}}
+async function init(){renderSavedCampaigns();const invite=new URLSearchParams(location.search).get('invite');prepareEntryInvitation(invite);try{model=await api('/api/status');await loadSystemChoices();$('#capabilities').innerHTML=`<p><strong>● Guardado persistente</strong><br>${esc(model.storage)}</p><p>${model.aiConfigured?'● IA configurada: '+esc(model.model):'○ Director de IA sin configurar'}<br>Conexión real a Claude Haiku; sin respuestas prefijadas.</p><p>${Object.entries(model.books).map(([k,n])=>esc(names[k])+': '+n+' páginas indexadas').join('<br>')}</p>`;$('#aiHint').textContent=model.aiConfigured?'El director responderá si activas «Responder con IA». Las tiradas y herramientas funcionan sin IA.':'El director no está disponible en esta mesa. Puedes usar las fichas, los dados y el tablero sin IA.';$('#askRule').disabled=!model.aiConfigured;$('#ruleAIHint').textContent=model.aiConfigured?'Consultar a la IA usa el servicio del director. Buscar en el texto y leer páginas no llama a IA.':'El director no está disponible. Puedes buscar en el texto y leer el manual.';$('#useAI').disabled=!model.aiConfigured;if(!model.aiConfigured)$('#useAI').checked=false;$('#resume').hidden=!token;try{await withSubmissionLock(()=>{})}catch(error){toast(error.message)}if(token&&!invite){let accepted;const pending=JSON.parse(localStorage.getItem('cronicas-pending')||'null');if(pending&&pending.token===token){try{busy=true;accepted=await recoverSubmission(pending)}catch(e){if(e.confirmed)await clearSubmission(pending);toast(e.message)}finally{busy=false}}await refresh(true);if(accepted){await clearSubmission(accepted);if(token===accepted.token){renderSyncStatus();renderComposerAvailability();renderSubmissionFeedback();toast('Envío recuperado')}}}}catch(e){toast(e.message)}}
 const tabletopControls=window.TabletopControls.mount({
  scroller:$('.board-scroll'),grid:$('#grid'),tool:$('#tool'),zoom:$('#zoom'),snapshot:()=>snapshot&&(!snapshot.state.ruleset||snapshot.state.ruleset==='pathfinder-1e')?{...snapshot,state:{...snapshot.state,characters:boardCharacters(snapshot.state)}}:null,
  select:id=>{$('#boardCharacter').value=id;path=[];renderBoard()},

@@ -103,6 +103,10 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
    assert.deepEqual(await page.evaluate(()=>({version:snapshot.version,state:structuredClone(snapshot.state)})),before);assert.equal(await page.evaluate(()=>localStorage.getItem('cronicas-pending')),null);
    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));if(width===390)await page.screenshot({path:'.deps/copy-rejected-current-game-mobile.png'});
   }
+  if(process.env.TEST_PENDING_REJECTED_REPLAY==='1'){
+   const rejected=actions.at(-1),postsBefore=actions.length,before=await page.evaluate(()=>({version:snapshot.version,state:structuredClone(snapshot.state)}));
+   await page.evaluate(saved=>{localStorage.setItem('cronicas-pending',JSON.stringify(saved));renderComposerAvailability();renderPlayGuidance(snapshot.state)},{token:await page.evaluate(()=>token),body:rejected});await page.locator('#playGuidanceAction').click();await page.waitForFunction(()=>!busy&&!localStorage.getItem('cronicas-pending'));assert.equal(actions.length,postsBefore,'A previously rejected copy must not be posted again');assert.match(await page.locator('#toast').textContent(),/ya se descartó/);assert.deepEqual(await page.evaluate(()=>({version:snapshot.version,state:structuredClone(snapshot.state)})),before);
+  }
   const version=await page.evaluate(()=>snapshot.version);await page.locator('#importFile').setInputFiles({name:'valid-copy.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(validCopy))});await page.waitForFunction(v=>snapshot.version>v&&!busy,version);
   await page.reload();await page.waitForFunction(()=>snapshot&&!busy);assert.equal(await page.evaluate(()=>snapshot.state.characters[0].hp),originalCharacter.maxHp-5);
   await page.locator('[data-tab=journal]').click();
