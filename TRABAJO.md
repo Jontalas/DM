@@ -1,5 +1,11 @@
 # Continuidad del desarrollo autónomo
 
+## Controles táctiles e invitación sencilla (10 de noviembre de 2026)
+
+Baseline touch-controls-baseline.log falla por Invitar con altura inferior44px. Cabecera, resumen de dados, siete dados rápidos y resumen de invitación tienen zona mínima44px; sin etiqueta visual redundante Dados, manteniendo nombres accesibles por botón/aria-label. Los dados caben en390 y envuelven en320 sin desbordar. Invitación muestra primero enlace y explicación por dirección actual: partida loopback sólo en este ordenador; no implica que su estado local exista en producción. Código/acceso de regreso bajo details; cooperación experimental y límite individual del patio explícitos. Se retiran instrucciones HOST/servidor/HTTPS del flujo de jugador, sin cambiar acceso/enlace ni mecanismo de invitación.
+
+touch-controls-invitation-final.log correcto: perfil nuevo/creador/ambos desenlaces de1.9, objetivos44px en390/320, invitación local/enlace exacto/details por teclado/0acciones al consultar, móvil/recarga/auxilio reales del motor. touch-controls-initial-scene-regression.log correcto escena original/recarga390×844 y844×390/390×480/1024×500, sin perder introducción al aumentar ayuda cerrada. No reglas/Python/dependencias/archivos propios nuevos ni IA real. Lectura horizontal ad53497 publicada, short-viewport-production-public.log verifica CSS/salud/release exactos,0campañas/POST/IA.
+
 ## Escena legible al girar el móvil (10 de noviembre de 2026)
 
 Revisión de demo8767 con todoPOST bloqueado midió48px de alto para story en844×390; la composición fija consumía la conversación. Fixture nuevo lo reproduce, short-viewport-baseline.log. CSS sólo hasta1099px ancho/540px alto deja crecer la página y reserva60dvh/mínimo200px por panel; sidebar de tablet queda acotada y no se ocultan fichas. No cambia controles, mensajes ni reglas. Demostración después234px,0POST y estado intacto; no reinicio.

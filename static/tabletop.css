@@ -9,9 +9,11 @@ button:disabled{cursor:not-allowed}
 #automationNotice{border:1px solid var(--gold);padding:8px;margin-top:8px;background:#342e21}
 .quick-dice{display:flex;gap:4px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
 #quickDiceHelp{padding:4px 0 10px;border-top:0}
+#quickDiceHelp>summary,#invitationDetails>summary{min-height:44px;align-content:center}
+.header-right button{min-height:44px}
 summary:focus-visible{outline:2px solid var(--gold);outline-offset:4px;border-radius:2px}
-.quick-dice span{color:var(--muted);font-size:14px;margin-right:4px}
-.quick-dice button{padding:5px 7px;min-height:36px;font-size:14px}
+.quick-dice span{display:none}
+.quick-dice button{padding:5px 7px;min-height:44px;min-width:44px;font-size:14px}
 .board-help{padding:8px 0;flex-shrink:0}
 .board-help summary{font-size:14px}
 .board-help .notice{margin-top:8px}
