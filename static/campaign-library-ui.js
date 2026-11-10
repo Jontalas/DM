@@ -5,7 +5,8 @@ function rememberCampaign(){
 }
 function ensureCampaignCanChange(destination){
  const pending=JSON.parse(localStorage.getItem('cronicas-pending')||'null');
- if(busy||(pending&&!(pending.token!==token&&pending.token===destination)))throw Error('Recupera o termina el envío pendiente antes de cambiar de campaña.');
+ if(busy)throw Error('Espera a que termine la operación actual antes de cambiar de partida.');
+ if(pending&&!(pending.token!==token&&pending.token===destination))throw Error('Recupera o termina el envío pendiente antes de cambiar de campaña.');
 }
 async function openPendingCampaign(){
  const pending=JSON.parse(localStorage.getItem('cronicas-pending')||'null');
@@ -17,19 +18,21 @@ async function openSavedCampaign(id,characterId){
  const entry=CampaignLibrary.read(localStorage).entries.find(v=>v.id===id);
  if(!entry)throw Error('Acceso de campaña no encontrado');
  ensureCampaignCanChange(entry.token);
- const previousToken=token;let next;
+ busy=true;renderComposerAvailability();
+ const originalDialog=$('#modalContent').firstElementChild,hadDialog=$('#modal').open;
  try{
-  token=entry.token;
-  next=await api('/api/state');
+  const next=await api('/api/state',undefined,entry.token);
   if(next.id!==entry.campaign||next.me.id!==entry.player)throw Error('La credencial no coincide con el acceso guardado');
-  localStorage.setItem('cronicas-token',token);
- }catch(error){token=previousToken;throw error}
- bookReader.reset();document.body.classList.remove('reader-wide');readerExpanded=false;
- snapshot=next;snapshotToken=token;lastVersion=next.version;path=[];ruler=[];rememberCampaign();renderSyncStatus();render();
- if($('#modal').open)$('#modal').close();
- if(characterId&&next.state.characters.some(c=>c.id===characterId&&c.owner===next.me.id)){
-  if(next.state.ruleset==='rule-pack')RulePackUI.openCharacter(characterId);else if(next.state.ruleset==='cairn-1e')CairnUI.openCharacter(characterId);else characterForm(characterId);
- }
+  token=entry.token;localStorage.setItem('cronicas-token',token);
+  bookReader.reset();document.body.classList.remove('reader-wide');readerExpanded=false;
+  snapshot=next;snapshotToken=token;lastVersion=next.version;path=[];ruler=[];rememberCampaign();renderSyncStatus();render();
+  const sameDialog=$('#modal').open===hadDialog&&$('#modalContent').firstElementChild===originalDialog;
+  if(sameDialog&&hadDialog)$('#modal').close();
+  if(sameDialog&&characterId&&next.state.characters.some(c=>c.id===characterId&&c.owner===next.me.id)){
+   if(next.state.ruleset==='rule-pack')RulePackUI.openCharacter(characterId);else if(next.state.ruleset==='cairn-1e')CairnUI.openCharacter(characterId);else characterForm(characterId);
+  }
+ }finally{busy=false;renderComposerAvailability()}
+
 }
 function libraryHtml(library,inCampaign=false){
  if(!library.entries.length)return '<p>Tus partidas y personajes aparecerán aquí al entrar en una campaña.</p>';
@@ -63,7 +66,7 @@ function openCampaignLibrary(){
 document.addEventListener('click',e=>{
  const button=e.target.closest('[data-library-open],[data-library-copy]');if(!button)return;
  run(async()=>{
-  if(button.dataset.libraryOpen){await openSavedCampaign(button.dataset.libraryOpen,button.dataset.libraryCharacter);return}
+  if(button.dataset.libraryOpen){button.disabled=true;try{await openSavedCampaign(button.dataset.libraryOpen,button.dataset.libraryCharacter)}finally{if(button.isConnected)button.disabled=false}return}
   if(snapshot.state.board?.active)throw Error('Finaliza el combate antes de crear una copia.');
   const entry=CampaignLibrary.read(localStorage).entries.find(v=>v.id===button.dataset.libraryCopy);
   const character=entry?.characters.find(v=>v.id===button.dataset.libraryCharacter);

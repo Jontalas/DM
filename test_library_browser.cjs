@@ -1,5 +1,5 @@
 const {chromium}=require('./.deps/browser-tests/node_modules/playwright');
-const {spawn}=require('node:child_process'),{createInterface}=require('node:readline');
+const {spawn,execFileSync}=require('node:child_process'),{createInterface}=require('node:readline');
 const path=require('node:path'),assert=require('node:assert/strict');
 (async()=>{
  const fixture=spawn(path.resolve('.venv/Scripts/python.exe'),['test_browser_fixture.py'],{stdio:['ignore','pipe','inherit']});let browser;
@@ -15,8 +15,9 @@ const path=require('node:path'),assert=require('node:assert/strict');
   room=await (await context.request.get(url+'/api/state',{headers})).json();
   const originalCharacter=room.state.characters[0];
   assert.ok((await context.request.post(url+'/api/action',{headers,data:{type:'manual',id:'fixture-injury',version:room.version,character:originalCharacter.id,hpDelta:-5,reason:'Fixture de continuidad',resolution:'Solo datos de prueba'}})).ok());
-  const page=await context.newPage(),errors=[],actions=[];
-  page.on('pageerror',error=>errors.push(error.message));page.on('request',r=>{if(r.url().endsWith('/api/action'))actions.push(r.postDataJSON())});
+  const page=await context.newPage(),errors=[],actions=[];let stateReads=0;
+  page.on('pageerror',error=>errors.push(error.message));page.on('request',r=>{if(new URL(r.url()).pathname==='/api/state')stateReads++;if(r.url().endsWith('/api/action'))actions.push(r.postDataJSON())});
+  if(process.env.TEST_LIBRARY_ENTRY_BASELINE==='1')await page.route('**/campaign-library-ui.js*',route=>route.fulfill({contentType:'text/javascript',body:execFileSync('git',['show','4fd5e0681a3e536ab6a4a034e38e46c9274f216f:static/campaign-library-ui.js'],{encoding:'utf8'})}));
   await page.goto(url);await page.evaluate(t=>localStorage.setItem('cronicas-token',t),first);await page.reload();
   await page.locator('#app').waitFor({state:'visible'});await page.locator('#exitBtn').click();
   assert.equal(await page.locator('#savedLibraryPanel').evaluate(el=>el.open),true);
@@ -25,6 +26,18 @@ const path=require('node:path'),assert=require('node:assert/strict');
   await page.locator('#createForm [name=title]').fill('La segunda campaña');
   await page.locator('#createForm [name=player]').fill('Ana');await page.locator('#createForm [name=goal]').fill('Otra historia');
   await page.locator('#createForm button').click();await page.locator('#app').waitFor({state:'visible'});
+  if(process.env.TEST_LIBRARY_ENTRY_COORDINATION==='1'){
+   const before=await page.evaluate(()=>({snapshot:structuredClone(snapshot),token})),destination=room.id+':'+room.me.id;let requested,release;const readRequested=new Promise(resolve=>{requested=resolve}),readGate=new Promise(resolve=>{release=resolve});let reads=0;
+   await page.route('**/api/state',async route=>{reads++;const response=await route.fetch();assert.equal(response.status(),200);requested();await readGate;await route.fulfill({response})},{times:1});
+   const beforeReads=stateReads;const opening=page.evaluate(id=>openSavedCampaign(id),destination);opening.catch(()=>{});await readRequested;
+   assert.equal(await page.evaluate(t=>token===t,before.token),true,'Keep the displayed campaign access until the replacement state is validated');assert.deepEqual(await page.evaluate(()=>snapshot.state),before.snapshot.state);assert.equal(await page.evaluate(()=>busy),true);
+   const blocked=await page.evaluate(async id=>{try{await openSavedCampaign(id);return false}catch{return true}},destination);assert.equal(blocked,true);assert.equal(reads,1);await page.evaluate(()=>document.querySelector('#resume').onclick());assert.equal(stateReads,beforeReads+1,'Resume must not load another state during an entry already in progress');
+   const beforeAction=actions.length;assert.equal(await page.evaluate(async()=>{try{await act('roll',{expression:'1d20'});return false}catch{return true}}),true);assert.equal(actions.length,beforeAction);
+   await page.locator('#libraryBtn').click();release();await opening;assert.equal(await page.evaluate(()=>snapshot.id),room.id);assert.equal(await page.locator('#modal').evaluate(e=>e.open),true,'Opening a saved campaign must preserve a newer dialog');assert.match(await page.locator('#modalContent h2').textContent(),/Partidas y personajes/);
+   await page.locator('#closeModal').click();await page.evaluate(id=>openSavedCampaign(id),before.snapshot.id+':'+before.snapshot.me.id);assert.equal(await page.evaluate(()=>snapshot.id),before.snapshot.id);assert.equal(await page.evaluate(()=>busy),false);
+   await page.route('**/api/state',route=>route.fulfill({status:403,contentType:'application/json',body:JSON.stringify({error:'Este acceso de prueba no está disponible.'})}),{times:1});assert.equal(await page.evaluate(async id=>{try{await openSavedCampaign(id);return false}catch{return true}},destination),true);assert.equal(await page.evaluate(t=>token===t,before.token),true);assert.equal(await page.evaluate(()=>snapshot.id),before.snapshot.id);assert.equal(await page.evaluate(()=>busy),false);
+
+  }
   await page.locator('#libraryBtn').click();
   assert.equal(await page.locator('#modal .library-entry').count(),2);
   assert.equal(await page.locator('[data-library-copy]').isVisible(),false);

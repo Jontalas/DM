@@ -1,5 +1,8 @@
 # Sencillez y orientación
 
+10nov: entrada y reanudación coordinadas en una pestaña. Crear/unirse/retomar/abrir guardada no aceptan otra operación de entrada/acción mientras esperan. Crear muestra progreso/desactiva botón y errores lo liberan. Crear confirmado+GET fallido conserva acceso y muestra continuar última campaña, sin recrearla. Abrir guardada valida estado con acceso explícito antes de sustituir acceso/ficha visibles, conserva diálogo posterior y rechaza403 sin perder partida previa. Baselines reproducidos, campaign-entry-coordination-final.log/library-entry-coordination-final.log correctos; invitaciones/mesa2jugadores y recibos entre partidas correctos. Contrato de recibos intacto. No prometer idempotencia servidor o entre pestañas para crear. TestStore/proveedor simulado,0IA real.
+
+
 10nov: recuperar resultado respeta navegación posterior. Si se abre diario u otro modal/foco durante espera, no fuerza conversación ni resultado. Sin navegación posterior conserva presentación habitual. Baseline ataque/respuesta perdida+GET demorado reprodujo salto; recovery-navigation-fixed.log correcto con estado/versionado/mismo envío y recorrido1.16 completo, checks correcto. Recuperación en primer plano correcta (recovery-navigation-foreground.log), foco habitual conservado; app.js sólo, sin cambiar recibos/red/motor ni IA real.
 
 

@@ -1,5 +1,12 @@
 # Continuidad del desarrollo autónomo
 
+## Entrada y accesos coordinados (10 de noviembre de 2026)
+
+Baselines campaign-entry-coordination-baseline.log y library-entry-coordination-baseline.log reproducen dos POST de creación al repetir envío y token cambiado antes de validar estado guardado. app.js comparte exclusión busy para crear/unirse/retomar; progreso/botón y finally restauran controles. API admite acceso explícito opcional. openSavedCampaign lee con credencial de destino sin cambiar globales, valida identidad, sustituye acceso/estado juntos y conserva modal posterior. Acciones/segunda entrada/retomar bloqueados durante lectura; rechazo403 no pierde anterior. Creación/unión confirmada con GET fallido conserva acceso local y orienta a continuar, no volver a crear. No cambia servidor ni ofrece idempotencia de creación cross-tab.
+
+Pruebas correctas: campaign-entry-coordination-final.log (503/reintento,segundo submit,confirmación+GET503/retomar una sola creación,ejemplo/ruta/asíncronos/copia/móvil); library-entry-coordination-final.log (lectura demorada/token+estado anteriores,1GET/0acciones/retomar concurrentes,modal posterior/403/copia/accesos/móvil); campaign-entry-two-player-regression.log; campaign-entry-receipt-regression.log (captura/GET-only/recibo entre partidas/Web Locks). Guion de recibos actualizado para esperar estado validado, no asumir token sustituido antes de cargar. Primer baseline librería no interceptaba ?v=1 y cierre producía rechazo pendiente, ajustado para conservar fallo real. Ninguna IA real ni Python/dependencias nuevas. Base4fd5e06 Render7672015897 success, recovery-navigation-production-public.log público0campañas/POST/IA.
+
+
 ## Recuperación sin robar navegación (10 de noviembre de 2026)
 
 Baseline recovery-navigation-baseline.log: recuperar ataque tras respuesta perdida, retener GET de estado y abrir diario terminaba mostrando conversación. recoverPendingSubmission captura acceso/pestaña/foco y comprueba modal antes de presentar check/ataque/investigación. No modifica red, recibo, idempotencia ni estado; resultado disponible al volver. recovery-navigation-fixed.log correcto en ambos recorridos1.16, mismo cuerpo/id y versión, teclado/móvil/copia/retomar; recovery-navigation-checks.log correcto. Recuperación en primer plano correcta (recovery-navigation-foreground.log), con foco habitual del resultado conservado. Ninguna IA real ni Python. Base25eb252 publicada/verificada Render7671969132 success, continuation-guidance-production-public.log0campañas/POST/IA.
