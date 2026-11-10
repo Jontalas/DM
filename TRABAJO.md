@@ -1,5 +1,13 @@
 # Continuidad del desarrollo autónomo
 
+## De la hoja a la ficha, sólo navegación (10 de noviembre de 2026)
+
+Hoja calculada o PNJ preparado puede mostrar su casilla actual mediante Ver en el tablero. Foco nativo desplaza cámara y contenedor, una marca discontinua hasta blur distingue localización de selección; no cambia actor/hablante, posiciones, escena ni estado. En primera hoja tras crear permanece sólo la continuación guiada. No se añade navegación al editor manual con cambios sin guardar. Otra escena se explica como consulta sin atajo; el clic revalida presencia y acceso/campaña/jugador/DOM, dejando explicación en hoja si contexto cambió. Modos de escritura pasan a consulta para evitar pintar al localizar; lo demás se conserva.
+
+show-character-on-board-baseline.log muestra falta de acceso. show-character-local-owner-touch-final.log correcto: cámara alejada, propia y ajena/caída,1280y390, teclado/táctil, foco dentro de mapa, marca se limpia al salir, estado/versión/selector/hablante intactos,0APIal localizar. show-character-changed-context-final.log simula GET retenido y hoja antigua preservada: atajo bloqueado con explicación/sin cambiar campaña de destino, combinado con entradas/borradores. show-prepared-token-and-remote-scene-final.log1.16 correcto ambos caminos: guardiana localizada, Aria sigue controlada, modo muro pasa a recorrido,0API/POST/estado, NPC remoto sin atajo ni viaje; resto de ruta/cierre/copia/retomar intactos. Captura show-prepared-token-mobile.png revisada, personaje legal/PNJ variante1.16,0IA real. Primer tap de guion se negó porque contexto invitado no tenía hasTouch; habilitado y completado, no error de aplicación.
+
+Basea93f542 publicada/verificada Render7680353827 success, preparation-context-production-public.log index/app/salud/release exactos,0campañas/POST/IA. La consulta de estado anterior no se ejecutó por cuota de revisión automática; tras reanudación explícita del usuario se completó por el mismo mecanismo de aprobación, sin bypass ni dependencia pendiente. Sin reglas/Python/dependencias/activos/archivos nuevos.
+
 ## Preparar el tablero con intención y contexto claros (10 de noviembre de 2026)
 
 Baselines: preparation-guidance-baseline.log mostraba instrucciones de jugar al elegir muro; preparation-role-switch-baseline-valid.log mantenía wall como invitado; preparation-context-switch-baseline.log mantenía edición al crear otra campaña siendo host. UI agrupa opciones en Jugar y consultar/Preparación del anfitrión y explica antes del clic qué guarda, requisito de casilla libre para muro y retorno a recorrido. No se introducen confirmaciones repetidas ni permisos nuevos.

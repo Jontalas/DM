@@ -6,7 +6,7 @@ const path=require('node:path'),assert=require('node:assert/strict');
  try{
   const url=await new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(Error('Fixture timeout')),15000);createInterface({input:fixture.stdout}).once('line',line=>{clearTimeout(timer);resolve(line)});fixture.once('exit',()=>reject(Error('Fixture exited')))});
   browser=await chromium.launch({headless:true,executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe'});
-  const host=await browser.newContext(),guest=await browser.newContext();
+  const host=await browser.newContext(),guest=await browser.newContext({hasTouch:true});
   const token=(await (await host.request.post(url+'/api/create',{data:{player:'Ana',title:'Creation'}})).json()).token;
   const headers={Authorization:'Bearer '+token};const room=await (await host.request.get(url+'/api/state',{headers})).json();
   const player=(await (await guest.request.post(url+'/api/join',{data:{name:'Luis',invite:room.invite}})).json()).token;
@@ -46,12 +46,23 @@ const path=require('node:path'),assert=require('node:assert/strict');
   }
   await b.locator('.sheet-checks').waitFor();
   assert.equal(actions.length,lostCreation?2:1);assert.equal(actions[0].type,'create_character');assert.equal(await b.locator('#characterForm').count(),0);
-  if(!delayedCreator)assert.equal(await b.locator('#creatorContinue').textContent(),'Volver a la mesa');
+  if(!delayedCreator){assert.equal(await b.locator('#creatorContinue').textContent(),'Volver a la mesa');assert.equal(await b.locator('#showCharacterOnBoard').count(),0,'The first creation step keeps its single continuation choice')}
   let state=await (await guest.request.get(url+'/api/state',{headers:{Authorization:'Bearer '+player}})).json();
   const character=state.state.characters[0];assert.equal(character.damage,'2d6+6');assert.equal(character.ac,16);assert.equal(character.maxHp,16);assert.ok(character.creation);
   await b.locator('.sheet-free-roll > summary').click();await b.locator('[data-sheet-selection]').selectOption('0');
   await b.locator('[data-check-key=str]').click();await b.waitForFunction(()=>snapshot.state.messages.at(-1).check?.total===16);
   await b.locator('#closeModal').click();await b.reload();await b.locator('.party-person').click();await b.locator('.sheet-checks').waitFor();
+  if(process.env.TEST_SHOW_CHARACTER_ON_BOARD==='1'){
+   assert.equal(await b.locator('#showCharacterOnBoard').count(),1,'An existing character sheet should provide a local way back to its token');
+   const requests=[],observe=request=>{if(new URL(request.url()).pathname.startsWith('/api/'))requests.push(request.url())};b.on('request',observe);
+   for(const [width,height] of [[1280,900],[390,844]]){
+    await b.locator('#closeModal').click();await b.setViewportSize({width,height});if(await b.locator('[data-tab=board]').isVisible())await b.locator('[data-tab=board]').click();await b.locator('.board-scroll').evaluate(element=>{element.scrollLeft=element.scrollWidth;element.scrollTop=element.scrollHeight});
+    const before=await b.evaluate(()=>({state:structuredClone(snapshot.state),version:snapshot.version,selected:document.querySelector('#boardCharacter').value,speaker:document.querySelector('#speaker').value})),count=actions.length;await b.locator('#party [data-character]').first().click();await b.locator('#showCharacterOnBoard').focus();await b.keyboard.press('Enter');assert.equal(await b.locator('#modal').evaluate(element=>element.open),false);assert.equal(await b.locator('#grid .cell:focus').getAttribute('data-token-id'),character.id);assert.equal(await b.locator('#grid .located-token').count(),1);
+    assert.ok(await b.locator('#grid .cell:focus').evaluate(element=>{const cell=element.getBoundingClientRect(),frame=document.querySelector('.board-scroll').getBoundingClientRect(),panel=document.querySelector('#board').getBoundingClientRect();return cell.left>=Math.max(0,frame.left,panel.left)&&cell.right<=Math.min(innerWidth,frame.right,panel.right)&&cell.top>=Math.max(0,frame.top,panel.top)&&cell.bottom<=Math.min(innerHeight,frame.bottom,panel.bottom)}),'The token must be visible inside the board after revealing it');assert.deepEqual(await b.evaluate(()=>({state:structuredClone(snapshot.state),version:snapshot.version,selected:document.querySelector('#boardCharacter').value,speaker:document.querySelector('#speaker').value})),before);assert.equal(actions.length,count);await b.locator('#tool').focus();assert.equal(await b.locator('.located-token').count(),0);await b.locator('#party [data-character]').first().click();
+   }
+   await b.setViewportSize({width:1280,height:900});
+   b.off('request',observe);assert.equal(requests.length,0,'Revealing a loaded token must stay entirely local');
+  }
   assert.equal(await b.locator('#advancedCharacterEdit').count(),1);
   assert.equal(await b.locator('#advancedCharacterEdit').isHidden(),true);const beforeCorrection=actions.length;await b.locator('#characterAdvanced > summary').focus();await b.keyboard.press('Enter');assert.equal(await b.locator('#advancedCharacterEdit').isVisible(),true);assert.match(await b.locator('#advancedEditHint').textContent(),/excepción/);await b.keyboard.press('Enter');assert.equal(actions.length,beforeCorrection);
   assert.equal(await b.locator('[data-sheet-check]').isVisible(),false);
@@ -80,6 +91,7 @@ const path=require('node:path'),assert=require('node:assert/strict');
   state=await (await guest.request.get(url+'/api/state',{headers:{Authorization:'Bearer '+player}})).json();
   assert.ok(state.state.characters[1].hp<state.state.characters[1].maxHp);
   const beforeCombatSheet=actions.length;await b.locator('#party [data-character="'+character.id+'"]').click();await b.locator('#characterAdvanced > summary').focus();await b.keyboard.press('Enter');assert.equal(await b.locator('#advancedCharacterEdit').isDisabled(),true);assert.match(await b.locator('#advancedEditHint').textContent(),/durante el combate/);assert.equal(actions.length,beforeCombatSheet);
+  if(process.env.TEST_SHOW_CHARACTER_ON_BOARD==='1'){await b.locator('#closeModal').click();await b.setViewportSize({width:390,height:844});await b.locator('[data-tab=board]').click();await b.locator('.board-scroll').evaluate(element=>{element.scrollLeft=element.scrollWidth;element.scrollTop=element.scrollHeight});const target=state.state.characters[1],before=await b.evaluate(()=>({state:structuredClone(snapshot.state),version:snapshot.version,selected:document.querySelector('#boardCharacter').value}));await b.locator('#party [data-character="'+target.id+'"]').click();await b.locator('#showCharacterOnBoard').tap();assert.equal(await b.locator('#grid .cell:focus').getAttribute('data-token-id'),target.id);assert.deepEqual(await b.evaluate(()=>({state:structuredClone(snapshot.state),version:snapshot.version,selected:document.querySelector('#boardCharacter').value})),before);assert.equal(await b.locator('#boardCharacter').inputValue(),character.id);assert.equal(actions.length,beforeCombatSheet)}
   assert.deepEqual(errors,[]);console.log('OK: zero manual statistics; guided creation, local invalid-budget preview, one save, sheet roll, reload, mobile wizard, generated adversary and real engine attack. No AI.');
  }finally{if(browser)await browser.close();fixture.kill()}
 })().catch(e=>{console.error(e);process.exitCode=1});

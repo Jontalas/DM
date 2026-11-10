@@ -44,6 +44,8 @@ Lectura de regla10nov: valor geométrico y extremos visibles sobre tablero, cons
 
 Preparación propia10nov: selector nativo distingue consulta/juego y herramientas del anfitrión; avisa antes de pintar qué se guarda. Cambiar campaña/jugador/escena limpia trazos y sale de modos de escritura, conservando mano/medición sin mediciones anteriores. No convierte una consulta en edición, no añade lecturas/escrituras remotas por elegir y no cambia permisos del servidor. Probes de roles/contexto y recorrido1.16 con preview reservado correctos; no observación nueva de Roll20.
 
+Localización propia10nov: hojas calculadas y PNJ preparados enlazan con su ficha visible en la escena actual. Cámara/foco y marca discontinua local, sin tomar control del PNJ ni moverlo/cambiar escena. Primera creación conserva paso guiado, editor manual y otros lugares sólo consulta. Guardas de contexto impiden usar hoja antigua al cambiar partida. Teclado/táctil/escritorio/móvil/cámara alejada y ruta1.16 verificados,0API/POST/estado al localizar. Es adaptación propia, no nueva observación de Roll20 ni traslados entre páginas.
+
 ## Adversarios automáticos
 
 La opción aparece activada al preparar un combate nuevo desde la interfaz; el anfitrión puede desactivarla o tomar el control durante el combate. Las partidas anteriores no cambian de modo automáticamente. Los clientes API anteriores que no envíen `automateEnemies` mantienen control manual.
