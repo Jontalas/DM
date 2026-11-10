@@ -300,7 +300,8 @@ async function recoverPendingSubmission(){
   if(unchanged()){
    if(saved.body.type==='check')chooseTab('story');
    if(saved.body.type==='attack')showAttackResult(saved.body);
-   if(['travel_scene','continue_pf_encounter','investigate'].includes(saved.body.type))showInvestigationScene();
+   if(saved.body.type==='investigate'&&snapshot.state.adventureRouteView?.completed)showRouteCompletion();
+   else if(['travel_scene','continue_pf_encounter','investigate'].includes(saved.body.type))showInvestigationScene();
   }
   toast('Envío recuperado');
  }
@@ -350,15 +351,15 @@ function renderPlayGuidance(s){
    chooseTab('story');const target=ready?$('#pfContinueScene'):$('#pfContinueHint');
    if(target){if(!ready)target.tabIndex=-1;target.scrollIntoView({block:'center'});target.focus({preventScroll:true})}
   };
- }else if(s.adventureRouteView?.exits.length&&(s.adventureModuleView?.completed||s.adventureRouteView.completed)){
-  message=s.adventureRouteView.completed?'Has resuelto el objetivo de la ruta. Puedes volver a los lugares conocidos; tus hallazgos se conservan.':'La investigación de este lugar está resuelta. Puedes consultar las salidas de la ruta.';
+ }else if(s.adventureRouteView?.completed){
+  message='Has resuelto el objetivo de la ruta. Puedes revisar los hallazgos o salir y retomarla después.';
+  label=s.adventureRouteView.visitedScenes?.length>1?'Revisar hallazgos':'Revisar el diario';open=showRouteFindings;
+ }else if(s.adventureRouteView?.exits.length&&s.adventureModuleView?.completed){
+  message='La investigación de este lugar está resuelta. Puedes consultar las salidas de la ruta.';
   label='Ver salidas';open=()=>{
    chooseTab('story');const exits=$$('[data-route-exit]'),target=exits.find(b=>!b.disabled)||exits[0]?.closest('.card')?.querySelector('small');
    if(target){if(target.tagName!=='BUTTON')target.tabIndex=-1;target.scrollIntoView({block:'center'});target.focus({preventScroll:true})}
   };
- }else if(s.adventureRouteView?.completed){
-  message='Has completado la ruta preparada. Puedes revisar los hallazgos en el diario; otros viajes aún no están disponibles.';
-  label='Revisar el diario';open=()=>chooseTab('journal');
  }else if(s.adventureModuleView&&!s.adventureModuleView.completed){
   const canSearch=!!$('#investigationForm button:not(:disabled)');
   message=canSearch?'Puedes investigar este lugar. Elige qué revisar y cómo buscar.':$('#investigationHelp')?.textContent||'Revisa las opciones de investigación y el estado de tu personaje.';

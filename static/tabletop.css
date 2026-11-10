@@ -223,9 +223,12 @@ body.reader-wide.submission-pending #composer{display:block}
 #movementPreview.prepared .toolbar{gap:6px;margin:6px 0 0}
 #board.preparing-move #attackForm,#board.preparing-move #boardGuidance{display:none}
 .combat-result:focus-visible{outline:2px solid var(--gold);outline-offset:4px}
-#investigationPanel>h3:focus-visible{outline:2px solid var(--gold);outline-offset:4px}
+#investigationPanel>h3:focus-visible,#routeProgress h4:focus-visible{outline:2px solid var(--gold);outline-offset:4px}
 
 body.encounter-choice #story>.chapter{display:none}
 
 #storyRhythm summary{min-height:44px;align-content:center;font-size:13px}
 #storyRhythm>p{font-size:12px;line-height:1.5;margin:8px 0}
+
+#routeProgress button{min-height:44px}
+#completedRouteExploration>summary{min-height:44px;align-content:center}

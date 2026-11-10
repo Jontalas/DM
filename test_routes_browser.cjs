@@ -38,7 +38,7 @@ const path=require('node:path'),assert=require('node:assert/strict');
   await page.waitForFunction(()=>snapshot.state.adventureRouteView.current==='lectura');
   await page.locator('#investigationForm [value=take20]').click();
   await page.waitForFunction(()=>snapshot.state.adventureRouteView.completed);
-  assert.match(await page.locator('#investigationPanel').textContent(),/Ruta completada/);
+  assert.match(await page.locator('#routeProgress').textContent(),/Has resuelto el objetivo/);assert.equal(await page.locator('#routeFindings').textContent(),'Revisar el diario');assert.equal(await page.locator('#completedRouteExploration').count(),0);const beforeReview=actions.length;await page.locator('#routeFindings').focus();await page.keyboard.press('Enter');assert.equal(await page.locator('#journal').evaluate(element=>element.classList.contains('active')),true);assert.equal(actions.length,beforeReview);await page.locator('[data-tab=story]').click();
   assert.equal(await page.locator('[data-route-exit]').count(),0);
   assert.equal(await page.evaluate(()=>snapshot.state.scene),5);
   assert.equal(actions.filter(a=>a.type==='start_adventure').length,1);

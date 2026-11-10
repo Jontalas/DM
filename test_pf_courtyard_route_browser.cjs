@@ -1,6 +1,10 @@
 const {chromium}=require('./.deps/browser-tests/node_modules/playwright');
 const {spawn}=require('node:child_process'),{createInterface}=require('node:readline');
 const path=require('node:path'),assert=require('node:assert/strict');
+async function revealCompletedRoute(page){
+ const options=page.locator('#completedRouteExploration');
+ if(await options.count()&&!await options.evaluate(element=>element.open))await options.locator('summary').click();
+}
 (async()=>{
  const returning=process.env.TEST_PF_ROUTE_RETURN==='1',encounterVersion=returning?'1.6.0':'1.4.0';
  const fixture=spawn(path.resolve('.venv/Scripts/python.exe'),['test_browser_fixture.py'],
@@ -28,7 +32,7 @@ const path=require('node:path'),assert=require('node:assert/strict');
     assert.equal(await initiative.evaluate(e=>e.open),false);assert.equal(await page.locator('.npc-preparation details').evaluate(e=>e.open),false);
     const originalInitiative=await page.evaluate(()=>snapshot.state.messages.find(m=>m.kind==='rules'&&m.text.startsWith('Iniciativa d20 + modificador declarado: ')).text);
     await initiative.locator('summary').focus();await page.keyboard.press('Enter');assert.equal(await initiative.evaluate(e=>e.open),true);assert.ok((await initiative.textContent()).includes(originalInitiative));await page.keyboard.press('Enter');assert.equal(await initiative.evaluate(e=>e.open),false);assert.equal(actions.length,beforeAudit);
-    await page.setViewportSize({width:390,height:844});await page.locator('[data-tab=board]').tap();assert.equal(await page.locator('#composer').isVisible(),false);assert.equal(await page.locator('#grid .token').first().evaluate(e=>{const r=e.getBoundingClientRect();return r.top>=0&&r.bottom<=innerHeight}),true);await page.locator('#toast').waitFor({state:'hidden',timeout:8000});await page.screenshot({path:'.deps/first-combat-mobile.png'});await page.locator('[data-tab=story]').tap();assert.equal(await page.locator('#composer').isVisible(),true);await page.locator('[data-tab=board]').tap();await page.setViewportSize({width:1440,height:1000});await page.screenshot({path:'.deps/first-combat-desktop.png'});
+    await page.setViewportSize({width:390,height:844});await page.locator('[data-tab=board]').tap();assert.equal(await page.locator('#composer').isVisible(),false);assert.equal(await page.locator('#grid .token').first().evaluate(e=>{const r=e.getBoundingClientRect();return r.top>=0&&r.bottom<=innerHeight}),true);await page.locator('#toast').waitFor({state:'hidden',timeout:8000});await page.screenshot({path:'.deps/first-combat-'+encounterVersion+'-mobile.png'});await page.locator('[data-tab=story]').tap();assert.equal(await page.locator('#composer').isVisible(),true);await page.locator('[data-tab=board]').tap();await page.setViewportSize({width:1440,height:1000});await page.screenshot({path:'.deps/first-combat-'+encounterVersion+'-desktop.png'});
     await page.locator('#attackButton').click();await page.waitForFunction(()=>snapshot.state.characters[1].hp<0&&!busy);
     await page.locator('#pfWaitStabilization').click();await page.waitForFunction(()=>snapshot.state.pfEncounter.phase==='resolved'&&!busy);
    }
@@ -44,18 +48,18 @@ const path=require('node:path'),assert=require('node:assert/strict');
    if(choice==='parley'){
     await page.locator('#grid [data-x="0"][data-y="1"]').click();await page.locator('#confirmMove').click();
     await page.waitForFunction(()=>snapshot.state.characters[0].y===1&&!busy);
-    await page.locator('[data-route-exit=cobertizo]').click();await page.waitForFunction(()=>snapshot.state.boardScenes.current==='cobertizo'&&!busy);
+    await revealCompletedRoute(page);await page.locator('[data-route-exit=cobertizo]').click();await page.waitForFunction(()=>snapshot.state.boardScenes.current==='cobertizo'&&!busy);
     assert.equal(await page.locator('#grid .token').count(),1);
     assert.equal(await page.locator('#boardCharacter option').count(),1);
-    assert.equal(await page.locator('#attackTarget option').count(),0);
+    assert.equal(await page.locator('#attackTarget option:not([value=""])').count(),0);assert.equal(await page.locator('#attackButton').isDisabled(),true);
     assert.match(await page.locator('#party').textContent(),/En otra escena/);
     assert.equal(await page.evaluate(()=>snapshot.state.characters[1].sceneId),'patio');
     await page.locator('#investigationForm button[value=take10]').click();await page.waitForFunction(()=>snapshot.state.moduleProgress.completed&&!busy);
-    await page.locator('[data-route-exit=patio]').click();await page.waitForFunction(()=>snapshot.state.boardScenes.current==='patio'&&!busy);
+    await revealCompletedRoute(page);await page.locator('[data-route-exit=patio]').click();await page.waitForFunction(()=>snapshot.state.boardScenes.current==='patio'&&!busy);
     assert.equal(await page.evaluate(()=>snapshot.state.characters[0].y),1);assert.equal(await page.locator('#grid .token').count(),2);
     assert.equal(await page.evaluate(()=>snapshot.state.moduleProgress.discoveries.length),2);
    }
-   await page.locator('[data-route-exit=almacen]').click();await page.waitForFunction(()=>snapshot.state.boardScenes.current==='almacen'&&!busy);
+   await revealCompletedRoute(page);await page.locator('[data-route-exit=almacen]').click();await page.waitForFunction(()=>snapshot.state.boardScenes.current==='almacen'&&!busy);
    assert.equal(await page.locator('#grid .token').count(),1);assert.equal(await page.locator('#startCombat').isEnabled(),false);
    for(const method of ['take10','take20']){
     const version=await page.evaluate(()=>snapshot.version);await page.locator(`#investigationForm button[value=${method}]`).click();
@@ -66,25 +70,25 @@ const path=require('node:path'),assert=require('node:assert/strict');
     assert.match(await page.locator('#playGuidanceText').textContent(),/Has resuelto el objetivo/);
     const localActions=actions.length;
     await page.locator('#playGuidanceAction').focus();await page.keyboard.press('Enter');
-    assert.equal(actions.length,localActions);
-    await page.locator('[data-route-exit=patio]').click();await page.waitForFunction(()=>snapshot.state.boardScenes.current==='patio'&&!busy);
+    assert.equal(await page.locator('#journal').evaluate(element=>element.classList.contains('active')),true);assert.equal(await page.locator('.visited-scene-notes').evaluate(element=>element.open),true);assert.equal(actions.length,localActions);await page.locator('[data-tab=story]').click();
+    await revealCompletedRoute(page);await page.locator('[data-route-exit=patio]').click();await page.waitForFunction(()=>snapshot.state.boardScenes.current==='patio'&&!busy);
     assert.equal(await page.evaluate(()=>snapshot.state.adventureRouteView.completed),true);
     assert.equal(await page.locator('#grid .token').count(),2);
     assert.equal(await page.evaluate(()=>snapshot.state.moduleProgress.discoveries.length),2);
-    await page.locator('[data-route-exit=cobertizo]').click();await page.waitForFunction(()=>snapshot.state.boardScenes.current==='cobertizo'&&!busy);
+    await revealCompletedRoute(page);await page.locator('[data-route-exit=cobertizo]').click();await page.waitForFunction(()=>snapshot.state.boardScenes.current==='cobertizo'&&!busy);
     assert.equal(await page.evaluate(()=>snapshot.state.adventureRouteView.completed),true);
     if(choice==='combat'){
      assert.equal(await page.evaluate(()=>snapshot.state.moduleProgress.completed),false);
      await page.locator('#investigationForm button[value=take10]').click();await page.waitForFunction(()=>snapshot.state.moduleProgress.completed&&!busy);
     }
-    await page.locator('[data-route-exit=almacen]').click();await page.waitForFunction(()=>snapshot.state.boardScenes.current==='almacen'&&!busy);
+    await revealCompletedRoute(page);await page.locator('[data-route-exit=almacen]').click();await page.waitForFunction(()=>snapshot.state.boardScenes.current==='almacen'&&!busy);
     assert.equal(await page.evaluate(()=>snapshot.state.moduleProgress.discoveries.length),2);
     assert.equal(await page.evaluate(()=>snapshot.state.adventureRouteView.completed),true);
     assert.deepEqual(await page.evaluate(()=>snapshot.state.characters),final.characters);
     final=await page.evaluate(()=>snapshot.state);
    }else{
-    assert.match(await page.locator('#playGuidanceText').textContent(),/Has completado la ruta preparada/);
-    assert.match(await page.locator('#playGuidanceText').textContent(),/otros viajes aún no están disponibles/);
+    assert.match(await page.locator('#playGuidanceText').textContent(),/Has resuelto el objetivo/);
+    assert.match(await page.locator('#routeProgress').textContent(),/ruta preparada termina aquí/);
     assert.equal(await page.locator('[data-route-exit]').count(),0);
    }
    assert.deepEqual(final.characters.map(c=>c.hp),before.characters.map(c=>c.hp));assert.equal(final.characters[1].sceneId,'patio');

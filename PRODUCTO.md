@@ -26,7 +26,7 @@ Ya hay una primera vista reconocible de la dirección: tablero central con conve
 
 Vista funcional adicional: http://127.0.0.1:8767, patio1.16 con personaje preparado y elección hablar/combate. Demostración local independiente, sin IA ni guardado remoto, comprobada en lectura escritorio/móvil/teclado sin alterar decisiones. La vista8766 permanece intacta; no reiniciar ninguna si el usuario puede estar interactuando. Informe de avances enlaza ambas y conserva capturas rotuladas.
 
-Esto todavía no cierra la primera versión: falta completar la revisión de sus primeras decisiones, presentación de la mesa y errores del recorrido ofrecido. No equivale a mapa ilustrado, campañas abiertas ni nuevas clases o sistemas. El informe local contiene las capturas y sigue siendo el lugar para ver el avance.
+La revisión de orientación ya cubre entrar, crear personaje, decidir cómo resolver el encuentro, investigar, revisar hallazgos al completar la ruta y salir/retomar. Se han comprobado también borradores, respuestas perdidas y coordinación entre pestañas. El cierre de la primera versión sigue incluyendo revisar los mensajes de límites y errores del director desde el jugador, conservando este alcance. No equivale a mapa ilustrado, campañas abiertas ni nuevas clases o sistemas. El informe local contiene las capturas y sigue siendo el lugar para ver el avance.
 
 ## Experiencia objetivo
 

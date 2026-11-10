@@ -1,6 +1,10 @@
 const {chromium}=require('./.deps/browser-tests/node_modules/playwright');
 const {spawn}=require('node:child_process'),{createInterface}=require('node:readline');
 const path=require('node:path'),assert=require('node:assert/strict');
+async function revealCompletedRoute(page){
+ const options=page.locator('#completedRouteExploration');
+ if(await options.count()&&!await options.evaluate(element=>element.open))await options.locator('summary').click();
+}
 (async()=>{
  const guest=process.env.TEST_GUEST_PLAYER==='1',disabledTruce=process.env.TEST_DISABLED_TRUCE==='1',awake=process.env.TEST_AWAKE_EXPLORATION==='1',aidCase=process.env.TEST_NPC_AID_CASE||'',npcAid=['success','boundary','natural','death'].includes(aidCase),falling=awake||npcAid;
  const encounterVersion=process.env.TEST_PF_ENCOUNTER_VERSION||(disabledTruce?'1.15.0':npcAid?'1.14.0':awake?'1.13.0':'1.12.0');
@@ -49,10 +53,10 @@ const path=require('node:path'),assert=require('node:assert/strict');
   assert.match(await page.locator('#investigationPanel').textContent(),/estas búsquedas y caminar sin prisa no cuestan PG/);
   await page.setViewportSize({width:390,height:1000});
   for(const [scene,clues] of [['patio',2],['cobertizo',1],['almacen',2]]){
-   if(scene!=='patio'){assert.match(await page.locator(`[data-route-exit=${scene}]`).textContent(),/caminando/);await page.locator(`[data-route-exit=${scene}]`).tap();await page.waitForFunction(s=>snapshot.state.boardScenes.current===s&&!busy,scene)}
+   if(scene!=='patio'){await revealCompletedRoute(page);assert.match(await page.locator(`[data-route-exit=${scene}]`).textContent(),/caminando/);await page.locator(`[data-route-exit=${scene}]`).tap();await page.waitForFunction(s=>snapshot.state.boardScenes.current===s&&!busy,scene)}
    for(let i=0;i<clues;i++){const version=await page.evaluate(()=>snapshot.version);await page.locator('#investigationForm button[value=take20]').tap();await page.waitForFunction(v=>snapshot.version>v&&!busy,version)}
   }
-  assert.equal(await page.evaluate(()=>snapshot.state.adventureRouteView.completed),true);await page.locator('[data-route-exit=patio]').tap();await page.waitForFunction(()=>snapshot.state.boardScenes.current==='patio'&&!busy);
+  assert.equal(await page.evaluate(()=>snapshot.state.adventureRouteView.completed),true);await revealCompletedRoute(page);await page.locator('[data-route-exit=patio]').tap();await page.waitForFunction(()=>snapshot.state.boardScenes.current==='patio'&&!busy);
   await page.locator('[data-tab=journal]').tap();
   if(!guest){const [download]=await Promise.all([page.waitForEvent('download'),page.locator('#exportBtn').click()]);const version=await page.evaluate(()=>snapshot.version);await page.locator('#importFile').setInputFiles(await download.path());await page.waitForFunction(v=>snapshot.version>v&&!busy,version)}
   else assert.equal(await page.locator('#exportBtn').isDisabled(),true);
