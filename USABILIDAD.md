@@ -1,5 +1,8 @@
 # Sencillez y orientación
 
+10nov: orientación tras acuerdo/desenlace. Guía visible lleva a investigar sin activar acción; con impedimento enfoca causa, sin decidir espera/auxilio. Quien no controla PJ recibe razón explícita de propietario. Baseline sin guía reproducido; after-agreement-guidance-fixed.log correcto1.16 con geometría/foco/0POST al consultar y recorrido completo. Captura móvil revisada. Pacientes negativos conscientes con invitada1.16 (continuation-guidance-awake-guest.log) y paciente inconsciente aún necesita seguimiento1.11 (continuation-guidance-blocked-patient.log) correctos; opción de esperar sigue disponible y manual. Informe con captura rotulada. Motor/reglas sin cambios,0IA real.
+
+
 10nov: primera decisión del patio visible a390×844 sin desplazamiento. Situación breve y dos botones primero, descripción original completa bajo details accesible por teclado, ayuda separada. Se oculta título de escena duplicado sólo en fase ofrecida, sin alterar escenas/reglas/datos. Captura inicial mostraba botones fuera de pantalla; captura final revisada (first-courtyard-decision-mobile.png,1.15) muestra ambas opciones. Tests1.16 y1.15 completos correctos: first-courtyard-decision-clear.log/legacy.log, geometría de título/botones y ayuda sin POST. Elegir combate respeta diario abierto durante respuesta; baseline reproducido, showActionResult reutilizado. Guion navega Tablero en móvil, pues en escritorio es superficie permanente. Informe de avances incluye captura rotulada/versión, first-decision-progress-page.log correcto0API/POST/externos. Sin IA real.
 
 

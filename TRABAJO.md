@@ -1,5 +1,10 @@
 # Continuidad del desarrollo autónomo
 
+## Orientación después del encuentro (10 de noviembre de 2026)
+
+Guía local detecta opción de continuar investigación, muestra texto/causa y lleva mediante teclado al botón o explicación sin activar acción. Propietario ausente se explica en hint del encuentro. Baseline after-agreement-guidance-baseline.log no tenía guía; after-agreement-guidance-fixed.log correcto1.16, geometría390×844 y foco sinPOST, dos recorridos completos. Captura móvil revisada; informe local ampliado. Prueba invitada con ambos pacientes negativos conscientes en1.16 correcta (continuation-guidance-awake-guest.log). Prueba1.11 con paciente todavía bajo seguimiento demuestra explicación, foco0POST y espera explícita intacta, luego ruta/copia/recarga (continuation-guidance-blocked-patient.log). Ninguna IA real, no Python ni cambios mecánicos. Base3004492 publicada/verificada Render7671915568 success, first-courtyard-decision-production-public.log recursos exactos y0campañas/POST/IA.
+
+
 ## Primera decisión móvil y elección de combate (10 de noviembre de 2026)
 
 Captura revisada del patio390×844: descripción larga y título duplicado consumían zona de lectura y botones no aparecían inicialmente. Nueva situación breve con opciones primero, descripción original íntegra en details accesible por teclado; título duplicado oculto sólo en fase ofrecida mediante clase de presentación. No cambia ficción, reglas ni estado. Baseline adicional combate/navigation fallaba por salto a tablero tras abrir diario; handler reutiliza showActionResult con cambio de tablero sólo si conserva contexto. Primer intento del test corregido porque Tablero es botón sólo móvil, no fallo de producto.

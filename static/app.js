@@ -230,6 +230,13 @@ function renderPlayGuidance(s){
  }else if(s.pending.length){
   message=snapshot.me.host?'Hay una situación pendiente de resolución excepcional. Puedes revisarla en el diario.':'El anfitrión tiene una situación pendiente de resolución excepcional.';
   label='Ver pendientes';open=()=>{chooseTab('journal');$('#journalPending').scrollIntoView({block:'center'})};
+ }else if($('#pfContinueScene')){
+  const ready=!$('#pfContinueScene').disabled;
+  message=ready?'Puedes investigar el registro del patio. Decide si continúas o revisas otras opciones.':$('#pfContinueHint')?.textContent||'Revisa el estado del encuentro antes de continuar.';
+  label=ready?'Ver cómo investigar':'Revisar cómo continuar';open=()=>{
+   chooseTab('story');const target=ready?$('#pfContinueScene'):$('#pfContinueHint');
+   if(target){if(!ready)target.tabIndex=-1;target.scrollIntoView({block:'center'});target.focus({preventScroll:true})}
+  };
  }else if(s.adventureRouteView?.exits.length&&(s.adventureModuleView?.completed||s.adventureRouteView.completed)){
   message=s.adventureRouteView.completed?'Has resuelto el objetivo de la ruta. Puedes volver a los lugares conocidos; tus hallazgos se conservan.':'La investigación de este lugar está resuelta. Puedes consultar las salidas de la ruta.';
   label='Ver salidas';open=()=>{
