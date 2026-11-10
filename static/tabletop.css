@@ -249,3 +249,11 @@ body.encounter-choice #story>.chapter{display:none}
 .pending-resolution button{min-height:44px}
 #journalPending h3:focus-visible{outline:2px solid var(--gold);outline-offset:4px}
 #directorIssue summary{min-height:44px;align-content:center}
+#turnOrder{padding:0;border:0}
+#turnOrder>summary{min-height:44px;align-content:center;color:var(--text)}
+#turnOrder [data-turn-disclosure]{color:var(--gold);font-size:12px}
+#turnOrder ol{padding:0;list-style-position:inside;margin:8px 0 12px}
+#turnOrder li{padding:8px 10px;border-left:2px solid transparent}
+#turnOrder li[aria-current=true]{border-left-color:var(--gold);background:var(--panel)}
+#turnOrder li>span{margin-left:10px;color:var(--muted);font-size:13px}
+#turnOrder small{font-size:12px}

@@ -1,5 +1,11 @@
 # Continuidad del desarrollo autónomo
 
+## Turno primero y orden consultable (10 de noviembre de 2026)
+
+renderTurnInfo sustituye cadena de todos los participantes por resumen nativo Asalto/Turno actual/Orden de turnos. Al abrir muestra lista en el orden ya validado por motor, total existente y d20/modificador, marca actual con aria-current. No reordena ni vuelve a tirar. Details/summary/foco se conservan al repintar/cambiar asalto; contexto nuevo lo cierra y combate terminado elimina orden. Presentación local propia, sin nuevos datos, reglas, activos, dependencia o llamadas.
+
+Baseline initiative-disclosure-baseline.log falló por ausencia de consulta progresiva. initiative-disclosure-local-final.log1.16 correcto: perfil nuevo/creador GUI/ambos caminos, abrir/cerrar por teclado/tacto390, orden exacto de ids y estado intactos/0API/POST al consultar, foco/abierto conservados tras repintar y asalto2, final sin lista obsoleta, ataque móvil/paso/confirmación/auxilio/descanso/investigación/copia/cierre/retomar. Capturas initiative-{order,current-turn}-mobile.png revisadas. initiative-tabletop-regression.log correcto gestos/zoom/regla/atajos/permisos/móvil/una confirmación. No nueva observación de Roll20 ni equivalencia completa; MESA_VIRTUAL/COMPATIBILIDAD identifican adaptación propia.0IA real, motor968 sin cambios. Informe de bloques actualizado en checkpoint effd639 (sólo rama), producción anterior07a9827 verificada.
+
 ## Revisión integrada del recorrido y control de tamaño (10 de noviembre de 2026)
 
 Base publicada07a982751630a3265f0830ca59187ab1cd6157dc, Render7678403610 success; director-error-production-public.log app.js/tabletop.css/salud/release exactos,0campañas/POST/IA. Revisión integrada first-release-integrated-courtyard.log1.16 correcta desde perfil nuevo/creador GUI, ambos caminos, primera decisión sin preparar scroll390×844, auxilio/combate/heridas/tregua/descanso, respuestas perdidas ataque/paso/investigación/viaje/última búsqueda con mismo cuerpo y sin repetir consecuencias,5hallazgos/3lugares/cierre/salir/retomar/copia. first-release-integrated-declarations.log1.16 correcto con proveedor simulado: preguntas/ambigüedad no eligen por jugador, tregua/sueño/armadura/investigación separados, copia/recarga. No nueva evaluación real ni hito personal, no campaña abierta ni mapas definitivos. Motor968 sin cambios.

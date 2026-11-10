@@ -32,6 +32,8 @@ Consulta progresiva9nov: ficha preparada de PNJ muestra valores actuales yfuente
 
 Navegación propia de teclado9nov: Tab entra una vez enel tablero, flechas recorren casillas sin mover fichas, Intro usa herramienta seleccionada ymovimiento conserva confirmación. Tab sale alcontrol pertinente; Esc cancela. Foco visual yselección distintos, etiquetas de terreno/ficha/PG/turno yrepintado sin perder foco. Contraste de foco ygestos ratón/táctil verificados enChromium; fuente APG yalcance enUSABILIDAD. Sin nuevas llamadas deIA oestado remoto por navegación.
 
+Orientación propia10nov: el tablero muestra primero asalto y turno actual. El orden completo de iniciativa, total y dados se despliega localmente con teclado o toque; conserva consulta/foco mientras avanzan asaltos y desaparece al terminar el combate. Respeta orden validado por motor, sin nueva tirada ni cálculo de reglas. initiative-disclosure-local-final.log y initiative-tabletop-regression.log; captura móvil en informe. No observación nueva ni equivalencia directa con tracker de Roll20.
+
 ## Adversarios automáticos
 
 La opción aparece activada al preparar un combate nuevo desde la interfaz; el anfitrión puede desactivarla o tomar el control durante el combate. Las partidas anteriores no cambian de modo automáticamente. Los clientes API anteriores que no envíen `automateEnemies` mantienen control manual.

@@ -519,7 +519,20 @@ function render(){restoreCampaignComposer();const importStatus=$('#copyImportSta
  $('#oracleLog').innerHTML=s.oracleLog.map(v=>`<p>${esc(v.question)} · ${esc(v.result)}<small>Escena ${v.scene} · ${esc(v.origin)} · originales ${esc(v.raw.join('/'))} · ${esc(v.probability)} → ${v.total} · ${esc(v.group)} d8=${v.detail??'no aplica'}<br>${esc(v.interpretation)}</small>${ref('trey',19)}</p>`).join('')||'<small>No se ha consultado el oráculo.</small>';
  $('#bookmarks').innerHTML=s.bookmarks.map(v=>ref(v.book,v.page,v.label)).join('');renderBoard();
 }
-function renderBoard(){if(!snapshot)return;renderAttack();renderAutomation();const s=snapshot.state,board=s.board;const title=s.boardScenes||s.adventureModuleView||s.pfEncounter?s.location:board.active?'Encuentro':'Tu mesa';$('#board .eyebrow').textContent=board.active?'ENCUENTRO':'LA MESA';if($('#board h2').textContent!==title)$('#board h2').textContent=title;$('#turnInfo').textContent=board.active?`Asalto ${board.round} · Turno de ${s.characters.find(c=>c.id===board.order[board.turn].id)?.name} · ${board.order.map(o=>s.characters.find(c=>c.id===o.id)?.name+' '+(o.roll+o.modifier)).join(' → ')}`:'Exploración · sin combate activo';
+function renderTurnInfo(s){
+ const panel=$('#turnInfo'),board=s.board;
+ if(!board.active){panel.textContent='Exploración · sin combate activo';return}
+ let details=panel.querySelector('#turnOrder');
+ if(!details){
+  panel.innerHTML='<details id="turnOrder"><summary><span data-turn-headline></span><span data-turn-disclosure> · Orden de turnos</span></summary><ol aria-label="Orden de iniciativa"></ol></details>';
+  details=panel.querySelector('#turnOrder');
+ }
+ const key=JSON.stringify([snapshot.id,snapshot.me.id,board.combatSerial,s.boardScenes?.current]);if(details.dataset.combat!==key){details.open=false;details.dataset.combat=key}
+ const current=board.order[board.turn]?.id;
+ details.querySelector('[data-turn-headline]').textContent=`Asalto ${board.round} · Turno de ${s.characters.find(c=>c.id===current)?.name||'ficha no disponible'}`;
+ details.querySelector('ol').innerHTML=board.order.map(row=>`<li data-character="${esc(row.id)}" ${row.id===current?'aria-current="true"':''}><strong>${esc(s.characters.find(c=>c.id===row.id)?.name||'Ficha no disponible')}</strong><span>Iniciativa ${esc(row.roll+row.modifier)}</span><small>d20 ${esc(row.roll)} ${row.modifier>=0?'+':''}${esc(row.modifier)}${row.id===current?' · Turno actual':''}</small></li>`).join('');
+}
+function renderBoard(){if(!snapshot)return;renderAttack();renderAutomation();const s=snapshot.state,board=s.board;const title=s.boardScenes||s.adventureModuleView||s.pfEncounter?s.location:board.active?'Encuentro':'Tu mesa';$('#board .eyebrow').textContent=board.active?'ENCUENTRO':'LA MESA';if($('#board h2').textContent!==title)$('#board h2').textContent=title;renderTurnInfo(s);
  const grid=$('#grid'),focused=document.activeElement?.closest('#grid .cell'),visible=boardCharacters(s),focusKey=snapshot.id+':'+snapshot.me.id+':'+(s.boardScenes?.current||'main');
  if(gridFocusKey!==focusKey){
   const selected=visible.find(c=>c.id===$('#boardCharacter').value);gridFocus=[selected?.x??0,selected?.y??0].map(n=>Number.isInteger(n)?Math.max(0,Math.min(19,n)):0);gridFocusKey=focusKey;

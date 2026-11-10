@@ -68,6 +68,8 @@ Mapas con imágenes y biblioteca de recursos; páginas/escenas; capas; visibilid
 
 Estos elementos no están certificados como implementados. La matriz se ampliará con sus fuentes, pruebas y excepciones conforme avance el desarrollo.
 
+Adaptación propia de orientación10nov: asalto y turno actual primero (texto Asalto en interfaz); orden íntegro ya validado por motor bajo consulta nativa, con total/dados y participante actual. Teclado/táctil, foco y apertura conservados durante asaltos, sin operaciones remotas por consultar. initiative-disclosure-local-final.log1.16 e initiative-tabletop-regression.log verifican nuestra app; no se ha realizado observación nueva del tracker de Roll20 ni se afirma reproducirlo por completo. Sin nuevas reglas ni tiradas. Véase MESA_VIRTUAL.md.
+
 ## Reproducción de las pruebas
 
 ```powershell
