@@ -1,6 +1,8 @@
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 let token=localStorage.getItem('cronicas-token'), model={}, snapshot, snapshotToken, path=[], ruler=[], lastVersion=-1, busy=false, toastTimer, gridFocus=[0,0], gridFocusKey;
 let submittedMovementPreview,messageRevision=0,submittedMessage;
+let composerScope,composerRestoreSpeaker;
+const composerDrafts=new Map();
 const names={reglas:'Reglas básicas',bestiario:'Bestiario',trey:'TREY'};
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const characterIsConscious=c=>!!c&&(c.hp>=0||(c.hp>-c.abilities[2]&&c.stable===true&&c.recoveryState?.conscious===true));
@@ -259,9 +261,21 @@ function showAdventureIntroduction(focus=true){
  target.style.scrollMarginTop=(offset+12)+'px';target.scrollIntoView({block:'start'});
  if(focus){target.tabIndex=-1;target.focus({preventScroll:true})}
 }
+function restoreCampaignComposer(){
+ const scope=JSON.stringify([snapshot.id,snapshot.me.id]);if(scope===composerScope)return;
+ if(composerScope){
+  composerDrafts.delete(composerScope);composerDrafts.set(composerScope,{text:$('#message').value,kind:$('#messageKind').value,speaker:$('#speaker').value,ai:$('#useAI').checked,revision:messageRevision});
+  while(composerDrafts.size>8)composerDrafts.delete(composerDrafts.keys().next().value);
+ }
+ const draft=composerDrafts.get(scope);composerScope=scope;
+ $('#message').value=draft?.text||'';$('#messageKind').value=draft?.kind||'action';composerRestoreSpeaker=draft?.speaker||'';$('#speaker').value='';
+ if(draft)$('#useAI').checked=!!model.aiConfigured&&draft.ai;
+ if($('#messageKind').value==='private')$('#useAI').checked=false;
+ messageRevision=draft?.revision||0;
+}
 function renderSpeakerChoices(){
  if(!snapshot)return;
- const me=snapshot.me,kind=$('#messageKind').value,previous=$('#speaker').value;
+ const me=snapshot.me,kind=$('#messageKind').value,previous=composerRestoreSpeaker??$('#speaker').value;composerRestoreSpeaker=undefined;
  const choices=snapshot.state.characters.filter(c=>c.owner===me.id||(me.host&&(c.enemy||['ooc','private'].includes(kind))));
  $('#speaker').innerHTML='<option value="">'+esc(me.name)+'</option>'+choices.map(c=>`<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('');
  if(choices.some(c=>c.id===previous))$('#speaker').value=previous;
@@ -457,7 +471,7 @@ function renderParty(s){
  $('#party').innerHTML=present.map(partyPerson).join('')+(elsewhere.length?`<button type="button" id="otherSceneCharacters">En otra escena · ${elsewhere.length}</button>`:'')||'<small>Aún no hay personajes. Crea tu primer aventurero.</small>';
  if($('#otherSceneCharacters'))$('#otherSceneCharacters').onclick=()=>modal(`<div class="eyebrow">OTROS PERSONAJES</div><h2>En otra escena</h2><p>Siguen en la partida, pero sus fichas no están en el tablero actual. Puedes consultarlas sin moverlas.</p>${elsewhere.map(partyPerson).join('')}`);
 }
-function render(){const importStatus=$('#copyImportStatus'),access=snapshot.id+':'+snapshot.me.id;if(importStatus.dataset.access!==access){importStatus.hidden=true;importStatus.dataset.access=access}if(snapshot.state.ruleset==='rule-pack'){RulePackUI.render();return}if($('#rulePackWorkspace'))$('#rulePackWorkspace').hidden=true;if(snapshot.state.ruleset==='cairn-1e'){$('#campaignTitle').textContent=snapshot.title;$('#campaignMeta').textContent='Cairn 1e';$('#inviteBtn').hidden=!snapshot.me.host;$('#welcome').hidden=true;$('#app').hidden=false;$('#app > .workspace').hidden=true;run(()=>CairnUI.render())();return}if($('#systemWorkspace'))$('#systemWorkspace').hidden=true;$('#app > .workspace').hidden=false;const s=snapshot.state, me=snapshot.me;$('#savedLibraryPanel').hidden=true;$('#welcome').hidden=true;$('#app').hidden=false;$('#campaignTitle').textContent=snapshot.title;$('#campaignMeta').textContent=`Pathfinder 1e · ${snapshot.players.length} ${snapshot.players.length===1?'jugador':'jugadores'} · ${s.characters.length} ${s.characters.length===1?'personaje':'personajes'}`;$('#place').textContent=s.location;$('#objective').textContent=s.goal;$('#sceneNum').textContent=s.scene;$('#tokenNum').textContent=`${s.tokens} / ${s.threshold}`;$('#phase').textContent=s.turned?'Punto de giro alcanzado · desenlace':'Desarrollo de la aventura';$('#sceneTitle').textContent=`Escena ${s.scene} · ${s.location}`;
+function render(){restoreCampaignComposer();const importStatus=$('#copyImportStatus'),access=snapshot.id+':'+snapshot.me.id;if(importStatus.dataset.access!==access){importStatus.hidden=true;importStatus.dataset.access=access}if(snapshot.state.ruleset==='rule-pack'){RulePackUI.render();return}if($('#rulePackWorkspace'))$('#rulePackWorkspace').hidden=true;if(snapshot.state.ruleset==='cairn-1e'){$('#campaignTitle').textContent=snapshot.title;$('#campaignMeta').textContent='Cairn 1e';$('#inviteBtn').hidden=!snapshot.me.host;$('#welcome').hidden=true;$('#app').hidden=false;$('#app > .workspace').hidden=true;run(()=>CairnUI.render())();return}if($('#systemWorkspace'))$('#systemWorkspace').hidden=true;$('#app > .workspace').hidden=false;const s=snapshot.state, me=snapshot.me;$('#savedLibraryPanel').hidden=true;$('#welcome').hidden=true;$('#app').hidden=false;$('#campaignTitle').textContent=snapshot.title;$('#campaignMeta').textContent=`Pathfinder 1e · ${snapshot.players.length} ${snapshot.players.length===1?'jugador':'jugadores'} · ${s.characters.length} ${s.characters.length===1?'personaje':'personajes'}`;$('#place').textContent=s.location;$('#objective').textContent=s.goal;$('#sceneNum').textContent=s.scene;$('#tokenNum').textContent=`${s.tokens} / ${s.threshold}`;$('#phase').textContent=s.turned?'Punto de giro alcanzado · desenlace':'Desarrollo de la aventura';$('#sceneTitle').textContent=`Escena ${s.scene} · ${s.location}`;
  renderParty(s);renderDiceEntry();
  const available=s.characters.filter(c=>me.host||c.owner===me.id), boardPrev=$('#boardCharacter').value;
  renderSpeakerChoices();

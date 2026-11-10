@@ -19,13 +19,15 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
   page.on('pageerror',error=>errors.push(error.message));page.on('request',r=>{if(new URL(r.url()).pathname==='/api/state')stateReads++;if(r.url().endsWith('/api/action'))actions.push(r.postDataJSON())});
   if(process.env.TEST_LIBRARY_ENTRY_BASELINE==='1')await page.route('**/campaign-library-ui.js*',route=>route.fulfill({contentType:'text/javascript',body:execFileSync('git',['show','4fd5e0681a3e536ab6a4a034e38e46c9274f216f:static/campaign-library-ui.js'],{encoding:'utf8'})}));
   await page.goto(url);await page.evaluate(t=>localStorage.setItem('cronicas-token',t),first);await page.reload();
-  await page.locator('#app').waitFor({state:'visible'});await page.locator('#exitBtn').click();
+  await page.locator('#app').waitFor({state:'visible'});const scopedDrafts=process.env.TEST_LIBRARY_COMPOSER_SCOPE==='1';if(scopedDrafts){await page.locator('#messageKind').selectOption('private');await page.locator('#speaker').selectOption(originalCharacter.id);await page.locator('#message').fill('Nota privada que sólo pertenece a la primera campaña.')}
+  await page.locator('#exitBtn').click();
   assert.equal(await page.locator('#savedLibraryPanel').evaluate(el=>el.open),true);
   assert.match(await page.locator('#savedCampaigns').textContent(),/Aria/);
   await page.locator('#campaignOptions > summary').click();
   await page.locator('#createForm [name=title]').fill('La segunda campaña');
   await page.locator('#createForm [name=player]').fill('Ana');await page.locator('#createForm [name=goal]').fill('Otra historia');
   await page.locator('#createForm button').click();await page.locator('#app').waitFor({state:'visible'});
+  if(scopedDrafts){assert.equal(await page.locator('#message').inputValue(),'','A draft must not cross into another campaign');assert.equal(await page.locator('#messageKind').inputValue(),'action');assert.equal(await page.locator('#speaker').inputValue(),'');await page.locator('#messageKind').selectOption('dialogue');await page.locator('#message').fill('Borrador de la segunda campaña.')}
   if(process.env.TEST_LIBRARY_ENTRY_COORDINATION==='1'){
    const before=await page.evaluate(()=>({snapshot:structuredClone(snapshot),token})),destination=room.id+':'+room.me.id;let requested,release;const readRequested=new Promise(resolve=>{requested=resolve}),readGate=new Promise(resolve=>{release=resolve});let reads=0;
    await page.route('**/api/state',async route=>{reads++;const response=await route.fetch();assert.equal(response.status(),200);requested();await readGate;await route.fulfill({response})},{times:1});
@@ -45,13 +47,14 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
   await page.locator('[data-library-copy]').click();await page.locator('#copyLibraryCharacter [name=name]').fill('Aria segunda');
   await page.locator('#copyLibraryCharacter button').click();await page.locator('.sheet-checks').waitFor();
   assert.deepEqual(actions.map(a=>a.type),['create_character']);
-  let second=await page.evaluate(()=>({id:snapshot.id,char:snapshot.state.characters[0]}));
+  let second=await page.evaluate(()=>({id:snapshot.id,player:snapshot.me.id,char:snapshot.state.characters[0]}));
   assert.notEqual(second.char.id,originalCharacter.id);assert.equal(second.char.hp,originalCharacter.maxHp);
   await page.locator('#closeModal').click();await page.locator('#libraryBtn').click();
   const sourceId=room.id+':'+room.me.id;
   await page.locator(`#modal [data-library-entry="${sourceId}"] .library-characters>summary`).click();await page.locator(`#modal [data-library-open="${sourceId}"][data-library-character]`).click();
   await page.locator('.sheet-checks').waitFor();
   assert.equal(await page.evaluate(()=>snapshot.state.characters[0].hp),originalCharacter.maxHp-5);
+  if(scopedDrafts){assert.equal(await page.locator('#message').inputValue(),'Nota privada que sólo pertenece a la primera campaña.');assert.equal(await page.locator('#messageKind').inputValue(),'private');assert.equal(await page.locator('#speaker').inputValue(),originalCharacter.id);assert.equal(await page.locator('#useAI').isChecked(),false);await page.locator('#closeModal').click();const before=actions.length;await page.evaluate(id=>openSavedCampaign(id),second.id+':'+second.player);if(await page.evaluate(id=>snapshot.id===id,second.id)){assert.equal(await page.locator('#message').inputValue(),'Borrador de la segunda campaña.');assert.equal(await page.locator('#messageKind').inputValue(),'dialogue')}else throw Error('Second campaign access unavailable');await page.evaluate(id=>openSavedCampaign(id),sourceId);assert.equal(await page.locator('#message').inputValue(),'Nota privada que sólo pertenece a la primera campaña.');assert.equal(actions.length,before);await page.locator('#party [data-character]').first().click()}
   await page.locator('#closeModal').click();await page.locator('#libraryBtn').click();
   const pending={token:first,body:{id:'not-sent',type:'roll'}};
   await page.evaluate(value=>localStorage.setItem('cronicas-pending',JSON.stringify(value)),pending);
@@ -116,6 +119,14 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
   const beforeSwitch=await page.evaluate(()=>({version:snapshot.version,state:structuredClone(snapshot.state)})),count=actions.length;
   await page.evaluate(()=>window.releaseCopyRead());await page.waitForFunction(()=>!busy&&document.querySelector('#toast').textContent.includes('partida ha cambiado'));
   assert.equal(actions.length,count);assert.deepEqual(await page.evaluate(()=>({version:snapshot.version,state:structuredClone(snapshot.state)})),beforeSwitch);assert.equal(await page.locator('#copyImportStatus').isVisible(),false);
+  if(scopedDrafts){
+   await page.locator('#messageKind').selectOption('private');await page.locator('#speaker').selectOption(second.char.id);await page.locator('#message').fill('Sólo Ana en la segunda campaña.');const before=actions.length;
+   const invite=await page.evaluate(()=>snapshot.invite),joined=await (await context.request.post(url+'/api/join',{data:{name:'Luis',invite}})).json(),guestState=await (await context.request.get(url+'/api/state',{headers:{Authorization:'Bearer '+joined.token}})).json();
+   await page.evaluate(({state,access})=>CampaignLibrary.record(localStorage,state,access),{state:guestState,access:joined.token});const guestId=guestState.id+':'+guestState.me.id,hostId=second.id+':'+second.player;
+   await page.evaluate(id=>openSavedCampaign(id),guestId);assert.equal(await page.locator('#message').inputValue(),'','Players in the same campaign must not share local drafts');assert.equal(await page.locator('#messageKind').inputValue(),'action');assert.equal(await page.locator('#speaker').inputValue(),'');assert.equal(await page.locator(`#speaker option[value="${second.char.id}"]`).count(),0);
+   await page.locator('#message').fill('Borrador de Luis.');await page.evaluate(id=>openSavedCampaign(id),hostId);assert.equal(await page.locator('#message').inputValue(),'Sólo Ana en la segunda campaña.');assert.equal(await page.locator('#messageKind').inputValue(),'private');assert.equal(await page.locator('#speaker').inputValue(),second.char.id);assert.equal(await page.locator('#useAI').isChecked(),false);
+   await page.evaluate(id=>openSavedCampaign(id),guestId);assert.equal(await page.locator('#message').inputValue(),'Borrador de Luis.');assert.equal(actions.length,before);await page.reload();await page.waitForFunction(()=>snapshot&&!busy);assert.equal(await page.locator('#message').inputValue(),'');assert.equal(await page.evaluate(()=>composerDrafts.size),0,'Drafts stay in this page memory only');
+  }
   assert.deepEqual(errors,[]);
   console.log('OK: remembers multiple campaigns, copies initial choices with server calculation, original progression preserved, no AI, access backup, pending-action switch protection, reload and mobile.');
  }finally{if(browser)await browser.close();fixture.kill()}
