@@ -570,7 +570,7 @@ function renderTabletopTools(){
  const board=snapshot.state.board,selected=$('#boardCharacter').value,spent=board.spent[selected]||{};
  $('#actionBudget').hidden=!board.active;
  const moving=snapshot.state.characters.find(c=>c.id===selected),incapacitated=moving?.hp<=0&&characterIsConscious(moving);
- $('#actionBudget').textContent=board.active?(!moving?'No hay una ficha seleccionada. Puedes consultar el tablero.':!characterIsConscious(moving)?`${characterHealthLabel(moving)} · No puede actuar`:incapacitated?`Incapacitado · ${spent.standard||spent.move?'Acción usada':'Elige una acción estándar o de movimiento'} · Hasta ${characterMovementCells(moving)} casillas completas por movimiento`:`Estándar: ${spent.standard?'gastada':'disponible'} · Movimiento: ${spent.move?'gastado':'disponible'}`):'Exploración';
+ const actionBudgetText=board.active?(!moving?'No hay una ficha seleccionada. Puedes consultar el tablero.':!characterIsConscious(moving)?`${characterHealthLabel(moving)} · No puede actuar`:incapacitated?`Incapacitado · ${spent.standard||spent.move?'Acción usada':'Elige una acción estándar o de movimiento'} · Hasta ${characterMovementCells(moving)} casillas completas por movimiento`:`Estándar: ${spent.standard?'gastada':'disponible'} · Movimiento: ${spent.move?'gastado':'disponible'}`):'Exploración';if($('#actionBudget').textContent!==actionBudgetText)$('#actionBudget').textContent=actionBudgetText;
  const measuring=$('#tool').value==='measure';
  $('.board-scroll').dataset.tool=$('#tool').value;
  $('#confirmMove').disabled=measuring||$('#tool').value==='pan'||!path.length;
@@ -595,15 +595,22 @@ function renderTabletopTools(){
  $('#board').classList.toggle('preparing-move',!!path.length&&$('#tool').value==='move'&&!$('.board-scroll').classList.contains('dragging-token'));
  $('#clearPath').hidden=!path.length;
  if($('#tool').value==='pan')$('#pathInfo').textContent='Arrastra el mapa para desplazar la vista. También puedes usar el botón derecho.';
+ $$('#grid .ruler-overlay').forEach(overlay=>overlay.remove());
  if(measuring){
-  if(ruler.length===2){const dx=Math.abs(ruler[1][0]-ruler[0][0]),dy=Math.abs(ruler[1][1]-ruler[0][1]);const d=Math.min(dx,dy);$('#pathInfo').textContent=`Distancia geométrica: ${(Math.max(dx,dy)+Math.floor(d/2))*5} pies. No incluye obstáculos ni terreno difícil.`}
+  let distance;
+  if(ruler.length===2){const dx=Math.abs(ruler[1][0]-ruler[0][0]),dy=Math.abs(ruler[1][1]-ruler[0][1]);const d=Math.min(dx,dy);distance=(Math.max(dx,dy)+Math.floor(d/2))*5;$('#pathInfo').textContent=`Distancia geométrica: ${distance} pies. No incluye obstáculos ni terreno difícil.`}
   else $('#pathInfo').textContent=ruler.length?'Origen marcado. Pulsa el destino para medir.':'Pulsa origen y destino para medir sin mover fichas.';
   if(ruler.length===2){
    const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.classList.add('ruler-overlay');svg.setAttribute('aria-hidden','true');
    const cell=$('#grid').firstElementChild.getBoundingClientRect().width,step=cell+1;
-   const line=document.createElementNS(svg.namespaceURI,'line');
-   for(const [i,point] of ruler.entries()){line.setAttribute('x'+(i+1),point[0]*step+cell/2);line.setAttribute('y'+(i+1),point[1]*step+cell/2)}
-   svg.append(line);$('#grid').append(svg);
+   const positions=ruler.map(point=>[point[0]*step+cell/2,point[1]*step+cell/2]),line=document.createElementNS(svg.namespaceURI,'line');
+   for(const [i,point] of positions.entries()){line.setAttribute('x'+(i+1),point[0]);line.setAttribute('y'+(i+1),point[1])}
+   svg.append(line);
+   for(const point of positions){const marker=document.createElementNS(svg.namespaceURI,'circle');marker.classList.add('ruler-endpoint');marker.setAttribute('cx',point[0]);marker.setAttribute('cy',point[1]);marker.setAttribute('r',4);svg.append(marker)}
+   const value=distance+' pies',width=value.length*8+16,extent=step*20-1,midpoint=positions[0].map((coordinate,i)=>(coordinate+positions[1][i])/2);
+   const x=Math.max(width/2+4,Math.min(extent-width/2-4,midpoint[0])),y=Math.max(4,Math.min(extent-30,midpoint[1]>=42?midpoint[1]-36:midpoint[1]+cell/2+8));
+   const badge=document.createElementNS(svg.namespaceURI,'rect');badge.classList.add('ruler-distance-backdrop');for(const [key,value] of Object.entries({x:x-width/2,y,width,height:26,rx:4}))badge.setAttribute(key,value);svg.append(badge);
+   const label=document.createElementNS(svg.namespaceURI,'text');label.classList.add('ruler-distance');label.setAttribute('x',x);label.setAttribute('y',y+13);label.textContent=value;svg.append(label);$('#grid').append(svg);
   }
  }
  for(const option of $('#tool').options)option.disabled=!snapshot.me.host&&['wall','difficult','clear'].includes(option.value);
@@ -624,6 +631,7 @@ function renderTabletopTools(){
  }
  const coverageReason=$('#attackButton').dataset.coverageReason;
  if(mine&&current.id===selected&&!unableToAct&&!spent.standard&&!(incapacitated&&spent.move)&&coverageReason)guidance=coverageReason;
+ if(measuring||$('#tool').value==='pan')guidance=$('#pathInfo').textContent;
  if($('#boardGuidance').textContent!==guidance)$('#boardGuidance').textContent=guidance;
 }
 $('#requestCheck').onclick=requestCheckForm;

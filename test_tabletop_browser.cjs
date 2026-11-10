@@ -64,12 +64,19 @@ const assert=require('node:assert/strict');
   // Measurement can be dragged; it draws an overlay and never moves the token.
   await page.locator('#tool').selectOption('measure');await cell(0,0).dragTo(cell(3,2));
   assert.match(await page.locator('#pathInfo').textContent(),/20 pies/);
+  assert.match(await page.locator('#boardGuidance').textContent(),/20 pies.*No incluye obstáculos/);assert.equal(await page.locator('#boardGuidance').getAttribute('role'),'status');
   assert.equal(await page.locator('.ruler-overlay line').count(),1);
+  await page.evaluate(()=>{renderTabletopTools();renderTabletopTools()});assert.equal(await page.locator('.ruler-overlay').count(),1,'Repainting local controls must keep a single ruler');
+  assert.equal(await page.locator('.ruler-distance').count(),1,'The measured value should be readable on the board itself');assert.equal(await page.locator('.ruler-distance').textContent(),'20 pies');
   const rulerEnd=await page.locator('.ruler-overlay line').getAttribute('x2');
   await page.locator('#zoom').focus();await page.keyboard.press('ArrowRight');
   assert.ok(Number(await page.locator('.ruler-overlay line').getAttribute('x2'))>Number(rulerEnd));
+  assert.equal(await page.locator('.ruler-distance').textContent(),'20 pies');
   await page.locator('#zoom').dblclick();
+  await cell(0,0).focus();await page.keyboard.press('Escape');await page.keyboard.press('Enter');assert.match(await page.locator('#boardGuidance').textContent(),/Origen marcado/);await page.keyboard.press('ArrowRight');await page.keyboard.press('Enter');assert.equal(await page.locator('.ruler-distance').textContent(),'5 pies');assert.match(await page.locator('#pathInfo').textContent(),/No incluye obstáculos ni terreno difícil/);
+  await page.keyboard.press('Escape');assert.equal(await page.locator('.ruler-overlay').count(),0);await cell(19,19).focus();await page.keyboard.press('Enter');await page.keyboard.press('Enter');assert.equal(await page.locator('.ruler-distance').textContent(),'0 pies');assert.equal(await page.locator('.ruler-overlay').getAttribute('aria-hidden'),'true');assert.ok(await page.locator('.ruler-distance-backdrop').evaluate(element=>{const badge=element.getBoundingClientRect(),grid=document.querySelector('#grid').getBoundingClientRect();return badge.left>=grid.left&&badge.right<=grid.right&&badge.top>=grid.top&&badge.bottom<=grid.bottom}),'The zero-distance badge stays inside the edge of the board');
   await page.locator('#tool').selectOption('move');
+  assert.equal(await page.locator('.ruler-overlay').count(),0);
   // Right-button panning changes the camera, not character coordinates.
   await scroll.evaluate(el=>{el.scrollLeft=100;el.scrollTop=100});
   let box=await scroll.boundingBox();
@@ -78,6 +85,7 @@ const assert=require('node:assert/strict');
   assert.equal(await scroll.evaluate(el=>el.scrollLeft>=149&&el.scrollTop>=139),true);
   // The local hand tool provides the same pan without requiring a right button.
   await page.locator('#tool').selectOption('pan');
+  assert.match(await page.locator('#boardGuidance').textContent(),/Arrastra el mapa para desplazar/);
   await page.mouse.move(box.x+200,box.y+80);await page.mouse.down();
   await page.mouse.move(box.x+175,box.y+60,{steps:5});await page.mouse.up();
   assert.equal(await scroll.evaluate(el=>el.scrollLeft>=174&&el.scrollTop>=159),true);
@@ -147,6 +155,8 @@ const assert=require('node:assert/strict');
   await touch.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
   assert.match(await page.locator('#pathInfo').textContent(),/20 pies/);
   assert.equal(await page.locator('.ruler-overlay line').count(),1);
+  assert.equal(await page.locator('.ruler-distance').textContent(),'20 pies');
+  await page.locator('#toast').waitFor({state:'hidden'});await scroll.screenshot({path:'.deps/ruler-distance-mobile.png'});
   assert.equal(writes,1);assert.equal((await saved()).version,after.version);
   await touch.detach();
   assert.deepEqual(errors,[]);

@@ -1,5 +1,11 @@
 # Continuidad del desarrollo autónomo
 
+## Distancia de regla en el tablero y orientación local (10 de noviembre de 2026)
+
+Regla SVG añade extremos y valor directamente al mapa, reutilizando exactamente distancia geométrica5/10 ya calculada. El texto accesible conserva advertencia de obstáculos/terreno, no se convierte en coste de movimiento ni cambia reglas/estado. Etiqueta mantiene tamaño legible al variar zoom, se acota al tablero y soporta0pies; overlay sigue aria-hidden/pointer-events:none porque la explicación textual permanece accesible. La guía superior role=status muestra origen/resultado al medir o instrucción de desplazamiento al usar mano; sólo cambia texto cuando difiere. Presupuesto también evita mutaciones de texto idéntico.
+
+Repaint local acumulaba SVG al sincronizar controles: ruler-local-repaint-baseline.log reproduce3envez1; se retira anterior antes de redibujar. ruler-value-on-board-baseline.log esperaba etiqueta inexistente (timeout del caso de mejora); ahora count falla rápido. ruler-value-and-guidance-final.log correcto: ratón/táctil/teclado,20pies/zoom/5pies/origen/0pies en esquina/límites/Esc/cambio de herramienta/foco/permisos, un solo overlay y0POSTde medición; único guardado es movimiento confirmado previo del guion. ruler-controls-regression.log160000rutas correcto y ruler-guidance-health-regression.log1.16 mantiene consciencia/condiciones/selección. Captura ruler-distance-mobile.png revisada sin toast, fixture de mesa genérica con fichas manuales10PG; no es creador legal/patio1.16 ni prueba de proveedor real. No Python de producción/reglas/dependencias/archivos/IA nuevos.
+
 ## Resumen antes del histórico visual (10 de noviembre de 2026)
 
 La acumulación de ejemplos ocultaba alcance/plazos entre18secciones. Generador local ahora conserva funciona/primera/plazos al principio y agrupa14bloques restantes en progressEvidence cerrado, más recientes primero; comunicación final permanece accesible. Aviso de demo deja de repetirse, explicación de límites bajo consulta. HTMLParser de biblioteca estándar preserva trozos íntegros/imágenes y valida estructura antes de escribir; organize_progress se aplica al argumento de salida para incluir futuras inserciones. No nuevos archivos de app/dependencias/servicios ni cambios en demos/partidas.

@@ -40,6 +40,8 @@ Coherencia propia10nov: guía y presupuesto no anuncian acciones para una ficha 
 
 Límites anticipados10nov: la interfaz refleja guardas existentes del ataque básico (perfiles, condiciones, revisión de posible cobertura por muro), explica el motivo antes del POST y actualiza al seleccionar objetivo sin tomar su control. No declara que todo muro prohíba atacar según Pathfinder: es el alcance conservador del motor actual. Probes de interfaz1.11/1.16 y recorridos válidos2jugadores/patio con recuperación correctos; sin cambiar reglas ni operaciones remotas por consultar.
 
+Lectura de regla10nov: valor geométrico y extremos visibles sobre tablero, conservando advertencia textual de obstáculos/terreno y fórmula existente. No es coste de movimiento. Teclado/táctil/zoom/0pies/bordes verificados, guía local de herramienta y SVG único en repaints; sin operaciones remotas ni nuevos activos. ruler-value-and-guidance-final.log y ruler-controls-regression.log; captura de fixture genérico manual rotulada como tal. No nueva observación de Roll20 ni certificación de dispositivos/lectores de pantalla reales.
+
 ## Adversarios automáticos
 
 La opción aparece activada al preparar un combate nuevo desde la interfaz; el anfitrión puede desactivarla o tomar el control durante el combate. Las partidas anteriores no cambian de modo automáticamente. Los clientes API anteriores que no envíen `automateEnemies` mantienen control manual.
