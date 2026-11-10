@@ -264,3 +264,9 @@ body.encounter-choice #story>.chapter{display:none}
 #turnOrder small{font-size:12px}
 
 #retryEntryConnection{min-height:44px}
+
+#grid .token-health{position:absolute;top:1px;right:1px;width:clamp(10px,calc(var(--cell)*.32),16px);height:clamp(10px,calc(var(--cell)*.32),16px);display:grid;place-items:center;border:1px solid #443521;border-radius:50%;background:#f7df9a;color:#30240e;font:bold clamp(9px,calc(var(--cell)*.25),13px)/1 sans-serif;pointer-events:none}
+#grid .token-health[data-health="Inconsciente y estable"]{background:#e4e7e2;color:#253b32}
+#grid .token-health[data-health="Moribundo"]{background:#842f28;color:#fff}
+#grid .token-health[data-health="Ha muerto"]{background:#25332e;color:#fff}
+#grid .token-hp{font-size:clamp(7px,calc(var(--cell)*.23),10px);line-height:clamp(9px,calc(var(--cell)*.3),13px)}
