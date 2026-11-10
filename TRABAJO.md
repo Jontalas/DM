@@ -1,5 +1,13 @@
 # Continuidad del desarrollo autónomo
 
+## Resumen antes del histórico visual (10 de noviembre de 2026)
+
+La acumulación de ejemplos ocultaba alcance/plazos entre18secciones. Generador local ahora conserva funciona/primera/plazos al principio y agrupa14bloques restantes en progressEvidence cerrado, más recientes primero; comunicación final permanece accesible. Aviso de demo deja de repetirse, explicación de límites bajo consulta. HTMLParser de biblioteca estándar preserva trozos íntegros/imágenes y valida estructura antes de escribir; organize_progress se aplica al argumento de salida para incluir futuras inserciones. No nuevos archivos de app/dependencias/servicios ni cambios en demos/partidas.
+
+progress-summary-disclosure-reviewed.log correcto: resumen principal antes de galería, cerrado por defecto, mapa actual primero, enlace a plazos sin abrir archivo de evidencias, todas las capturas decodifican tras teclado/toque, escritorio/móvil/0API/POST/externos. Primer inspector auxiliar usó nombre offset ya existente en HTMLParser; corregido antes de generar, sin alterar salida anterior. Medición540bbf5 anclada a SHA:107archivos propios/1.037.099bytes (~1,04MB),84Python/23interfaz; única alta desde7516 aventura1.16. Mismo método, .deps/project-size-audit-current.json. Cifras de tamaño, no porcentaje de avance.
+
+Ataques540bbf5 publicados/verificados Render7679389706 success, attack-coverage-production-public.log recursos/salud/release exactos,0campañas/POST/IA. Siguiente mejora: valor de regla geométrica sobre tablero, sin modificar fórmula ni confundir distancia con coste de movimiento.
+
 ## Evitar envíos de ataques conocidos fuera de cobertura (10 de noviembre de 2026)
 
 Baseline attack-coverage-ui-baseline.log demuestra ataque habilitado con condición pese a guarda existente del servidor. attackCoverageReason refleja exclusivamente basic_pair de combat.py: perfiles presentes, condiciones anotadas y muro cercano que puede requerir revisión de cobertura. Presenta límites de automatización de esta versión, no reglas nuevas ni prohibición Pathfinder universal. Deshabilita acción conocida inválida y explica ficha/condición/revisión; guía se actualiza al cambiar objetivo por selector o ficha, sin asumir control del NPC. Servidor conserva validación de autoridad; no se añaden muros/condiciones ni operaciones remotas por consultar.
