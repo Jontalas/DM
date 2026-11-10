@@ -574,6 +574,7 @@ function fiveFootStepReason(c){
 }
 function movementPathReason(c){
  if(!c||!path.length||!characterIsConscious(c))return '';
+ if(path.length>100)return 'Puedes preparar hasta 100 casillas por recorrido en esta versión. Bórralo y traza uno más corto.';
  const board=snapshot.state.board,visible=boardCharacters(snapshot.state);
  let x=c.x,y=c.y,diagonals=0,cost=0;
  for(const [nx,ny] of path){

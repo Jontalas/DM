@@ -16,6 +16,10 @@ const path=require('node:path'),fs=require('node:fs'),assert=require('node:asser
   await page.locator('#createForm [name=goal]').fill('Probar las reglas de la linterna');
   assert.ok(await page.locator('#createForm [name=threshold]').isHidden());
   await page.locator('#createForm button').click();await page.locator('#packFile').waitFor();
+  if(process.env.TEST_STARTUP_SELECTOR_RETRY==='1'){
+   const before=await page.evaluate(()=>({state:structuredClone(snapshot.state),version:snapshot.version})),count=actions.length;
+   await page.route('**/api/state',route=>route.abort('failed'),{times:1});await page.reload();await page.locator('#entryConnection').waitFor({state:'visible'});await page.locator('#systemPicker select').selectOption('rule-pack');await page.locator('#retryEntryConnection').focus();await page.keyboard.press('Enter');await page.locator('#packFile').waitFor();assert.equal(await page.locator('#systemPicker').count(),1);assert.equal(await page.locator('#systemPicker select').inputValue(),'rule-pack');assert.deepEqual(await page.evaluate(()=>({state:structuredClone(snapshot.state),version:snapshot.version})),before);assert.equal(actions.length,count);
+  }
   assert.ok(await page.locator('#app > .workspace').isHidden());
   await page.locator('#packFile').setInputFiles({name:'wrong.json',mimeType:'application/json',buffer:Buffer.from('{"format":"wrong"}')});
   await page.locator('#toast').waitFor({state:'visible'});assert.equal(actions.length,0);
