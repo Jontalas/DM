@@ -11,13 +11,21 @@ const characterMovementCells=c=>c&&characterIsConscious(c)&&Number.isInteger(c.s
 const boardCharacters=s=>s.boardScenes?s.characters.filter(c=>c.sceneId===s.boardScenes.current):s.characters;
 function toast(s){$('#toast').textContent=s;$('#toast').hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('#toast').hidden=true,7000)}
 async function api(url,body,access=token){
- let response;
+ const requestedScope=snapshot&&JSON.stringify([snapshot.id,snapshot.me.id]);let response;
  try{response=await fetch(url,{method:body?'POST':'GET',headers:{'Content-Type':'application/json',Authorization:'Bearer '+access},body:body?JSON.stringify(body):undefined})}
  catch{throw Error('No se pudo conectar con la mesa. Vuelve a intentarlo cuando tengas conexión.')}
  let data;
  try{data=await response.json()}
  catch{throw Error('La mesa no devolvió una respuesta válida. Vuelve a intentarlo.')}
- if(!response.ok){const error=Error(data?.error||'Error del servidor');error.confirmed=response.status>=400&&response.status<500;error.status=response.status;throw error}
+ if(!response.ok){
+  const error=Error(data?.error||'Error del servidor');error.confirmed=response.status>=400&&response.status<500;error.status=response.status;
+  const stage=error.message.match(/\(director:([a-z_-]+)\)$/)?.[1];
+  if(response.status===400&&['/api/action','/api/rules'].includes(url)&&stage&&error.message.includes('La acción no se ha aplicado')){
+   error.directorIssue={scope:requestedScope,diagnostic:error.message};
+   error.message=(stage==='output_limit'?'El director no ha terminado de preparar la respuesta.':stage==='module'?'La aventura propuesta no es compatible con este recorrido.':'El director no ha podido entregar una respuesta válida.')+' La acción no se ha aplicado. Puedes revisar el aviso en el diario.';
+  }
+  throw error;
+ }
  return data;
 }
 function values(form){return Object.fromEntries(new FormData(form))}
@@ -198,7 +206,7 @@ async function act(type,data={}){
   if(type==='talk')submittedMessage={token:saved.token,id:body.id,revision:draftRevision};
   if(movement)submittedMovementPreview={id:body.id,path:preparedPath};
   await api('/api/action',body);accepted=true;saved=await acknowledgeSubmission(saved);if(movement)clearSubmittedMovementPreview(saved);else path=[];
-  await refresh(true);await clearSubmission(saved);
+  await refresh(true);await clearSubmission(saved);if(['talk','start_adventure','continue_adventure','next_adventure'].includes(type))clearDirectorIssue();
  }catch(e){
   if(!stored&&type==='talk'&&e.persistedSubmission===body.id)submittedMessage={token:saved.token,id:body.id,revision:draftRevision};
   if(!stored&&e.name==='QuotaExceededError')throw Error('No hay espacio en el navegador para conservar este envío. No se ha enviado al servidor; conserva tus accesos y vuelve a intentarlo cuando haya espacio disponible.');
@@ -207,7 +215,14 @@ async function act(type,data={}){
   throw e;
  }finally{busy=false;renderComposerAvailability();renderSubmissionFeedback(feedbackContext)}
 }
-function run(fn){return async e=>{e?.preventDefault();try{await fn(e)}catch(err){toast(err.message)}}}
+function clearDirectorIssue(){$('#directorIssue')?.remove()}
+function showDirectorIssue(error){
+ const issue=error.directorIssue;if(!issue||!issue.scope||issue.scope!==composerScope)return;
+ clearDirectorIssue();const details=document.createElement('details');details.id='directorIssue';details.className='notice';
+ details.innerHTML=`<summary>Aviso del director · acción sin aplicar</summary><p>${esc(error.message)}</p><p>Revisa tu texto antes de enviarlo de nuevo. Un nuevo envío puede pedir otra respuesta al director.</p><details><summary>Detalle técnico del aviso</summary><p>${esc(issue.diagnostic)}</p></details>`;
+ $('#journalOverview').after(details);
+}
+function run(fn){return async e=>{e?.preventDefault();try{await fn(e)}catch(err){showDirectorIssue(err);toast(err.message)}}}
 function renderSyncStatus(waiting=!!JSON.parse(localStorage.getItem('cronicas-pending')||'null')){
  const saved=JSON.parse(localStorage.getItem('cronicas-pending')||'null');
  $('#sync').textContent=waiting?(saved?.token!==token?'Otra partida pendiente':saved?.confirmed===true?'Resultado pendiente':'Envío pendiente'):'● Guardado en Firebase';$('#sync').classList.toggle('pending',waiting);
@@ -263,6 +278,7 @@ function showAdventureIntroduction(focus=true){
 }
 function restoreCampaignComposer(){
  const scope=JSON.stringify([snapshot.id,snapshot.me.id]);if(scope===composerScope)return;
+ clearDirectorIssue();
  if(composerScope){
   composerDrafts.delete(composerScope);composerDrafts.set(composerScope,{text:$('#message').value,kind:$('#messageKind').value,speaker:$('#speaker').value,ai:$('#useAI').checked,revision:messageRevision});
   while(composerDrafts.size>8)composerDrafts.delete(composerDrafts.keys().next().value);
@@ -309,7 +325,7 @@ async function recoverPendingSubmission(){
  busy=true;$('#send').disabled=true;$('#playGuidanceAction').disabled=true;$('#sync').textContent='Recuperando envío…';
  let accepted,reading=false;
  try{
-  accepted=await recoverSubmission(saved);clearSubmittedMovementPreview(accepted);reading=true;await refresh(true);await clearSubmission(accepted);
+  accepted=await recoverSubmission(saved);clearSubmittedMovementPreview(accepted);reading=true;await refresh(true);await clearSubmission(accepted);if(token===saved.token&&['talk','start_adventure','continue_adventure','next_adventure'].includes(saved.body.type))clearDirectorIssue();
   const revision=submittedMessage?.token===saved.token&&submittedMessage.id===saved.body.id?submittedMessage.revision:0;
   if(saved.body.type==='talk'&&revision===messageRevision&&$('#message').value===saved.body.text)$('#message').value='';
   if(submittedMessage?.id===saved.body.id)submittedMessage=undefined;

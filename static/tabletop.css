@@ -248,3 +248,4 @@ body.encounter-choice #story>.chapter{display:none}
 .pending-resolution summary{min-height:44px;align-content:center}
 .pending-resolution button{min-height:44px}
 #journalPending h3:focus-visible{outline:2px solid var(--gold);outline-offset:4px}
+#directorIssue summary{min-height:44px;align-content:center}
