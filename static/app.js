@@ -186,6 +186,7 @@ async function reserveSubmission(saved){
 async function act(type,data={}){
  ensureSubmissionCanStart();
  const body=JSON.parse(JSON.stringify({...data,type,id:crypto.randomUUID(),version:snapshot.version})),draftRevision=messageRevision;
+ const feedbackContext={modal:$('#modal').open?$('#modalContent').firstElementChild:null};
  busy=true;renderComposerAvailability();$('#sync').textContent='Resolviendo…';
  const movement=['move','five_foot_step'].includes(type),preparedPath=path;
  if((!snapshot.state.ruleset||snapshot.state.ruleset==='pathfinder-1e')&&['talk','start_adventure','continue_adventure','next_adventure'].includes(type))body.captureContract=type==='start_adventure'&&body.openingContract==='authored-opening-1'?'pf-authored-opening-1':'pf-director-action-1';
@@ -202,7 +203,7 @@ async function act(type,data={}){
   if(!accepted&&e.confirmed)await clearSubmission(saved);
   if(stored&&!accepted){try{await refresh(true)}catch{}}
   throw e;
- }finally{busy=false;renderComposerAvailability();renderSubmissionFeedback()}
+ }finally{busy=false;renderComposerAvailability();renderSubmissionFeedback(feedbackContext)}
 }
 function run(fn){return async e=>{e?.preventDefault();try{await fn(e)}catch(err){toast(err.message)}}}
 function renderSyncStatus(waiting=!!JSON.parse(localStorage.getItem('cronicas-pending')||'null')){
@@ -277,18 +278,19 @@ function renderComposerAvailability(){
  $('#message').setAttribute('aria-describedby','aiHint');
  $('#aiHint').textContent=busy?'Resolviendo tu envío…':pending?(saved.token===token?'Recupera el envío pendiente antes de enviar otra acción. Puedes seguir escribiendo tu borrador.':'Hay un envío pendiente en otra partida. Ábrela para recuperarlo. Tu borrador permanece aquí.'):reason||(model.aiConfigured?'El director responderá si activas «Responder con IA». Las tiradas y herramientas funcionan sin IA.':'El director no está disponible en esta mesa. Puedes usar las fichas, los dados y el tablero sin IA.');
 }
-function renderSubmissionFeedback(){
+function renderSubmissionFeedback(context={modal:null}){
  if(!snapshot||(snapshot.state.ruleset&&snapshot.state.ruleset!=='pathfinder-1e'))return;
  const saved=JSON.parse(localStorage.getItem('cronicas-pending')||'null'),pending=!!saved,hadModal=$('#modal').open;
- if(pending){renderSyncStatus(true);if(hadModal)$('#modal').close();readerExpanded=false;renderReaderMode()}
+ const dismissModal=hadModal&&context.modal===$('#modalContent').firstElementChild;
+ if(pending){renderSyncStatus(true);if(dismissModal)$('#modal').close();if(!hadModal||dismissModal){readerExpanded=false;renderReaderMode()}}
  renderPlayGuidance(snapshot.state);
- if(pending&&(hadModal||document.activeElement===document.body||['send','confirmMove','confirmStep','attackButton'].includes(document.activeElement.id)))$('#playGuidanceAction').focus();
+ if(pending&&(!hadModal||dismissModal)&&(dismissModal||document.activeElement===document.body||['send','confirmMove','confirmStep','attackButton'].includes(document.activeElement.id)))$('#playGuidanceAction').focus();
 }
 async function recoverPendingSubmission(){
  if(busy)throw Error('Hay una acción en curso');
  const saved=JSON.parse(localStorage.getItem('cronicas-pending')||'null');
  if(!saved||saved.token!==token)throw Error('No hay un envío pendiente de esta partida');
- const access=token,tab=$('[data-tab].active')?.dataset.tab,focus=document.activeElement;
+ const access=token,tab=$('[data-tab].active')?.dataset.tab,focus=document.activeElement,feedbackContext={modal:$('#modal').open?$('#modalContent').firstElementChild:null};
  const unchanged=()=>token===access&&$('[data-tab].active')?.dataset.tab===tab&&!$('#modal').open&&(document.activeElement===focus||document.activeElement===document.body);
  busy=true;$('#send').disabled=true;$('#playGuidanceAction').disabled=true;$('#sync').textContent='Recuperando envío…';
  let accepted,reading=false;
@@ -306,7 +308,7 @@ async function recoverPendingSubmission(){
   toast('Envío recuperado');
  }
  catch(error){if(!reading&&error.confirmed)await clearSubmission(saved);if(!reading){try{await refresh(true)}catch{}}throw error}
- finally{busy=false;renderComposerAvailability();$('#playGuidanceAction').disabled=false;renderSubmissionFeedback()}
+ finally{busy=false;renderComposerAvailability();$('#playGuidanceAction').disabled=false;renderSubmissionFeedback(feedbackContext)}
 }
 function renderPlayGuidance(s){
  const panel=$('#playGuidance'),text=$('#playGuidanceText'),button=$('#playGuidanceAction');
