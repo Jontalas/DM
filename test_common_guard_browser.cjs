@@ -30,9 +30,18 @@ const path=require('node:path'),assert=require('node:assert/strict');
 
    await page.waitForFunction(()=>snapshot.state.pfEncounter&&!busy);assert.deepEqual(await page.evaluate(()=>snapshot.state.characters.map(c=>c.hp)),[16,6]);
    assert.equal(await page.evaluate(()=>snapshot.state.pfEncounter.definition.version),encounterVersion);
+   if(process.env.TEST_PF_FIRST_DECISION_SCREENSHOT==='1'&&!wounded){await page.setViewportSize({width:390,height:844});await page.locator('[data-tab=story]').tap();await page.locator('#story').evaluate(e=>{e.scrollTop=0});await page.locator('#toast').waitFor({state:'hidden'});const storyBox=await page.locator('#story').boundingBox();for(const selector of ['#adventureEntry h3','#pfEncounterParley','#pfEncounterCombat']){const box=await page.locator(selector).boundingBox();assert.ok(box.y>=storyBox.y&&box.y+box.height<=storyBox.y+storyBox.height,selector+' must be visible before scrolling')}
+    const beforeHelp=actions.length;await page.locator('#pfEncounterDescription summary').focus();await page.keyboard.press('Enter');assert.equal(await page.locator('#pfEncounterDescription').evaluate(e=>e.open),true);assert.match(await page.locator('#pfEncounterDescription').textContent(),/visibilidad normal/);await page.keyboard.press('Enter');assert.equal(actions.length,beforeHelp);await page.locator('#story').evaluate(e=>{e.scrollTop=0});await page.screenshot({path:'.deps/first-courtyard-decision-mobile.png'});await page.setViewportSize({width:1440,height:960})}
    if(!wounded){await page.locator('#pfEncounterParley').click();await page.waitForFunction(()=>snapshot.state.pfEncounter.phase==='agreement'&&!busy);}
    else{
-    await page.locator('#pfEncounterCombat').click();await page.waitForFunction(()=>snapshot.state.board.active&&!busy);
+    const navigateCombat=process.env.TEST_PF_COMBAT_NAVIGATION==='1';let combatSent,releaseCombat;const combatRequested=new Promise(resolve=>{combatSent=resolve}),combatGate=new Promise(resolve=>{releaseCombat=resolve});
+    if(navigateCombat)await page.setViewportSize({width:390,height:844});
+    if(navigateCombat)await page.route('**/api/action',async route=>{const response=await route.fetch();assert.equal(response.status(),200);combatSent();await combatGate;await route.fulfill({response})},{times:1});
+    await page.locator('#pfEncounterCombat').click();
+    if(navigateCombat){await combatRequested;await page.locator('[data-tab=journal]').click();releaseCombat()}
+    await page.waitForFunction(()=>snapshot.state.board.active&&!busy);await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+    if(navigateCombat){assert.equal(await page.locator('#journal').evaluate(e=>e.classList.contains('active')),true,'A late combat choice must preserve subsequent navigation');await page.locator('[data-tab=board]').click();await page.setViewportSize({width:1440,height:960})}
+
     const hero=await page.evaluate(()=>snapshot.state.pfEncounter.character),opponent=await page.evaluate(()=>snapshot.state.pfEncounter.npc),beforeTargeting=actions.length;
     await page.locator('#grid .cell[data-x="0"][data-y="0"]').focus();await page.keyboard.press('ArrowRight');await page.keyboard.press('Enter');
     assert.equal(await page.locator('#boardCharacter').inputValue(),hero,'The solo player targets the prepared opponent without taking control of its token');

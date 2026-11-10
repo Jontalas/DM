@@ -1,5 +1,8 @@
 # Sencillez y orientación
 
+10nov: primera decisión del patio visible a390×844 sin desplazamiento. Situación breve y dos botones primero, descripción original completa bajo details accesible por teclado, ayuda separada. Se oculta título de escena duplicado sólo en fase ofrecida, sin alterar escenas/reglas/datos. Captura inicial mostraba botones fuera de pantalla; captura final revisada (first-courtyard-decision-mobile.png,1.15) muestra ambas opciones. Tests1.16 y1.15 completos correctos: first-courtyard-decision-clear.log/legacy.log, geometría de título/botones y ayuda sin POST. Elegir combate respeta diario abierto durante respuesta; baseline reproducido, showActionResult reutilizado. Guion navega Tablero en móvil, pues en escritorio es superficie permanente. Informe de avances incluye captura rotulada/versión, first-decision-progress-page.log correcto0API/POST/externos. Sin IA real.
+
+
 10nov: entrar al patio o continuar un objetivo ya enviado tampoco cierra una biblioteca abierta mientras llega la respuesta. Fallos reproducidos con respuesta retenida y corregidos sin repetir acciones ni IA. Capítulos conserva además recuperación de respuesta perdida con mismo envío, originales/copia/ficha/lugar/reloj. Patio1.16 conserva ambos caminos completos, teclado/móvil/táctil. Evidencia: .deps/chapter-late-dialog-baseline.log/final.log, chapter-late-dialog-recovery-regression.log, encounter-entry-late-dialog-baseline.log/fixed.log; fixtures sin IA real. No se promete cancelar envíos ya realizados.
 
 

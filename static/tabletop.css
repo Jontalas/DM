@@ -224,3 +224,5 @@ body.reader-wide.submission-pending #composer{display:block}
 #board.preparing-move #attackForm,#board.preparing-move #boardGuidance{display:none}
 .combat-result:focus-visible{outline:2px solid var(--gold);outline-offset:4px}
 #investigationPanel>h3:focus-visible{outline:2px solid var(--gold);outline-offset:4px}
+
+body.encounter-choice #story>.chapter{display:none}

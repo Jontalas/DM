@@ -1,5 +1,12 @@
 # Continuidad del desarrollo autónomo
 
+## Primera decisión móvil y elección de combate (10 de noviembre de 2026)
+
+Captura revisada del patio390×844: descripción larga y título duplicado consumían zona de lectura y botones no aparecían inicialmente. Nueva situación breve con opciones primero, descripción original íntegra en details accesible por teclado; título duplicado oculto sólo en fase ofrecida mediante clase de presentación. No cambia ficción, reglas ni estado. Baseline adicional combate/navigation fallaba por salto a tablero tras abrir diario; handler reutiliza showActionResult con cambio de tablero sólo si conserva contexto. Primer intento del test corregido porque Tablero es botón sólo móvil, no fallo de producto.
+
+first-courtyard-decision-clear.log correcto1.16 (ambos recorridos completos y navegación tardía), first-courtyard-decision-legacy.log correcto1.15 (ambos recorridos); geometría título/dos botones dentro del viewport y descripción completa teclado/0POST. Imagen final1.15 revisada, misma presentación comprobada actual1.16. Informe local incluye captura veraz y cancelación antes del envío; first-decision-progress-page.log correcto sin API/POST/externos. Base publicada6bbb9f1 Render7671830084 success, later-dialog-production-public.log salud/release/JS exactos,0campañas/POST/IA. Ninguna IA real nueva ni Python; suite968 backend sigue intacta.
+
+
 ## Continuidad de modales al entrar y seguir (10 de noviembre de 2026)
 
 Dos fallos adicionales reproducidos: entrar al patio y next_adventure cerraban biblioteca abierta durante la respuesta. Referencias ligadas al formulario original y acceso/campaña/jugador, protección de doble envío y avisos/finally acotados. Sólo UI; no cambia motor, contratos, recibo ni operaciones. Pruebas chapter-late-dialog-baseline.log y encounter-entry-late-dialog-baseline.log fallan antes; chapter-late-dialog-final.log y encounter-entry-late-dialog-fixed.log correctos después. Recuperación histórica de next_adventure conserva mismo cuerpo/id, dos capítulos/fichas/reloj/originales/copia intactos (chapter-late-dialog-recovery-regression.log); patio1.16 completo acuerdo y combate a0PG/tregua/descanso/cinco pistas/tres escenas/retomar. Todo TestStore/proveedor simulado; ninguna IA real. Preparación anterior c3691fe publicada en Render7671778343 success, adventure-preparation-production-public.log público sin campañas/POST/IA.
