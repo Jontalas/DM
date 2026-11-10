@@ -134,6 +134,7 @@ const assert=require('node:assert/strict');
   await gmPage.locator('.cell[data-x="1"][data-y="0"]').dblclick();
   await gmPage.locator('#characterForm').waitFor();
   assert.equal(await gmPage.locator('#characterForm [name=name]').inputValue(),'Bandido');
+  await gmPage.locator('#closeModal').click();const preparationPosts=[];gmPage.on('request',request=>{if(request.method()==='POST')preparationPosts.push(request.url())});for(const tool of ['wall','difficult','clear']){await gmPage.locator('#tool').selectOption(tool);assert.match(await gmPage.locator('#boardGuidance').textContent(),/Preparación.*guardar el cambio/);assert.match(await gmPage.locator('#pathInfo').textContent(),/guardar el cambio/)}assert.equal(preparationPosts.length,0);assert.equal((await saved()).version,after.version);
   await gmPage.close();
   // The same preview works with a touch pointer on a narrow viewport.
   await page.setViewportSize({width:390,height:844});

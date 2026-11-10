@@ -42,6 +42,8 @@ Límites anticipados10nov: la interfaz refleja guardas existentes del ataque bá
 
 Lectura de regla10nov: valor geométrico y extremos visibles sobre tablero, conservando advertencia textual de obstáculos/terreno y fórmula existente. No es coste de movimiento. Teclado/táctil/zoom/0pies/bordes verificados, guía local de herramienta y SVG único en repaints; sin operaciones remotas ni nuevos activos. ruler-value-and-guidance-final.log y ruler-controls-regression.log; captura de fixture genérico manual rotulada como tal. No nueva observación de Roll20 ni certificación de dispositivos/lectores de pantalla reales.
 
+Preparación propia10nov: selector nativo distingue consulta/juego y herramientas del anfitrión; avisa antes de pintar qué se guarda. Cambiar campaña/jugador/escena limpia trazos y sale de modos de escritura, conservando mano/medición sin mediciones anteriores. No convierte una consulta en edición, no añade lecturas/escrituras remotas por elegir y no cambia permisos del servidor. Probes de roles/contexto y recorrido1.16 con preview reservado correctos; no observación nueva de Roll20.
+
 ## Adversarios automáticos
 
 La opción aparece activada al preparar un combate nuevo desde la interfaz; el anfitrión puede desactivarla o tomar el control durante el combate. Las partidas anteriores no cambian de modo automáticamente. Los clientes API anteriores que no envíen `automateEnemies` mantienen control manual.

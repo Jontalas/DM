@@ -532,8 +532,12 @@ function renderTurnInfo(s){
  details.querySelector('[data-turn-headline]').textContent=`Asalto ${board.round} · Turno de ${s.characters.find(c=>c.id===current)?.name||'ficha no disponible'}`;
  details.querySelector('ol').innerHTML=board.order.map(row=>`<li data-character="${esc(row.id)}" ${row.id===current?'aria-current="true"':''}><strong>${esc(s.characters.find(c=>c.id===row.id)?.name||'Ficha no disponible')}</strong><span>Iniciativa ${esc(row.roll+row.modifier)}</span><small>d20 ${esc(row.roll)} ${row.modifier>=0?'+':''}${esc(row.modifier)}${row.id===current?' · Turno actual':''}</small></li>`).join('');
 }
-function renderBoard(){if(!snapshot)return;renderAttack();renderAutomation();const s=snapshot.state,board=s.board;const title=s.boardScenes||s.adventureModuleView||s.pfEncounter?s.location:board.active?'Encuentro':'Tu mesa';$('#board .eyebrow').textContent=board.active?'ENCUENTRO':'LA MESA';if($('#board h2').textContent!==title)$('#board h2').textContent=title;renderTurnInfo(s);
- const grid=$('#grid'),focused=document.activeElement?.closest('#grid .cell'),visible=boardCharacters(s),focusKey=snapshot.id+':'+snapshot.me.id+':'+(s.boardScenes?.current||'main');
+function renderBoard(){if(!snapshot)return;
+ const s=snapshot.state,board=s.board,focusKey=snapshot.id+':'+snapshot.me.id+':'+(s.boardScenes?.current||'main');
+ const contextChanged=gridFocusKey!==focusKey,resetPreparation=['wall','difficult','clear'].includes($('#tool').value)&&(contextChanged||!snapshot.me.host);
+ if(contextChanged||resetPreparation){path=[];ruler=[]}if(resetPreparation)$('#tool').value='move';
+ renderAttack();renderAutomation();const title=s.boardScenes||s.adventureModuleView||s.pfEncounter?s.location:board.active?'Encuentro':'Tu mesa';$('#board .eyebrow').textContent=board.active?'ENCUENTRO':'LA MESA';if($('#board h2').textContent!==title)$('#board h2').textContent=title;renderTurnInfo(s);
+ const grid=$('#grid'),focused=document.activeElement?.closest('#grid .cell'),visible=boardCharacters(s);
  if(gridFocusKey!==focusKey){
   const selected=visible.find(c=>c.id===$('#boardCharacter').value);gridFocus=[selected?.x??0,selected?.y??0].map(n=>Number.isInteger(n)?Math.max(0,Math.min(19,n)):0);gridFocusKey=focusKey;
  }else if(focused)gridFocus=[Number(focused.dataset.x),Number(focused.dataset.y)];
@@ -632,6 +636,8 @@ function renderTabletopTools(){
  const coverageReason=$('#attackButton').dataset.coverageReason;
  if(mine&&current.id===selected&&!unableToAct&&!spent.standard&&!(incapacitated&&spent.move)&&coverageReason)guidance=coverageReason;
  if(measuring||$('#tool').value==='pan')guidance=$('#pathInfo').textContent;
+ const preparation={wall:'un muro',difficult:'terreno difícil',clear:'terreno despejado'}[$('#tool').value];
+ if(preparation){guidance=`Preparación del tablero: ${preparation}. Pulsa ${$('#tool').value==='wall'?'una casilla libre':'una casilla'} para guardar el cambio. Vuelve a «Trazar recorrido» para mover fichas.`;$('#pathInfo').textContent=guidance}
  if($('#boardGuidance').textContent!==guidance)$('#boardGuidance').textContent=guidance;
 }
 $('#requestCheck').onclick=requestCheckForm;
