@@ -552,7 +552,7 @@ function renderBoard(){if(!snapshot)return;
  grid.innerHTML=cells;
  $('#tokenHealthLegend').hidden=!visible.some(c=>characterHealthLabel(c));
  if(focused)grid.querySelector(`.cell[data-x="${gridFocus[0]}"][data-y="${gridFocus[1]}"]`)?.focus({preventScroll:true});
- let c=s.characters.find(c=>c.id===$('#boardCharacter').value),x=c?.x,y=c?.y,diagonal=0,cost=0;for(const [nx,ny] of path){let d=nx!==x&&ny!==y;if(d)diagonal++;cost+=board.terrain[nx+','+ny]==='difficult'?(d?3:2):(d&&diagonal%2===0?2:1);x=nx;y=ny}$('#pathInfo').textContent=path.length?`Recorrido: ${path.map(p=>p.join(',')).join(' → ')} · Coste: ${cost*5} pies (${cost} casillas). Revisión manual de AdO, alcance, visibilidad y consecuencias antes de confirmar.`:'Selecciona una ficha y traza casillas adyacentes.';renderTabletopTools()}
+ let c=s.characters.find(c=>c.id===$('#boardCharacter').value),x=c?.x,y=c?.y,diagonal=0,cost=0;const movementStart=!c?'Selecciona una ficha para preparar un recorrido.':!characterIsConscious(c)?`${c.name} · ${characterHealthLabel(c)}. No puede moverse; puedes consultar su ficha.`:`${c.name}: marca casillas adyacentes o arrastra su ficha para preparar el recorrido. No se mueve hasta que confirmes.`;for(const [nx,ny] of path){let d=nx!==x&&ny!==y;if(d)diagonal++;cost+=board.terrain[nx+','+ny]==='difficult'?(d?3:2):(d&&diagonal%2===0?2:1);x=nx;y=ny}$('#pathInfo').textContent=path.length?`Recorrido: ${path.map(p=>p.join(',')).join(' → ')} · Coste: ${cost*5} pies (${cost} casillas). Revisión manual de AdO, alcance, visibilidad y consecuencias antes de confirmar.`:movementStart;renderTabletopTools()}
 function openBook(book=$('#book').value,page=Number($('#page').value)){if(!token)return;$('#book').value=book;$('#page').value=page;bookReader.open(book,page)}
 function fiveFootStepReason(c){
  const s=snapshot.state,b=s.board,r=s.pfEncounter,opponent=s.characters.find(v=>v.id===r?.npc);
@@ -807,7 +807,13 @@ function preparedOpponentTarget(character){
  const s=snapshot.state,encounter=s.pfEncounter;
  return s.mode==='solo'&&s.board.active&&encounter?.phase==='combat'&&character.id===encounter.npc&&$('#boardCharacter').value===encounter.character&&s.characters.some(c=>c.id===encounter.character&&c.owner===snapshot.me.id);
 }
-$('#clearPath').onclick=()=>{path=[];renderBoard()};
+$('#clearPath').onclick=()=>{
+ const returnFocus=$('#clearPath').matches(':focus-visible');path=[];renderBoard();
+ if(returnFocus&&snapshot){
+  const selected=boardCharacters(snapshot.state).find(c=>c.id===$('#boardCharacter').value),cell=selected?$(`#grid .cell[data-x="${selected.x}"][data-y="${selected.y}"]`):$('#grid .cell[tabindex="0"]');
+  rememberGridFocus(cell);cell?.focus();
+ }
+};
 $('#confirmStep').onclick=run(async()=>{
  ensureSubmissionCanStart();
  const characterId=$('#boardCharacter').value,c=snapshot.state.characters.find(v=>v.id===characterId),reason=fiveFootStepReason(c);

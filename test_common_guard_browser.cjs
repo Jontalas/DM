@@ -94,7 +94,7 @@ const path=require('node:path'),assert=require('node:assert/strict');
      if(reservedPreview)await page.evaluate(()=>new Promise(started=>{navigator.locks.request('cronicas-pending',()=>new Promise(release=>{window.releaseMovementReservation=release;started()}))}));
      await page.keyboard.press('Enter');
      if(reservedPreview){
-      await page.waitForFunction(()=>busy);await page.locator('#clearPath').click();await page.locator('#grid .cell[data-x="0"][data-y="0"]').focus();await page.keyboard.press('ArrowDown');await page.keyboard.press('ArrowRight');await page.keyboard.press('Enter');await page.evaluate(()=>window.releaseMovementReservation());
+      await page.waitForFunction(()=>busy);if(process.env.TEST_CLEAR_PATH_FOCUS==='1'){await page.locator('#clearPath').focus();await page.keyboard.press('Enter');assert.equal(await page.locator('#grid .cell[data-x="0"][data-y="0"]').evaluate(e=>e===document.activeElement),true)}else await page.locator('#clearPath').click();await page.locator('#grid .cell[data-x="0"][data-y="0"]').focus();await page.keyboard.press('ArrowDown');await page.keyboard.press('ArrowRight');await page.keyboard.press('Enter');await page.evaluate(()=>window.releaseMovementReservation());
      }
      await page.waitForFunction(()=>snapshot.state.board.fiveFootSteps?.[snapshot.state.characters[0].id]&&!busy);
      assert.deepEqual(await page.evaluate(()=>snapshot.state.characters.map(c=>c.hp)),[0,1]);

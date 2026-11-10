@@ -12,7 +12,7 @@ Comunicar qué puede hacer el jugador, qué falta y dónde verlo. No usar contad
 
 ## Siguiente trabajo autorizado
 
-1. Revisar recuperación del foco al borrar un recorrido con teclado: clearPath oculta el botón que tiene foco. Mantener selección/estado y devolver a una casilla útil, sin mover fichas ni alterar recibos pendientes. Continuar claridad de herramientas ya implementadas; no ampliar reglas/sistemas/catálogos ni pedir pruebas personales rutinarias.
+1. En curso: al borrar recorrido desde teclado, devolver foco a ficha seleccionada (o casilla de Tab si no hay ficha), un solo tabstop y sin cambiar actor/estado; ratón/táctil conservan comportamiento. Guía vacía identifica ficha, explica preparación y confirmación, o estado que impide mover. clear-path-focus-baseline.log detectó foco perdido; focus-and-preflight-final y focus-guidance-final correctos con0API/estado/actor y obstáculos/costes/límite100. clear-path-focus-reserved-preview-final.log1.16 correcto: borrar por teclado mientras espera reserva no cancela envío ni borra preview posterior, ruta completa/copia/retomar correctos. Publicar/verificar app.js. Después revisar orientación de herramientas con selección vacía y otras escenas, sin ampliar reglas/sistemas/catálogos ni pedir pruebas personales rutinarias.
 2. Conservar continuidad en archivos existentes. No nuevosMD por corrección ni dependencias/servicios nuevos. Demos y ensayos protegidos intactos.
 
 ## Producción y evidencia vigente
