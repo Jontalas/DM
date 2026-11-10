@@ -4,6 +4,7 @@ let submittedMovementPreview,messageRevision=0,submittedMessage;
 let composerScope,composerRestoreSpeaker;
 let messageHistory;
 const composerDrafts=new Map();
+const journalViews=new Map();
 const names={reglas:'Reglas básicas',bestiario:'Bestiario',trey:'TREY'};
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const characterIsConscious=c=>!!c&&(c.hp>=0||(c.hp>-c.abilities[2]&&c.stable===true&&c.recoveryState?.conscious===true));
@@ -415,15 +416,15 @@ function renderCampaignWorld(s){
  let details=$('#campaignWorldJournal');
  if(!details){details=document.createElement('details');details.id='campaignWorldJournal';details.innerHTML='<summary>Personas y lugares conocidos</summary><div id="campaignWorldNotes"></div>';$('#journalOverview').after(details)}
  const world=s.campaignWorldView,known=world&&[...world.npcs,...world.places,...world.relationships].length;
- details.hidden=!known;if(!known)return;
+ details.hidden=!known;if(!known){renderJournalHtml($('#campaignWorldNotes'),'');return}
  const section=(title,entries)=>entries.length?`<h3>${title}</h3>${entries.map(item=>`<h4>${esc(item.name)}</h4><p>${esc(item.public||'Todavía no hay notas compartidas.')}</p>`).join('')}`:'';
- $('#campaignWorldNotes').innerHTML=section('Personas',world.npcs)+section('Lugares',world.places)+section('Vínculos',world.relationships.map(link=>({name:link.fromName+' · '+link.toName,public:link.public})))+'<p class="hint">Recuerdos de la historia. La salud, el equipo y las reglas se consultan en las fichas y el registro.</p>';
+ renderJournalHtml($('#campaignWorldNotes'),section('Personas',world.npcs)+section('Lugares',world.places)+section('Vínculos',world.relationships.map(link=>({name:link.fromName+' · '+link.toName,public:link.public})))+'<p class="hint">Recuerdos de la historia. La salud, el equipo y las reglas se consultan en las fichas y el registro.</p>');
 }
 function renderChapterHistory(s){
  let details=$('#chapterHistory');
  if(!details){details=document.createElement('details');details.id='chapterHistory';details.innerHTML='<summary>Investigaciones anteriores</summary><div id="chapterHistoryNotes"></div>';$('#journalOverview').after(details)}
- const history=s.adventureChaptersView;details.hidden=!history?.completed?.length;if(details.hidden)return;
- $('#chapterHistoryNotes').innerHTML=history.completed.map(chapter=>`<h3>${esc(chapter.title)}</h3><p>${esc(chapter.goal)}</p><p>${esc(chapter.conclusion)}</p><details><summary>Pistas confirmadas</summary>${chapter.discoveries.map(clue=>`<p>${esc(clue.text)}</p>`).join('')}</details>`).join('');
+ const history=s.adventureChaptersView;details.hidden=!history?.completed?.length;if(details.hidden){renderJournalHtml($('#chapterHistoryNotes'),'');return}
+ renderJournalHtml($('#chapterHistoryNotes'),history.completed.map(chapter=>`<h3>${esc(chapter.title)}</h3><p>${esc(chapter.goal)}</p><p>${esc(chapter.conclusion)}</p><details><summary>Pistas confirmadas</summary>${chapter.discoveries.map(clue=>`<p>${esc(clue.text)}</p>`).join('')}</details>`).join(''));
 }
 function renderJournalOverview(s){
  const lists=[['Aliados',s.allies],['Enemigos',s.enemies],['Incógnitas',s.unknowns]].filter(([,items])=>items?.length);
@@ -432,11 +433,12 @@ function renderJournalOverview(s){
  const unknownCurrentTime=unmeasuredActivity&&knownAnchor;
  const timeLabel=unknownCurrentTime?'Hora no registrada':s.worldTime;
  const resolved=s.adventureRouteView?.completed?'Ruta completada':!s.adventureRouteView&&s.adventureModuleView?.completed?'Investigación resuelta':'';
- $('#journalOverview').innerHTML=`<h3>Situación actual</h3><p><strong>${esc(s.location)}</strong> · ${esc(timeLabel)}</p><p>${esc(s.goal)}</p>${resolved?`<p class="notice">${esc(resolved)}. Los hallazgos confirmados quedan guardados.</p>`:''}${!s.adventure&&s.objectives.length?`<ul>${s.objectives.map(v=>`<li>${esc(v)}</li>`).join('')}</ul>`:''}${s.notes?`<h4>Notas confirmadas</h4><p>${esc(s.notes)}</p>`:''}${s.adventureRouteView?.visitedScenes?.length>1?`<details class="visited-scene-notes"><summary>Lugares visitados y hallazgos</summary>${s.adventureRouteView.visitedScenes.map(v=>`<h4>${esc(v.location)}</h4>${v.discoveries.length?v.discoveries.map(d=>`<p>${esc(d.text)}</p>`).join(''):'<p>Sin hallazgos confirmados todavía.</p>'}`).join('')}</details>`:''}${lists.length?`<details><summary>Personas e incógnitas</summary>${lists.map(([title,items])=>`<h4>${title}</h4><ul>${items.map(v=>`<li>${esc(v)}</li>`).join('')}</ul>`).join('')}</details>`:''}`;
+ let overview=`<h3>Situación actual</h3><p><strong>${esc(s.location)}</strong> · ${esc(timeLabel)}</p><p>${esc(s.goal)}</p>${resolved?`<p class="notice">${esc(resolved)}. Los hallazgos confirmados quedan guardados.</p>`:''}${!s.adventure&&s.objectives.length?`<ul>${s.objectives.map(v=>`<li>${esc(v)}</li>`).join('')}</ul>`:''}${s.notes?`<h4>Notas confirmadas</h4><p>${esc(s.notes)}</p>`:''}${s.adventureRouteView?.visitedScenes?.length>1?`<details class="visited-scene-notes"><summary>Lugares visitados y hallazgos</summary>${s.adventureRouteView.visitedScenes.map(v=>`<h4>${esc(v.location)}</h4>${v.discoveries.length?v.discoveries.map(d=>`<p>${esc(d.text)}</p>`).join(''):'<p>Sin hallazgos confirmados todavía.</p>'}`).join('')}</details>`:''}${lists.length?`<details><summary>Personas e incógnitas</summary>${lists.map(([title,items])=>`<h4>${title}</h4><ul>${items.map(v=>`<li>${esc(v)}</li>`).join('')}</ul>`).join('')}</details>`:''}`;
  renderCampaignWorld(s);
  renderChapterHistory(s);
  $('#journalFacts').hidden=!Object.keys(s.facts).length;
- if(unknownCurrentTime)$('#journalOverview').insertAdjacentHTML('beforeend',`<details class="clock-reference"><summary>Última referencia de tiempo</summary><p>${esc(s.worldTime)}</p><p>La duración de las búsquedas y los trayectos todavía no se calcula. Se conserva esta referencia sin inventar una hora actual.</p></details>`);
+ if(unknownCurrentTime)overview+=`<details class="clock-reference"><summary>Última referencia de tiempo</summary><p>${esc(s.worldTime)}</p><p>La duración de las búsquedas y los trayectos todavía no se calcula. Se conserva esta referencia sin inventar una hora actual.</p></details>`;
+ renderJournalHtml($('#journalOverview'),overview);
  $('#journalConsequences').hidden=!s.consequences.length;
  $('#journalPending').hidden=!s.pending.length;
 }
@@ -467,8 +469,14 @@ function messageEntry(message){
  }
  return `<article class="message ${esc(message.kind)}">${heading}${content}</article>`;
 }
-function messageHistoryIsCurrent(){
- return messageHistory?.root===$('#messages')&&messageHistory.access===token&&messageHistory.campaign===snapshot.id&&messageHistory.player===snapshot.me.id&&messageHistory.host===snapshot.me.host&&(!snapshot.state.ruleset||snapshot.state.ruleset==='pathfinder-1e');
+function readViewScope(root){return {root,access:token,campaign:snapshot.id,player:snapshot.me.id,host:snapshot.me.host}}
+function readViewIsCurrent(view,root){
+ return view?.root===root&&root.isConnected&&view.access===token&&view.campaign===snapshot.id&&view.player===snapshot.me.id&&view.host===snapshot.me.host&&(!snapshot.state.ruleset||snapshot.state.ruleset==='pathfinder-1e');
+}
+function messageHistoryIsCurrent(){return readViewIsCurrent(messageHistory,$('#messages'))}
+function renderJournalHtml(root,html){
+ const previous=journalViews.get(root);if(readViewIsCurrent(previous,root)&&previous.html===html)return;
+ root.innerHTML=html;journalViews.set(root,{...readViewScope(root),html});
 }
 function renderMessageHistory(messages,introHtml){
  const root=$('#messages'),active=document.activeElement;
@@ -500,7 +508,7 @@ function renderMessageHistory(messages,introHtml){
  const retained=new Set(nodes);for(const node of [...root.childNodes])if(!retained.has(node))node.remove();
  let cursor=root.firstChild;for(const node of nodes){if(node===cursor)cursor=cursor.nextSibling;else root.insertBefore(node,cursor)}
  if(focusTarget?.isConnected&&document.activeElement===document.body)focusTarget.focus({preventScroll:true});
- messageHistory={root,access:token,campaign:snapshot.id,player:snapshot.me.id,host:snapshot.me.host,rows,intro};
+ messageHistory={...readViewScope(root),rows,intro};
 }
 function combatMessage(message){
  const result=message.combat;
@@ -523,7 +531,7 @@ function renderParty(s){
  $('#party').innerHTML=present.map(partyPerson).join('')+(elsewhere.length?`<button type="button" id="otherSceneCharacters">En otra escena · ${elsewhere.length}</button>`:'')||'<small>Aún no hay personajes. Crea tu primer aventurero.</small>';
  if($('#otherSceneCharacters'))$('#otherSceneCharacters').onclick=()=>modal(`<div class="eyebrow">OTROS PERSONAJES</div><h2>En otra escena</h2><p>Siguen en la partida, pero sus fichas no están en el tablero actual. Puedes consultarlas sin moverlas.</p>${elsewhere.map(partyPerson).join('')}`);
 }
-function render(){restoreCampaignComposer();if(messageHistory&&!messageHistoryIsCurrent()){$('#messages').replaceChildren();messageHistory=undefined}const importStatus=$('#copyImportStatus'),access=snapshot.id+':'+snapshot.me.id;if(importStatus.dataset.access!==access){importStatus.hidden=true;importStatus.dataset.access=access}if(snapshot.state.ruleset==='rule-pack'){RulePackUI.render();return}if($('#rulePackWorkspace'))$('#rulePackWorkspace').hidden=true;if(snapshot.state.ruleset==='cairn-1e'){$('#campaignTitle').textContent=snapshot.title;$('#campaignMeta').textContent='Cairn 1e';$('#inviteBtn').hidden=!snapshot.me.host;$('#welcome').hidden=true;$('#app').hidden=false;$('#app > .workspace').hidden=true;run(()=>CairnUI.render())();return}if($('#systemWorkspace'))$('#systemWorkspace').hidden=true;$('#app > .workspace').hidden=false;const s=snapshot.state, me=snapshot.me;$('#savedLibraryPanel').hidden=true;$('#welcome').hidden=true;$('#app').hidden=false;$('#campaignTitle').textContent=snapshot.title;$('#campaignMeta').textContent=`Pathfinder 1e · ${snapshot.players.length} ${snapshot.players.length===1?'jugador':'jugadores'} · ${s.characters.length} ${s.characters.length===1?'personaje':'personajes'}`;$('#place').textContent=s.location;$('#objective').textContent=s.goal;$('#sceneNum').textContent=s.scene;$('#tokenNum').textContent=`${s.tokens} / ${s.threshold}`;$('#phase').textContent=s.turned?'Punto de giro alcanzado · desenlace':'Desarrollo de la aventura';$('#sceneTitle').textContent=`Escena ${s.scene} · ${s.location}`;
+function render(){restoreCampaignComposer();if(messageHistory&&!messageHistoryIsCurrent()){$('#messages').replaceChildren();messageHistory=undefined}for(const [root,view] of journalViews)if(!readViewIsCurrent(view,root)){root.replaceChildren();const details=root.closest('details');if(details)details.open=false;journalViews.delete(root)}const importStatus=$('#copyImportStatus'),access=snapshot.id+':'+snapshot.me.id;if(importStatus.dataset.access!==access){importStatus.hidden=true;importStatus.dataset.access=access}if(snapshot.state.ruleset==='rule-pack'){RulePackUI.render();return}if($('#rulePackWorkspace'))$('#rulePackWorkspace').hidden=true;if(snapshot.state.ruleset==='cairn-1e'){$('#campaignTitle').textContent=snapshot.title;$('#campaignMeta').textContent='Cairn 1e';$('#inviteBtn').hidden=!snapshot.me.host;$('#welcome').hidden=true;$('#app').hidden=false;$('#app > .workspace').hidden=true;run(()=>CairnUI.render())();return}if($('#systemWorkspace'))$('#systemWorkspace').hidden=true;$('#app > .workspace').hidden=false;const s=snapshot.state, me=snapshot.me;$('#savedLibraryPanel').hidden=true;$('#welcome').hidden=true;$('#app').hidden=false;$('#campaignTitle').textContent=snapshot.title;$('#campaignMeta').textContent=`Pathfinder 1e · ${snapshot.players.length} ${snapshot.players.length===1?'jugador':'jugadores'} · ${s.characters.length} ${s.characters.length===1?'personaje':'personajes'}`;$('#place').textContent=s.location;$('#objective').textContent=s.goal;$('#sceneNum').textContent=s.scene;$('#tokenNum').textContent=`${s.tokens} / ${s.threshold}`;$('#phase').textContent=s.turned?'Punto de giro alcanzado · desenlace':'Desarrollo de la aventura';$('#sceneTitle').textContent=`Escena ${s.scene} · ${s.location}`;
  renderParty(s);renderDiceEntry();
  const available=s.characters.filter(c=>me.host||c.owner===me.id), boardPrev=$('#boardCharacter').value;
  renderSpeakerChoices();
