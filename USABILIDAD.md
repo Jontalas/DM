@@ -1,5 +1,8 @@
 # Sencillez y orientación
 
+10nov: entrada real/recarga del patio. Se retiró scrollTop=0 del guion antes de geometría: baseline demostró título inicial fuera de pantalla por autoscroll del chat, aunque el contenido ya cabía. Render inicializa nueva oferta arriba sin recolocar lecturas posteriores de la misma oferta; entrar explícitamente enfoca título si conserva ventana original. 1.16 (incluye respuesta/modal tardío) y1.15 completos correctos, geometría de entrada y recarga sin preparar scroll; initial-courtyard-scroll-fixed.log/legacy.log. Capturas revisadas. Contadores secundarios de sidebar ahora bajo details, mismos IDs/valores, teclado/tacto sin requests y demoestado intacto (story-rhythm-layout-review.log). No cambia mecánicas/IA.
+
+
 10nov: archivo local de accesos respeta cancelación. Cerrar/reemplazar biblioteca durante lectura no importa credenciales ni sustituye modal posterior; otra selección invalida anterior. Aviso asociado al input, progreso local y archivo ilegible con siguiente paso claro; input limpio permite reintento. Baseline importaba dos accesos después de cerrar; access-import-cancellation-fixed.log correcto (TEST_ACCESS_IMPORT_ASYNC=1+TEST_LIBRARY_ENTRY_COORDINATION=1), biblioteca vacía intacta/modal nuevo/malformado/archivo válido/copia/recarga/móvil. No cambia formato ni abre una partida al importar;0IA/operaciones remotas por leer o consultar ayuda.
 
 

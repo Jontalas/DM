@@ -354,7 +354,12 @@ function render(){const importStatus=$('#copyImportStatus'),access=snapshot.id+'
  const area=$('#story'), near=area.scrollHeight-area.scrollTop-area.clientHeight<150;
  $('#messages').innerHTML=s.messages.map(messageEntry).join('');
  if(!available.length)$('#messages').insertAdjacentHTML('afterbegin','<div class="card"><div class="eyebrow">PASO 1 · TU PERSONAJE</div><h3>¿Quién vivirá esta aventura?</h3><p>Elige un estilo y un nombre. El creador calcula tu ficha; después podrás elegir la aventura.</p><button class="primary" data-create-hero>Crear mi personaje</button></div>');
- document.body.classList.toggle('preparing-adventure',!s.adventure&&!s.pfEncounter&&!s.board.active&&s.location==='Por decidir');document.body.classList.toggle('adventure-active',!!(s.adventure||s.pfEncounter));renderAdventure();renderChecks();renderPlayGuidance(s);if(near)area.scrollTop=area.scrollHeight;
+ document.body.classList.toggle('preparing-adventure',!s.adventure&&!s.pfEncounter&&!s.board.active&&s.location==='Por decidir');document.body.classList.toggle('adventure-active',!!(s.adventure||s.pfEncounter));renderAdventure();renderChecks();renderPlayGuidance(s);
+ if(s.pfEncounter?.phase==='offered'){
+  const opening=snapshot.id+':'+s.pfEncounter.character+':'+s.pfEncounter.definition.version;
+  if(area.dataset.offeredEncounter!==opening)area.scrollTop=0;
+  area.dataset.offeredEncounter=opening;
+ }else{delete area.dataset.offeredEncounter;if(near)area.scrollTop=area.scrollHeight;}
  renderJournalOverview(s);
  const jf=$('#journalForm');for(const key of ['location','worldTime','goal','notes','secrets','directorNotes','objectives','allies','enemies','unknowns']){const el=jf.elements[key];if(document.activeElement!==el)el.value=Array.isArray(s[key])?s[key].join('\n'):s[key]||'';el.disabled=!me.host}
  $$('.host-only').forEach(x=>x.hidden=!me.host);$('#inviteBtn').hidden=!me.host;$('#exportBtn').disabled=!me.host;

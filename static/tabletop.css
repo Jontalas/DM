@@ -226,3 +226,6 @@ body.reader-wide.submission-pending #composer{display:block}
 #investigationPanel>h3:focus-visible{outline:2px solid var(--gold);outline-offset:4px}
 
 body.encounter-choice #story>.chapter{display:none}
+
+#storyRhythm summary{min-height:44px;align-content:center;font-size:13px}
+#storyRhythm>p{font-size:12px;line-height:1.5;margin:8px 0}

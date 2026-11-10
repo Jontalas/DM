@@ -1,5 +1,12 @@
 # Continuidad del desarrollo autónomo
 
+## Entrada visible de verdad y contadores secundarios (10 de noviembre de 2026)
+
+Revisión de captura real escritorio mostró cabecera del encuentro ocultada por autoscroll. La geometría anterior ponía scrollTop=0 antes de comprobar: al retirar preparación, initial-courtyard-scroll-baseline.log falla. Render marca nueva oferta campaña/personaje/versión y la inicia arriba; actualizaciones de misma oferta conservan lectura, otras fases conservan scroll ordinario. Entrada explícita enfoca título sólo en modal original. Primera corrección de no hacer autoscroll era insuficiente con offset previo; clave de nueva oferta resuelve ese caso.
+
+initial-courtyard-scroll-fixed.log correcto1.16+respuesta/modal tardío, initial-courtyard-scroll-legacy.log correcto1.15; entrada y recarga muestran título/dos decisiones sin scroll, después ambos caminos completos/copia/retomar. Captura first-courtyard-reloaded-mobile.png1.15 revisada (actual1.16 también revisada). Opening/capítulos regresión correctos. Sidebar sólo presenta lugar/objetivo, contadores bajo details nativo conservando IDs/cálculos; revisión teclado/tacto0requests/POST/demostateintacto, story-rhythm-layout-review.log. No Python/reglas/IA real. Base3e39a5d Render7672206346 success verificada access-import-production-public.log0campañas/POST/IA.
+
+
 ## Recuperación de accesos ligada a su ventana (10 de noviembre de 2026)
 
 Baseline access-import-cancellation-baseline.log: archivo demorado, cerrar biblioteca y abrir otra terminaba importando dos credenciales y sustituyendo modal nuevo. Handler ligado al details/input original, modal abierto y última lectura; cierre/reemplazo cancela antes de merge. Progreso/errores accesibles y JSON ilegible explicado, input limpio para mismo archivo. Formato/CampaignLibrary.merge originales conservados, no abre campañas ni agrega red/IA.

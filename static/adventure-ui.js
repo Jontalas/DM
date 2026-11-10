@@ -4,6 +4,10 @@ function getPreparedEncounterCatalog(){
  if(!preparedEncounterCatalog)preparedEncounterCatalog=api('/api/pf-encounters').catch(error=>{preparedEncounterCatalog=null;throw error});
  return preparedEncounterCatalog;
 }
+function showPreparedEncounterScene(){
+ chooseTab('story');const heading=$('#adventureEntry h3');if(!heading)return;
+ heading.tabIndex=-1;heading.style.scrollMarginTop='12px';heading.scrollIntoView({block:'start'});heading.focus({preventScroll:true});
+}
 function renderAdventure(){
  const s=snapshot.state, host=!!snapshot.me.host, active=!!s.adventure;
  const ready=s.characters.some(c=>!c.enemy&&c.creation&&!c.creation.manualOverride&&c.hp>0&&!c.conditions?.trim());
@@ -193,7 +197,7 @@ function renderPreparedPathfinderEncounter(){
    if(!current()||submitting)return;
    if(token+':'+snapshot.id!==key)throw Error('La campaña ha cambiado.');
    submitting=true;const button=form.querySelector('button');button.disabled=true;
-   try{await act('enter_pf_encounter',{encounter:definition.id,encounterVersion:definition.version,character:own[0].id});if(current())$('#modal').close()}
+   try{await act('enter_pf_encounter',{encounter:definition.id,encounterVersion:definition.version,character:own[0].id});if(current()){$('#modal').close();showPreparedEncounterScene()}}
    finally{submitting=false;if(current())button.disabled=false}
   });
  });
