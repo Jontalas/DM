@@ -1,5 +1,10 @@
 # Continuidad del desarrollo autónomo
 
+## Continuidad de modales al entrar y seguir (10 de noviembre de 2026)
+
+Dos fallos adicionales reproducidos: entrar al patio y next_adventure cerraban biblioteca abierta durante la respuesta. Referencias ligadas al formulario original y acceso/campaña/jugador, protección de doble envío y avisos/finally acotados. Sólo UI; no cambia motor, contratos, recibo ni operaciones. Pruebas chapter-late-dialog-baseline.log y encounter-entry-late-dialog-baseline.log fallan antes; chapter-late-dialog-final.log y encounter-entry-late-dialog-fixed.log correctos después. Recuperación histórica de next_adventure conserva mismo cuerpo/id, dos capítulos/fichas/reloj/originales/copia intactos (chapter-late-dialog-recovery-regression.log); patio1.16 completo acuerdo y combate a0PG/tregua/descanso/cinco pistas/tres escenas/retomar. Todo TestStore/proveedor simulado; ninguna IA real. Preparación anterior c3691fe publicada en Render7671778343 success, adventure-preparation-production-public.log público sin campañas/POST/IA.
+
+
 ## Preparación asíncrona ligada al formulario (10 de noviembre de 2026)
 
 Baseline nuevo reprodujo que un archivo de texto demorado sustituía el borrador de un formulario posterior. adventure-ui.js conserva referencias al formulario, acceso, campaña y jugador; invalida lecturas por opción/archivo/edición, evita POST si la lectura JSON termina después de cerrar, y no cierra un modal posterior al recibir la respuesta de una acción ya enviada. Los avisos y finally usan el formulario original; el envío no se desbloquea al cambiar de opción. No cambia contratos, límites, reglas ni operaciones remotas.

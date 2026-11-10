@@ -18,16 +18,23 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
   await page.locator('#savedCampaigns [data-library-open]:not([data-library-character])').focus();await page.keyboard.press('Enter');await page.waitForFunction(()=>snapshot?.state.moduleProgress.completed&&!busy);assert.equal(await page.evaluate(()=>snapshot.id),id);
   const count=actions.length;await page.locator('#playGuidanceAction').focus();await page.keyboard.press('Enter');await page.locator('#nextAdventureForm').waitFor();assert.equal(actions.length,count);
   const premise='Quiero averiguar quién dejó el sello de la archivera aquí.';await page.locator('#nextAdventureForm [name=premise]').fill(premise);
+  const lateDialog=process.env.TEST_CHAPTER_LATE_DIALOG==='1';let sent,release;const sentPromise=new Promise(resolve=>{sent=resolve}),replyGate=new Promise(resolve=>{release=resolve});
   let lost=false;await page.route('**/api/action',async route=>{
-   if(route.request().postDataJSON().type==='next_adventure'&&!lost){lost=true;const response=await route.fetch();if(response.status()===200)await route.abort('failed');else await route.fulfill({response})}
+   if(route.request().postDataJSON().type==='next_adventure'&&!lost){lost=true;const response=await route.fetch();if(lateDialog){assert.equal(response.status(),200);sent();await replyGate;await route.fulfill({response});return}if(response.status()===200)await route.abort('failed');else await route.fulfill({response})}
    else await route.continue();
   });
-  await page.locator('#nextAdventureForm button').click();await page.waitForFunction(()=>snapshot?.state.adventureChaptersView?.current===2&&!busy&&JSON.parse(localStorage.getItem('cronicas-pending')||'null'));
-  assert.equal(await page.locator('#nextAdventureForm [name=premise]').inputValue(),premise);
-  const pending=await page.evaluate(()=>JSON.parse(localStorage.getItem('cronicas-pending')));assert.equal(pending.body.premise,premise);assert.equal(pending.body.captureContract,'pf-director-action-1');
-  assert.equal(await page.locator('#modal').evaluate(e=>e.open),false);assert.equal(await page.locator('#playGuidance').isVisible(),true);assert.equal(await page.locator('#playGuidance').evaluate(e=>e.parentElement.id),'composer');
-  await page.reload();await page.waitForFunction(()=>snapshot?.state.adventureChaptersView?.current===2&&!busy&&!localStorage.getItem('cronicas-pending'));
-  const retries=actions.filter(a=>a.type==='next_adventure');assert.equal(retries.length,2);assert.deepEqual(retries[0],retries[1]);
+  await page.locator('#nextAdventureForm button').click();
+  if(lateDialog){
+   await sentPromise;await page.locator('#closeModal').click();await page.locator('#libraryBtn').click();release();await page.waitForFunction(()=>snapshot?.state.adventureChaptersView?.current===2&&!busy);await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+   assert.equal(await page.locator('#modal').evaluate(e=>e.open),true,'A late chapter reply must preserve the library opened afterward');assert.match(await page.locator('#modalContent h2').textContent(),/Partidas y personajes/);await page.locator('#closeModal').click();await page.locator('[data-tab=story]').click();
+  }else{
+   await page.waitForFunction(()=>snapshot?.state.adventureChaptersView?.current===2&&!busy&&JSON.parse(localStorage.getItem('cronicas-pending')||'null'));
+   assert.equal(await page.locator('#nextAdventureForm [name=premise]').inputValue(),premise);
+   const pending=await page.evaluate(()=>JSON.parse(localStorage.getItem('cronicas-pending')));assert.equal(pending.body.premise,premise);assert.equal(pending.body.captureContract,'pf-director-action-1');
+   assert.equal(await page.locator('#modal').evaluate(e=>e.open),false);assert.equal(await page.locator('#playGuidance').isVisible(),true);assert.equal(await page.locator('#playGuidance').evaluate(e=>e.parentElement.id),'composer');
+   await page.reload();await page.waitForFunction(()=>snapshot?.state.adventureChaptersView?.current===2&&!busy&&!localStorage.getItem('cronicas-pending'));
+  }
+  const retries=actions.filter(a=>a.type==='next_adventure');assert.equal(retries.length,lateDialog?1:2);if(!lateDialog)assert.deepEqual(retries[0],retries[1]);
   const second=await page.evaluate(()=>structuredClone(snapshot));assert.equal(second.id,id);assert.deepEqual(second.state.characters,characters);assert.equal(second.state.worldTime,first.state.worldTime);
   assert.equal(second.state.moduleProgress.searchActions,0);assert.equal(second.state.adventureModule.premise,premise);assert.equal(second.state.location,first.state.location);
   assert.equal(second.state.messages.filter(m=>m.kind==='director').length,1);assert.equal(second.state.messages.filter(m=>m.kind==='scene'&&m.preparedOpeningSha256).length,1);assert.equal(second.state.messages.filter(m=>m.kind==='action'&&m.text.includes(premise)).length,1);
@@ -41,6 +48,6 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
   const version=await page.evaluate(()=>snapshot.version);await page.locator('#importFile').setInputFiles(file);await page.waitForFunction(v=>snapshot.version>v&&!busy,version);
   await page.reload();await page.waitForFunction(()=>snapshot?.state.moduleProgress.completed&&!busy);assert.equal(await page.evaluate(()=>snapshot.state.adventureChaptersView.current),2);
   await page.setViewportSize({width:390,height:1000});await page.locator('[data-tab=journal]').tap();await page.locator('#chapterHistory > summary').tap();assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await page.screenshot({path:'.deps/adventure-chapters-mobile.png',fullPage:true});
-  assert.deepEqual(errors,[]);console.log('Two chapters in same campaign: guided creator, complete first investigation, close/rejoin, explicit new goal here, lost reply recovered with identical submission, one new simulated response, unchanged ficha/location/clock, historical clues/private originals, copy/reload/keyboard/mobile. Zero real inference.');
+  assert.deepEqual(errors,[]);console.log((lateDialog?'Late reply preserves later library; ':'Lost reply recovered with identical submission; ')+'Two chapters in same campaign: guided creator, complete first investigation, close/rejoin, explicit new goal here, one new simulated response, unchanged ficha/location/clock, historical clues/private originals, copy/reload/keyboard/mobile. Zero real inference.');
  }finally{await browser?.close();fixture.kill()}
 })().catch(e=>{console.error(e);process.exitCode=1});

@@ -1,5 +1,8 @@
 # Sencillez y orientación
 
+10nov: entrar al patio o continuar un objetivo ya enviado tampoco cierra una biblioteca abierta mientras llega la respuesta. Fallos reproducidos con respuesta retenida y corregidos sin repetir acciones ni IA. Capítulos conserva además recuperación de respuesta perdida con mismo envío, originales/copia/ficha/lugar/reloj. Patio1.16 conserva ambos caminos completos, teclado/móvil/táctil. Evidencia: .deps/chapter-late-dialog-baseline.log/final.log, chapter-late-dialog-recovery-regression.log, encounter-entry-late-dialog-baseline.log/fixed.log; fixtures sin IA real. No se promete cancelar envíos ya realizados.
+
+
 10nov: preparación cancelable antes del envío. Una lectura tardía de texto no sustituye un borrador nuevo ni una edición realizada durante la lectura. Cerrar la preparación antes de leer el JSON deja la partida intacta y no envía la acción. Una respuesta de inicio ya enviado conserva la biblioteca abierta después; no se promete cancelar una acción ya enviada. Formulario y avisos ligados a su acceso/campaña/jugador; opción o archivo nuevos invalidan la lectura pendiente. Evidencia reproducida antes/correcta después: test_adventure_opening_browser.cjs con TEST_OPENING_ASYNC=1, .deps/adventure-preparation-stale-baseline.log y adventure-preparation-stale-final.log. Ejemplo/ruta completos, teclado/móvil/copia/recarga y pistas conservados; TestStore sin IA ni proveedor real.
 
 

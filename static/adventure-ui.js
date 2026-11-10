@@ -185,9 +185,15 @@ function renderPreparedPathfinderEncounter(){
   const definition=catalog.encounters[0];
   const scopeHint=definition.restScope?'Recorrido experimental: tras resolver el encuentro puedes investigar o elegir una noche de descanso si no hay heridas o efectos pendientes de seguimiento. La cobertura real se explica al elegir.':'Encuentro básico experimental. Consulta la cobertura del recorrido antes de empezar.';
   modal(`<div class="eyebrow">ESCENA ORIGINAL · PATHFINDER 1E</div><h2>${esc(definition.title)}</h2><p>${esc(definition.description)}</p><p>Al entrar se prepara la guardiana. Después eliges si hablar o combatir.</p><p class="notice">${esc(scopeHint)}</p><form id="pfEncounterEntry"><button class="primary">Entrar con ${esc(own[0].name)}</button></form>${preparedEncounterHelp(definition,own[0])}`);
-  $('#pfEncounterEntry').onsubmit=run(async()=>{
+  const form=$('#pfEncounterEntry'),player=snapshot.me.id;
+  const current=()=>token+':'+snapshot.id===key&&snapshot.me.id===player&&form.isConnected&&$('#modal').open&&$('#modal').contains(form);
+  let submitting=false;
+  form.onsubmit=run(async()=>{
+   if(!current()||submitting)return;
    if(token+':'+snapshot.id!==key)throw Error('La campaña ha cambiado.');
-   await act('enter_pf_encounter',{encounter:definition.id,encounterVersion:definition.version,character:own[0].id});$('#modal').close();
+   submitting=true;const button=form.querySelector('button');button.disabled=true;
+   try{await act('enter_pf_encounter',{encounter:definition.id,encounterVersion:definition.version,character:own[0].id});if(current())$('#modal').close()}
+   finally{submitting=false;if(current())button.disabled=false}
   });
  });
 }
@@ -202,12 +208,16 @@ function renderNextAdventure(panel,s){
  $('#nextAdventure').onclick=()=>{
   const campaign=token+':'+snapshot.id,chapter=s.adventureChaptersView?.current||1;
   modal('<h2>¿Qué quieres averiguar aquí?</h2><form id="nextAdventureForm"><label>Tu próximo objetivo<textarea name="premise" required maxlength="2000" rows="4" placeholder="Por ejemplo: quiero averiguar quién dejó el paquete en este lugar."></textarea></label><p>El director preparará otra investigación aquí. Conservas tu ficha, tus heridas y lo descubierto.</p><button class="primary">Continuar aquí</button><p id="nextAdventureProgress" role="status" aria-live="polite"></p></form>');
-  $('#nextAdventureForm').onsubmit=run(async e=>{
+  const form=$('#nextAdventureForm'),player=snapshot.me.id;
+  const current=()=>token+':'+snapshot.id===campaign&&snapshot.me.id===player&&form.isConnected&&$('#modal').open&&$('#modal').contains(form);
+  let submitting=false;
+  form.onsubmit=run(async e=>{
+   if(!current()||submitting)return;
    if(token+':'+snapshot.id!==campaign||(snapshot.state.adventureChaptersView?.current||1)!==chapter)throw Error('La partida ha cambiado; vuelve a abrir tu próximo objetivo.');
-   const button=e.target.querySelector('button');button.disabled=true;$('#nextAdventureProgress').textContent='El director está preparando tu próximo objetivo…';
-   try{await act('next_adventure',{premise:e.target.elements.premise.value,worldMemoryContract:'structured-world-memory-1'});$('#modal').close();chooseTab('story')}
-   catch(error){$('#nextAdventureProgress').textContent=error.message;throw error}
-   finally{button.disabled=false}
+   submitting=true;const button=form.querySelector('button'),progress=form.querySelector('#nextAdventureProgress');button.disabled=true;progress.textContent='El director está preparando tu próximo objetivo…';
+   try{await act('next_adventure',{premise:e.target.elements.premise.value,worldMemoryContract:'structured-world-memory-1'});if(current()){$('#modal').close();chooseTab('story')}}
+   catch(error){if(current()){progress.textContent=error.message;throw error}}
+   finally{submitting=false;if(current())button.disabled=false}
   });
  };
 }

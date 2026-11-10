@@ -23,7 +23,11 @@ const path=require('node:path'),assert=require('node:assert/strict');
     await page.locator('#closeModal').click();await page.locator('#beginAdventure').click();await page.locator('#adventureForm [name=source]').selectOption('encounter');await page.locator('#adventureForm button').click();await page.locator('#pfEncounterEntry').waitFor();assert.equal(catalogReads,2);
    }
    assert.deepEqual(await page.evaluate(()=>snapshot.state.characters[0].creation.choices.languages),[]);
-   if(wounded)await page.locator('#beginPreparedEncounter').click();await page.locator('#pfEncounterEntry').waitFor();assert.match(await page.locator('#modalContent').textContent(),/Común/);await page.locator('#pfEncounterEntry button').click();
+   if(wounded)await page.locator('#beginPreparedEncounter').click();await page.locator('#pfEncounterEntry').waitFor();assert.match(await page.locator('#modalContent').textContent(),/Común/);const lateEntry=process.env.TEST_PF_ENTRY_LATE_DIALOG==='1'&&!wounded;let entrySent,releaseEntry;const entryRequested=new Promise(resolve=>{entrySent=resolve}),entryGate=new Promise(resolve=>{releaseEntry=resolve});
+   if(lateEntry)await page.route('**/api/action',async route=>{assert.equal(route.request().postDataJSON().type,'enter_pf_encounter');const response=await route.fetch();assert.equal(response.status(),200);entrySent();await entryGate;await route.fulfill({response})},{times:1});
+   await page.locator('#pfEncounterEntry button').click();
+   if(lateEntry){await entryRequested;await page.locator('#closeModal').click();await page.locator('#libraryBtn').click();releaseEntry();await page.waitForFunction(()=>snapshot.state.pfEncounter&&!busy);await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));assert.equal(await page.locator('#modal').evaluate(e=>e.open),true,'A late encounter entry must preserve the newer library');assert.match(await page.locator('#modalContent h2').textContent(),/Partidas y personajes/);await page.locator('#closeModal').click()}
+
    await page.waitForFunction(()=>snapshot.state.pfEncounter&&!busy);assert.deepEqual(await page.evaluate(()=>snapshot.state.characters.map(c=>c.hp)),[16,6]);
    assert.equal(await page.evaluate(()=>snapshot.state.pfEncounter.definition.version),encounterVersion);
    if(!wounded){await page.locator('#pfEncounterParley').click();await page.waitForFunction(()=>snapshot.state.pfEncounter.phase==='agreement'&&!busy);}
