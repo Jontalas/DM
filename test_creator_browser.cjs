@@ -15,7 +15,14 @@ const path=require('node:path'),assert=require('node:assert/strict');
   for(const page of [a,b])page.on('pageerror',e=>errors.push(e.message));
   b.on('request',r=>{if(r.url().endsWith('/api/action'))actions.push(r.postDataJSON())});
   await b.goto(url);await b.locator('#app').waitFor({state:'visible'});
-  await b.locator('[data-create-hero]').click();await b.locator('#creatorForm').waitFor();
+  const asyncCatalog=process.env.TEST_CREATOR_CATALOG_ASYNC==='1';let catalogSent,releaseCatalog,catalogReads=0;const catalogRequested=new Promise(resolve=>{catalogSent=resolve}),catalogGate=new Promise(resolve=>{releaseCatalog=resolve});
+  if(asyncCatalog){await b.route('**/creation-catalog.json*',async route=>{catalogReads++;const response=await route.fetch();catalogSent();await catalogGate;await route.fulfill({response})});await b.evaluate(()=>{const start=startCharacterCreator;startCharacterCreator=(...args)=>{window.creatorOpening=start(...args);return window.creatorOpening}})}
+  const failedCatalog=process.env.TEST_CREATOR_CATALOG_FAILURE==='1';let failedCatalogReads=0;
+  if(failedCatalog)await b.route('**/creation-catalog.json*',async route=>{failedCatalogReads++;if(failedCatalogReads===1)await route.fulfill({status:503,body:'Unavailable'});else await route.continue()});
+  await b.locator('[data-create-hero]').click();
+  if(failedCatalog){await b.locator('#creatorRetry').waitFor();assert.equal(actions.length,0);assert.match(await b.locator('#modalContent').textContent(),/partida sigue intacta/);await b.locator('#creatorRetry').focus();await b.keyboard.press('Enter');await b.locator('#creatorForm').waitFor();assert.equal(failedCatalogReads,2)}
+  if(asyncCatalog){await catalogRequested;if(await b.locator('#modal').evaluate(element=>element.open))await b.locator('#closeModal').click();await b.locator('#libraryBtn').click();releaseCatalog();await b.evaluate(()=>window.creatorOpening);assert.match(await b.locator('#modalContent h2').textContent(),/Partidas y personajes/,'A late creator catalog must preserve the newer dialog');assert.equal(actions.length,0);await b.locator('#closeModal').click();await b.locator('[data-create-hero]').click();assert.equal(catalogReads,1)}
+  await b.locator('#creatorForm').waitFor();
   assert.equal(await b.locator('#creatorName').evaluate(e=>e===document.activeElement),true);
   assert.equal(await b.locator('#creatorEnemy').count(),0);
   assert.equal(await b.locator('[data-creator-preset=guardian]').getAttribute('aria-pressed'),'true');
@@ -26,9 +33,18 @@ const path=require('node:path'),assert=require('node:assert/strict');
   await b.locator('[data-creator-ability="0"]').fill('16');await b.locator('#creatorNext').click();
   assert.equal(await b.locator('#creatorRanks').textContent(),'3 / 3 rangos asignados · 3 / 3 dotes · 0 / 0 idiomas adicionales');
   await b.locator('#creatorNext').click();assert.match(await b.locator('#creatorPreview').textContent(),/2d6\+6/);
-  assert.equal(actions.length,0);await b.locator('#creatorFinish').click();await b.locator('.sheet-checks').waitFor();
+  assert.equal(actions.length,0);const delayedCreator=process.env.TEST_CREATOR_LATE_DIALOG||'',mutableInput=process.env.TEST_CREATOR_MUTABLE_INPUT==='1';let createSent,releaseCreate;const createRequested=new Promise(resolve=>{createSent=resolve}),createGate=new Promise(resolve=>{releaseCreate=resolve});
+  if(delayedCreator)await b.route('**/api/action',async route=>{const response=await route.fetch();assert.equal(response.status(),200);createSent();await createGate;await route.fulfill({response})},{times:1});
+  if(delayedCreator||mutableInput)await b.evaluate(()=>{const form=document.querySelector('#creatorForm'),handler=form.onsubmit;form.onsubmit=event=>{window.creationFinished=handler(event);return window.creationFinished}});
+  if(mutableInput){await b.evaluate(()=>{const original=act;act=(type,data)=>{if(type==='create_character')window.creationInput=data;return original(type,data)};window.creationReservation=navigator.locks.request('cronicas-pending',()=>new Promise(resolve=>{window.releaseCreationReservation=resolve}))});await b.waitForFunction(()=>!!window.releaseCreationReservation)}
+  await b.locator('#creatorFinish').click();
+  if(mutableInput){await b.waitForFunction(()=>busy);await b.evaluate(()=>{window.creationInput.choices.name='Nombre modificado después de confirmar';window.releaseCreationReservation()});await b.evaluate(()=>window.creationFinished);assert.equal(actions[0].choices.name,'Aria','Queued creation must use the choices confirmed before later mutation')}
+  if(delayedCreator){await createRequested;assert.equal(await b.locator('#modalContent button:enabled, #modalContent input:enabled, #modalContent select:enabled').count(),0,'Confirmed choices stay locked while saving');assert.match(await b.locator('#creatorErrors').textContent(),/Guardando a Aria/);await b.locator('#closeModal').click();if(delayedCreator==='draft'){await b.locator('[data-create-hero]').click();await b.locator('#creatorName').fill('Lina')}else await b.locator('#libraryBtn').click();releaseCreate();await b.evaluate(()=>window.creationFinished);
+   if(delayedCreator==='draft'){assert.equal(await b.locator('#creatorName').inputValue(),'Lina');assert.equal(await b.evaluate(()=>JSON.parse(sessionStorage.getItem('cronicas-creator:'+snapshot.id+':'+snapshot.me.id)).choices.name),'Lina')}else assert.match(await b.locator('#modalContent h2').textContent(),/Partidas y personajes/,'A late creation result must preserve the newer dialog');await b.locator('#closeModal').click();await b.locator('#party [data-character]').first().click();
+  }
+  await b.locator('.sheet-checks').waitFor();
   assert.equal(actions.length,1);assert.equal(actions[0].type,'create_character');assert.equal(await b.locator('#characterForm').count(),0);
-  assert.equal(await b.locator('#creatorContinue').textContent(),'Volver a la mesa');
+  if(!delayedCreator)assert.equal(await b.locator('#creatorContinue').textContent(),'Volver a la mesa');
   let state=await (await guest.request.get(url+'/api/state',{headers:{Authorization:'Bearer '+player}})).json();
   const character=state.state.characters[0];assert.equal(character.damage,'2d6+6');assert.equal(character.ac,16);assert.equal(character.maxHp,16);assert.ok(character.creation);
   await b.locator('.sheet-free-roll > summary').click();await b.locator('[data-sheet-selection]').selectOption('0');

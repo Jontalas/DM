@@ -1,5 +1,7 @@
 # Sencillez y orientación
 
+10nov: creador cancelable y guardado claro. Carga anuncia espera/cierre,503 permite reintento con teclado sin perder partida; catálogo tardío no sustituye otra ventana. Al confirmar se bloquean elecciones, se anuncia guardado y se permite cerrar; resultado respeta biblioteca o borrador posterior. Guardado usa exactamente elecciones confirmadas antes de esperas, abre sólo ficha propia inequívoca. creator-fixed-* correctos en escritorio/móvil, invitado/anfitrión/recarga/ataque, sin estadísticas manuales ni IA. Regresiones de entrada y100rondas de recibos correctas; sin cambios de reglas/servicios.
+
 10nov: cierre comprensible del recorrido. Objetivo resuelto aparece en guía y tarjeta; revisar hallazgos/diario o salir son primeras decisiones. Seguir explorando queda plegado sólo cuando existen salidas; terminal anuncia fin de ruta. Hallazgos conjuntos sólo si la vista cargada los ofrece, otras rutas abren diario. Última búsqueda y recuperación enfocan título sin robar contexto posterior. Título/dos controles visibles390×844, botones/summary44px, teclado/tacto; diario3lugares/5hallazgos y salir0POST/estado intacto/retomar. route-completion-guidance-final.log/recovery.log correctos1.16 ambos caminos, captura móvil revisada; genérica/1.4/1.6, pacientes conscientes negativos con invitada1.16 y espera1.11 correctos. Se conservaron movimientos/opciones disponibles, heridas, posición, reloj y copia; sin IA nueva ni operaciones remotas por revisar/salir. No un nuevo hito personal ni soporte de campañas abiertas.
 
 

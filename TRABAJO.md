@@ -1,5 +1,11 @@
 # Continuidad del desarrollo autónomo
 
+## Creador cancelable y elecciones confirmadas (10 de noviembre de 2026)
+
+Tres baselines reales de navegador fallaron: catálogo tardío reemplazaba biblioteca, creación tardía reemplazaba biblioteca y referencia anidada mutable cambiaba el nombre confirmado mientras esperaba la reserva. Ahora carga local cancelable por contexto/generación/elemento original, reintento tras503 y comprobación de combate al terminar la carga. Confirmación bloquea controles y explica que cerrar no cancela el guardado; respeta ventanas y borradores nuevos. Limpieza del borrador ligada a generación y contenido exactos. Sólo abre una ficha nueva propia con nombre/tipo coincidentes inequívocos, sin seleccionar la última ficha global de otro jugador. act copia JSON entero sincrónicamente antes de busy/reserva, conservando captura/recibos y serialización del protocolo.
+
+creator-fixed-{catalog,library,draft,input,normal,retry}.log y creator-fixed-{draft,library}-final.log correctos: un guardado, estadísticas originales, invitado/adversario, teclado/móvil/recarga/ataque real del motor. creator-immutable-outbox-regression.log correcto100rondas con espejo atrasado/durabilidad/cuerpo íntegro/borrador reescrito; creator-opening-regression.log correcto. Una ejecución inicial usó por error test_opening_browser.cjs inexistente; corregida a test_adventure_opening_browser.cjs, sin fallo de aplicación. Todos TestStore/proveedor simulado,0IA real. No nuevas reglas, catálogos, archivos propios ni dependencias. Base ad8902c publicada/verificada, route-completion-production-public.log,0campañas/POST/IA.
+
 ## Del objetivo resuelto a revisar y retomar (10 de noviembre de 2026)
 
 Baseline route-completion-guidance-baseline.log mostraba Ver salidas tras terminar. Guía ahora prioriza objetivo resuelto y revisar hallazgos/diario; tarjeta con revisar/salir y exploración secundaria si existen salidas. Sin salidas comunica cierre, sin ofrecer controles vacíos. La lista conjunta sólo se muestra desde visitedScenes público ya cargado; otras rutas abren diario. Terminar la última búsqueda enfoca título del cierre si no hubo navegación/modal posterior; recuperación mantiene ese foco sin repetir búsqueda. Salir usa handler existente, sin nueva escritura/modelo; controles táctiles44px.

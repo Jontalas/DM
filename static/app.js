@@ -184,10 +184,10 @@ async function reserveSubmission(saved){
  await withSubmissionLock(reserve,[saved]);
 }
 async function act(type,data={}){
- ensureSubmissionCanStart();busy=true;renderComposerAvailability();$('#sync').textContent='Resolviendo…';
- const body={...data,type,id:crypto.randomUUID(),version:snapshot.version},draftRevision=messageRevision;
+ ensureSubmissionCanStart();
+ const body=JSON.parse(JSON.stringify({...data,type,id:crypto.randomUUID(),version:snapshot.version})),draftRevision=messageRevision;
+ busy=true;renderComposerAvailability();$('#sync').textContent='Resolviendo…';
  const movement=['move','five_foot_step'].includes(type),preparedPath=path;
- if(movement)body.path=structuredClone(data.path);
  if((!snapshot.state.ruleset||snapshot.state.ruleset==='pathfinder-1e')&&['talk','start_adventure','continue_adventure','next_adventure'].includes(type))body.captureContract=type==='start_adventure'&&body.openingContract==='authored-opening-1'?'pf-authored-opening-1':'pf-director-action-1';
  let saved={token,body},stored=false,accepted=false;
  try{

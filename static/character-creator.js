@@ -1,5 +1,5 @@
 /* Step-by-step local creation; exactly one campaign action when confirmed. */
-let creationCatalog;
+let creationCatalog,creatorGeneration=0;
 document.addEventListener('click',e=>{if(e.target.closest('[data-create-hero]'))characterForm()});
 async function getCreationCatalog(){
  if(!creationCatalog)creationCatalog=fetch('/creation-catalog.json?v=1').then(r=>{if(!r.ok)throw Error('No se pudo cargar el creador');return r.json()}).catch(e=>{creationCatalog=null;throw e});
@@ -23,10 +23,20 @@ function creationSummary(c,d){
 }
 async function startCharacterCreator(){
  if(snapshot.state.board.active){toast('Finaliza el combate antes de crear un personaje');return}
- const catalog=await getCreationCatalog();if(!snapshot)return;
+ const generation=++creatorGeneration,access=token,campaign=snapshot.id,player=snapshot.me.id;
+ const sameContext=()=>generation===creatorGeneration&&token===access&&snapshot?.id===campaign&&snapshot?.me.id===player;
+ const current=element=>sameContext()&&element?.isConnected&&$('#modal').open&&$('#modalContent').contains(element);
+ modal('<h2>Prepara tu personaje</h2><p id="creatorLoading" role="status">Cargando las opciones del creador… Puedes cerrar esta ventana y volver después.</p>');
+ const loading=$('#creatorLoading');let catalog;
+ try{catalog=await getCreationCatalog()}catch(error){
+  if(current(loading)){modal('<h2>Prepara tu personaje</h2><p role="status">No se han podido cargar las opciones. Tu partida sigue intacta.</p><button id="creatorRetry" class="primary">Volver a intentarlo</button>');$('#creatorRetry').onclick=run(()=>startCharacterCreator())}
+  return;
+ }
+ if(!current(loading))return;
+ if(snapshot.state.board.active){$('#modal').close();toast('Finaliza el combate antes de crear un personaje');return}
  const storageKey='cronicas-creator:'+snapshot.id+':'+snapshot.me.id;
  const makePreset=id=>({race:'human',class:'fighter',level:1,name:'',favored:'hp',...structuredClone(catalog.presets[id]),feats:['focus','initiative','toughness'],skills:['climb','intimidate','perception'],languages:[]});
- let choices=makePreset('guardian'),enemy=false,step=0;
+ let choices=makePreset('guardian'),enemy=false,step=0,submitting=false;
  try{const draft=JSON.parse(sessionStorage.getItem(storageKey)||'null');if(draft?.version===1){choices=draft.choices;enemy=!!draft.enemy&&snapshot.me.host}}catch{}
  function saveDraft(){try{sessionStorage.setItem(storageKey,JSON.stringify({version:1,choices,enemy}))}catch{}}
  function preview(){
@@ -41,6 +51,7 @@ async function startCharacterCreator(){
   saveDraft();return result;
  }
  function draw(focus='#creatorPage'){
+  if(submitting||!sameContext())return;
   const matchesPreset=id=>Object.entries(makePreset(id)).every(([key,value])=>key==='name'||JSON.stringify(choices[key])===JSON.stringify(value));
   const option=(group,selected)=>Object.entries(catalog[group]).map(([id,v])=>`<option value="${id}" ${selected===id?'selected':''}>${esc(v.name)}</option>`).join('');
   const checkboxes=(group,selected,kind)=>Object.entries(catalog[group]).map(([id,v])=>`<label class="check"><input type="checkbox" data-choice-list="${kind}" value="${esc(id)}" ${selected.includes(id)?'checked':''}>${esc(v.name)}${kind==='feats'&&v.combat?' · combate':''}${kind==='skills'&&v.class?' · de clase':''}</label>`).join('');
@@ -51,7 +62,9 @@ async function startCharacterCreator(){
    `<div class="row"><label>Arma<select data-creator-field="weapon">${option('weapons',choices.weapon)}</select></label><label>Armadura<select data-creator-field="armor">${option('armors',choices.armor)}</select></label><label>Escudo<select data-creator-field="shield">${option('shields',choices.shield)}</select></label></div><p>175 po iniciales de media; incluye equipo de viaje y atuendo inicial. Precio, monedas, peso y carga se calculan juntos. El arma elegida queda equipada y lista para el combate básico.</p>`
   ];
   modal(`<div class="eyebrow">CREADOR DE PERSONAJES · PATHFINDER 1e</div><h2>Tu aventurero, paso a paso</h2><nav class="creator-steps" aria-label="Pasos del creador">${['Concepto','Características','Elecciones','Equipo y resumen'].map((label,i)=>`<button type="button" data-creator-step="${i}" ${step===i?'aria-current="step"':''}>${i+1}. ${label}</button>`).join('')}</nav><form id="creatorForm"><section id="creatorPage" tabindex="-1" aria-label="Paso ${step+1} de 4 · ${['Concepto','Características','Elecciones','Equipo y resumen'][step]}">${pages[step]}</section><p id="creatorErrors" role="status"></p><div id="creatorPreview" aria-live="polite" ${step===0?'hidden':''}></div><div class="toolbar"><button type="button" id="creatorBack" ${step===0?'hidden':''}>Anterior</button><button type="button" id="creatorNext" ${step===3?'hidden':''}>${step===0?'Personalizar':'Siguiente'}</button>${step===0?'<button type="button" id="creatorReview" class="primary">Revisar mi personaje</button>':''}<button class="primary" id="creatorFinish" ${step!==3?'hidden':''}>Crear personaje y jugar</button></div><details id="creatorAdvanced"><summary>Opciones avanzadas</summary>${snapshot.me.host?`<label class="check"><input id="creatorEnemy" type="checkbox" ${enemy?'checked':''}> Crear un adversario para la mesa</label>`:''}<button type="button" id="creatorManual">Crear ficha manual avanzada</button></details></form>`);
-  $('#creatorForm').oninput=e=>{
+  const form=$('#creatorForm');
+  form.oninput=e=>{
+   if(submitting||!current(form))return;
    const el=e.target;if(el.id==='creatorName')choices.name=el.value;
    if(el.id==='creatorEnemy')enemy=el.checked;
    if(el.dataset.creatorAbility!==undefined)choices.abilities[Number(el.dataset.creatorAbility)]=el.value===''?null:Number(el.value);
@@ -64,11 +77,26 @@ async function startCharacterCreator(){
   $('#creatorBack').onclick=()=>{step--;draw()};$('#creatorNext').onclick=()=>{step++;draw()};
   if($('#creatorReview'))$('#creatorReview').onclick=()=>{if(!$('#creatorForm').reportValidity())return;step=3;draw()};
   $('#creatorManual').onclick=()=>manualCharacterForm();
-  $('#creatorForm').onsubmit=run(async()=>{
+  form.onsubmit=run(async()=>{
+   if(submitting||!current(form))return;
    if(step!==3){step=step===0?3:step+1;draw();return}
    const result=preview();if(!result||result.errors.length||!choices.name.trim())throw Error('Completa las elecciones antes de crear el personaje');
-   await act('create_character',{choices,enemy});try{sessionStorage.removeItem(storageKey)}catch{}
-   const created=snapshot.state.characters.at(-1);$('#boardCharacter').value=created.id;$('#speaker').value=created.id;renderBoard();$('#modal').close();characterForm(created.id,true);toast('Personaje creado y listo para jugar');
+   const submittedName=choices.name.trim(),submittedEnemy=enemy,priorIds=new Set(snapshot.state.characters.map(c=>c.id));
+   let submittedDraft;try{submittedDraft=sessionStorage.getItem(storageKey)}catch{}
+   const controls=$$('#modalContent button, #modalContent input, #modalContent select, #modalContent textarea').map(element=>({element,disabled:element.disabled}));
+   submitting=true;controls.forEach(({element})=>element.disabled=true);$('#creatorErrors').textContent=`Guardando a ${submittedName}. Estará en la mesa aunque cierres esta ventana.`;
+   try{
+    await act('create_character',{choices,enemy});
+    try{if(generation===creatorGeneration&&sessionStorage.getItem(storageKey)===submittedDraft)sessionStorage.removeItem(storageKey)}catch{}
+    if(!current(form)){toast(`${submittedName}: personaje creado y disponible en la mesa`);return}
+    const matches=snapshot.state.characters.filter(c=>!priorIds.has(c.id)&&c.owner===player&&c.name===submittedName&&!!c.enemy===submittedEnemy);
+    if(matches.length===1){const created=matches[0];$('#boardCharacter').value=created.id;$('#speaker').value=created.id;renderBoard();$('#modal').close();characterForm(created.id,true)}
+    else{$('#modal').close();toast('Personaje creado. Elige su ficha en la mesa.');return}
+    toast('Personaje creado y listo para jugar');
+   }finally{
+    submitting=false;
+    if(current(form)){controls.forEach(({element,disabled})=>element.disabled=disabled);$('#creatorErrors').textContent='Puedes revisar tus elecciones. Si hay un envío pendiente, recupéralo antes de crear otro personaje.'}
+   }
   });preview();$(focus)?.focus();
  }
  draw(step===0?'#creatorName':'#creatorPage');
