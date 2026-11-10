@@ -878,8 +878,10 @@ async function init(retry=false){
  }
  }catch(e){
   connection.hidden=false;
-  $('#entryConnectionMessage').textContent='No se ha podido abrir la mesa. Conservamos tus accesos y lo escrito aquí. Vuelve a conectar cuando tengas conexión.';
-  $('#capabilities').textContent='No se ha podido completar la conexión. Usa «Volver a conectar» para intentarlo de nuevo.';
+  const denied=e.status===401||e.status===403;
+  button.textContent=denied?'Comprobar acceso de nuevo':'Volver a conectar';
+  $('#entryConnectionMessage').textContent=denied?'Este acceso no permite abrir la partida. Puedes recuperar otro desde «Mis partidas y personajes» o empezar una partida nueva.':'No se ha podido abrir la mesa. Conservamos tus accesos y lo escrito aquí. Vuelve a conectar cuando tengas conexión.';
+  $('#capabilities').textContent=denied?'El servidor ha rechazado este acceso. Puedes comprobarlo de nuevo o recuperar otro.':'No se ha podido completar la conexión. Usa «Volver a conectar» para intentarlo de nuevo.';
   toast(e.message);
  }finally{initializingConnection=false;button.disabled=false}
 }
