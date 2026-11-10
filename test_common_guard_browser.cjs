@@ -1,8 +1,8 @@
 const {chromium}=require('./.deps/browser-tests/node_modules/playwright');
-const {spawn}=require('node:child_process'),{createInterface}=require('node:readline');
+const {spawn,execFileSync}=require('node:child_process'),{createInterface}=require('node:readline');
 const path=require('node:path'),assert=require('node:assert/strict');
 (async()=>{
- const encounterVersion=process.env.TEST_PF_ENCOUNTER_VERSION||'1.10.0';
+ const encounterVersion=process.env.TEST_PF_ENCOUNTER_VERSION||execFileSync(path.resolve('.venv/Scripts/python.exe'),['-c','import pf_encounters; print(pf_encounters.definition()["version"])'],{encoding:'utf8'}).trim();
  const recoverStep=process.env.TEST_PF_STEP_RECOVERY==='1';
  const reservedPreview=process.env.TEST_PF_STEP_RESERVED_PREVIEW==='1';
  const fixture=spawn(path.resolve('.venv/Scripts/python.exe'),['test_browser_fixture.py'],{env:{...process.env,TEST_PF_ENCOUNTER_VERSION:encounterVersion,TEST_PF_CEASEFIRE_FIXTURE:'1',TEST_PF_TRUCE_NIGHT:'1'},stdio:['ignore','pipe','inherit']});let browser;
@@ -52,7 +52,7 @@ const path=require('node:path'),assert=require('node:assert/strict');
      const count=actions.length;await page.locator('[data-tab=board]').tap();assert.equal(actions.length,count);
     }
     for(let turn=0;turn<4;turn++){await page.locator('#nextTurn').click();await page.waitForFunction(hp=>snapshot.state.characters[0].hp===hp&&!busy,12-turn*4);}
-    if(encounterVersion==='1.16.0'){
+    if(await page.evaluate(()=>snapshot.state.pfEncounter.definition.fiveFootStepScope==='normal-light-ground-five-foot-step-1')){
      await page.setViewportSize({width:390,height:844});await page.locator('[data-tab=board]').tap();
      const before=await page.evaluate(()=>structuredClone(snapshot)),count=actions.length;
      await page.locator('#grid .cell[data-x="0"][data-y="0"]').focus();await page.keyboard.press('ArrowDown');await page.keyboard.press('Enter');
@@ -99,8 +99,45 @@ const path=require('node:path'),assert=require('node:assert/strict');
    await page.locator('[data-tab=journal]').click();const [download]=await Promise.all([page.waitForEvent('download'),page.locator('#exportBtn').click()]);
    const version=await page.evaluate(()=>snapshot.version);await page.locator('#importFile').setInputFiles(await download.path());await page.waitForFunction(v=>snapshot.version>v&&!busy,version);await page.reload();await page.waitForFunction(()=>snapshot?.state.pfEncounter.phase==='agreement'&&!busy);
    await page.locator('[data-tab=story]').click();await page.locator('#pfContinueScene').click();await page.waitForFunction(()=>snapshot.state.boardScenes?.current==='patio'&&!busy);
-   for(let clue=0;clue<2;clue++){const version=await page.evaluate(()=>snapshot.version);await page.locator('#investigationForm button[value=take20]').click();await page.waitForFunction(v=>snapshot.version>v&&!busy,version);}
-   await page.locator('[data-route-exit=cobertizo]').click();await page.waitForFunction(()=>snapshot.state.boardScenes.current==='cobertizo'&&!busy);
+   assert.equal(await page.locator('#investigationPanel > h3').evaluate(e=>e===document.activeElement),true,'The first prepared investigation also starts at its place heading');
+   for(let clue=0;clue<2;clue++){
+    const version=await page.evaluate(()=>snapshot.version),count=actions.length,recoverSearch=process.env.TEST_PF_INVESTIGATION_RECOVERY==='1'&&clue===0;
+    if(recoverSearch)await page.route('**/api/action',async route=>{const response=await route.fetch();assert.equal(response.ok(),true);await page.route('**/api/state',r=>r.abort('failed'),{times:1});await route.fulfill({response})},{times:1});
+    await page.locator('#investigationForm button[value=take20]').click();
+    if(recoverSearch){await page.waitForFunction(()=>!busy&&JSON.parse(localStorage.getItem('cronicas-pending')||'null')?.confirmed===true);assert.equal(await page.locator('#playGuidanceAction').evaluate(e=>e===document.activeElement),true);await page.keyboard.press('Enter');await page.waitForFunction(()=>!busy&&!localStorage.getItem('cronicas-pending'));assert.equal(actions.length,count+1);assert.equal(await page.evaluate(()=>snapshot.state.moduleProgress.discoveries.length),1);assert.equal(await page.locator('#investigationPanel > h3').evaluate(e=>e===document.activeElement),true);}
+    await page.waitForFunction(v=>snapshot.version>v&&!busy,version);
+   }
+   await page.setViewportSize({width:390,height:844});
+   const beforeExits=actions.length;await page.locator('#story').evaluate(e=>{e.scrollTop=e.scrollHeight});await page.locator('#playGuidanceAction').focus();await page.keyboard.press('Enter');
+   const exitBox=await page.locator('[data-route-exit=cobertizo]').boundingBox(),exitGuide=await page.locator('#playGuidance').boundingBox(),exitStory=await page.locator('#story').boundingBox();
+   if(exitBox.y<exitGuide.y+exitGuide.height||exitBox.y+exitBox.height>exitStory.y+exitStory.height)await page.screenshot({path:'.deps/scene-exits-baseline-mobile.png',fullPage:true});
+   assert.ok(exitBox.y>=exitGuide.y+exitGuide.height&&exitBox.y+exitBox.height<=exitStory.y+exitStory.height,'The route guide must bring the next exit into view');assert.equal(actions.length,beforeExits);
+   const sceneRecovery=process.env.TEST_PF_SCENE_RECOVERY||'',sceneNavigation=process.env.TEST_PF_SCENE_NAVIGATION==='1',originVersion=await page.evaluate(()=>snapshot.version);let markScene,releaseScene;
+   const sceneRequested=new Promise(resolve=>{markScene=resolve}),sceneGate=new Promise(resolve=>{releaseScene=resolve});
+   if(sceneRecovery||sceneNavigation)await page.route('**/api/action',async route=>{
+    const response=await route.fetch();assert.equal(response.ok(),true);
+    if(sceneNavigation){markScene();await sceneGate;return route.fulfill({response})}
+    if(sceneRecovery==='unknown')return route.abort('failed');
+    await page.route('**/api/state',r=>r.abort('failed'),{times:1});await route.fulfill({response});
+   },{times:1});
+   await page.locator('[data-route-exit=cobertizo]').click();
+   if(sceneNavigation){await sceneRequested;await page.locator('[data-tab=journal]').tap();releaseScene();}
+   if(sceneRecovery){
+    await page.waitForFunction(()=>!busy&&!!localStorage.getItem('cronicas-pending'));const body=actions.at(-1),count=actions.length;
+    assert.equal(await page.locator('#playGuidanceAction').evaluate(e=>e===document.activeElement),true,'A failed foreground journey must offer keyboard recovery');await page.keyboard.press('Enter');await page.waitForFunction(()=>!busy&&!localStorage.getItem('cronicas-pending'));
+    assert.equal(actions.length,count+(sceneRecovery==='unknown'?1:0));assert.deepEqual(actions.at(-1),body);assert.equal(await page.evaluate(()=>snapshot.version),originVersion+1);
+   }
+   await page.waitForFunction(()=>snapshot.state.boardScenes.current==='cobertizo'&&!busy);
+   if(sceneNavigation){assert.equal(await page.locator('#journal').evaluate(e=>e.classList.contains('active')),true);await page.locator('[data-tab=story]').tap();}
+   else assert.equal(await page.locator('#investigationPanel > h3').evaluate(e=>e===document.activeElement),true,'Arriving should show and focus the new place, not leave the player at old exit controls');
+   const arrivalActions=actions.length,arrivalVersion=await page.evaluate(()=>snapshot.version);
+   await page.locator('#story').evaluate(e=>{e.scrollTop=e.scrollHeight});await page.locator('#playGuidanceAction').focus();await page.keyboard.press('Enter');
+   assert.equal(await page.locator('#investigationForm [name=opportunity]').evaluate(e=>e===document.activeElement),true);
+   assert.equal(actions.length,arrivalActions);assert.equal(await page.evaluate(()=>snapshot.version),arrivalVersion);
+   const place=await page.locator('#investigationPanel > h3').boundingBox(),guide=await page.locator('#playGuidance').boundingBox(),story=await page.locator('#story').boundingBox();
+   if(place.y<guide.y+guide.height-1)await page.screenshot({path:'.deps/scene-arrival-overlap-mobile.png',fullPage:true});
+   assert.ok(place.y>=guide.y+guide.height-1&&place.y+place.height<=story.y+story.height,'The guide must not cover the new place heading '+JSON.stringify({place,guide,story}));
+   if(!sceneRecovery&&!sceneNavigation){await page.locator('#toast').waitFor({state:'hidden'});await page.screenshot({path:'.deps/scene-arrival-'+encounterVersion+'-'+(wounded?'truce':'peace')+'-mobile.png',fullPage:true});}
    assert.equal(await page.evaluate(()=>snapshot.state.characters[1].sceneId),'patio');assert.equal(await page.evaluate(()=>snapshot.state.characters[1].maxHp),6);
    assert.deepEqual(await page.evaluate(()=>snapshot.state.characters[0].creation.choices.languages),[]);assert.equal(actions.filter(a=>a.type==='manual').length,0);
    await page.setViewportSize({width:390,height:1000});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await page.screenshot({path:'.deps/common-guard-'+(wounded?'truce':'peace')+'-mobile.png',fullPage:true});
@@ -113,6 +150,6 @@ const path=require('node:path'),assert=require('node:assert/strict');
    assert.deepEqual(await page.evaluate(()=>snapshot.state.characters),returnedCharacters);assert.equal(await page.evaluate(()=>snapshot.state.adventureRouteView.visitedScenes.reduce((n,v)=>n+v.discoveries.length,0)),5);assert.equal(await page.evaluate(()=>snapshot.state.worldTime),completed.worldTime);
    assert.deepEqual(errors,[]);await context.close();
   }
-  console.log('Common guard verified: default guided creator with no extra language, legal new6HP variant, peace and organic zero/truce/night, common offer, keyboard/mobile/touch/UI copy/reload, full five-clue route, return, exit/resume and guard retained; no provider.');
+  console.log('Common guard '+encounterVersion+' verified: default guided creator with no extra language, legal new6HP variant, peace and organic zero/truce/night, common offer, keyboard/mobile/touch/UI copy/reload, full five-clue route, return, exit/resume and guard retained; no provider.');
  }finally{await browser?.close();fixture.kill()}
 })().catch(e=>{console.error(e);process.exitCode=1});

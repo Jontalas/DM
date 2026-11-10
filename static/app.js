@@ -31,19 +31,33 @@ async function recoverSubmission(saved){
  try{await api('/api/action',saved.body)}catch(error){
   if(error.status!==409||saved.body.type!=='resolve_pack_request')throw error;
   await refresh(true);
+  if(token!==saved.token)throw error;
   const pending=snapshot?.state.narrativeView?.pending;
   if(pending?.id!==saved.body.request||pending.randomnessScope!=='pending-resolution-v2')throw error;
   const body={...saved.body,id:crypto.randomUUID(),version:snapshot.version};
-  localStorage.setItem('cronicas-pending',JSON.stringify({token,body}));
-  saved={token,body};
+  const replacement={token:saved.token,body};
+  if(!await replaceSubmission(saved,replacement))throw Error('El envío pendiente cambió en otra pestaña. Revisa su recuperación antes de continuar.');
+  saved=replacement;
   await api('/api/action',body);
  }
  return acknowledgeSubmission(saved);
 }
-function clearSubmission(saved){
- const current=JSON.parse(localStorage.getItem('cronicas-pending')||'null');
- if(current?.token!==saved.token||current.body?.id!==saved.body.id)return false;
- localStorage.removeItem('cronicas-pending');return true;
+async function withSubmissionLock(change){
+ return navigator.locks?navigator.locks.request('cronicas-pending',change):change();
+}
+async function replaceSubmission(saved,next){
+ return withSubmissionLock(()=>{
+  const current=JSON.parse(localStorage.getItem('cronicas-pending')||'null');
+  if(current?.token!==saved.token||current?.body?.id!==saved.body.id)return false;
+  localStorage.setItem('cronicas-pending',JSON.stringify(next));return true;
+ });
+}
+async function clearSubmission(saved){
+ return withSubmissionLock(()=>{
+  const current=JSON.parse(localStorage.getItem('cronicas-pending')||'null');
+  if(current?.token!==saved.token||current?.body?.id!==saved.body.id)return false;
+  localStorage.removeItem('cronicas-pending');return true;
+ });
 }
 function clearSubmittedMovementPreview(saved){
  const previous=submittedMovementPreview;
@@ -52,9 +66,12 @@ function clearSubmittedMovementPreview(saved){
  if(path!==previous.path||$('#boardCharacter').value!==saved.body.character||JSON.stringify(path)!==JSON.stringify(saved.body.path))return;
  path=[];renderBoard();
 }
-function acknowledgeSubmission(saved){
- const accepted={...saved,confirmed:true},current=JSON.parse(localStorage.getItem('cronicas-pending')||'null');
- if(current?.token===saved.token&&current.body?.id===saved.body.id){try{localStorage.setItem('cronicas-pending',JSON.stringify(accepted))}catch{}}
+async function acknowledgeSubmission(saved){
+ const accepted={...saved,confirmed:true};
+ await withSubmissionLock(()=>{
+  const current=JSON.parse(localStorage.getItem('cronicas-pending')||'null');
+  if(current?.token===saved.token&&current?.body?.id===saved.body.id){try{localStorage.setItem('cronicas-pending',JSON.stringify(accepted))}catch{}}
+ });
  return accepted;
 }
 function ensureSubmissionCanStart(){
@@ -67,7 +84,7 @@ async function reserveSubmission(saved){
   if(localStorage.getItem('cronicas-pending'))throw Error('Hay un envío pendiente. Recupéralo antes de enviar otra acción.');
   localStorage.setItem('cronicas-pending',JSON.stringify(saved));
  };
- if(navigator.locks)await navigator.locks.request('cronicas-pending',reserve);else reserve();
+ await withSubmissionLock(reserve);
 }
 async function act(type,data={}){
  ensureSubmissionCanStart();busy=true;renderComposerAvailability();$('#sync').textContent='Resolviendo…';
@@ -79,11 +96,11 @@ async function act(type,data={}){
  try{
   await reserveSubmission(saved);stored=true;
   if(movement)submittedMovementPreview={id:body.id,path:preparedPath};
-  await api('/api/action',body);accepted=true;saved=acknowledgeSubmission(saved);if(movement)clearSubmittedMovementPreview(saved);else path=[];
-  await refresh(true);clearSubmission(saved);
+  await api('/api/action',body);accepted=true;saved=await acknowledgeSubmission(saved);if(movement)clearSubmittedMovementPreview(saved);else path=[];
+  await refresh(true);await clearSubmission(saved);
  }catch(e){
   if(!stored&&e.name==='QuotaExceededError')throw Error('No hay espacio en el navegador para conservar este envío. No se ha enviado al servidor; libera espacio o importa una copia más pequeña.');
-  if(!accepted&&e.confirmed)clearSubmission(saved);
+  if(!accepted&&e.confirmed)await clearSubmission(saved);
   if(stored&&!accepted){try{await refresh(true)}catch{}}
   throw e;
  }finally{busy=false;renderComposerAvailability();renderSubmissionFeedback()}
@@ -101,12 +118,16 @@ async function refresh(force=false){
  if(cached)params.set('workspace',cached);
  const next=await api('/api/state'+(params.size?'?'+params:''));
  if(token!==requestedToken)return;
- if(next.unchanged){if(receipt?.token===requestedToken&&receipt.confirmed===true){clearSubmission(receipt);renderComposerAvailability();renderSubmissionFeedback()}renderSyncStatus();return}
+ if(next.unchanged){
+  if(receipt?.token===requestedToken&&receipt.confirmed===true){await clearSubmission(receipt);if(token!==requestedToken)return;renderComposerAvailability();renderSubmissionFeedback()}
+  renderSyncStatus();return;
+ }
  if(next.workspaceUnchanged){
   if(!cached||next.workspaceUnchanged!==cached||next.id!==previous.id||next.me.id!==previous.me.id||!next.me.host)throw Error('La caché privada no corresponde a este acceso; recarga para recuperarla.');
   next.state.authoringWorkspace=previous.state.authoringWorkspace;
  }
- const completed=receipt?.token===requestedToken&&receipt.confirmed===true&&clearSubmission(receipt);
+ const completed=receipt?.token===requestedToken&&receipt.confirmed===true&&await clearSubmission(receipt);
+ if(token!==requestedToken)return;
  if(previous?.state.boardScenes?.current!==next.state.boardScenes?.current){path=[];ruler=[];}
  snapshot=next;snapshotToken=requestedToken;rememberCampaign();renderSyncStatus();
  if(!force&&!completed&&lastVersion===next.version)return;lastVersion=next.version;render();
@@ -117,6 +138,19 @@ function renderReaderMode(){
  document.body.classList.toggle('reader-wide',expanded);$('#expandReader').textContent=expanded?'Cerrar vista ampliada':'Ampliar lectura';$('#expandReader').setAttribute('aria-pressed',String(expanded));
 }
 function ref(book,page,label){return `<button type="button" class="rule-link" data-book="${esc(book)}" data-page="${Number(page)}">${esc(label||names[book]+' · PDF p.'+page)} ↗</button>`}
+async function showActionResult(type,data,show){
+ const access=token,tab=$('[data-tab].active')?.dataset.tab,focus=document.activeElement;
+ const unchanged=()=>token===access&&$('[data-tab].active')?.dataset.tab===tab&&!$('#modal').open&&(document.activeElement===focus||document.activeElement===document.body);
+ try{await act(type,data)}catch(error){if(unchanged()&&JSON.parse(localStorage.getItem('cronicas-pending')||'null')?.token===access)$('#playGuidanceAction').focus();throw error}
+ if(unchanged())show?.();
+}
+function showInvestigationScene(focusChoice=false){
+ chooseTab('story');
+ const heading=$('#investigationPanel > h3');if(!heading)return;
+ const guide=$('#playGuidance'),area=$('#story'),offset=!guide.hidden&&guide.parentElement===area?guide.getBoundingClientRect().height+(parseFloat(getComputedStyle(area).paddingTop)||0):0;
+ heading.tabIndex=-1;heading.style.scrollMarginTop=(offset+12)+'px';heading.scrollIntoView({block:'start'});
+ (focusChoice?$('#investigationForm [name=opportunity]')||heading:heading).focus({preventScroll:true});
+}
 function renderSpeakerChoices(){
  if(!snapshot)return;
  const me=snapshot.me,kind=$('#messageKind').value,previous=$('#speaker').value;
@@ -149,8 +183,15 @@ async function recoverPendingSubmission(){
  if(!saved||saved.token!==token)throw Error('No hay un envío pendiente de esta partida');
  busy=true;$('#send').disabled=true;$('#playGuidanceAction').disabled=true;$('#sync').textContent='Recuperando envío…';
  let accepted,reading=false;
- try{accepted=await recoverSubmission(saved);clearSubmittedMovementPreview(accepted);reading=true;await refresh(true);clearSubmission(accepted);if(saved.body.type==='talk'&&$('#message').value===saved.body.text)$('#message').value='';if(saved.body.type==='check')chooseTab('story');if(saved.body.type==='attack')showAttackResult(saved.body);toast('Envío recuperado')}
- catch(error){if(!reading&&error.confirmed)clearSubmission(saved);if(!reading){try{await refresh(true)}catch{}}throw error}
+ try{
+  accepted=await recoverSubmission(saved);clearSubmittedMovementPreview(accepted);reading=true;await refresh(true);await clearSubmission(accepted);
+  if(saved.body.type==='talk'&&$('#message').value===saved.body.text)$('#message').value='';
+  if(saved.body.type==='check')chooseTab('story');
+  if(saved.body.type==='attack')showAttackResult(saved.body);
+  if(['travel_scene','continue_pf_encounter','investigate'].includes(saved.body.type))showInvestigationScene();
+  toast('Envío recuperado');
+ }
+ catch(error){if(!reading&&error.confirmed)await clearSubmission(saved);if(!reading){try{await refresh(true)}catch{}}throw error}
  finally{busy=false;renderComposerAvailability();$('#playGuidanceAction').disabled=false;renderSubmissionFeedback()}
 }
 function renderPlayGuidance(s){
@@ -191,10 +232,17 @@ function renderPlayGuidance(s){
   label='Ver pendientes';open=()=>{chooseTab('journal');$('#journalPending').scrollIntoView({block:'center'})};
  }else if(s.adventureRouteView?.exits.length&&(s.adventureModuleView?.completed||s.adventureRouteView.completed)){
   message=s.adventureRouteView.completed?'Has resuelto el objetivo de la ruta. Puedes volver a los lugares conocidos; tus hallazgos se conservan.':'La investigación de este lugar está resuelta. Puedes consultar las salidas de la ruta.';
-  label='Ver salidas';open=()=>{const exits=$$('[data-route-exit]');$('#investigationPanel').scrollIntoView({block:'start'});exits.find(b=>!b.disabled)?.focus({preventScroll:true})};
+  label='Ver salidas';open=()=>{
+   chooseTab('story');const exits=$$('[data-route-exit]'),target=exits.find(b=>!b.disabled)||exits[0]?.closest('.card')?.querySelector('small');
+   if(target){if(target.tagName!=='BUTTON')target.tabIndex=-1;target.scrollIntoView({block:'center'});target.focus({preventScroll:true})}
+  };
  }else if(s.adventureRouteView?.completed){
   message='Has completado la ruta preparada. Puedes revisar los hallazgos en el diario; otros viajes aún no están disponibles.';
   label='Revisar el diario';open=()=>chooseTab('journal');
+ }else if(s.adventureModuleView&&!s.adventureModuleView.completed){
+  const canSearch=!!$('#investigationForm button:not(:disabled)');
+  message=canSearch?'Puedes investigar este lugar. Elige qué revisar y cómo buscar.':$('#investigationHelp')?.textContent||'Revisa las opciones de investigación y el estado de tu personaje.';
+  label=canSearch?'Ver qué investigar':'Revisar opciones';open=()=>showInvestigationScene(canSearch);
  }else if(s.adventureModuleView?.completed&&s.nextAdventureView?.kind==='group'){
   const proposal=s.nextAdventureView.proposal;
   message=proposal?(proposal.author===snapshot.me.id?'Tu propuesta espera la decisión del otro propietario.':'Hay un objetivo propuesto. Revísalo antes de decidir si continúas.'):'La investigación está resuelta. Podéis elegir juntos el próximo objetivo aquí.';
@@ -436,9 +484,8 @@ function showAttackResult(action){
  if(result){result.tabIndex=-1;result.scrollIntoView({block:'center'});result.focus({preventScroll:true})}
 }
 $('#attackForm').onsubmit=run(async()=>{
- const action={character:$('#boardCharacter').value,target:$('#attackTarget').value},tab=$('[data-tab].active')?.dataset.tab,focus=document.activeElement;
- await act('attack',action);
- if($('[data-tab].active')?.dataset.tab===tab&&!$('#modal').open&&(document.activeElement===focus||document.activeElement===document.body))showAttackResult(action);
+ const action={character:$('#boardCharacter').value,target:$('#attackTarget').value};
+ await showActionResult('attack',action,()=>showAttackResult(action));
 });
 function modal(html){$('#modalContent').innerHTML=html;$('#modal').showModal()}
 function npcProvenance(character){
@@ -541,7 +588,7 @@ async function loadSystemChoices(){
   $('#systemChoiceHint').textContent=selected.status==='experimental'?'Experimental: recorrido en pruebas, con límites indicados al entrar.':(selected.coverage||[]).join(' · ');
  };label.querySelector('select').onchange();
 }
-async function init(){renderSavedCampaigns();const invite=new URLSearchParams(location.search).get('invite');prepareEntryInvitation(invite);try{model=await api('/api/status');await loadSystemChoices();$('#capabilities').innerHTML=`<p><strong>● Guardado persistente</strong><br>${esc(model.storage)}</p><p>${model.aiConfigured?'● IA configurada: '+esc(model.model):'○ Director de IA sin configurar'}<br>Conexión real a Claude Haiku; sin respuestas prefijadas.</p><p>${Object.entries(model.books).map(([k,n])=>esc(names[k])+': '+n+' páginas indexadas').join('<br>')}</p>`;$('#aiHint').textContent=model.aiConfigured?'El director responderá si activas «Responder con IA». Las tiradas y herramientas funcionan sin IA.':'El director no está disponible en esta mesa. Puedes usar las fichas, los dados y el tablero sin IA.';$('#askRule').disabled=!model.aiConfigured;$('#ruleAIHint').textContent=model.aiConfigured?'Consultar a la IA usa el servicio del director. Buscar en el texto y leer páginas no llama a IA.':'El director no está disponible. Puedes buscar en el texto y leer el manual.';$('#useAI').disabled=!model.aiConfigured;if(!model.aiConfigured)$('#useAI').checked=false;$('#resume').hidden=!token;if(token&&!invite){let accepted;const pending=JSON.parse(localStorage.getItem('cronicas-pending')||'null');if(pending&&pending.token===token){try{busy=true;accepted=await recoverSubmission(pending)}catch(e){if(e.confirmed)clearSubmission(pending);toast(e.message)}finally{busy=false}}await refresh(true);if(accepted){clearSubmission(accepted);renderSyncStatus();renderComposerAvailability();renderSubmissionFeedback();toast('Envío recuperado')}}}catch(e){toast(e.message)}}
+async function init(){renderSavedCampaigns();const invite=new URLSearchParams(location.search).get('invite');prepareEntryInvitation(invite);try{model=await api('/api/status');await loadSystemChoices();$('#capabilities').innerHTML=`<p><strong>● Guardado persistente</strong><br>${esc(model.storage)}</p><p>${model.aiConfigured?'● IA configurada: '+esc(model.model):'○ Director de IA sin configurar'}<br>Conexión real a Claude Haiku; sin respuestas prefijadas.</p><p>${Object.entries(model.books).map(([k,n])=>esc(names[k])+': '+n+' páginas indexadas').join('<br>')}</p>`;$('#aiHint').textContent=model.aiConfigured?'El director responderá si activas «Responder con IA». Las tiradas y herramientas funcionan sin IA.':'El director no está disponible en esta mesa. Puedes usar las fichas, los dados y el tablero sin IA.';$('#askRule').disabled=!model.aiConfigured;$('#ruleAIHint').textContent=model.aiConfigured?'Consultar a la IA usa el servicio del director. Buscar en el texto y leer páginas no llama a IA.':'El director no está disponible. Puedes buscar en el texto y leer el manual.';$('#useAI').disabled=!model.aiConfigured;if(!model.aiConfigured)$('#useAI').checked=false;$('#resume').hidden=!token;if(token&&!invite){let accepted;const pending=JSON.parse(localStorage.getItem('cronicas-pending')||'null');if(pending&&pending.token===token){try{busy=true;accepted=await recoverSubmission(pending)}catch(e){if(e.confirmed)clearSubmission(pending);toast(e.message)}finally{busy=false}}await refresh(true);if(accepted){await clearSubmission(accepted);if(token===accepted.token){renderSyncStatus();renderComposerAvailability();renderSubmissionFeedback();toast('Envío recuperado')}}}}catch(e){toast(e.message)}}
 const tabletopControls=window.TabletopControls.mount({
  scroller:$('.board-scroll'),grid:$('#grid'),tool:$('#tool'),zoom:$('#zoom'),snapshot:()=>snapshot&&(!snapshot.state.ruleset||snapshot.state.ruleset==='pathfinder-1e')?{...snapshot,state:{...snapshot.state,characters:boardCharacters(snapshot.state)}}:null,
  select:id=>{$('#boardCharacter').value=id;path=[];renderBoard()},

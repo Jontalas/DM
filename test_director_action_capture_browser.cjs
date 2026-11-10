@@ -1,6 +1,7 @@
 const {chromium}=require('./.deps/browser-tests/node_modules/playwright');
 const {spawn}=require('node:child_process'),{createInterface}=require('node:readline');
 const path=require('node:path'),assert=require('node:assert/strict');
+const crypto=require('node:crypto');
 (async()=>{
  const fixture=spawn(path.resolve('.venv/Scripts/python.exe'),['test_browser_fixture.py'],{env:{...process.env,TEST_ADVENTURE_FIXTURE:'1'},stdio:['ignore','pipe','inherit']});let browser;
  try{
@@ -41,11 +42,34 @@ const path=require('node:path'),assert=require('node:assert/strict');
   assert.equal(await other.locator('#playGuidanceAction').textContent(),'Abrir partida pendiente');await other.locator('#playGuidanceAction').click();assert.equal(await other.evaluate(()=>token),held.token);assert.equal(otherPosts,0);assert.deepEqual(await other.evaluate(()=>JSON.parse(localStorage.getItem('cronicas-pending'))),held);await other.locator('#playGuidanceAction').click();await other.waitForFunction(()=>!busy&&!localStorage.getItem('cronicas-pending'));assert.equal(otherPosts,1);assert.equal(await other.evaluate(()=>snapshot.state.messages.filter(m=>m.text==='Compruebo el resultado guardado.').length),1);await page.waitForFunction(()=>!document.querySelector('#send').disabled);
   // Queue both reservations behind the same browser lock so neither can win by timing alone.
   await other.evaluate(async t=>{token=t;await refresh(true)},otherRoom.token);assert.equal(await page.evaluate(()=>!!navigator.locks),true);
-  let simultaneousPosts=0;for(const tab of [page,other])await tab.route('**/api/action',route=>{simultaneousPosts++;return route.abort('connectionfailed')});
+  // A reservation can only protect its receipt if acknowledgements and clears
+  // participate in the same cross-tab coordination, including delayed reads.
+  await Promise.all([page,other].map(tab=>tab.evaluate(()=>{syncing=true})));
+  for(const operation of ['acknowledge','clear','replace']){
+   const receipt=await page.evaluate(saved=>({...saved,confirmed:false,body:{...saved.body,id:crypto.randomUUID(),text:'Metadatos locales, sin enviar'}}),held);
+   await page.evaluate(saved=>localStorage.setItem('cronicas-pending',JSON.stringify(saved)),receipt);
+   await page.evaluate(()=>{delete window.releaseMutation;window.mutationGate=navigator.locks.request('cronicas-pending',()=>new Promise(resolve=>{window.releaseMutation=resolve}))});await page.waitForFunction(()=>!!window.releaseMutation);
+   const replacement={...receipt,body:{...receipt.body,id:crypto.randomUUID()}};
+   await other.evaluate(({operation,receipt,replacement})=>{window.receiptMutation=Promise.resolve(operation==='acknowledge'?acknowledgeSubmission(receipt):operation==='clear'?clearSubmission(receipt):replaceSubmission(receipt,replacement))},{operation,receipt,replacement});
+   const heldReceipt=await page.evaluate(()=>JSON.parse(localStorage.getItem('cronicas-pending')));assert.ok(!!heldReceipt,operation+' must not clear a coordinated receipt');assert.ok(heldReceipt.token===receipt.token);assert.deepEqual(heldReceipt.body,receipt.body);assert.equal(heldReceipt.confirmed,receipt.confirmed,operation+' must wait while another tab owns receipt coordination');
+   await page.evaluate(()=>window.releaseMutation());await other.evaluate(()=>window.receiptMutation);
+   if(operation==='acknowledge'){assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('cronicas-pending')).confirmed),true);await page.evaluate(saved=>clearSubmission(saved),receipt)}else if(operation==='clear')assert.equal(await page.evaluate(()=>localStorage.getItem('cronicas-pending')),null);
+   else{await other.evaluate(saved=>acknowledgeSubmission(saved),receipt);assert.equal(await other.evaluate(saved=>clearSubmission(saved),receipt),false);assert.equal(await other.evaluate(({receipt,replacement})=>replaceSubmission(receipt,replacement),{receipt,replacement}),false);assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('cronicas-pending')).body.id),replacement.body.id);await page.evaluate(saved=>clearSubmission(saved),replacement)}
+  }
+  // Waiting to clear a confirmed receipt must not let an older read switch
+  // the player back to a campaign they have already left.
+  await other.evaluate(()=>{window.readGate=navigator.locks.request('cronicas-pending',()=>new Promise(resolve=>{window.releaseRead=resolve}))});await other.waitForFunction(()=>!!window.releaseRead);
+  await page.evaluate(saved=>{localStorage.setItem('cronicas-pending',JSON.stringify(saved));window.delayedView=refresh(true)},acknowledged);
+  await page.waitForFunction(async()=>{const locks=await navigator.locks.query();return locks.pending.some(lock=>lock.name==='cronicas-pending')});
+  await page.evaluate(async t=>{token=t;await refresh(true)},otherRoom.token);assert.equal(await page.evaluate(()=>snapshot.id),otherRoom.id||await other.evaluate(()=>snapshot.id));
+  const changedCampaign=await page.evaluate(()=>snapshot.id);await other.evaluate(()=>window.releaseRead());await page.evaluate(()=>window.delayedView);assert.equal(await page.evaluate(()=>snapshot.id),changedCampaign);
+  await page.evaluate(async t=>{token=t;await refresh(true)},held.token);
+  await Promise.all([page,other].map(tab=>tab.evaluate(()=>{syncing=false})));
+  let simultaneousPosts=0;const simultaneousRequests=[];for(const [index,tab] of [page,other].entries())await tab.route('**/api/action',route=>{simultaneousPosts++;const request=route.request(),body=request.postDataJSON();simultaneousRequests.push({tab:index,method:request.method(),id:body?.id,text:body?.text});return route.abort('connectionfailed')});
   await page.evaluate(()=>{window.reservationGate=navigator.locks.request('cronicas-pending',()=>new Promise(resolve=>{window.releaseReservation=resolve}))});await page.waitForFunction(()=>!!window.releaseReservation);
   await Promise.all([page,other].map((tab,index)=>tab.evaluate(i=>{window.simultaneousAction=act('talk',{kind:'ooc',text:'Reserva simultánea '+i,director:false}).catch(()=>{})},index)));
   assert.equal(await page.evaluate(()=>busy),true);assert.equal(await other.evaluate(()=>busy),true);await page.evaluate(()=>window.releaseReservation());await Promise.all([page,other].map(tab=>tab.evaluate(()=>window.simultaneousAction)));
-  assert.equal(simultaneousPosts,1);assert.ok(await page.evaluate(()=>JSON.parse(localStorage.getItem('cronicas-pending')).body.text.startsWith('Reserva simultánea')));await page.evaluate(()=>localStorage.removeItem('cronicas-pending'));await other.close();
+  assert.equal(simultaneousPosts,1,JSON.stringify(simultaneousRequests));assert.ok(await page.evaluate(()=>JSON.parse(localStorage.getItem('cronicas-pending')).body.text.startsWith('Reserva simultánea')));await page.evaluate(()=>localStorage.removeItem('cronicas-pending'));await other.close();
   console.log('Director action capture browser verified: mobile lost reply and unavailable state keep recovery visible across panels; original id/body recovered without reload, new draft preserved, pending status survives unchanged reads; legacy reload retained; confirmed result recovery/reload uses GET only; older reads cannot clear a later acknowledgement; other campaigns preserve and reopen the original pending action; forced simultaneous Web Lock reservations allow one aborted POST. Provider simulated.');
  }finally{await browser?.close();fixture.kill()}
 })().catch(e=>{console.error(e);process.exitCode=1});

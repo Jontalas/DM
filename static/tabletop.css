@@ -223,3 +223,4 @@ body.reader-wide.submission-pending #composer{display:block}
 #movementPreview.prepared .toolbar{gap:6px;margin:6px 0 0}
 #board.preparing-move #attackForm,#board.preparing-move #boardGuidance{display:none}
 .combat-result:focus-visible{outline:2px solid var(--gold);outline-offset:4px}
+#investigationPanel>h3:focus-visible{outline:2px solid var(--gold);outline-offset:4px}

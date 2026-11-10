@@ -1,6 +1,6 @@
 # Reanudar el desarrollo
 
-Estado: 9 de noviembre de 2026. Desarrollo activo y sin dependencia imprescindible del usuario. Este archivo contiene el estado vigente; la cronología técnica está en TRABAJO.md. El punto anterior íntegro se conserva en Git, revisión 1c783e5dc229ed18918ca49e66c79293176fabd3:REANUDAR.md, y en sus documentos de referencia.
+Estado: 10 de noviembre de 2026. Desarrollo activo y sin dependencia imprescindible del usuario. Este archivo contiene el estado vigente; la cronología técnica está en TRABAJO.md. El punto anterior íntegro se conserva en Git, revisión 1c783e5dc229ed18918ca49e66c79293176fabd3:REANUDAR.md, y en sus documentos de referencia.
 
 ## Cómo continuar
 
@@ -12,13 +12,15 @@ Comunicar qué puede hacer el jugador, qué falta y dónde verlo. No usar contad
 
 Siguiente trabajo autorizado:
 
-1. Publicar/verificar selección de adversario preparado en solo (app.js/test_common_guard_browser.cjs). Ahorro de contexto ya publicado/verificado f399245/Render7668113768 success,968Python base intacta. Nuevo defecto UI reproducido: host-jugador pulsaba guardiana y cambiaba actor aPNJ; ahora, si tiene su PJ seleccionado en combate individual preparado, señala objetivo sin tomar control. Selección manual explícita por selector y demás gestos/roles conservados. Recorrido1.16 teclado/táctil/0POST al apuntar correcto, incluidos paso/tregua/noche/copia/cinco pistas; mesa general/gestos/doble clic/permisos y versión1.15 correctos. No pruebas o inferencias en curso. No backend ni IA nueva. NO reiniciar demos8766/8767.
-2. Continuar la revisión de primeras decisiones, combate y recuperación del recorrido individual. Resolver fricciones observadas, conservando agencia y reglas; no expandir el alcance para producir más cambios.
+1. Publicar/verificar bloque UI de orientación y recibos coordinados. Producción4c49132 ya verificada (seleccionar guardiana mantiene PJ;0POST al apuntar). Local: llegar por continue_pf/travel enfoca título visible, guía de investigación local y salidas centra botón útil a390×844. Respeta navegación/foco/modal posterior; recuperar viaje/búsqueda enfoca escena sin repetir transición/pista (POST conocido→sóloGET, desconocido→mismo cuerpo/id). Tests de entrada, checks, biblioteca, paquetes, recorrido actual/histórico y errores correctos. La aceptación común usa ahora por defecto la versión real del catálogo y capabilities del paso; admite override histórico.
+
+Durante regresión hubo un contador intermitente2POST frente1 en carrera de pestañas (POST abortados,0servidor/IA); tres repeticiones diagnosticadas pasaron. Se demostró aparte que ack/clear podían modificar recibo con otra pestaña reteniendo WebLock. Arreglo local: reserva/ack/sustitución/limpieza comparten bloqueo y CAS token/id, todos los callers esperan; revalidar token tras limpieza diferida evita que lectura antigua sustituya nueva campaña. Prueba forzada de tres mutaciones, recibo nuevo intacto, lectura demorada/cambio campaña y carrera final correctas. Sólo UI; backend968 intacto. No nuevas inferencias. NO reiniciar8766/8767. Logs receipt-coordination-*.log, coordinated-arrival-*.log y final-scene-receipt-* correctos; no pruebas/inferencias en curso. Publicar y verificar app.js/adventure-ui.js/tabletop.css; backend968 sin cambios.
+2. Tras publicación, revisar preparación de aventuras con lectura/respuesta tardía: impedir envío si se cerró/cambió la preparación o cambió la partida, no cerrar un modal posterior y mantener orientación inicial. Después continuar la revisión de primeras decisiones, combate y recuperación del recorrido individual. Resolver fricciones observadas, conservando agencia y reglas; no expandir el alcance para producir más cambios.
 3. Conservar el progreso en estos archivos existentes. No crear un MD por corrección: PRODUCTO para alcance, REANUDAR para continuidad, TRABAJO para detalle, USABILIDAD para criterios/evidencia.
 
 ## Producción y verificación actual
 
-**f39924554e6fa7fab13cbc76314a11b905ed4c77**, Render7668113768 success. app.js/salud/release exactos, director-help-projection-production-public.log. Proyección de ayuda publicada con968completas/0omisiones/436,021s. Lector clínico protegido anterior83cc correcto; no repetir por cambios que no alteran estado/vistas. Ramas publicadas;0lecturas campañas/POST/IA.
+**4c49132eb6816791e828e5d19d22a9520b1ef7dd**, Render7668275622 success. app.js/salud/release exactos, prepared-target-production-public.log. Proyección de ayuda publicada con968completas/0omisiones/436,021s. Lector clínico protegido anterior83cc correcto; no repetir por cambios que no alteran estado/vistas. Ramas publicadas;0lecturas campañas/POST/IA.
 
 Base anterior cbb6c24: **959 pruebas completas correctas con emulador, sin omisiones,537,689s**, .deps/five-foot-step-full-suite.log; sesión22242 terminada. Incluye paso voluntario sin acciones/dados/IA, copias, HTTP atómico/reintento frío y auxilio. Fuentes originales y alcance acotado COMBATE.md. Originales1.0–1.15 (16archivos) SHA256 intactos; entradas API sin versión conservan1.0. No migrar campañas ni ampliar mecánicas no bloqueantes. Ajuste posterior local solo UI/pruebas/docs; no repetir suite Python sin motivo.
 
