@@ -1,5 +1,11 @@
 # Continuidad del desarrollo autónomo
 
+## Escena legible al girar el móvil (10 de noviembre de 2026)
+
+Revisión de demo8767 con todoPOST bloqueado midió48px de alto para story en844×390; la composición fija consumía la conversación. Fixture nuevo lo reproduce, short-viewport-baseline.log. CSS sólo hasta1099px ancho/540px alto deja crecer la página y reserva60dvh/mínimo200px por panel; sidebar de tablet queda acotada y no se ocultan fichas. No cambia controles, mensajes ni reglas. Demostración después234px,0POST y estado intacto; no reinicio.
+
+short-viewport-final.log correcto con ejemplo/ruta preparados en844×390,390×480 y1024×500: escena≥200, escritura/envío accesibles al enfocar, tablero y regreso, sin API/POST/estado por navegación o cambio de tamaño. Captura authored-short-viewport-landscape.png revisada sin toast. short-viewport-pending.log correcto con respuesta perdida, recuperación visible, fallo tardío/biblioteca/foco/borrador y reintento mismo cuerpo. short-viewport-courtyard-regression.log1.16 vertical correcto ambos caminos/ataque móvil/hallazgos/cierre/salir/retomar/copia. Ventana reducida aproxima espacio de teclado, no prueba real de teclado de SO. Ninguna IA real, regla, dependencia ni archivo propio nuevo. Borradores92fdb27 publicados/verificados Render7677818649 success; composer-scope-production-public.log app.js/salud/release exactos,0campañas/POST/IA; composer-scope-health-regression.log correcto.
+
 ## Borradores separados por campaña y jugador (10 de noviembre de 2026)
 
 Baseline composer-campaign-scope-baseline.log muestra nota privada de la primera campaña trasladada al compositor de la segunda. restoreCampaignComposer liga texto/tipo/hablante/opción IA/revisión a campaña+jugador antes de render, usando Map efímero acotado8entradas sin credenciales. Campaña nueva vacía con tipo acción, opción IA nueva conserva decisión actual; recuperar borrador conserva su propia opción, privado siempre desactivado. renderSpeakerChoices valida de nuevo el hablante contra propietarios/permisos actuales. Misma campaña/refresco no repone ni borra ediciones, revisión del borrador por contexto conserva contrato de respuesta/recuperación. Recargar/cerrar pierde borradores, sin añadir persistencia de texto privado; recibos originales siguen independientes.

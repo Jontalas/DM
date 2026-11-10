@@ -200,6 +200,14 @@ body.preparing-adventure #story>.chapter{display:none}
 }
 
 /* Small screens give the selected board its full working height. Recovery remains visible. */
+/* Landscape phones and keyboard-sized windows scroll the page instead of crushing the scene. */
+@media(max-width:1099px) and (max-height:540px){
+ .workspace{height:auto}
+ main>.tab{flex:none;height:60dvh;min-height:200px}
+}
+@media(min-width:681px) and (max-width:1099px) and (max-height:540px){
+ .sidebar{max-height:calc(100dvh - 80px)}
+}
 @media(max-width:1099px){
  body.board-tab-active:not(.submission-pending) #composer{display:none}
  #board .panel-title h2{margin:4px 0 8px}

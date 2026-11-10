@@ -63,6 +63,15 @@ const fs=require('node:fs');
 
    assert.equal(actions.at(-1).openingContract,'authored-opening-1');assert.equal(actions.at(-1).captureContract,'pf-authored-opening-1');assert.equal(await page.evaluate(()=>snapshot.state.messages.filter(m=>m.kind==='director').length),0);assert.equal(await page.locator('.message.scene').count(),1);
    assert.equal(await page.locator('#useAI').isDisabled(),true);assert.deepEqual(await page.evaluate(()=>snapshot.state.characters),original);assert.equal(await page.evaluate(()=>snapshot.state.moduleProgress.discoveries.length),0);
+   if(process.env.TEST_SHORT_VIEWPORT==='1'){
+    const before=await page.evaluate(()=>structuredClone(snapshot.state)),reads=apiRequests.length,posts=actions.length;
+    for(const [width,height] of [[844,390],[390,480],[1024,500]]){
+     await page.setViewportSize({width,height});await page.locator('[data-tab=story]').tap();assert.ok(await page.locator('#story').evaluate(element=>element.clientHeight>=200),'A short viewport must retain a readable scene area');assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+     await page.locator('#message').focus();const text=await page.locator('#message').boundingBox(),send=await page.locator('#send').boundingBox();assert.ok(text.y>=0&&text.y+text.height<=height,'The draft stays reachable above the keyboard-sized viewport');assert.ok(send.y>=0&&send.y+send.height<=height,'Send stays reachable without losing the scene');
+     await page.locator('[data-tab=board]').tap();assert.ok(await page.locator('#board').evaluate(element=>element.clientHeight>=200));assert.equal(await page.locator('#composer').isVisible(),false);await page.locator('[data-tab=story]').tap();await page.locator('.message.scene').scrollIntoViewIfNeeded();
+    }
+    assert.equal(actions.length,posts);assert.equal(apiRequests.length,reads);assert.deepEqual(await page.evaluate(()=>snapshot.state),before);if(source==='example'){await page.locator('#toast').waitFor({state:'hidden'});await page.setViewportSize({width:844,height:390});await page.locator('.message.scene').scrollIntoViewIfNeeded();await page.screenshot({path:'.deps/authored-short-viewport-landscape.png'})}await page.setViewportSize({width:1440,height:960});
+   }
    if(source==='example'){
     await page.setViewportSize({width:1440,height:960});
     assert.equal(await page.locator('.character-preparation details').evaluate(e=>e.open),false);
