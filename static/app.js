@@ -570,7 +570,7 @@ function renderTabletopTools(){
  const board=snapshot.state.board,selected=$('#boardCharacter').value,spent=board.spent[selected]||{};
  $('#actionBudget').hidden=!board.active;
  const moving=snapshot.state.characters.find(c=>c.id===selected),incapacitated=moving?.hp<=0&&characterIsConscious(moving);
- $('#actionBudget').textContent=board.active?(incapacitated?`Incapacitado · ${spent.standard||spent.move?'Acción usada':'Elige una acción estándar o de movimiento'} · Hasta ${characterMovementCells(moving)} casillas completas por movimiento`:`Estándar: ${spent.standard?'gastada':'disponible'} · Movimiento: ${spent.move?'gastado':'disponible'}`):'Exploración';
+ $('#actionBudget').textContent=board.active?(!moving?'No hay una ficha seleccionada. Puedes consultar el tablero.':!characterIsConscious(moving)?`${characterHealthLabel(moving)} · No puede actuar`:incapacitated?`Incapacitado · ${spent.standard||spent.move?'Acción usada':'Elige una acción estándar o de movimiento'} · Hasta ${characterMovementCells(moving)} casillas completas por movimiento`:`Estándar: ${spent.standard?'gastada':'disponible'} · Movimiento: ${spent.move?'gastado':'disponible'}`):'Exploración';
  const measuring=$('#tool').value==='measure';
  $('.board-scroll').dataset.tool=$('#tool').value;
  $('#confirmMove').disabled=measuring||$('#tool').value==='pan'||!path.length;
@@ -616,8 +616,9 @@ function renderTabletopTools(){
  $('#nextTurn').hidden=!board.active;
  $('#nextTurn').disabled=!current||(!snapshot.me.host&&current.owner!==snapshot.me.id);
  const mine=current&&(snapshot.me.host||current.owner===snapshot.me.id);
- let guidance=!snapshot.state.characters.length?'Usa «Crear personaje» para empezar.':!board.active?'Puedes consultar el mapa, medir o preparar un recorrido. El combate solo empieza cuando lo decides.':!mine?`Es el turno de ${current?.name||'otro participante'}. Puedes consultar el mapa mientras esperas.`:current.id!==selected?`Es el turno de ${current.name}. Selecciona su ficha para actuar.`:(spent.standard&&spent.move||current.hp<=0&&(spent.standard||spent.move))?'Ya has usado tus acciones disponibles. Pulsa «Terminar turno» cuando quieras continuar.':spent.standard?'Ya has usado tu acción estándar. Puedes moverte o terminar el turno.':spent.move?'Ya te has movido. Puedes atacar a un objetivo cercano o terminar el turno.':'Es tu turno. Traza un movimiento o elige un objetivo. Los controles de ataque están bajo el mapa.';
- if(mine&&current.id===selected&&stepEnabled){
+ const unableToAct=current&&!characterIsConscious(current);
+ let guidance=!snapshot.state.characters.length?'Usa «Crear personaje» para empezar.':!board.active?'Puedes consultar el mapa, medir o preparar un recorrido. El combate solo empieza cuando lo decides.':unableToAct?`${current.name} · ${characterHealthLabel(current)}. No puede actuar. Consulta su ficha y las opciones del encuentro.`:!mine?`Es el turno de ${current?.name||'otro participante'}. Puedes consultar el mapa mientras esperas.`:current.id!==selected?`Es el turno de ${current.name}. Selecciona su ficha para actuar.`:(spent.standard&&spent.move||current.hp<=0&&(spent.standard||spent.move))?'Ya has usado tus acciones disponibles. Pulsa «Terminar turno» cuando quieras continuar.':spent.standard?'Ya has usado tu acción estándar. Puedes moverte o terminar el turno.':spent.move?'Ya te has movido. Puedes atacar a un objetivo cercano o terminar el turno.':'Es tu turno. Traza un movimiento o elige un objetivo. Los controles de ataque están bajo el mapa.';
+ if(mine&&current.id===selected&&stepEnabled&&!unableToAct){
   if(stepped)guidance=spent.standard?'Ya has dado el paso y usado tu acción estándar. Puedes terminar el turno.':'Ya has dado el paso. Puedes atacar a un objetivo cercano o terminar el turno; no puedes desplazarte más este asalto.';
   else if(spent.standard&&!spent.move)guidance='Ya has usado tu acción estándar. Puedes preparar un paso de 5 pies en una casilla despejada o terminar el turno.';
  }

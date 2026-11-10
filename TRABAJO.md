@@ -1,5 +1,11 @@
 # Continuidad del desarrollo autónomo
 
+## Guía y presupuesto según consciencia real (10 de noviembre de 2026)
+
+board-health-guidance-baseline.log muestra sugerencia de movimiento/ataque a ficha inconsciente; board-health-budget-baseline-valid.log confirma Movimiento disponible. Render reutiliza characterIsConscious/characterHealthLabel ya existentes para explicar estado/No puede actuar/consultar ficha, sin promover selecciones imposibles cuando no hay ficha. El presupuesto tampoco promete acciones; condiciones mecánicas y permisos del motor no se alteran. El mensaje del paso5pies no pisa aviso clínico. Consciente0PG/negativos conserva opciones de incapacitado y advertencia de pérdida1PG; no se equipara PG no positivos a inconsciencia o muerte.
+
+board-health-states-current-final.log1.16 correcto: caída orgánica0PG, movimiento4casillas bloqueado/3con revisión, probes de presentación con acciones usadas/consciente negativo/inconsciente estable/muerto y controles/avisos coherentes,0POSTde movimiento, refresh restaura ficha real. board-health-guidance-legacy-final.log1.11 y board-health-conversation-regression.log correctos; comentario OOC sigue posible y diálogo0PG gratuito. Primera ejecución1.16 falló en assert heredado de ayuda1.11: ahora distingue razón específica de paso5pies; no defecto de mecánica. No nueva validación de reglas por probes UI; motor968 y fuentes anteriores intactos, sin Python/servicios/archivos/IA nuevos. Base50f6df2 publicada/verificada Render7678979745 success, board-map-first-production-public.log index/app/salud/release exactos,0campañas/POST/IA.
+
 ## Mapa antes de los controles de ataque (10 de noviembre de 2026)
 
 Baseline board-map-first-baseline.log: sólo57,55px de mapa visibles al entrar en combate390×844, sin scroll preparado. El mismo formulario de ataque se sitúa tras mapa+confirmación de recorrido y antes de excepciones. Orden visual y DOM coinciden, sin duplicar controles, cambiar gestos ni introducir posiciones/obstáculos. Guía dirige al ataque bajo el mapa, manteniendo turno/ficha/herramientas presentes.
