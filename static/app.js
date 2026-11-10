@@ -848,6 +848,7 @@ $('#importFile').onchange=run(async e=>{
  }finally{e.target.value=''}
 });
 async function loadSystemChoices(){
+ if($('#systemPicker'))return;
  const {systems}=await api('/api/systems');if(systems.length<2)return;
  const form=$('#createForm'),label=document.createElement('label');label.id='systemPicker';
  label.innerHTML='Reglamento<select name="ruleset">'+systems.map(s=>`<option value="${esc(s.id)}">${esc(s.name)}</option>`).join('')+'</select><small id="systemChoiceHint"></small>';
@@ -860,7 +861,29 @@ async function loadSystemChoices(){
   $('#systemChoiceHint').textContent=selected.status==='experimental'?'Experimental: recorrido en pruebas, con límites indicados al entrar.':(selected.coverage||[]).join(' · ');
  };label.querySelector('select').onchange();
 }
-async function init(){renderSavedCampaigns();const invite=new URLSearchParams(location.search).get('invite');prepareEntryInvitation(invite);try{model=await api('/api/status');await loadSystemChoices();$('#capabilities').innerHTML=`<p><strong>● Guardado persistente</strong><br>${esc(model.storage)}</p><p>${model.aiConfigured?'● IA configurada: '+esc(model.model):'○ Director de IA sin configurar'}<br>Conexión real a Claude Haiku; sin respuestas prefijadas.</p><p>${Object.entries(model.books).map(([k,n])=>esc(names[k])+': '+n+' páginas indexadas').join('<br>')}</p>`;$('#aiHint').textContent=model.aiConfigured?'El director responderá si activas «Responder con IA». Las tiradas y herramientas funcionan sin IA.':'El director no está disponible en esta mesa. Puedes usar las fichas, los dados y el tablero sin IA.';$('#askRule').disabled=!model.aiConfigured;$('#ruleAIHint').textContent=model.aiConfigured?'Consultar a la IA usa el servicio del director. Buscar en el texto y leer páginas no llama a IA.':'El director no está disponible. Puedes buscar en el texto y leer el manual.';$('#useAI').disabled=!model.aiConfigured;if(!model.aiConfigured)$('#useAI').checked=false;$('#resume').hidden=!token;try{await withSubmissionLock(()=>{})}catch(error){toast(error.message)}if(token&&!invite){let accepted;const pending=JSON.parse(localStorage.getItem('cronicas-pending')||'null');if(pending&&pending.token===token){try{busy=true;accepted=await recoverSubmission(pending)}catch(e){if(e.confirmed)await clearSubmission(pending);toast(e.message)}finally{busy=false}}await refresh(true);if(accepted){await clearSubmission(accepted);if(token===accepted.token){renderSyncStatus();renderComposerAvailability();renderSubmissionFeedback();toast('Envío recuperado')}}}}catch(e){toast(e.message)}}
+let initializingConnection=false;
+async function init(retry=false){
+ if(initializingConnection||busy||(retry&&!$('#app').hidden))return;
+ initializingConnection=true;
+ const invite=new URLSearchParams(location.search).get('invite'),connection=$('#entryConnection'),button=$('#retryEntryConnection');
+ const returnFocus=retry&&document.activeElement===button;
+ if(!retry){renderSavedCampaigns();prepareEntryInvitation(invite)}
+ button.disabled=true;
+ if(retry)$('#entryConnectionMessage').textContent='Volviendo a conectar con la mesa…';
+ try{
+ model=await api('/api/status');await loadSystemChoices();$('#capabilities').innerHTML=`<p><strong>● Guardado persistente</strong><br>${esc(model.storage)}</p><p>${model.aiConfigured?'● IA configurada: '+esc(model.model):'○ Director de IA sin configurar'}<br>Conexión real a Claude Haiku; sin respuestas prefijadas.</p><p>${Object.entries(model.books).map(([k,n])=>esc(names[k])+': '+n+' páginas indexadas').join('<br>')}</p>`;$('#aiHint').textContent=model.aiConfigured?'El director responderá si activas «Responder con IA». Las tiradas y herramientas funcionan sin IA.':'El director no está disponible en esta mesa. Puedes usar las fichas, los dados y el tablero sin IA.';$('#askRule').disabled=!model.aiConfigured;$('#ruleAIHint').textContent=model.aiConfigured?'Consultar a la IA usa el servicio del director. Buscar en el texto y leer páginas no llama a IA.':'El director no está disponible. Puedes buscar en el texto y leer el manual.';$('#useAI').disabled=!model.aiConfigured;if(!model.aiConfigured)$('#useAI').checked=false;$('#resume').hidden=!token;try{await withSubmissionLock(()=>{})}catch(error){toast(error.message)}if(token&&!invite){let accepted;const pending=JSON.parse(localStorage.getItem('cronicas-pending')||'null');if(pending&&pending.token===token){try{busy=true;accepted=await recoverSubmission(pending)}catch(e){if(e.confirmed)await clearSubmission(pending);toast(e.message)}finally{busy=false}}await refresh(true);if(accepted){await clearSubmission(accepted);if(token===accepted.token){renderSyncStatus();renderComposerAvailability();renderSubmissionFeedback();toast('Envío recuperado')}}}
+ connection.hidden=true;
+ if(returnFocus&&(document.activeElement===button||document.activeElement===document.body)){
+  const target=$('#app').hidden?document.body.classList.contains('joining-campaign')?$('#joinForm [name=name]'):$('#createForm [name=player]'):!$('#playGuidance').hidden?$('#playGuidanceAction'):$('#message');target.focus();
+ }
+ }catch(e){
+  connection.hidden=false;
+  $('#entryConnectionMessage').textContent='No se ha podido abrir la mesa. Conservamos tus accesos y lo escrito aquí. Vuelve a conectar cuando tengas conexión.';
+  $('#capabilities').textContent='No se ha podido completar la conexión. Usa «Volver a conectar» para intentarlo de nuevo.';
+  toast(e.message);
+ }finally{initializingConnection=false;button.disabled=false}
+}
+$('#retryEntryConnection').onclick=()=>init(true);
 const tabletopControls=window.TabletopControls.mount({
  scroller:$('.board-scroll'),grid:$('#grid'),tool:$('#tool'),zoom:$('#zoom'),snapshot:()=>snapshot&&(!snapshot.state.ruleset||snapshot.state.ruleset==='pathfinder-1e')?{...snapshot,state:{...snapshot.state,characters:boardCharacters(snapshot.state)}}:null,
  select:id=>{$('#boardCharacter').value=id;path=[];renderBoard()},

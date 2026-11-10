@@ -262,3 +262,5 @@ body.encounter-choice #story>.chapter{display:none}
 #turnOrder li[aria-current=true]{border-left-color:var(--gold);background:var(--panel)}
 #turnOrder li>span{margin-left:10px;color:var(--muted);font-size:13px}
 #turnOrder small{font-size:12px}
+
+#retryEntryConnection{min-height:44px}

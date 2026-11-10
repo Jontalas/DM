@@ -19,7 +19,14 @@ const assert=require('node:assert/strict');
   const host=await browser.newContext(),guest=await browser.newContext();
   const a=await host.newPage(),b=await guest.newPage(),errors=[];
   for(const page of [a,b])page.on('pageerror',error=>errors.push(error.message));
+  if(process.env.TEST_STARTUP_RETRY==='1')await a.setViewportSize({width:390,height:844});
+  let startupStatusReads=0;a.on('request',r=>{if(new URL(r.url()).pathname==='/api/status')startupStatusReads++});
+  if(process.env.TEST_STARTUP_RETRY==='1')await a.route('**/api/'+(process.env.TEST_STARTUP_RETRY_ENDPOINT||'status'),route=>route.abort('failed'),{times:1});
   await a.goto(url);
+  if(process.env.TEST_STARTUP_RETRY==='1'){
+   await a.locator('#entryConnection').waitFor({state:'visible'});await a.locator('#createForm [name=player]').fill('Nombre conservado');await a.locator('#createForm [name=goal]').fill('Idea que no debe desaparecer.');const posts=[];a.on('request',r=>{if(r.method()==='POST')posts.push(r.url())});assert.ok((await a.locator('#retryEntryConnection').boundingBox()).height>=44);assert.equal(await a.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);await a.locator('#retryEntryConnection').focus();await a.keyboard.press('Enter');await a.keyboard.press('Enter');await a.locator('#entryConnection').waitFor({state:'hidden'});assert.equal(await a.locator('#createForm [name=player]').inputValue(),'Nombre conservado');assert.equal(await a.locator('#createForm [name=goal]').inputValue(),'Idea que no debe desaparecer.');assert.ok(await a.locator('#systemPicker').count()<=1);assert.equal(posts.length,0);assert.equal(startupStatusReads,2);assert.equal(await a.locator('#createForm [name=player]').evaluate(e=>e===document.activeElement),true);await a.locator('#createForm [name=goal]').fill('');
+  }
+
   const welcomePosts=[];a.on('request',r=>{if(r.method()==='POST')welcomePosts.push(r)});
   assert.equal(await a.locator('#campaignOptions [name=tone]').isVisible(),false);
   assert.equal(await a.locator('#savedLibraryPanel').getAttribute('open'),null);
@@ -44,13 +51,30 @@ const assert=require('node:assert/strict');
    const token=localStorage.getItem('cronicas-token');
    return (await (await fetch('/api/state',{headers:{Authorization:'Bearer '+token}})).json()).invite;
   });
+  if(process.env.TEST_STARTUP_RETRY==='1')await b.route('**/api/status',route=>route.abort('failed'),{times:1});
   await b.goto(url+'?invite='+encodeURIComponent(invite));
+  if(process.env.TEST_STARTUP_RETRY==='1'){
+   await b.locator('#entryConnection').waitFor({state:'visible'});await b.locator('#joinForm [name=name]').fill('Nombre de invitado conservado');await b.locator('#inviteInput').fill(invite+' ');await b.locator('#retryEntryConnection').click();await b.locator('#entryConnection').waitFor({state:'hidden'});assert.equal(await b.locator('#joinForm [name=name]').inputValue(),'Nombre de invitado conservado');assert.equal(await b.locator('#inviteInput').inputValue(),invite+' ');await b.locator('#inviteInput').fill(invite);
+  }
+
   await b.waitForFunction(()=>document.querySelector('#joinPanel').open);
   assert.equal(await b.locator('#inviteInput').inputValue(),invite);
   await b.locator('#joinForm [name=name]').fill('Luis');await b.locator('#joinForm button').click();
   await b.locator('#app').waitFor({state:'visible'});
   assert.equal(new URL(b.url()).searchParams.has('invite'),false);
-  await a.reload();await a.locator('#app').waitFor({state:'visible'});
+  if(process.env.TEST_STARTUP_RETRY==='1'){
+   await a.evaluate(()=>refresh(true));const before=await a.evaluate(()=>({token,state:structuredClone(snapshot.state),version:snapshot.version})),posts=[];a.on('request',r=>{if(r.method()==='POST')posts.push(r.url())});await a.route('**/api/state',route=>route.abort('failed'),{times:1});await a.reload();await a.locator('#entryConnection').waitFor({state:'visible'});await a.locator('#retryEntryConnection').focus();await a.keyboard.press('Enter');await a.locator('#app').waitFor({state:'visible'});assert.deepEqual(await a.evaluate(()=>({token,state:structuredClone(snapshot.state),version:snapshot.version})),before);assert.equal(posts.length,0);assert.ok(await a.locator('#systemPicker').count()<=1);
+  }else{await a.reload();await a.locator('#app').waitFor({state:'visible'});}
+
+  if(process.env.TEST_STARTUP_PENDING_RETRY==='1'){
+   const bodies=[];a.on('request',r=>{if(r.url().endsWith('/api/action'))bodies.push(r.postDataJSON())});
+   await a.route('**/api/action',async route=>{const response=await route.fetch();assert.equal(response.ok(),true);await route.abort('failed')},{times:1});
+   await a.locator('#quickDiceHelp>summary').click();await a.locator('#quickDice [data-quick-die="20"]').click();await a.waitForFunction(()=>!busy&&!!localStorage.getItem('cronicas-pending'));
+   const applied=await a.evaluate(()=>({state:structuredClone(snapshot.state),version:snapshot.version})),pending=await a.evaluate(()=>JSON.parse(localStorage.getItem('cronicas-pending')).body);assert.equal(bodies.length,1);
+   await a.route('**/api/status',route=>route.abort('failed'),{times:1});await a.reload();await a.locator('#entryConnection').waitFor({state:'visible'});assert.equal(bodies.length,1);await a.locator('#retryEntryConnection').focus();await a.keyboard.press('Enter');await a.waitForFunction(()=>!busy&&!localStorage.getItem('cronicas-pending')&&!document.querySelector('#app').hidden);
+   assert.equal(bodies.length,2);assert.deepEqual(bodies[0],pending);assert.deepEqual(bodies[1],pending);assert.deepEqual(await a.evaluate(()=>({state:structuredClone(snapshot.state),version:snapshot.version})),applied);
+   console.log('OK: startup retry recovers the original uncertain dice submission without a second result or provider call.');
+  }
   async function character(name,enemy){
    await a.locator('#addCharacter').click();
    await a.locator('#modal details summary').last().click();await a.locator('#creatorManual').click();
