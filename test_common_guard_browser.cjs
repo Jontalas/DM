@@ -12,7 +12,8 @@ const path=require('node:path'),assert=require('node:assert/strict');
   browser=await chromium.launch({headless:true,executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe'});
   for(const wounded of [false,true]){
    const context=await browser.newContext({hasTouch:true,acceptDownloads:true}),page=await context.newPage(),actions=[],errors=[];
-   page.on('dialog',d=>d.accept());page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>{if(r.url().endsWith('/api/action'))actions.push(r.postDataJSON())});
+   const acceptDialog=d=>d.accept();page.on('dialog',acceptDialog);page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>{if(r.url().endsWith('/api/action'))actions.push(r.postDataJSON())});
+   if(process.env.TEST_MOVEMENT_REVIEW_BASELINE==='1')await page.route('**/app.js*',route=>route.fulfill({contentType:'text/javascript',body:execFileSync('git',['show','979d67409b86dbb4a323f6a92a556de95b1e1b95:static/app.js'],{encoding:'utf8'})}));
    await page.goto(url);await page.locator('#createForm [name=player]').fill('Ana');await page.locator('#createForm [name=goal]').fill('Entender a la guardiana y seguir las pistas');await page.locator('#createForm button').click();
    await page.locator('[data-create-hero]').click();await page.locator('[data-creator-preset=guardian]').click();await page.locator('#creatorName').fill('Aria');await page.locator('[data-creator-step="3"]').click();
    await page.locator('#creatorFinish').click();await page.locator('.sheet-checks').waitFor();
@@ -87,6 +88,9 @@ const path=require('node:path'),assert=require('node:assert/strict');
      assert.equal(actions.length,count);assert.equal(await page.locator('#confirmStep').isEnabled(),true);
      const confirmation=await page.locator('#confirmStep').boundingBox();assert.ok(confirmation.y>=0&&confirmation.y+confirmation.height<=844,'Movement confirmation must be visible after preparing the adjacent step');
      assert.equal(await page.locator('#attackForm').isVisible(),false);
+     if(process.env.TEST_MOVEMENT_REVIEW_EXPLANATION==='1'){
+      page.off('dialog',acceptDialog);let message;page.once('dialog',async dialog=>{message=dialog.message();await dialog.dismiss()});await page.locator('#confirmMove').click();page.on('dialog',acceptDialog);assert.match(message,/Coste: 5 pies/);assert.match(message,/Revisión necesaria de ataques de oportunidad/);assert.doesNotMatch(message,/no provoca ataques de oportunidad|ni gasta acciones/i);assert.equal(actions.length,count);assert.deepEqual(await page.evaluate(()=>snapshot.state),before.state);
+     }
      const origin=await page.locator('#grid .cell[data-x="0"][data-y="0"]').boundingBox(),preview=await page.locator('#movementPreview').boundingBox();assert.ok(origin.y>=0&&origin.y+origin.height<=preview.y,'Prepared move keeps the actor visible above its confirmation');
      await page.locator('#toast').waitFor({state:'hidden'});
      await page.locator('#confirmStep').focus();await page.locator('#confirmStep').scrollIntoViewIfNeeded();await page.screenshot({path:'.deps/five-foot-step-choice-mobile.png',fullPage:true});
@@ -101,6 +105,11 @@ const path=require('node:path'),assert=require('node:assert/strict');
      assert.deepEqual(await page.evaluate(()=>snapshot.state.board.spent),before.state.board.spent);
      assert.equal(actions.length,count+1);assert.equal(actions.at(-1).type,'five_foot_step');
      assert.match(await page.locator('#boardGuidance').textContent(),/no puedes desplazarte más/);
+     if(process.env.TEST_STABLE_ACTION_BUDGET==='1'){
+      assert.match(await page.locator('#actionBudget').textContent(),/Paso de 5 pies usado/);
+      const before=await page.evaluate(()=>({state:structuredClone(snapshot.state),version:snapshot.version})),count=actions.length;await page.evaluate(()=>{window.budgetChanges=0;window.budgetObserver=new MutationObserver(records=>window.budgetChanges+=records.length);window.budgetObserver.observe(document.querySelector('#actionBudget'),{childList:true,characterData:true,subtree:true})});for(const value of [55,44,55,44])await page.locator('#zoom').evaluate((e,value)=>{e.value=value;e.dispatchEvent(new Event('input',{bubbles:true}))},value);const changes=await page.evaluate(()=>{window.budgetObserver.disconnect();return window.budgetChanges});assert.equal(changes,0,'Local viewing must not replace an unchanged live action budget');assert.deepEqual(await page.evaluate(()=>({state:structuredClone(snapshot.state),version:snapshot.version})),before);assert.equal(actions.length,count);
+     }
+
      if(recoverStep){
       const accepted=await page.evaluate(()=>structuredClone(snapshot)),original=actions.at(-1);
       const keepPreview=process.env.TEST_PF_KEEP_STEP_PREVIEW==='1';

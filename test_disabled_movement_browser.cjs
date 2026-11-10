@@ -18,6 +18,7 @@ const path=require('node:path'),assert=require('node:assert/strict');
   for(let y=1;y<=4;y++)await page.locator(`#grid [data-x="0"][data-y="${y}"]`).click();
   assert.equal(await page.locator('#confirmMove').isEnabled(),false);assert.match(await page.locator('#pathInfo').textContent(),stepScope?/única casilla/:/supera las 3 casillas/);
   await page.locator('#clearPath').click();for(let y=1;y<=3;y++)await page.locator(`#grid [data-x="0"][data-y="${y}"]`).click();assert.equal(await page.locator('#confirmMove').isEnabled(),true);
+  if(stepScope&&process.env.TEST_MOVEMENT_REVIEW_EXPLANATION==='1'){assert.match(await page.locator('#pathInfo').textContent(),/Movimiento con revisión: 15 pies/);assert.match(await page.locator('#pathInfo').textContent(),/Paso de 5 pies:.*única casilla/);assert.equal(await page.locator('#confirmStep').isDisabled(),true)}
   // Presentation-only probes. No move is confirmed: opportunity attacks still
   // require explicit adjudication; HTTP tests separately commit a legal move.
   await page.evaluate(()=>{snapshot.state.board.spent[snapshot.state.characters[0].id]={move:true};renderBoard()});

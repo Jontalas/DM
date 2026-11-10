@@ -495,7 +495,7 @@ function render(){restoreCampaignComposer();const importStatus=$('#copyImportSta
  $('#boardCharacter').innerHTML=boardAvailable.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('');if(boardAvailable.some(c=>c.id===boardPrev))$('#boardCharacter').value=boardPrev;
  const area=$('#story'), near=area.scrollHeight-area.scrollTop-area.clientHeight<150;
  $('#messages').innerHTML=s.messages.map(messageEntry).join('');
- if(!available.length)$('#messages').insertAdjacentHTML('afterbegin','<div class="card"><div class="eyebrow">PASO 1 · TU PERSONAJE</div><h3>¿Quién vivirá esta aventura?</h3><p>Elige un estilo y un nombre. El creador calcula tu ficha; después podrás elegir la aventura.</p><button class="primary" data-create-hero>Crear mi personaje</button></div>');
+ if(!available.length)$('#messages').insertAdjacentHTML('afterbegin',`<div class="card"><div class="eyebrow">PASO 1 · TU PERSONAJE</div><h3>¿Quién vivirá esta aventura?</h3><p>Elige un estilo y un nombre. El creador calcula tu ficha. ${me.host?'Después podrás elegir la aventura.':'Después podrás participar con tu personaje en la historia del grupo.'}</p><button class="primary" data-create-hero>Crear mi personaje</button></div>`);
  document.body.classList.toggle('preparing-adventure',!s.adventure&&!s.pfEncounter&&!s.board.active&&s.location==='Por decidir');document.body.classList.toggle('adventure-active',!!(s.adventure||s.pfEncounter));renderAdventure();renderChecks();renderPlayGuidance(s);
  if(s.pfEncounter?.phase==='offered'){
   const opening=snapshot.id+':'+s.pfEncounter.character+':'+s.pfEncounter.definition.version;
@@ -532,6 +532,15 @@ function renderTurnInfo(s){
  details.querySelector('[data-turn-headline]').textContent=`Asalto ${board.round} · Turno de ${s.characters.find(c=>c.id===current)?.name||'ficha no disponible'}`;
  details.querySelector('ol').innerHTML=board.order.map(row=>`<li data-character="${esc(row.id)}" ${row.id===current?'aria-current="true"':''}><strong>${esc(s.characters.find(c=>c.id===row.id)?.name||'Ficha no disponible')}</strong><span>Iniciativa ${esc(row.roll+row.modifier)}</span><small>d20 ${esc(row.roll)} ${row.modifier>=0?'+':''}${esc(row.modifier)}${row.id===current?' · Turno actual':''}</small></li>`).join('');
 }
+function movementPathCost(c,board){
+ let x=c?.x,y=c?.y,diagonal=0,cost=0;
+ for(const [nx,ny] of path){const d=nx!==x&&ny!==y;if(d)diagonal++;cost+=board.terrain[nx+','+ny]==='difficult'?(d?3:2):(d&&diagonal%2===0?2:1);x=nx;y=ny}
+ return cost;
+}
+function movementReviewText(c,board){
+ const cost=movementPathCost(c,board);
+ return `Recorrido: ${path.map(p=>p.join(',')).join(' → ')} · Coste: ${cost*5} pies (${cost} casillas). Revisión necesaria de ataques de oportunidad, alcance, visibilidad y otras consecuencias antes de confirmar.`;
+}
 function renderBoard(){if(!snapshot)return;
  const s=snapshot.state,board=s.board,focusKey=snapshot.id+':'+snapshot.me.id+':'+(s.boardScenes?.current||'main');
  const contextChanged=gridFocusKey!==focusKey,resetPreparation=['wall','difficult','clear'].includes($('#tool').value)&&(contextChanged||!snapshot.me.host);
@@ -552,7 +561,10 @@ function renderBoard(){if(!snapshot)return;
  grid.innerHTML=cells;
  $('#tokenHealthLegend').hidden=!visible.some(c=>characterHealthLabel(c));
  if(focused)grid.querySelector(`.cell[data-x="${gridFocus[0]}"][data-y="${gridFocus[1]}"]`)?.focus({preventScroll:true});
- let c=s.characters.find(c=>c.id===$('#boardCharacter').value),x=c?.x,y=c?.y,diagonal=0,cost=0;const movementStart=!c?'Selecciona una ficha para preparar un recorrido.':!characterIsConscious(c)?`${c.name} · ${characterHealthLabel(c)}. No puede moverse; puedes consultar su ficha.`:`${c.name}: marca casillas adyacentes o arrastra su ficha para preparar el recorrido. No se mueve hasta que confirmes.`;for(const [nx,ny] of path){let d=nx!==x&&ny!==y;if(d)diagonal++;cost+=board.terrain[nx+','+ny]==='difficult'?(d?3:2):(d&&diagonal%2===0?2:1);x=nx;y=ny}$('#pathInfo').textContent=path.length?`Recorrido: ${path.map(p=>p.join(',')).join(' → ')} · Coste: ${cost*5} pies (${cost} casillas). Revisión manual de AdO, alcance, visibilidad y consecuencias antes de confirmar.`:movementStart;renderTabletopTools()}
+ const moving=s.characters.find(c=>c.id===$('#boardCharacter').value);
+ const movementStart=!moving?'Selecciona una ficha para preparar un recorrido.':!characterIsConscious(moving)?`${moving.name} · ${characterHealthLabel(moving)}. No puede moverse; puedes consultar su ficha.`:`${moving.name}: marca casillas adyacentes o arrastra su ficha para preparar el recorrido. No se mueve hasta que confirmes.`;
+ $('#pathInfo').textContent=path.length?movementReviewText(moving,board):movementStart;renderTabletopTools();}
+
 function openBook(book=$('#book').value,page=Number($('#page').value)){if(!token)return;$('#book').value=book;$('#page').value=page;bookReader.open(book,page)}
 function fiveFootStepReason(c){
  const s=snapshot.state,b=s.board,r=s.pfEncounter,opponent=s.characters.find(v=>v.id===r?.npc);
@@ -576,49 +588,46 @@ function movementPathReason(c){
  if(!c||!path.length||!characterIsConscious(c))return '';
  if(path.length>100)return 'Puedes preparar hasta 100 casillas por recorrido en esta versión. Bórralo y traza uno más corto.';
  const board=snapshot.state.board,visible=boardCharacters(snapshot.state);
- let x=c.x,y=c.y,diagonals=0,cost=0;
+ let x=c.x,y=c.y;
  for(const [nx,ny] of path){
   const dx=Math.abs(nx-x),dy=Math.abs(ny-y);
   if(!Number.isInteger(nx)||!Number.isInteger(ny)||nx<0||nx>=20||ny<0||ny>=20||Math.max(dx,dy)!==1)return 'El recorrido debe seguir casillas adyacentes dentro del tablero. Bórralo y vuelve a trazarlo.';
   if(board.terrain[nx+','+ny]==='wall')return 'El recorrido atraviesa un muro. Bórralo y traza otro camino.';
   if(dx&&dy&&(board.terrain[x+','+ny]==='wall'||board.terrain[nx+','+y]==='wall'))return 'No puedes cortar la esquina de un muro. Bórralo y rodea la esquina.';
   if(visible.some(other=>other.id!==c.id&&other.x===nx&&other.y===ny))return 'El recorrido pasa por una casilla ocupada. El cruce necesita una resolución excepcional en esta versión; puedes trazar otro camino.';
-  if(dx&&dy)diagonals++;
-  cost+=board.terrain[nx+','+ny]==='difficult'?(dx&&dy?3:2):(dx&&dy&&diagonals%2===0?2:1);
   x=nx;y=ny;
  }
  if(board.active&&c.hp>0){
   if(board.order[board.turn]?.id!==c.id)return 'Espera al turno de esta ficha. Puedes consultar el tablero mientras tanto.';
   if(board.spent[c.id]?.move)return 'Ya has usado tu acción de movimiento. Más movimiento necesita una resolución excepcional en esta versión.';
-  if(cost>characterMovementCells(c))return 'El recorrido supera una acción de movimiento. Bórralo y traza uno más corto; otros desplazamientos necesitan una resolución excepcional en esta versión.';
+  if(movementPathCost(c,board)>characterMovementCells(c))return 'El recorrido supera una acción de movimiento. Bórralo y traza uno más corto; otros desplazamientos necesitan una resolución excepcional en esta versión.';
  }
  return '';
 }
 function renderTabletopTools(){
  const board=snapshot.state.board,selected=$('#boardCharacter').value,spent=board.spent[selected]||{};
  $('#actionBudget').hidden=!board.active;
- const moving=snapshot.state.characters.find(c=>c.id===selected),incapacitated=moving?.hp<=0&&characterIsConscious(moving);
- const actionBudgetText=board.active?(!moving?'No hay una ficha seleccionada. Puedes consultar el tablero.':!characterIsConscious(moving)?`${characterHealthLabel(moving)} · No puede actuar`:incapacitated?`Incapacitado · ${spent.standard||spent.move?'Acción usada':'Elige una acción estándar o de movimiento'} · Hasta ${characterMovementCells(moving)} casillas completas por movimiento`:`Estándar: ${spent.standard?'gastada':'disponible'} · Movimiento: ${spent.move?'gastado':'disponible'}`):'Exploración';if($('#actionBudget').textContent!==actionBudgetText)$('#actionBudget').textContent=actionBudgetText;
+ const moving=snapshot.state.characters.find(c=>c.id===selected),incapacitated=moving?.hp<=0&&characterIsConscious(moving),stepEnabled=snapshot.state.pfEncounter?.definition.fiveFootStepScope==='normal-light-ground-five-foot-step-1',stepped=stepEnabled&&board.fiveFootSteps?.[selected];
+ const actionBudgetText=(board.active?(!moving?'No hay una ficha seleccionada. Puedes consultar el tablero.':!characterIsConscious(moving)?`${characterHealthLabel(moving)} · No puede actuar`:incapacitated?`Incapacitado · ${spent.standard||spent.move?'Acción usada':'Elige una acción estándar o de movimiento'} · Hasta ${characterMovementCells(moving)} casillas completas por movimiento`:`Estándar: ${spent.standard?'gastada':'disponible'} · Movimiento: ${spent.move?'gastado':'disponible'}`):'Exploración')+(stepped?' · Paso de 5 pies usado; sin más desplazamientos este asalto.':'');if($('#actionBudget').textContent!==actionBudgetText)$('#actionBudget').textContent=actionBudgetText;
  const measuring=$('#tool').value==='measure';
  $('.board-scroll').dataset.tool=$('#tool').value;
  $('#confirmMove').disabled=measuring||$('#tool').value==='pan'||!path.length;
+ const movementCost=movementPathCost(moving,board);
+ if(path.length&&$('#tool').value==='move'){const review=movementReviewText(moving,board);if($('#pathInfo').textContent!==review)$('#pathInfo').textContent=review}
  let movementReason='';
  if(moving?.hp<=0&&path.length&&!measuring&&$('#tool').value==='move'){
-  let x=moving.x,y=moving.y,diagonal=0,cost=0;
-  for(const [nx,ny] of path){const d=nx!==x&&ny!==y;if(d)diagonal++;cost+=board.terrain[nx+','+ny]==='difficult'?(d?3:2):(d&&diagonal%2===0?2:1);x=nx;y=ny}
-  movementReason=!characterIsConscious(moving)?'No puede moverse en su estado actual. Revisa su ficha.':board.active&&board.order[board.turn]?.id!==moving.id?'Espera al turno de esta ficha.':board.active&&(spent.standard||spent.move)?'Incapacitado: ya has usado tu acción de este turno.':board.active&&cost>characterMovementCells(moving)?`Este recorrido supera las ${characterMovementCells(moving)} casillas completas de tu movimiento reducido.`:'';
+  movementReason=!characterIsConscious(moving)?'No puede moverse en su estado actual. Revisa su ficha.':board.active&&board.order[board.turn]?.id!==moving.id?'Espera al turno de esta ficha.':board.active&&(spent.standard||spent.move)?'Incapacitado: ya has usado tu acción de este turno.':board.active&&movementCost>characterMovementCells(moving)?`Este recorrido supera las ${characterMovementCells(moving)} casillas completas de tu movimiento reducido.`:'';
   if(movementReason)$('#confirmMove').disabled=true;
   $('#pathInfo').textContent+=(incapacitated?' Incapacitado: velocidad reducida a la mitad.':'')+(movementReason?' '+movementReason:'');
  }
  $('#confirmMove').hidden=!path.length||$('#tool').value!=='move';
- const stepEnabled=snapshot.state.pfEncounter?.definition.fiveFootStepScope==='normal-light-ground-five-foot-step-1',stepped=stepEnabled&&board.fiveFootSteps?.[selected];
  $('#confirmMove').textContent=stepEnabled?'Mover con revisión':'Confirmar recorrido';
  $('#confirmMove').classList.toggle('primary',!stepEnabled);
  $('#confirmStep').hidden=!stepEnabled||!board.active||!path.length||$('#tool').value!=='move';
  const stepReason=stepEnabled?fiveFootStepReason(moving):'';
  $('#confirmStep').disabled=!!stepReason;
- if(stepped){$('#confirmMove').disabled=true;$('#actionBudget').textContent+=' · Paso de 5 pies usado; sin más desplazamientos este asalto.';}
- if(!$('#confirmStep').hidden)$('#pathInfo').textContent=stepReason||'Paso de 5 pies: no provoca ataques de oportunidad ni gasta acciones. Después no podrás desplazarte más este asalto. Elige cómo mover.';
+ if(stepped)$('#confirmMove').disabled=true;
+ if(!$('#confirmStep').hidden)$('#pathInfo').textContent=stepReason?`Movimiento con revisión: ${movementReason||movementCost*5+' pies.'} Paso de 5 pies: ${stepReason}`:'Paso de 5 pies: no provoca ataques de oportunidad ni gasta acciones. Después no podrás desplazarte más este asalto. Elige cómo mover.';
  const pathReason=$('#tool').value==='move'&&!stepped?movementPathReason(moving):'';
  if(pathReason){$('#confirmMove').disabled=true;$('#pathInfo').textContent=pathReason}
  $('#movementPreview').classList.toggle('prepared',!!path.length&&$('#tool').value==='move');
@@ -827,9 +836,10 @@ $('#confirmStep').onclick=run(async()=>{
 $('#confirmMove').onclick=run(async()=>{
  ensureSubmissionCanStart();
  if(!path.length)throw Error('Traza un recorrido primero');
- const pathReason=movementPathReason(snapshot.state.characters.find(c=>c.id===$('#boardCharacter').value));if(pathReason)throw Error(pathReason);
+ const moving=snapshot.state.characters.find(c=>c.id===$('#boardCharacter').value);if(!moving)throw Error('Selecciona una ficha para preparar su recorrido.');
+ const pathReason=movementPathReason(moving);if(pathReason)throw Error(pathReason);
  const action=$('#confirmMove'),returnFocus=action.matches(':focus-visible'),characterId=$('#boardCharacter').value;
- if(!confirm($('#pathInfo').textContent+'\n¿Has revisado las consecuencias conocidas y las reglas pendientes con la mesa?'))return;
+ if(!confirm(movementReviewText(moving,snapshot.state.board)+'\n¿Has revisado las consecuencias conocidas y las reglas pendientes con la mesa?'))return;
  await act('move',{character:characterId,path,acknowledge:true});
  if(returnFocus&&(document.activeElement===action||document.activeElement===document.body)){
   const c=boardCharacters(snapshot.state).find(c=>c.id===characterId),cell=c&&$(`#grid .cell[data-x="${c.x}"][data-y="${c.y}"]`);rememberGridFocus(cell);cell?.focus();
