@@ -2,6 +2,7 @@ const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 let token=localStorage.getItem('cronicas-token'), model={}, snapshot, snapshotToken, path=[], ruler=[], lastVersion=-1, busy=false, toastTimer, gridFocus=[0,0], gridFocusKey;
 let submittedMovementPreview,messageRevision=0,submittedMessage;
 let composerScope,composerRestoreSpeaker;
+let messageHistory;
 const composerDrafts=new Map();
 const names={reglas:'Reglas básicas',bestiario:'Bestiario',trey:'TREY'};
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -466,6 +467,41 @@ function messageEntry(message){
  }
  return `<article class="message ${esc(message.kind)}">${heading}${content}</article>`;
 }
+function messageHistoryIsCurrent(){
+ return messageHistory?.root===$('#messages')&&messageHistory.access===token&&messageHistory.campaign===snapshot.id&&messageHistory.player===snapshot.me.id&&messageHistory.host===snapshot.me.host&&(!snapshot.state.ruleset||snapshot.state.ruleset==='pathfinder-1e');
+}
+function renderMessageHistory(messages,introHtml){
+ const root=$('#messages'),active=document.activeElement;
+ const same=messageHistoryIsCurrent();
+ const previous=same?messageHistory.rows:new Map(),rows=new Map(),counts=new Map(),nodes=[];
+ let focusTarget=same&&root.contains(active)?active:null;
+ if(!same)root.replaceChildren();
+ const element=html=>{const template=document.createElement('template');template.innerHTML=html;return template.content.firstElementChild};
+ const ordered=value=>Array.isArray(value)?value.map(ordered):value&&typeof value==='object'?Object.fromEntries(Object.keys(value).sort().map(key=>[key,ordered(value[key])])):value;
+ for(const message of messages){
+  const identity=JSON.stringify(ordered(message)),occurrence=counts.get(identity)||0;counts.set(identity,occurrence+1);
+  const key=identity+'\0'+occurrence,html=messageEntry(message),old=previous.get(key);
+  let node=old?.node;
+  if(!old||old.html!==html||node.parentNode!==root){
+   node=element(html);
+   if(old?.node.parentNode===root){
+    const expanded=[...old.node.querySelectorAll('details')].map(detail=>detail.open);node.querySelectorAll('details').forEach((detail,i)=>detail.open=!!expanded[i]);
+    if(old.node.contains(active)){
+     const path=[];let current=active;while(current!==old.node){path.unshift([...current.parentElement.children].indexOf(current));current=current.parentElement}
+     const target=path.reduce((parent,index)=>parent?.children[index],node);
+     if(target?.tagName===active.tagName){if(active.hasAttribute('tabindex')&&active.tabIndex===-1)target.tabIndex=-1;focusTarget=target}
+    }
+   }
+  }
+  rows.set(key,{html,node});nodes.push(node);
+ }
+ let intro;
+ if(introHtml){const old=same?messageHistory.intro:undefined;intro=old?.html===introHtml&&old.node.parentNode===root?old:{html:introHtml,node:element(introHtml)};nodes.unshift(intro.node)}
+ const retained=new Set(nodes);for(const node of [...root.childNodes])if(!retained.has(node))node.remove();
+ let cursor=root.firstChild;for(const node of nodes){if(node===cursor)cursor=cursor.nextSibling;else root.insertBefore(node,cursor)}
+ if(focusTarget?.isConnected&&document.activeElement===document.body)focusTarget.focus({preventScroll:true});
+ messageHistory={root,access:token,campaign:snapshot.id,player:snapshot.me.id,host:snapshot.me.host,rows,intro};
+}
 function combatMessage(message){
  const result=message.combat;
  if(message.kind!=='rules'||!result||typeof result.hit!=='boolean'||typeof result.critical!=='boolean'||(result.critical&&!result.hit)||!['damage','targetHp','attackerHp'].every(key=>Number.isFinite(result[key]))||typeof result.status!=='string'||typeof result.attackerStatus!=='string')return null;
@@ -487,15 +523,15 @@ function renderParty(s){
  $('#party').innerHTML=present.map(partyPerson).join('')+(elsewhere.length?`<button type="button" id="otherSceneCharacters">En otra escena · ${elsewhere.length}</button>`:'')||'<small>Aún no hay personajes. Crea tu primer aventurero.</small>';
  if($('#otherSceneCharacters'))$('#otherSceneCharacters').onclick=()=>modal(`<div class="eyebrow">OTROS PERSONAJES</div><h2>En otra escena</h2><p>Siguen en la partida, pero sus fichas no están en el tablero actual. Puedes consultarlas sin moverlas.</p>${elsewhere.map(partyPerson).join('')}`);
 }
-function render(){restoreCampaignComposer();const importStatus=$('#copyImportStatus'),access=snapshot.id+':'+snapshot.me.id;if(importStatus.dataset.access!==access){importStatus.hidden=true;importStatus.dataset.access=access}if(snapshot.state.ruleset==='rule-pack'){RulePackUI.render();return}if($('#rulePackWorkspace'))$('#rulePackWorkspace').hidden=true;if(snapshot.state.ruleset==='cairn-1e'){$('#campaignTitle').textContent=snapshot.title;$('#campaignMeta').textContent='Cairn 1e';$('#inviteBtn').hidden=!snapshot.me.host;$('#welcome').hidden=true;$('#app').hidden=false;$('#app > .workspace').hidden=true;run(()=>CairnUI.render())();return}if($('#systemWorkspace'))$('#systemWorkspace').hidden=true;$('#app > .workspace').hidden=false;const s=snapshot.state, me=snapshot.me;$('#savedLibraryPanel').hidden=true;$('#welcome').hidden=true;$('#app').hidden=false;$('#campaignTitle').textContent=snapshot.title;$('#campaignMeta').textContent=`Pathfinder 1e · ${snapshot.players.length} ${snapshot.players.length===1?'jugador':'jugadores'} · ${s.characters.length} ${s.characters.length===1?'personaje':'personajes'}`;$('#place').textContent=s.location;$('#objective').textContent=s.goal;$('#sceneNum').textContent=s.scene;$('#tokenNum').textContent=`${s.tokens} / ${s.threshold}`;$('#phase').textContent=s.turned?'Punto de giro alcanzado · desenlace':'Desarrollo de la aventura';$('#sceneTitle').textContent=`Escena ${s.scene} · ${s.location}`;
+function render(){restoreCampaignComposer();if(messageHistory&&!messageHistoryIsCurrent()){$('#messages').replaceChildren();messageHistory=undefined}const importStatus=$('#copyImportStatus'),access=snapshot.id+':'+snapshot.me.id;if(importStatus.dataset.access!==access){importStatus.hidden=true;importStatus.dataset.access=access}if(snapshot.state.ruleset==='rule-pack'){RulePackUI.render();return}if($('#rulePackWorkspace'))$('#rulePackWorkspace').hidden=true;if(snapshot.state.ruleset==='cairn-1e'){$('#campaignTitle').textContent=snapshot.title;$('#campaignMeta').textContent='Cairn 1e';$('#inviteBtn').hidden=!snapshot.me.host;$('#welcome').hidden=true;$('#app').hidden=false;$('#app > .workspace').hidden=true;run(()=>CairnUI.render())();return}if($('#systemWorkspace'))$('#systemWorkspace').hidden=true;$('#app > .workspace').hidden=false;const s=snapshot.state, me=snapshot.me;$('#savedLibraryPanel').hidden=true;$('#welcome').hidden=true;$('#app').hidden=false;$('#campaignTitle').textContent=snapshot.title;$('#campaignMeta').textContent=`Pathfinder 1e · ${snapshot.players.length} ${snapshot.players.length===1?'jugador':'jugadores'} · ${s.characters.length} ${s.characters.length===1?'personaje':'personajes'}`;$('#place').textContent=s.location;$('#objective').textContent=s.goal;$('#sceneNum').textContent=s.scene;$('#tokenNum').textContent=`${s.tokens} / ${s.threshold}`;$('#phase').textContent=s.turned?'Punto de giro alcanzado · desenlace':'Desarrollo de la aventura';$('#sceneTitle').textContent=`Escena ${s.scene} · ${s.location}`;
  renderParty(s);renderDiceEntry();
  const available=s.characters.filter(c=>me.host||c.owner===me.id), boardPrev=$('#boardCharacter').value;
  renderSpeakerChoices();
  const boardAvailable=boardCharacters(s).filter(c=>me.host||c.owner===me.id);
  $('#boardCharacter').innerHTML=boardAvailable.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('');if(boardAvailable.some(c=>c.id===boardPrev))$('#boardCharacter').value=boardPrev;
- const area=$('#story'), near=area.scrollHeight-area.scrollTop-area.clientHeight<150;
- $('#messages').innerHTML=s.messages.map(messageEntry).join('');
- if(!available.length)$('#messages').insertAdjacentHTML('afterbegin',`<div class="card"><div class="eyebrow">PASO 1 · TU PERSONAJE</div><h3>¿Quién vivirá esta aventura?</h3><p>Elige un estilo y un nombre. El creador calcula tu ficha. ${me.host?'Después podrás elegir la aventura.':'Después podrás participar con tu personaje en la historia del grupo.'}</p><button class="primary" data-create-hero>Crear mi personaje</button></div>`);
+ const area=$('#story'),history=$('#messages'),selection=getSelection(),readingHistory=history.contains(document.activeElement)||selection&&!selection.isCollapsed&&history.contains(selection.anchorNode),near=!readingHistory&&area.scrollHeight-area.scrollTop-area.clientHeight<150;
+ const intro=!available.length?`<div class="card"><div class="eyebrow">PASO 1 · TU PERSONAJE</div><h3>¿Quién vivirá esta aventura?</h3><p>Elige un estilo y un nombre. El creador calcula tu ficha. ${me.host?'Después podrás elegir la aventura.':'Después podrás participar con tu personaje en la historia del grupo.'}</p><button class="primary" data-create-hero>Crear mi personaje</button></div>`:'';
+ renderMessageHistory(s.messages,intro);
  document.body.classList.toggle('preparing-adventure',!s.adventure&&!s.pfEncounter&&!s.board.active&&s.location==='Por decidir');document.body.classList.toggle('adventure-active',!!(s.adventure||s.pfEncounter));renderAdventure();renderChecks();renderPlayGuidance(s);
  if(s.pfEncounter?.phase==='offered'){
   const opening=snapshot.id+':'+s.pfEncounter.character+':'+s.pfEncounter.definition.version;
@@ -721,7 +757,7 @@ function renderAttack(){
 $('#attackTarget').onchange=()=>{renderAttack();renderTabletopTools()};
 function showAttackResult(action){
  chooseTab('story');
- const index=snapshot.state.messages.findLastIndex(m=>m.combat?.attacker===action.character&&m.combat.target===action.target),result=$('#messages').children[index]?.querySelector('.combat-result');
+ const index=snapshot.state.messages.findLastIndex(m=>m.combat?.attacker===action.character&&m.combat.target===action.target),result=$$('#messages > .message')[index]?.querySelector('.combat-result');
  if(result){result.tabIndex=-1;result.scrollIntoView({block:'center'});result.focus({preventScroll:true})}
 }
 $('#attackForm').onsubmit=run(async()=>{

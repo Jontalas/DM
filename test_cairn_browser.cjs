@@ -66,12 +66,17 @@ const path=require('node:path'),assert=require('node:assert/strict');
   await page.locator('#createForm button').click();await page.locator('#app > .workspace').waitFor({state:'visible'});
   assert.ok(await page.locator('#systemWorkspace').isHidden());
   assert.match(await page.locator('#campaignMeta').textContent(),/Pathfinder 1e/);
+  if(process.env.TEST_MESSAGE_HISTORY_SCOPE==='1'){
+   await page.evaluate(()=>{window.pfHistoryIntro=document.querySelector('#messages [data-create-hero]')});await page.locator('#messageKind').selectOption('private');await page.locator('#message').fill('Nota privada de la partida Pathfinder.');await page.locator('#send').click();await page.waitForFunction(()=>!busy&&snapshot.state.messages.some(m=>m.kind==='private'));assert.equal(await page.locator('#messages [data-create-hero]').count(),1);assert.equal(await page.evaluate(()=>window.pfHistoryIntro===document.querySelector('#messages [data-create-hero]')),true);await page.evaluate(()=>{window.pfPrivateHistory=document.querySelector('#messages .private')});assert.equal(await page.locator('#messages .private').count(),1);
+  }
+
   await page.locator('#libraryBtn').click();
   await page.locator(`#modal [data-library-entry="${entry.id}"] .library-characters>summary`).click();await page.locator(`#modal [data-library-open="${entry.id}"][data-library-character="${confirmed.id}"]`).click();
   await page.waitForFunction(id=>snapshot.id===id,entry.campaign);
   await page.locator('#modal').waitFor({state:'visible'});
   assert.equal(await page.locator('#modalContent > h2').textContent(),'Yslen Abernathy');
   assert.match(await page.locator('#campaignMeta').textContent(),/Cairn 1e/);
+  if(process.env.TEST_MESSAGE_HISTORY_SCOPE==='1'){assert.equal(await page.locator('#messages > *').count(),0);assert.equal(await page.evaluate(()=>window.pfPrivateHistory.isConnected),false);assert.equal(await page.evaluate(()=>window.pfHistoryIntro.isConnected),false)}
   await page.locator('#closeModal').click();
   const beforeScene=actions.length;
   await page.locator('#startCairnAdventure').click();
