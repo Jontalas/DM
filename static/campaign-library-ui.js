@@ -53,14 +53,23 @@ function renderSavedCampaigns(){
 }
 function openCampaignLibrary(){
  const library=CampaignLibrary.read(localStorage);
- modal(`<div class="eyebrow">TUS CRÓNICAS</div><h2>Partidas y personajes</h2><p>Las partidas se guardan en el servidor. Esta lista de accesos pertenece a este perfil del navegador.</p>${libraryHtml(library,!!snapshot&&!$('#app').hidden)}<details id="libraryAccessTools"><summary>Guardar o recuperar mis accesos</summary><p>El archivo permite entrar con tus permisos, incluidos los de anfitrión. Guárdalo en privado; no lo compartas ni lo subas al repositorio.</p><button id="exportAccesses">Guardar mis accesos</button><label>Recuperar accesos desde un archivo<input id="importAccesses" type="file" accept=".json,application/json"></label></details>`);
+ modal(`<div class="eyebrow">TUS CRÓNICAS</div><h2>Partidas y personajes</h2><p>Las partidas se guardan en el servidor. Esta lista de accesos pertenece a este perfil del navegador.</p>${libraryHtml(library,!!snapshot&&!$('#app').hidden)}<details id="libraryAccessTools"><summary>Guardar o recuperar mis accesos</summary><p>El archivo permite entrar con tus permisos, incluidos los de anfitrión. Guárdalo en privado; no lo compartas ni lo subas al repositorio.</p><button id="exportAccesses">Guardar mis accesos</button><label>Recuperar accesos desde un archivo<input id="importAccesses" type="file" accept=".json,application/json" aria-describedby="accessImportStatus"></label><p id="accessImportStatus" role="status" aria-live="polite"></p></details>`);
  $('#exportAccesses').onclick=()=>{
   const url=URL.createObjectURL(new Blob([JSON.stringify(CampaignLibrary.read(localStorage))],{type:'application/json'}));
   const link=document.createElement('a');link.href=url;link.download='cronicas-accesos-privados.json';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
  };
- $('#importAccesses').onchange=run(async e=>{
-  const file=e.target.files[0];if(!file||file.size>1000000)throw Error('Elige un archivo de accesos de hasta 1 MB.');
-  CampaignLibrary.merge(localStorage,JSON.parse(await file.text()));renderSavedCampaigns();openCampaignLibrary();toast('Accesos recuperados. Se comprobarán al abrir cada partida.');
+ const tools=$('#libraryAccessTools'),input=$('#importAccesses'),status=$('#accessImportStatus');let reads=0;
+ input.onchange=run(async()=>{
+  const read=++reads,file=input.files[0];if(!file)return;
+  const current=()=>read===reads&&tools.isConnected&&$('#modal').open&&$('#modal').contains(tools);
+  status.textContent='Leyendo tus accesos…';
+  try{
+   if(file.size>1000000)throw Error('Elige un archivo de accesos de hasta 1 MB.');
+   const text=await file.text();if(!current())return;
+   let data;try{data=JSON.parse(text)}catch{throw Error('No se puede leer este archivo. Elige una copia de accesos guardada desde «Mis partidas».')}
+   CampaignLibrary.merge(localStorage,data);renderSavedCampaigns();openCampaignLibrary();toast('Accesos recuperados. Se comprobarán al abrir cada partida.');
+  }catch(error){if(current()){status.textContent=error.message;throw error}}
+  finally{if(input.isConnected&&read===reads)input.value=''}
  });
 }
 document.addEventListener('click',e=>{

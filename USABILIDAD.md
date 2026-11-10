@@ -1,5 +1,8 @@
 # Sencillez y orientación
 
+10nov: archivo local de accesos respeta cancelación. Cerrar/reemplazar biblioteca durante lectura no importa credenciales ni sustituye modal posterior; otra selección invalida anterior. Aviso asociado al input, progreso local y archivo ilegible con siguiente paso claro; input limpio permite reintento. Baseline importaba dos accesos después de cerrar; access-import-cancellation-fixed.log correcto (TEST_ACCESS_IMPORT_ASYNC=1+TEST_LIBRARY_ENTRY_COORDINATION=1), biblioteca vacía intacta/modal nuevo/malformado/archivo válido/copia/recarga/móvil. No cambia formato ni abre una partida al importar;0IA/operaciones remotas por leer o consultar ayuda.
+
+
 10nov: entrada y reanudación coordinadas en una pestaña. Crear/unirse/retomar/abrir guardada no aceptan otra operación de entrada/acción mientras esperan. Crear muestra progreso/desactiva botón y errores lo liberan. Crear confirmado+GET fallido conserva acceso y muestra continuar última campaña, sin recrearla. Abrir guardada valida estado con acceso explícito antes de sustituir acceso/ficha visibles, conserva diálogo posterior y rechaza403 sin perder partida previa. Baselines reproducidos, campaign-entry-coordination-final.log/library-entry-coordination-final.log correctos; invitaciones/mesa2jugadores y recibos entre partidas correctos. Contrato de recibos intacto. No prometer idempotencia servidor o entre pestañas para crear. TestStore/proveedor simulado,0IA real.
 
 

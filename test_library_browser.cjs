@@ -1,6 +1,6 @@
 const {chromium}=require('./.deps/browser-tests/node_modules/playwright');
 const {spawn,execFileSync}=require('node:child_process'),{createInterface}=require('node:readline');
-const path=require('node:path'),assert=require('node:assert/strict');
+const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
 (async()=>{
  const fixture=spawn(path.resolve('.venv/Scripts/python.exe'),['test_browser_fixture.py'],{stdio:['ignore','pipe','inherit']});let browser;
  try{
@@ -65,7 +65,14 @@ const path=require('node:path'),assert=require('node:assert/strict');
   assert.ok(backupPath);
   const restoredContext=await browser.newContext(),restored=await restoredContext.newPage();
   await restored.goto(url);await restored.locator('#savedLibraryPanel > summary').click();await restored.locator('#manageAccesses').click();
-  await restored.locator('#libraryAccessTools>summary').click();await restored.locator('#importAccesses').setInputFiles(backupPath);
+  await restored.locator('#libraryAccessTools>summary').click();
+  if(process.env.TEST_ACCESS_IMPORT_ASYNC==='1'){
+   await restored.evaluate(()=>{window.originalAccessText=File.prototype.text;File.prototype.text=function(){if(this.name!=='slow-accesses.json')return window.originalAccessText.call(this);return new Promise(resolve=>{window.releaseAccessRead=()=>window.originalAccessText.call(this).then(resolve)})};const input=document.querySelector('#importAccesses'),handler=input.onchange;input.onchange=e=>{window.accessReadFinished=handler(e);return window.accessReadFinished}});
+   await restored.locator('#importAccesses').setInputFiles({name:'slow-accesses.json',mimeType:'application/json',buffer:fs.readFileSync(backupPath)});await restored.waitForFunction(()=>!!window.releaseAccessRead);await restored.locator('#closeModal').click();await restored.locator('#manageAccesses').click();await restored.evaluate(()=>document.querySelector('#modalContent').firstElementChild.dataset.newDialog='true');
+   await restored.evaluate(()=>window.releaseAccessRead());await restored.evaluate(()=>window.accessReadFinished);assert.equal(await restored.evaluate(()=>CampaignLibrary.read(localStorage).entries.length),0,'Closing an access-file read before it completes must not import credentials');assert.equal(await restored.locator('#modalContent').evaluate(e=>e.firstElementChild.dataset.newDialog), 'true');assert.equal(await restored.locator('#modal').evaluate(e=>e.open),true);await restored.evaluate(()=>{File.prototype.text=window.originalAccessText});
+   await restored.locator('#libraryAccessTools>summary').click();await restored.locator('#importAccesses').setInputFiles({name:'unreadable-accesses.json',mimeType:'application/json',buffer:Buffer.from('{not a backup')});await restored.waitForFunction(()=>document.querySelector('#accessImportStatus')?.textContent.includes('No se puede leer'));assert.equal(await restored.locator('#importAccesses').inputValue(),'');assert.equal(await restored.evaluate(()=>CampaignLibrary.read(localStorage).entries.length),0);
+  }
+  await restored.locator('#importAccesses').setInputFiles(backupPath);
   await restored.waitForFunction(()=>document.querySelectorAll('#modal .library-entry').length===2);
   await restored.locator(`#modal [data-library-entry="${sourceId}"] .library-characters>summary`).click();await restored.locator(`#modal [data-library-open="${sourceId}"][data-library-character]`).click();
   await restored.locator('.sheet-checks').waitFor();

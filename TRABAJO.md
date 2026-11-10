@@ -1,5 +1,12 @@
 # Continuidad del desarrollo autónomo
 
+## Recuperación de accesos ligada a su ventana (10 de noviembre de 2026)
+
+Baseline access-import-cancellation-baseline.log: archivo demorado, cerrar biblioteca y abrir otra terminaba importando dos credenciales y sustituyendo modal nuevo. Handler ligado al details/input original, modal abierto y última lectura; cierre/reemplazo cancela antes de merge. Progreso/errores accesibles y JSON ilegible explicado, input limpio para mismo archivo. Formato/CampaignLibrary.merge originales conservados, no abre campañas ni agrega red/IA.
+
+access-import-cancellation-fixed.log correcto con TEST_ACCESS_IMPORT_ASYNC=1 y TEST_LIBRARY_ENTRY_COORDINATION=1: biblioteca local intacta al cancelar, nuevo modal conservado, archivo ilegible sin importar, válido posterior recupera accesos, copia/fichas originales/recarga/móvil y coordinación/rechazo403. Sin Python ni IA real. Base d771469 Render7672167785 success, campaign-entry-production-public.log app.js/campaign-library-ui.js/release/salud exactos,0campañas/POST/IA.
+
+
 ## Entrada y accesos coordinados (10 de noviembre de 2026)
 
 Baselines campaign-entry-coordination-baseline.log y library-entry-coordination-baseline.log reproducen dos POST de creación al repetir envío y token cambiado antes de validar estado guardado. app.js comparte exclusión busy para crear/unirse/retomar; progreso/botón y finally restauran controles. API admite acceso explícito opcional. openSavedCampaign lee con credencial de destino sin cambiar globales, valida identidad, sustituye acceso/estado juntos y conserva modal posterior. Acciones/segunda entrada/retomar bloqueados durante lectura; rechazo403 no pierde anterior. Creación/unión confirmada con GET fallido conserva acceso local y orienta a continuar, no volver a crear. No cambia servidor ni ofrece idempotencia de creación cross-tab.
