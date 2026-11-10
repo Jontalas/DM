@@ -159,6 +159,31 @@ const assert=require('node:assert/strict');
   assert.equal(await page.locator('.ruler-distance').textContent(),'20 pies');
   await page.locator('#toast').waitFor({state:'hidden'});await scroll.screenshot({path:'.deps/ruler-distance-mobile.png'});
   assert.equal(writes,1);assert.equal((await saved()).version,after.version);
+  if(process.env.TEST_MOVEMENT_PREFLIGHT==='1'){
+   // Real terrain changes in an isolated fixture; preparing or consulting never submits movement.
+   await page.locator('#tool').selectOption('move');
+   const setTerrain=async(x,y,terrain)=>{const row=await saved();const response=await host.request.post(url+'/api/action',{headers:hostHeaders,data:{id:'preview-'+row.version,version:row.version,type:'terrain',x,y,terrain}});assert.equal(response.ok(),true)};
+   const refresh=async()=>{await page.reload();await page.locator('#app').waitFor({state:'visible'});await page.locator('[data-tab=board]').click()};
+   const posts=[];page.on('request',request=>{if(request.method()==='POST')posts.push(request.url())});
+   await setTerrain(3,1,'wall');await refresh();const checkpoint=await saved();
+   await cell(2,1).focus();await page.keyboard.press('ArrowRight');await page.keyboard.press('Enter');
+   assert.equal(await page.locator('#confirmMove').isDisabled(),true);assert.match(await page.locator('#pathInfo').textContent(),/muro/i);
+   assert.match(await page.locator('#boardGuidance').textContent(),/muro/i);
+   await page.keyboard.press('Escape');await cell(2,1).focus();await page.keyboard.press('ArrowRight');await page.keyboard.press('ArrowDown');await page.keyboard.press('Enter');
+   assert.equal(await page.locator('#confirmMove').isDisabled(),true);assert.match(await page.locator('#pathInfo').textContent(),/esquina/i);
+   await page.keyboard.press('Escape');await cell(2,1).focus();await page.keyboard.press('ArrowDown');await page.keyboard.press('Enter');
+   assert.equal(await page.locator('#confirmMove').isEnabled(),true);assert.doesNotMatch(await page.locator('#pathInfo').textContent(),/atraviesa un muro|cortar la esquina/);
+   assert.equal(posts.length,0);assert.deepEqual(await saved(),checkpoint);
+   await page.keyboard.press('Escape');await setTerrain(3,1,'clear');await refresh();
+   await cell(2,1).dragTo(cell(0,0));assert.equal(await page.locator('#confirmMove').isDisabled(),true);assert.match(await page.locator('#pathInfo').textContent(),/ocupada.*esta versión/);await page.keyboard.press('Escape');
+   const hostAction=async(type,extra={})=>{const row=await saved();const response=await host.request.post(url+'/api/action',{headers:hostHeaders,data:{id:'preflight-'+row.version,version:row.version,type,...extra}});assert.equal(response.ok(),true)};
+   await hostAction('combat',{automateEnemies:false});let combat=await saved();if(combat.state.board.order[combat.state.board.turn].id!==hero.id)await hostAction('turn');await refresh();
+   const combatBefore=await saved();await cell(2,1).focus();for(let i=0;i<7;i++){await page.keyboard.press('ArrowDown');await page.keyboard.press('Enter')}
+   assert.equal(await page.locator('#confirmMove').isDisabled(),true);assert.match(await page.locator('#pathInfo').textContent(),/supera una acción de movimiento/);
+   await page.keyboard.press('Escape');await cell(2,1).focus();await page.keyboard.press('ArrowDown');await page.keyboard.press('Enter');assert.equal(await page.locator('#confirmMove').isEnabled(),true);assert.deepEqual(await saved(),combatBefore);
+   await page.keyboard.press('Escape');await hostAction('move',{character:hero.id,path:[[2,2]],acknowledge:true});await refresh();const spentBefore=await saved();await cell(2,2).focus();await page.keyboard.press('ArrowDown');await page.keyboard.press('Enter');assert.equal(await page.locator('#confirmMove').isDisabled(),true);assert.match(await page.locator('#pathInfo').textContent(),/usado tu acción de movimiento/);assert.deepEqual(await saved(),spentBefore);assert.equal(posts.length,0);
+   console.log('OK: actual wall and blocked diagonal disable confirmation, clear route recovers, keyboard/mobile, zero preview POSTs or state changes.');
+  }
   await touch.detach();
   assert.deepEqual(errors,[]);
   await page.screenshot({path:'.deps/tabletop-gestures.png',fullPage:true});

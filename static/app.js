@@ -570,6 +570,27 @@ function fiveFootStepReason(c){
  if(boardCharacters(s).some(v=>v.id!==c.id&&v.x===x&&v.y===y))return 'La casilla está ocupada.';
  return '';
 }
+function movementPathReason(c){
+ if(!c||!path.length||!characterIsConscious(c))return '';
+ const board=snapshot.state.board,visible=boardCharacters(snapshot.state);
+ let x=c.x,y=c.y,diagonals=0,cost=0;
+ for(const [nx,ny] of path){
+  const dx=Math.abs(nx-x),dy=Math.abs(ny-y);
+  if(!Number.isInteger(nx)||!Number.isInteger(ny)||nx<0||nx>=20||ny<0||ny>=20||Math.max(dx,dy)!==1)return 'El recorrido debe seguir casillas adyacentes dentro del tablero. Bórralo y vuelve a trazarlo.';
+  if(board.terrain[nx+','+ny]==='wall')return 'El recorrido atraviesa un muro. Bórralo y traza otro camino.';
+  if(dx&&dy&&(board.terrain[x+','+ny]==='wall'||board.terrain[nx+','+y]==='wall'))return 'No puedes cortar la esquina de un muro. Bórralo y rodea la esquina.';
+  if(visible.some(other=>other.id!==c.id&&other.x===nx&&other.y===ny))return 'El recorrido pasa por una casilla ocupada. El cruce necesita una resolución excepcional en esta versión; puedes trazar otro camino.';
+  if(dx&&dy)diagonals++;
+  cost+=board.terrain[nx+','+ny]==='difficult'?(dx&&dy?3:2):(dx&&dy&&diagonals%2===0?2:1);
+  x=nx;y=ny;
+ }
+ if(board.active&&c.hp>0){
+  if(board.order[board.turn]?.id!==c.id)return 'Espera al turno de esta ficha. Puedes consultar el tablero mientras tanto.';
+  if(board.spent[c.id]?.move)return 'Ya has usado tu acción de movimiento. Más movimiento necesita una resolución excepcional en esta versión.';
+  if(cost>characterMovementCells(c))return 'El recorrido supera una acción de movimiento. Bórralo y traza uno más corto; otros desplazamientos necesitan una resolución excepcional en esta versión.';
+ }
+ return '';
+}
 function renderTabletopTools(){
  const board=snapshot.state.board,selected=$('#boardCharacter').value,spent=board.spent[selected]||{};
  $('#actionBudget').hidden=!board.active;
@@ -595,6 +616,8 @@ function renderTabletopTools(){
  $('#confirmStep').disabled=!!stepReason;
  if(stepped){$('#confirmMove').disabled=true;$('#actionBudget').textContent+=' · Paso de 5 pies usado; sin más desplazamientos este asalto.';}
  if(!$('#confirmStep').hidden)$('#pathInfo').textContent=stepReason||'Paso de 5 pies: no provoca ataques de oportunidad ni gasta acciones. Después no podrás desplazarte más este asalto. Elige cómo mover.';
+ const pathReason=$('#tool').value==='move'?movementPathReason(moving):'';
+ if(pathReason){$('#confirmMove').disabled=true;$('#pathInfo').textContent=pathReason}
  $('#movementPreview').classList.toggle('prepared',!!path.length&&$('#tool').value==='move');
  $('#board').classList.toggle('preparing-move',!!path.length&&$('#tool').value==='move'&&!$('.board-scroll').classList.contains('dragging-token'));
  $('#clearPath').hidden=!path.length;
@@ -636,6 +659,7 @@ function renderTabletopTools(){
  const coverageReason=$('#attackButton').dataset.coverageReason;
  if(mine&&current.id===selected&&!unableToAct&&!spent.standard&&!(incapacitated&&spent.move)&&coverageReason)guidance=coverageReason;
  if(measuring||$('#tool').value==='pan')guidance=$('#pathInfo').textContent;
+ if(pathReason)guidance=pathReason;
  const preparation={wall:'un muro',difficult:'terreno difícil',clear:'terreno despejado'}[$('#tool').value];
  if(preparation){guidance=`Preparación del tablero: ${preparation}. Pulsa ${$('#tool').value==='wall'?'una casilla libre':'una casilla'} para guardar el cambio. Vuelve a «Trazar recorrido» para mover fichas.`;$('#pathInfo').textContent=guidance}
  if($('#boardGuidance').textContent!==guidance)$('#boardGuidance').textContent=guidance;
@@ -794,6 +818,7 @@ $('#confirmStep').onclick=run(async()=>{
 $('#confirmMove').onclick=run(async()=>{
  ensureSubmissionCanStart();
  if(!path.length)throw Error('Traza un recorrido primero');
+ const pathReason=movementPathReason(snapshot.state.characters.find(c=>c.id===$('#boardCharacter').value));if(pathReason)throw Error(pathReason);
  const action=$('#confirmMove'),returnFocus=action.matches(':focus-visible'),characterId=$('#boardCharacter').value;
  if(!confirm($('#pathInfo').textContent+'\n¿Has revisado las consecuencias conocidas y las reglas pendientes con la mesa?'))return;
  await act('move',{character:characterId,path,acknowledge:true});

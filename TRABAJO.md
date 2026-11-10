@@ -1,5 +1,7 @@
 # Continuidad del desarrollo autónomo
 
+Movimiento: la preparación anticipa muros, esquinas bloqueadas, ocupación y límites de la acción de movimiento ya validados por el servidor. Explica cómo corregir el camino y distingue las excepciones pendientes de cobertura de las reglas universales. Consulta local, sin IA ni escrituras. Fuente original revisada visualmente: Reglas básicas PDF194/folio193; motor sin cambios. Evidencia movement-preflight-{baseline,geometry,budget,courtyard-regression}.log, teclado/móvil/estado idéntico durante previsión, ruta1.16 completa con paso/reserva; controles160000rutas correctas. No nueva observación directa de Roll20 ni equivalencia completa.
+
 ## De la hoja a la ficha, sólo navegación (10 de noviembre de 2026)
 
 Hoja calculada o PNJ preparado puede mostrar su casilla actual mediante Ver en el tablero. Foco nativo desplaza cámara y contenedor, una marca discontinua hasta blur distingue localización de selección; no cambia actor/hablante, posiciones, escena ni estado. En primera hoja tras crear permanece sólo la continuación guiada. No se añade navegación al editor manual con cambios sin guardar. Otra escena se explica como consulta sin atajo; el clic revalida presencia y acceso/campaña/jugador/DOM, dejando explicación en hoja si contexto cambió. Modos de escritura pasan a consulta para evitar pintar al localizar; lo demás se conserva.

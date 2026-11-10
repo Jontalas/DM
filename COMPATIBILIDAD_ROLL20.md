@@ -1,5 +1,7 @@
 # Ingeniería inversa funcional de Roll20
 
+Movimiento: la preparación anticipa muros, esquinas bloqueadas, ocupación y límites de la acción de movimiento ya validados por el servidor. Explica cómo corregir el camino y distingue las excepciones pendientes de cobertura de las reglas universales. Consulta local, sin IA ni escrituras. Fuente original revisada visualmente: Reglas básicas PDF194/folio193; motor sin cambios. Evidencia movement-preflight-{baseline,geometry,budget,courtyard-regression}.log, teclado/móvil/estado idéntico durante previsión, ruta1.16 completa con paso/reserva; controles160000rutas correctas. No nueva observación directa de Roll20 ni equivalencia completa.
+
 Objetivo obligatorio: máxima fidelidad viable a la mesa de Roll20 en comportamiento, organización e interacciones, incorporando director de IA, resolución automática de la partida y mínimo coste. La comparación se realiza por funciones verificables y diferencias explícitas.
 
 ## Método y evidencia

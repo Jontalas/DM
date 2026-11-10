@@ -1,5 +1,7 @@
 # Dirección de producto: mesa al estilo de Roll20
 
+Movimiento: la preparación anticipa muros, esquinas bloqueadas, ocupación y límites de la acción de movimiento ya validados por el servidor. Explica cómo corregir el camino y distingue las excepciones pendientes de cobertura de las reglas universales. Consulta local, sin IA ni escrituras. Fuente original revisada visualmente: Reglas básicas PDF194/folio193; motor sin cambios. Evidencia movement-preflight-{baseline,geometry,budget,courtyard-regression}.log, teclado/móvil/estado idéntico durante previsión, ruta1.16 completa con paso/reserva; controles160000rutas correctas. No nueva observación directa de Roll20 ni equivalencia completa.
+
 La aplicación debe aproximarse lo máximo posible a Roll20 en experiencia y capacidades de mesa virtual, añadiendo maestro de juego de IA y gestión automática de la partida. Se toma como referencia la [mesa de Roll20](https://help.roll20.net/hc/en-us/articles/360039734913-Tabletop-Overview): superficie de juego, fichas, herramientas y acceso a información durante la sesión.
 
 Las tres bases son inseparables: mesa virtual familiar, automatización que permita a los jugadores centrarse en rolear y mínimo coste de IA/Firebase. No se afirma equivalencia funcional completa con Roll20.
