@@ -79,6 +79,9 @@ def main():
         os.environ['ANTHROPIC_API_KEY']='fixture-only-never-sent'
         from test_adventure import reply,memory
         def fixture_reply(state,text,refs,**options):
+            if os.environ.get('TEST_EXCEPTION_UI')=='1' and text=='Acción técnica fuera de cobertura':
+                return reply(narration='Esta acción necesita una resolución excepcional; no se han aplicado consecuencias mecánicas.',
+                             proposals=[{'type':'manual','reason':'Acción de prueba fuera de la cobertura automática.'}])
             if options.get('starting') and state.get('adventureChapterTransition'):
                 from test_adventure_chapters_context import reply as chapter_reply
                 return chapter_reply(state)

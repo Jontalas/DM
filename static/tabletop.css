@@ -242,3 +242,9 @@ body.encounter-choice #story>.chapter{display:none}
 
 #routeProgress button{min-height:44px}
 #completedRouteExploration>summary{min-height:44px;align-content:center}
+.pending-resolution{padding:12px 0;border-bottom:1px solid var(--line)}
+.pending-resolution p{margin:8px 0}
+.pending-resolution>details{padding:4px 0 8px}
+.pending-resolution summary{min-height:44px;align-content:center}
+.pending-resolution button{min-height:44px}
+#journalPending h3:focus-visible{outline:2px solid var(--gold);outline-offset:4px}
