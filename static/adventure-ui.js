@@ -81,7 +81,7 @@ function renderAdventure(){
      try{const text=await file.text();if(!submissionCurrent())return;data.module=JSON.parse(text)}catch{if(!submissionCurrent())return;throw Error('El archivo no contiene JSON válido.')}
     }
     if(!submissionCurrent())return;
-    await act('start_adventure',data);if(submissionCurrent()){$('#modal').close();chooseTab('story');}
+    await act('start_adventure',data);if(submissionCurrent()){$('#modal').close();showAdventureIntroduction();}
    }
    catch(error){if(current()){field('#adventureProgress').textContent=error.message;throw error;}}
    finally{submitting=false;updateSource();}
@@ -220,7 +220,7 @@ function renderNextAdventure(panel,s){
    if(!current()||submitting)return;
    if(token+':'+snapshot.id!==campaign||(snapshot.state.adventureChaptersView?.current||1)!==chapter)throw Error('La partida ha cambiado; vuelve a abrir tu próximo objetivo.');
    submitting=true;const button=form.querySelector('button'),progress=form.querySelector('#nextAdventureProgress');button.disabled=true;progress.textContent='El director está preparando tu próximo objetivo…';
-   try{await act('next_adventure',{premise:e.target.elements.premise.value,worldMemoryContract:'structured-world-memory-1'});if(current()){$('#modal').close();chooseTab('story')}}
+   try{await act('next_adventure',{premise:e.target.elements.premise.value,worldMemoryContract:'structured-world-memory-1'});if(current()){$('#modal').close();showAdventureIntroduction()}}
    catch(error){if(current()){progress.textContent=error.message;throw error}}
    finally{submitting=false;if(current())button.disabled=false}
   });

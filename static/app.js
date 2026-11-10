@@ -151,6 +151,14 @@ function showInvestigationScene(focusChoice=false){
  heading.tabIndex=-1;heading.style.scrollMarginTop=(offset+12)+'px';heading.scrollIntoView({block:'start'});
  (focusChoice?$('#investigationForm [name=opportunity]')||heading:heading).focus({preventScroll:true});
 }
+function showAdventureIntroduction(focus=true){
+ if(focus)chooseTab('story');
+ const scene=$$('#messages .message').findLast(message=>message.matches('.scene,.director'));if(!scene)return;
+ const target=scene.querySelector('.speaker')||scene,area=$('#story'),guide=$('#playGuidance');
+ const offset=!guide.hidden&&guide.parentElement===area?guide.getBoundingClientRect().height+(parseFloat(getComputedStyle(area).paddingTop)||0):0;
+ target.style.scrollMarginTop=(offset+12)+'px';target.scrollIntoView({block:'start'});
+ if(focus){target.tabIndex=-1;target.focus({preventScroll:true})}
+}
 function renderSpeakerChoices(){
  if(!snapshot)return;
  const me=snapshot.me,kind=$('#messageKind').value,previous=$('#speaker').value;
@@ -359,7 +367,14 @@ function render(){const importStatus=$('#copyImportStatus'),access=snapshot.id+'
   const opening=snapshot.id+':'+s.pfEncounter.character+':'+s.pfEncounter.definition.version;
   if(area.dataset.offeredEncounter!==opening)area.scrollTop=0;
   area.dataset.offeredEncounter=opening;
- }else{delete area.dataset.offeredEncounter;if(near)area.scrollTop=area.scrollHeight;}
+ }else{
+  delete area.dataset.offeredEncounter;const last=s.messages.at(-1);
+  if(last?.adventureStart||last?.adventureChapterStart){
+   const introduction=snapshot.id+':'+(last.preparedOpeningSha256||last.time)+':'+last.kind;
+   if(area.dataset.adventureIntroduction!==introduction){area.scrollTop=0;if(area.classList.contains('active'))showAdventureIntroduction(false)}
+   area.dataset.adventureIntroduction=introduction;
+  }else{delete area.dataset.adventureIntroduction;if(near)area.scrollTop=area.scrollHeight;}
+ }
  renderJournalOverview(s);
  const jf=$('#journalForm');for(const key of ['location','worldTime','goal','notes','secrets','directorNotes','objectives','allies','enemies','unknowns']){const el=jf.elements[key];if(document.activeElement!==el)el.value=Array.isArray(s[key])?s[key].join('\n'):s[key]||'';el.disabled=!me.host}
  $$('.host-only').forEach(x=>x.hidden=!me.host);$('#inviteBtn').hidden=!me.host;$('#exportBtn').disabled=!me.host;

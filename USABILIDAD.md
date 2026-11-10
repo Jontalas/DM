@@ -1,5 +1,8 @@
 # Sencillez y orientación
 
+10nov: situación antes de investigación. Entrada real a ejemplo/ruta y recarga mostraban búsqueda con introducción fuera de pantalla (authored-initial-view-baseline.log, geometría sin scroll preparado). Ahora entrada/continuación explícitas muestran presentación original si ventana no cambió; render inicial coloca introducción sin enfocar ni cambiar pestaña sólo si último mensaje conserva marcador de comienzo. Misma introducción conserva lectura, mensajes posteriores usan scroll habitual. authored-initial-view-fixed.log correcto, captura móvil revisada; capítulos perdidos/tardíos correctos. Combinado con entrada/asíncronos correcto (authored-initial-view-final.log); reanudación con actividad posterior correcta sin volver al comienzo (authored-intro-resume-latest.log), informe verificado0API/POST/externos. Sin IA real ni cambio de hechos/reglas/persistencia.
+
+
 10nov: entrada real/recarga del patio. Se retiró scrollTop=0 del guion antes de geometría: baseline demostró título inicial fuera de pantalla por autoscroll del chat, aunque el contenido ya cabía. Render inicializa nueva oferta arriba sin recolocar lecturas posteriores de la misma oferta; entrar explícitamente enfoca título si conserva ventana original. 1.16 (incluye respuesta/modal tardío) y1.15 completos correctos, geometría de entrada y recarga sin preparar scroll; initial-courtyard-scroll-fixed.log/legacy.log. Capturas revisadas. Contadores secundarios de sidebar ahora bajo details, mismos IDs/valores, teclado/tacto sin requests y demoestado intacto (story-rhythm-layout-review.log). No cambia mecánicas/IA.
 
 

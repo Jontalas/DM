@@ -1,5 +1,12 @@
 # Continuidad del desarrollo autónomo
 
+## Presentación original antes de buscar (10 de noviembre de 2026)
+
+TEST_OPENING_INITIAL_VIEW=1 añadió geometría de entrada/recarga390×844 sin preparar desplazamiento. Baseline authored-initial-view-baseline.log confirmó encabezado de escena y texto original fuera de pantalla por auto-scroll, controles de búsqueda primero. showAdventureIntroduction muestra la última escena/director público con margen de guía; iniciar/continuar objetivo lo usa sólo si modal original. Render reconoce comienzo/chapter ya marcado como último mensaje, inicializa una vez sin enfocar/cambiar pestaña y conserva scroll ordinario después de otros hechos. Usa datos existentes, sin red/persistencia/reglas nuevas.
+
+authored-initial-view-fixed.log correcto ejemplo/ruta, captura original revisada; combinado con coordinación/lecturas tardías correcto (authored-initial-view-final.log). Reanudación tras actividad correcta sin volver al comienzo (authored-intro-resume-latest.log), informe authored-introduction-progress-page.log correcto0API/POST/externos. authored-intro-chapter-late-dialog.log y authored-intro-chapter-recovery.log correctos, dos capítulos/fichas/reloj/histórico/copia y mismo recibo intactos. Base3263d54 Render7672346325 success, initial-courtyard-scroll-production-public.log cuatro recursos/salud/release exactos0campañas/POST/IA. Ninguna IA real ni Python.
+
+
 ## Entrada visible de verdad y contadores secundarios (10 de noviembre de 2026)
 
 Revisión de captura real escritorio mostró cabecera del encuentro ocultada por autoscroll. La geometría anterior ponía scrollTop=0 antes de comprobar: al retirar preparación, initial-courtyard-scroll-baseline.log falla. Render marca nueva oferta campaña/personaje/versión y la inicia arriba; actualizaciones de misma oferta conservan lectura, otras fases conservan scroll ordinario. Entrada explícita enfoca título sólo en modal original. Primera corrección de no hacer autoscroll era insuficiente con offset previo; clave de nueva oferta resuelve ese caso.
