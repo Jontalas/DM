@@ -1,5 +1,11 @@
 # Continuidad del desarrollo autónomo
 
+## Revisión integrada del recorrido y control de tamaño (10 de noviembre de 2026)
+
+Base publicada07a982751630a3265f0830ca59187ab1cd6157dc, Render7678403610 success; director-error-production-public.log app.js/tabletop.css/salud/release exactos,0campañas/POST/IA. Revisión integrada first-release-integrated-courtyard.log1.16 correcta desde perfil nuevo/creador GUI, ambos caminos, primera decisión sin preparar scroll390×844, auxilio/combate/heridas/tregua/descanso, respuestas perdidas ataque/paso/investigación/viaje/última búsqueda con mismo cuerpo y sin repetir consecuencias,5hallazgos/3lugares/cierre/salir/retomar/copia. first-release-integrated-declarations.log1.16 correcto con proveedor simulado: preguntas/ambigüedad no eligen por jugador, tregua/sueño/armadura/investigación separados, copia/recarga. No nueva evaluación real ni hito personal, no campaña abierta ni mapas definitivos. Motor968 sin cambios.
+
+Medición anclada a07a9827 con mismo método anterior:107archivos propios,84Python/23interfaz,1.033.964bytes frente954.468 de7516 y1.000.501 de d081. Única alta desde7516 es aventura versionada1.16; ninguna app/prueba/doc/dependencia nueva en este trabajo. .deps/project-size-audit-current.json y helper medida actualizado para resolver SHA en vez de etiqueta HEAD. Mide tamaño, no porcentaje de producto. Resumen visible debe reflejar recorrido y recuperación revisados, conservando límites. Siguiente trabajo: claridad visual del tablero/herramientas existentes, sin nuevas mecánicas ni obstáculos inventados.
+
 ## Rechazo conocido del director frente a respuesta desconocida (10 de noviembre de 2026)
 
 La API conserva status/confirmed/protocolo y clasifica sólo400 de action/rules con marcador director:* y texto explícito La acción no se ha aplicado. Mensaje visible sencillo diferencia salida incompleta, aventura incompatible o respuesta inválida; detalle íntegro queda en aviso plegado del diario y explica que volver a enviar puede pedir nueva respuesta. Metadatos del error contienen sólo scope campaña+jugador/diagnóstico, sin credencial/cuerpo. Es local/efímero,0remoto al consultar, no cierra otra ventana; se borra al cambiar campaña/propietario o tras intervención narrativa/recuperación confirmada. JSON ilegible/503/corte no se reinterpretan como rechazo; mantienen recibo/cuerpo original.
