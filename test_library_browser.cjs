@@ -18,6 +18,7 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
   const page=await context.newPage(),errors=[],actions=[];let stateReads=0;
   page.on('pageerror',error=>errors.push(error.message));page.on('request',r=>{if(new URL(r.url()).pathname==='/api/state')stateReads++;if(r.url().endsWith('/api/action'))actions.push(r.postDataJSON())});
   if(process.env.TEST_LIBRARY_ENTRY_BASELINE==='1')await page.route('**/campaign-library-ui.js*',route=>route.fulfill({contentType:'text/javascript',body:execFileSync('git',['show','4fd5e0681a3e536ab6a4a034e38e46c9274f216f:static/campaign-library-ui.js'],{encoding:'utf8'})}));
+  if(process.env.TEST_LIBRARY_COPY_BASELINE==='1')await page.route('**/campaign-library-ui.js*',route=>route.fulfill({contentType:'text/javascript',body:execFileSync('git',['show','7a3620cda37efcca159751088bc8cb3b62000598:static/campaign-library-ui.js'],{encoding:'utf8'})}));
   await page.goto(url);await page.evaluate(t=>localStorage.setItem('cronicas-token',t),first);await page.reload();
   await page.locator('#app').waitFor({state:'visible'});const scopedDrafts=process.env.TEST_LIBRARY_COMPOSER_SCOPE==='1';if(scopedDrafts){await page.locator('#messageKind').selectOption('private');await page.locator('#speaker').selectOption(originalCharacter.id);await page.locator('#message').fill('Nota privada que sólo pertenece a la primera campaña.');await page.locator('#tool').selectOption('wall')}
   await page.locator('#exitBtn').click();
@@ -45,7 +46,19 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
   assert.equal(await page.locator('[data-library-copy]').isVisible(),false);
   const beforeExpand=actions.length,firstCharacter=page.locator('#modal .library-entry').filter({has:page.locator('[data-library-copy]')});await firstCharacter.locator('.library-characters>summary').focus();await page.keyboard.press('Enter');assert.equal(await page.locator('[data-library-copy]').isVisible(),true);assert.equal(actions.length,beforeExpand);
   await page.locator('[data-library-copy]').click();await page.locator('#copyLibraryCharacter [name=name]').fill('Aria segunda');
-  await page.locator('#copyLibraryCharacter button').click();await page.locator('.sheet-checks').waitFor();
+  if(process.env.TEST_LIBRARY_COPY_LATE_DIALOG==='1'||process.env.TEST_LIBRARY_COPY_CONCURRENT_NPC==='1'){
+   let requested,release;const sent=new Promise(resolve=>{requested=resolve}),gate=new Promise(resolve=>{release=resolve});
+   await page.route('**/api/action',async route=>{if(route.request().postDataJSON().type!=='create_character'){await route.continue();return}const response=await route.fetch();assert.equal(response.status(),200);requested();await gate;await route.fulfill({response})},{times:1});
+   await page.locator('#copyLibraryCharacter button').click();await sent;
+   if(process.env.TEST_LIBRARY_COPY_CONCURRENT_NPC==='1'){
+    const access=await page.evaluate(()=>token),headers={Authorization:'Bearer '+access};const row=await (await context.request.get(url+'/api/state',{headers})).json();assert.ok((await context.request.post(url+'/api/action',{headers,data:{id:'concurrent-npc',version:row.version,type:'character',character:{name:'PNJ de prueba concurrente',enemy:true,owner:row.me.id}}})).ok());
+    release();await page.waitForFunction(()=>!busy&&snapshot.state.characters.length===2);assert.equal(await page.locator('#modal h2').textContent(),'Aria segunda');await page.locator('.sheet-checks').waitFor();assert.equal(await page.locator('#boardCharacter').inputValue(),await page.evaluate(()=>snapshot.state.characters.find(c=>c.name==='Aria segunda').id));
+   }else{assert.equal(await page.locator('#copyLibraryCharacter [name=name]').isDisabled(),true);assert.match(await page.locator('#libraryCopyStatus').textContent(),/aunque cierres/);
+   await page.locator('#closeModal').click();await page.locator('#libraryBtn').click();await page.locator('#libraryAccessTools>summary').focus();const heading=await page.locator('#modal h2').textContent();release();await page.waitForFunction(()=>!busy&&snapshot.state.characters.some(c=>c.name==='Aria segunda'));
+   assert.equal(await page.locator('#modal h2').textContent(),heading);assert.equal(await page.locator('#libraryAccessTools>summary').evaluate(element=>element===document.activeElement),true);assert.equal(await page.locator('.sheet-checks').count(),0);
+   await page.locator('#closeModal').click();await page.locator('#party [data-character]').first().click();await page.locator('.sheet-checks').waitFor();}
+  }else{await page.locator('#copyLibraryCharacter button').click();await page.locator('.sheet-checks').waitFor();}
+
   assert.deepEqual(actions.map(a=>a.type),['create_character']);
   let second=await page.evaluate(()=>({id:snapshot.id,player:snapshot.me.id,char:snapshot.state.characters[0]}));
   assert.notEqual(second.char.id,originalCharacter.id);assert.equal(second.char.hp,originalCharacter.maxHp);

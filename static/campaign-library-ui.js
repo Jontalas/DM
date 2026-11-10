@@ -81,10 +81,27 @@ document.addEventListener('click',e=>{
   const character=entry?.characters.find(v=>v.id===button.dataset.libraryCharacter);
   if(!entry||!character)throw Error('Personaje guardado no encontrado');
   const choices=CampaignLibrary.template(entry,character,snapshot.state.ruleset||'pathfinder-1e');
-  modal(`<h2>Una nueva copia de ${esc(character.name)}</h2><p>Se recalcula un personaje de nivel 1 con sus elecciones iniciales. El progreso, heridas y cambios de equipo del original permanecen en su campaña.</p><form id="copyLibraryCharacter"><label>Nombre<input name="name" value="${esc(character.name)}" maxlength="80" required></label><button class="primary">Crear copia inicial</button></form>`);
-  $('#copyLibraryCharacter').onsubmit=run(async event=>{
-   await act('create_character',{choices:{...choices,name:event.target.elements.name.value}});
-   $('#modal').close();characterForm(snapshot.state.characters.at(-1).id);
+  modal(`<h2>Una nueva copia de ${esc(character.name)}</h2><p>Se recalcula un personaje de nivel 1 con sus elecciones iniciales. El progreso, heridas y cambios de equipo del original permanecen en su campaña.</p><form id="copyLibraryCharacter"><label>Nombre<input name="name" value="${esc(character.name)}" maxlength="80" required></label><button class="primary" aria-describedby="libraryCopyStatus">Crear copia inicial</button><p id="libraryCopyStatus" role="status"></p></form>`);
+  const form=$('#copyLibraryCharacter'),access=token,campaign=snapshot.id,player=snapshot.me.id;
+  const sameContext=()=>token===access&&snapshot?.id===campaign&&snapshot?.me.id===player;
+  const current=()=>sameContext()&&form.isConnected&&$('#modal').open&&$('#modal').contains(form);
+  let submitting=false;
+  form.onsubmit=run(async()=>{
+   if(!current()||submitting)return;
+   if(snapshot.state.board.active)throw Error('Finaliza el combate antes de crear una copia.');
+   const name=form.elements.name.value.trim();if(!name)throw Error('Escribe un nombre para la copia.');
+   const priorIds=new Set(snapshot.state.characters.map(c=>c.id)),controls=[...form.querySelectorAll('input,button')];
+   submitting=true;controls.forEach(element=>element.disabled=true);form.querySelector('#libraryCopyStatus').textContent=`Guardando a ${name}. Estará en la mesa aunque cierres esta ventana.`;
+   try{
+    await act('create_character',{choices:{...choices,name}});
+    if(!current()){if(sameContext())toast(`${name}: copia creada y disponible en la mesa`);return}
+    const matches=snapshot.state.characters.filter(c=>!priorIds.has(c.id)&&c.owner===player&&c.name===name&&!c.enemy);
+    $('#modal').close();
+    if(matches.length===1){const created=matches[0];$('#boardCharacter').value=created.id;$('#speaker').value=created.id;renderBoard();characterForm(created.id,true)}
+    else toast('Copia creada. Elige su ficha en la mesa.');
+   }finally{
+    submitting=false;if(current()){controls.forEach(element=>element.disabled=false);form.querySelector('#libraryCopyStatus').textContent='Puedes revisar el nombre. Si hay un envío pendiente, recupéralo antes de crear otra copia.'}
+   }
   });
  })(e);
 });
