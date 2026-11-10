@@ -181,14 +181,18 @@ async function recoverPendingSubmission(){
  if(busy)throw Error('Hay una acción en curso');
  const saved=JSON.parse(localStorage.getItem('cronicas-pending')||'null');
  if(!saved||saved.token!==token)throw Error('No hay un envío pendiente de esta partida');
+ const access=token,tab=$('[data-tab].active')?.dataset.tab,focus=document.activeElement;
+ const unchanged=()=>token===access&&$('[data-tab].active')?.dataset.tab===tab&&!$('#modal').open&&(document.activeElement===focus||document.activeElement===document.body);
  busy=true;$('#send').disabled=true;$('#playGuidanceAction').disabled=true;$('#sync').textContent='Recuperando envío…';
  let accepted,reading=false;
  try{
   accepted=await recoverSubmission(saved);clearSubmittedMovementPreview(accepted);reading=true;await refresh(true);await clearSubmission(accepted);
   if(saved.body.type==='talk'&&$('#message').value===saved.body.text)$('#message').value='';
-  if(saved.body.type==='check')chooseTab('story');
-  if(saved.body.type==='attack')showAttackResult(saved.body);
-  if(['travel_scene','continue_pf_encounter','investigate'].includes(saved.body.type))showInvestigationScene();
+  if(unchanged()){
+   if(saved.body.type==='check')chooseTab('story');
+   if(saved.body.type==='attack')showAttackResult(saved.body);
+   if(['travel_scene','continue_pf_encounter','investigate'].includes(saved.body.type))showInvestigationScene();
+  }
   toast('Envío recuperado');
  }
  catch(error){if(!reading&&error.confirmed)await clearSubmission(saved);if(!reading){try{await refresh(true)}catch{}}throw error}

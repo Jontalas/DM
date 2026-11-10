@@ -51,18 +51,21 @@ const path=require('node:path'),assert=require('node:assert/strict');
     await page.locator('#boardCharacter').selectOption(opponent);assert.equal(await page.locator('#boardCharacter').inputValue(),opponent);
     await page.locator('#boardCharacter').selectOption(hero);assert.equal(actions.length,beforeTargeting);
     if(process.env.TEST_PF_MOBILE_ATTACK==='1'){await page.setViewportSize({width:390,height:844});await page.locator('[data-tab=board]').tap();await page.locator('#grid .cell[data-x="1"][data-y="0"]').tap();assert.equal(await page.locator('#boardCharacter').inputValue(),hero);assert.equal(actions.length,beforeTargeting);}
-    const recoverAttack=process.env.TEST_PF_ATTACK_RECOVERY==='1',navigateAttack=process.env.TEST_PF_ATTACK_NAVIGATION==='1';let releaseAttack,markAttack;
+    const recoverAttack=process.env.TEST_PF_ATTACK_RECOVERY==='1',navigateAttack=process.env.TEST_PF_ATTACK_NAVIGATION==='1',navigateRecovery=process.env.TEST_PF_RECOVERY_NAVIGATION==='1';let releaseAttack,markAttack;
     const attackRequested=new Promise(resolve=>{markAttack=resolve}),attackGate=new Promise(resolve=>{releaseAttack=resolve});
     if(recoverAttack||navigateAttack)await page.route('**/api/action',async route=>{const response=await route.fetch();assert.equal(response.ok(),true);if(navigateAttack){markAttack();await attackGate;await route.fulfill({response})}else await route.abort('failed')},{times:1});
     await page.locator('#attackButton').click();
     if(navigateAttack){await attackRequested;await page.locator('[data-tab=journal]').tap();releaseAttack();}
     await page.waitForFunction(()=>snapshot.state.characters[1].hp===1&&!busy);
-    if(recoverAttack){const original=actions.at(-1),version=await page.evaluate(()=>snapshot.version);await page.locator('#playGuidanceAction').click();await page.waitForFunction(()=>!localStorage.getItem('cronicas-pending')&&!busy);assert.deepEqual(actions.at(-1),original);assert.equal(await page.evaluate(()=>snapshot.version),version);}
+    if(recoverAttack){const original=actions.at(-1),version=await page.evaluate(()=>snapshot.version);let recoverySent,releaseRecovery;const recoveryRequested=new Promise(resolve=>{recoverySent=resolve}),recoveryGate=new Promise(resolve=>{releaseRecovery=resolve});
+     if(navigateRecovery)await page.route('**/api/state',async route=>{const response=await route.fetch();assert.equal(response.status(),200);recoverySent();await recoveryGate;await route.fulfill({response})},{times:1});
+     await page.locator('#playGuidanceAction').click();if(navigateRecovery){await recoveryRequested;await page.locator('[data-tab=journal]').tap();releaseRecovery()}await page.waitForFunction(()=>!localStorage.getItem('cronicas-pending')&&!busy);assert.deepEqual(actions.at(-1),original);assert.equal(await page.evaluate(()=>snapshot.version),version);
+    }
     if(process.env.TEST_PF_MOBILE_ATTACK==='1'){
-     if(navigateAttack){assert.equal(await page.locator('#journal').evaluate(e=>e.classList.contains('active')),true,'A late attack reply must preserve subsequent navigation');await page.locator('[data-tab=story]').tap();}
+     if(navigateAttack||navigateRecovery){assert.equal(await page.locator('#journal').evaluate(e=>e.classList.contains('active')),true,'A late attack reply must preserve subsequent navigation');await page.locator('[data-tab=story]').tap();}
      assert.equal(await page.locator('#story').evaluate(e=>e.classList.contains('active')),true,'An attack from the mobile board must show its result');
      assert.match(await page.locator('.combat-result').last().textContent(),/Daño: 5/);assert.equal(await page.locator('.combat-audit').last().evaluate(e=>e.open),false);
-     if(!navigateAttack)assert.equal(await page.locator('.combat-result').last().evaluate(e=>e===document.activeElement),true);
+     if(!navigateAttack&&!navigateRecovery)assert.equal(await page.locator('.combat-result').last().evaluate(e=>e===document.activeElement),true);
      if(!recoverAttack&&!navigateAttack){await page.locator('#toast').waitFor({state:'hidden'});await page.screenshot({path:'.deps/mobile-attack-result-focused.png',fullPage:true});}
      const count=actions.length;await page.locator('[data-tab=board]').tap();assert.equal(actions.length,count);
     }

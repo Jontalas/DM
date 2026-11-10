@@ -1,5 +1,10 @@
 # Continuidad del desarrollo autónomo
 
+## Recuperación sin robar navegación (10 de noviembre de 2026)
+
+Baseline recovery-navigation-baseline.log: recuperar ataque tras respuesta perdida, retener GET de estado y abrir diario terminaba mostrando conversación. recoverPendingSubmission captura acceso/pestaña/foco y comprueba modal antes de presentar check/ataque/investigación. No modifica red, recibo, idempotencia ni estado; resultado disponible al volver. recovery-navigation-fixed.log correcto en ambos recorridos1.16, mismo cuerpo/id y versión, teclado/móvil/copia/retomar; recovery-navigation-checks.log correcto. Recuperación en primer plano correcta (recovery-navigation-foreground.log), con foco habitual del resultado conservado. Ninguna IA real ni Python. Base25eb252 publicada/verificada Render7671969132 success, continuation-guidance-production-public.log0campañas/POST/IA.
+
+
 ## Orientación después del encuentro (10 de noviembre de 2026)
 
 Guía local detecta opción de continuar investigación, muestra texto/causa y lleva mediante teclado al botón o explicación sin activar acción. Propietario ausente se explica en hint del encuentro. Baseline after-agreement-guidance-baseline.log no tenía guía; after-agreement-guidance-fixed.log correcto1.16, geometría390×844 y foco sinPOST, dos recorridos completos. Captura móvil revisada; informe local ampliado. Prueba invitada con ambos pacientes negativos conscientes en1.16 correcta (continuation-guidance-awake-guest.log). Prueba1.11 con paciente todavía bajo seguimiento demuestra explicación, foco0POST y espera explícita intacta, luego ruta/copia/recarga (continuation-guidance-blocked-patient.log). Ninguna IA real, no Python ni cambios mecánicos. Base3004492 publicada/verificada Render7671915568 success, first-courtyard-decision-production-public.log recursos exactos y0campañas/POST/IA.

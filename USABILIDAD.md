@@ -1,5 +1,8 @@
 # Sencillez y orientación
 
+10nov: recuperar resultado respeta navegación posterior. Si se abre diario u otro modal/foco durante espera, no fuerza conversación ni resultado. Sin navegación posterior conserva presentación habitual. Baseline ataque/respuesta perdida+GET demorado reprodujo salto; recovery-navigation-fixed.log correcto con estado/versionado/mismo envío y recorrido1.16 completo, checks correcto. Recuperación en primer plano correcta (recovery-navigation-foreground.log), foco habitual conservado; app.js sólo, sin cambiar recibos/red/motor ni IA real.
+
+
 10nov: orientación tras acuerdo/desenlace. Guía visible lleva a investigar sin activar acción; con impedimento enfoca causa, sin decidir espera/auxilio. Quien no controla PJ recibe razón explícita de propietario. Baseline sin guía reproducido; after-agreement-guidance-fixed.log correcto1.16 con geometría/foco/0POST al consultar y recorrido completo. Captura móvil revisada. Pacientes negativos conscientes con invitada1.16 (continuation-guidance-awake-guest.log) y paciente inconsciente aún necesita seguimiento1.11 (continuation-guidance-blocked-patient.log) correctos; opción de esperar sigue disponible y manual. Informe con captura rotulada. Motor/reglas sin cambios,0IA real.
 
 
