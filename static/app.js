@@ -616,7 +616,7 @@ function renderTabletopTools(){
  $('#confirmStep').disabled=!!stepReason;
  if(stepped){$('#confirmMove').disabled=true;$('#actionBudget').textContent+=' · Paso de 5 pies usado; sin más desplazamientos este asalto.';}
  if(!$('#confirmStep').hidden)$('#pathInfo').textContent=stepReason||'Paso de 5 pies: no provoca ataques de oportunidad ni gasta acciones. Después no podrás desplazarte más este asalto. Elige cómo mover.';
- const pathReason=$('#tool').value==='move'?movementPathReason(moving):'';
+ const pathReason=$('#tool').value==='move'&&!stepped?movementPathReason(moving):'';
  if(pathReason){$('#confirmMove').disabled=true;$('#pathInfo').textContent=pathReason}
  $('#movementPreview').classList.toggle('prepared',!!path.length&&$('#tool').value==='move');
  $('#board').classList.toggle('preparing-move',!!path.length&&$('#tool').value==='move'&&!$('.board-scroll').classList.contains('dragging-token'));
