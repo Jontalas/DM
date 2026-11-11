@@ -29,6 +29,23 @@ const path=require('node:path'),assert=require('node:assert/strict');
   const beforeDiceEntry=await b.evaluate(()=>snapshot.version);await b.locator('[data-tab=dice]').click();assert.equal(await b.locator('[data-dice-character]').count(),1);assert.equal(await b.locator('#rollForm').isVisible(),false);await b.locator('#manualDiceTools>summary').focus();await b.keyboard.press('Enter');assert.equal(await b.locator('#rollForm').isVisible(),true);await b.keyboard.press('Enter');await b.locator('[data-dice-character]').focus();await b.keyboard.press('Enter');assert.equal(await b.evaluate(()=>snapshot.version),beforeDiceEntry);
   assert.equal(await b.locator('#characterForm').count(),0);assert.equal(await b.locator('[data-sheet-check]').isVisible(),true);assert.equal(await b.locator('[data-sheet-selection]').evaluate(e=>e===document.activeElement),true);
   await b.keyboard.press('Escape');assert.equal(await b.locator('#dice').isVisible(),true);assert.equal(await b.locator('[data-dice-character]').evaluate(e=>e===document.activeElement),true);await b.keyboard.press('Enter');
+  if(process.env.TEST_CHECK_SELECTION_IDENTITY==='1'){
+   const current=await b.evaluate(()=>snapshot),original=current.state.characters[0];
+   const save=async(skills,id)=>{const version=(await(await guest.request.get(url+'/api/state',{headers:gh})).json()).version;const response=await guest.request.post(url+'/api/action',{headers:gh,data:{id,version,type:'character',character:{...original,skillTotals:skills}}});assert.ok(response.ok());await b.evaluate(()=>refresh())};
+   await save([{name:'Sigilo',total:5},{name:'Percepci\u00f3n',total:8}],'reorder-skills');
+   await b.locator('[data-sheet-selection]').selectOption('0');await b.locator('[data-sheet-selection]').selectOption('9');
+   assert.equal(await b.locator('[data-sheet-check]').getAttribute('data-check-key'),'Percepci\u00f3n','An open option must keep its skill identity after reordering');
+   await save(original.skillTotals,'restore-skills');
+   await a.evaluate(()=>{requestCheckForm()});
+   await a.locator('#requestCheckForm [name=selection]').selectOption('9');
+   await a.locator('#requestCheckForm [name=reason]').fill('Verify stable skill identity');
+   await save([{name:'Sigilo',total:5},{name:'Percepci\u00f3n',total:8}],'reorder-request-skills');await a.evaluate(()=>refresh());
+   await a.locator('#requestCheckForm button.primary').click();await a.locator('#modal').waitFor({state:'hidden'});
+   const requested=await a.evaluate(()=>snapshot);assert.equal(requested.state.pending.find(p=>p.check).check.key,'Percepci\u00f3n');
+   const cancelled=await host.request.post(url+'/api/action',{headers,data:{id:'cancel-identity-request',version:requested.version,type:'cancel_check',request:requested.state.pending.find(p=>p.check).check.id}});assert.ok(cancelled.ok());
+   await save(original.skillTotals,'restore-request-skills');await a.evaluate(()=>refresh());
+
+  }
   const countBeforeChoice=await b.evaluate(()=>snapshot.version);
   await b.locator('[data-sheet-selection]').selectOption('0');
   assert.equal(await b.locator('[data-check-key="str"]').textContent(),'Tirar Fuerza (-1)');
