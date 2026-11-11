@@ -2,6 +2,15 @@
 const checkAbilities=[['str','Fuerza'],['dex','Destreza'],['con','Constitución'],['int','Inteligencia'],['wis','Sabiduría'],['cha','Carisma']];
 const checkSaves=[['fort','Fortaleza'],['ref','Reflejos'],['will','Voluntad']];
 const characterViews=new WeakMap();
+const characterViewSaving=new WeakSet();
+async function saveCharacterView(view,send){
+ characterViewSaving.add(view);
+ const fields=Array.from(view.querySelectorAll('input,select,textarea,button')).map(field=>[field,field.disabled]);
+ fields.forEach(([field])=>field.disabled=true);
+ const status=document.createElement('p');status.className='notice';status.setAttribute('role','status');status.textContent='Guardando... Cerrar esta ventana no cancela el env\u00edo.';view.append(status);
+ try{return await send()}finally{characterViewSaving.delete(view);fields.forEach(([field,disabled])=>field.disabled=disabled);status.remove()}
+}
+
 function bindCharacterViews(){for(const view of $$('#modal .sheet-checks,#modal #characterForm,#modal #requestCheckForm'))characterViews.set(view,readViewScope(view))}
 function characterViewIsCurrent(view){return !!view&&$('#modal').open&&$('#modal').contains(view)&&readViewIsCurrent(characterViews.get(view),view)}
 function checkCharacterView(view){
@@ -86,7 +95,7 @@ function requestCheckForm(){
  const form=$('#requestCheckForm');
  function update(){if(!checkCharacterView(form))return;const c=snapshot.state.characters.find(c=>c.id===form.elements.character.value);if(!c){form.elements.selection.innerHTML='';form.querySelector('button.primary').disabled=true;toast('Esta ficha ya no está disponible. Cierra la solicitud y vuelve a elegir.');return}form.elements.selection.innerHTML=characterChecks(c).map((v,i)=>`<option value="${i}" data-option-kind="${esc(v.kind)}" data-option-key="${esc(v.key)}">${esc(v.name)} (${v.total>=0?'+':''}${v.total})</option>`).join('')}
  form.elements.character.onchange=update;update();
- form.onsubmit=run(async()=>{if(!checkCharacterView(form))return;const c=snapshot.state.characters.find(c=>c.id===form.elements.character.value),check=selectedCharacterCheck(form.elements.selection,c);if(!check){toast('La prueba ya no est\u00e1 disponible. Cierra la solicitud y vuelve a elegir.');return}await act('request_check',{character:c.id,checkKind:check.kind,key:check.key,dc:Number(form.elements.dc.value),reason:form.elements.reason.value});if(characterViewIsCurrent(form)){$('#modal').close();chooseTab('story')}});
+ form.onsubmit=run(async()=>{if(characterViewSaving.has(form)||!checkCharacterView(form))return;const c=snapshot.state.characters.find(c=>c.id===form.elements.character.value),check=selectedCharacterCheck(form.elements.selection,c);if(!check){toast('La prueba ya no est\u00e1 disponible. Cierra la solicitud y vuelve a elegir.');return}const body={character:c.id,checkKind:check.kind,key:check.key,dc:Number(form.elements.dc.value),reason:form.elements.reason.value};await saveCharacterView(form,()=>act('request_check',body));if(characterViewIsCurrent(form)){$('#modal').close();chooseTab('story')}});
 }
 document.addEventListener('click',e=>{
  const button=e.target.closest('[data-sheet-check],[data-resolve-check],[data-cancel-check]');if(!button)return;

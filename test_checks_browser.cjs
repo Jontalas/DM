@@ -89,7 +89,19 @@ const path=require('node:path'),assert=require('node:assert/strict');
   await a.locator('#requestCheckForm [name=selection]').selectOption('6');
   await a.locator('#requestCheckForm [name=dc]').fill('16');
   await a.locator('#requestCheckForm [name=reason]').fill('Resistir el peligro');
+  if(process.env.TEST_CHARACTER_SAVE_WAIT==='1'){
+   let release,started,posts=0;const waiting=new Promise(resolve=>started=resolve),held=new Promise(resolve=>release=resolve);
+   await a.route('**/api/action',async route=>{if(route.request().postDataJSON().type!=='request_check')return route.continue();posts++;const response=await route.fetch();started();await held;await route.fulfill({response})});
+   await a.evaluate(()=>window.savingRequestForm=document.querySelector('#requestCheckForm'));await a.locator('#requestCheckForm button').click();await waiting;
+   assert.equal(await a.locator('#requestCheckForm [name=reason]').isDisabled(),true);assert.match(await a.locator('#requestCheckForm [role=status]').textContent(),/Guardando/);
+   await a.evaluate(()=>window.savingRequestForm.dispatchEvent(new Event('submit',{cancelable:true,bubbles:true})));
+   await a.keyboard.press('Escape');await a.evaluate(()=>modal('<h2 id="newer-request-dialog">Newer request dialog</h2>'));await a.locator('#newer-request-dialog').evaluate(e=>{e.tabIndex=-1;e.focus()});release();
+   await a.waitForFunction(()=>!characterViewSaving.has(window.savingRequestForm));await a.waitForTimeout(100);assert.equal(posts,1);
+   assert.equal(await a.locator('#newer-request-dialog').isVisible(),true);assert.equal(await a.locator('#newer-request-dialog').evaluate(e=>e===document.activeElement),true);
+   await a.keyboard.press('Escape');await a.unroute('**/api/action');await a.locator('nav [data-tab=story]').click();await a.locator('.check-request').waitFor();
+  }else{
   await a.locator('#requestCheckForm button').click();await a.locator('.check-request').waitFor();
+  }
   await b.reload();await b.locator('.check-request').waitFor();
   assert.match(await b.locator('#playGuidanceText').textContent(),/tirada pendiente/);
   const beforeGuide=await b.evaluate(()=>snapshot.version);
@@ -120,7 +132,19 @@ const path=require('node:path'),assert=require('node:assert/strict');
   await b.locator('.party-person').click();
   assert.equal(await b.locator('[name=skillTotalsInput]').inputValue(),'Percepción | 8');
   await b.locator('#characterForm [name=skillTotalsInput]').fill('Percepción | 8\nSigilo | 5');
+  if(process.env.TEST_CHARACTER_SAVE_WAIT==='1'){
+   let release,started;const waiting=new Promise(resolve=>started=resolve),held=new Promise(resolve=>release=resolve);
+   await b.route('**/api/action',async route=>{if(route.request().postDataJSON().type!=='character')return route.continue();const response=await route.fetch();started();await held;await route.fulfill({response})});
+   await b.evaluate(()=>window.savingCharacterForm=document.querySelector('#characterForm'));await b.locator('#characterForm button.primary').click();await waiting;
+   assert.equal(await b.locator('#characterForm [name=skillTotalsInput]').isDisabled(),true);
+   assert.match(await b.locator('#characterForm [role=status]').textContent(),/Guardando/);
+   await b.keyboard.press('Escape');await b.evaluate(()=>modal('<h2 id="newer-dialog">Newer dialog</h2>'));await b.locator('#newer-dialog').evaluate(e=>{e.tabIndex=-1;e.focus()});
+   release();await b.waitForFunction(()=>!characterViewSaving.has(window.savingCharacterForm));await b.waitForTimeout(100);
+   assert.equal(await b.locator('#newer-dialog').isVisible(),true);assert.equal(await b.locator('#newer-dialog').evaluate(e=>e===document.activeElement),true);
+   await b.keyboard.press('Escape');await b.unroute('**/api/action');await b.evaluate(()=>refresh());
+  }else{
   await b.locator('#characterForm button.primary').click();await b.locator('#modal').waitFor({state:'hidden'});
+  }
   await b.locator('.party-person').click();await b.locator('.sheet-free-roll > summary').click();
   await b.locator('[data-sheet-selection]').selectOption('10');assert.equal(await b.locator('[data-check-key="Sigilo"]').textContent(),'Tirar Sigilo (+5)');
   await b.setViewportSize({width:390,height:844});
