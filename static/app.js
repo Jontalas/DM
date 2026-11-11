@@ -363,6 +363,7 @@ async function recoverPendingSubmission(){
 function renderPlayGuidance(s){
  const panel=$('#playGuidance'),text=$('#playGuidanceText'),button=$('#playGuidanceAction');
  const checks=s.pending.filter(p=>p.check),mine=checks.filter(p=>s.characters.some(c=>c.id===p.check.character&&c.owner===snapshot.me.id)),own=mine.filter(p=>!pendingCheckUnavailable(p,s.characters.find(c=>c.id===p.check.character)));
+ const missingCheck=mine.find(p=>!characterChecks(s.characters.find(c=>c.id===p.check.character)).some(check=>check.kind===p.check.kind&&check.key===p.check.key));
  let message='',label='',open;
  const saved=JSON.parse(localStorage.getItem('cronicas-pending')||'null');
  if(saved){if(panel.parentElement!==$('#composer'))$('#composer').prepend(panel)}else if(panel.parentElement!==$('#story'))$('#adventureEntry').before(panel);
@@ -376,6 +377,9 @@ function renderPlayGuidance(s){
   message=own.length===1?'Tienes una tirada pendiente. Resuélvela para continuar.':`Tienes ${own.length} tiradas pendientes. Puedes resolverlas en la conversación.`;
   label='Ver mi tirada';
   open=()=>{const target=$$('[data-resolve-check]').find(b=>b.dataset.resolveCheck===own[0].check.id);if(target){target.scrollIntoView({block:'center'});target.focus({preventScroll:true})}};
+ }else if(missingCheck){
+  message='La prueba pendiente ya no est\u00e1 en tu ficha. El anfitri\u00f3n puede cancelarla y solicitar la correcta.';label='Ver motivo';
+  open=()=>{chooseTab('story');const target=$$('[data-resolve-check]').find(button=>button.dataset.resolveCheck===missingCheck.check.id)?.closest('.check-request')?.querySelector('.notice');if(target){target.tabIndex=-1;target.scrollIntoView({block:'center'});target.focus({preventScroll:true})}};
  }else if(mine.length){
   message='Una tirada pendiente requiere revisar el estado de tu personaje.';
   label='Revisar mi personaje';open=()=>characterForm(mine[0].check.character);
