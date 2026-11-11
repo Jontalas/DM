@@ -145,7 +145,15 @@ const path=require('node:path'),assert=require('node:assert/strict');
   // Saving a legacy-style sheet retains the new prepared skill totals.
   await b.locator('.party-person').click();
   assert.equal(await b.locator('[name=skillTotalsInput]').inputValue(),'Percepción | 8');
+  if(process.env.TEST_CHARACTER_EDIT_CONFLICT==='1'){
+   const before=await b.evaluate(()=>snapshot),original=before.state.characters[0],typed='Name still being edited';await b.locator('#characterForm [name=name]').fill(typed);
+   const changed=await guest.request.post(url+'/api/action',{headers:gh,data:{id:'other-tab-injury',version:before.version,type:'character',character:{...original,hp:original.hp-1}}});assert.ok(changed.ok());await b.evaluate(()=>refresh());
+   const version=await b.evaluate(()=>snapshot.version);let posts=0;const count=r=>{if(r.url().endsWith('/api/action'))posts++};b.on('request',count);await b.locator('#characterForm button.primary').click();await b.waitForTimeout(100);
+   assert.equal(posts,0,'A stale editor must not replace a changed character');assert.equal(await b.evaluate(()=>snapshot.version),version);assert.equal(await b.locator('#characterForm [name=name]').inputValue(),typed);assert.match(await b.locator('#characterForm [role=status]').textContent(),/ha cambiado/);b.off('request',count);
+   const restored=await guest.request.post(url+'/api/action',{headers:gh,data:{id:'restore-other-tab-injury',version,type:'character',character:original}});assert.ok(restored.ok());await b.evaluate(()=>refresh());await b.keyboard.press('Escape');await b.locator('.party-person').click();
+  }
   if(process.env.TEST_CHARACTER_SAVE_ERRORS==='1'){
+   await b.evaluate(()=>{snapshot.state.characters[0]=Object.fromEntries(Object.entries(snapshot.state.characters[0]).reverse())});
    const before=await b.evaluate(()=>snapshot.version),invalid='Percepci\u00f3n | 8\nPercepci\u00f3n | 5';
    await b.locator('#characterForm [name=skillTotalsInput]').fill(invalid);await b.locator('#characterForm button.primary').click();
    await b.waitForFunction(()=>!busy&&!characterViewSaving.has(document.querySelector('#characterForm')));
