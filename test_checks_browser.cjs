@@ -55,10 +55,12 @@ const path=require('node:path'),assert=require('node:assert/strict');
   }
   if(process.env.TEST_OPEN_SHEET_CHECK_STATE==='1'){
    await b.locator('[data-sheet-selection]').selectOption('9');const initial=await b.evaluate(()=>snapshot),original=initial.state.characters[0];
+   await a.evaluate(()=>requestCheckForm());await a.locator('#requestCheckForm [name=reason]').fill('Changed state before request');
    const changed=await guest.request.post(url+'/api/action',{headers:gh,data:{id:'check-condition-change',version:initial.version,type:'character',character:{...original,conditions:'Needs review'}}});assert.ok(changed.ok());await b.evaluate(()=>refresh());
    let posts=0;const count=r=>{if(r.url().endsWith('/api/action'))posts++};b.on('request',count);const version=await b.evaluate(()=>snapshot.version);
    await b.locator('[data-sheet-check]').click();await b.waitForTimeout(150);assert.equal(posts,0,'A known unavailable check must be explained without sending it');assert.equal(await b.evaluate(()=>snapshot.version),version);assert.match(await b.locator('.sheet-checks [role=status]').textContent(),/condiciones/);b.off('request',count);
-   const restored=await guest.request.post(url+'/api/action',{headers:gh,data:{id:'restore-check-condition',version,type:'character',character:original}});assert.ok(restored.ok());await b.evaluate(()=>refresh());
+   await a.evaluate(()=>refresh());let requestPosts=0;const countRequests=r=>{if(r.url().endsWith('/api/action'))requestPosts++};a.on('request',countRequests);await a.locator('#requestCheckForm button.primary').click();await a.waitForTimeout(100);assert.equal(requestPosts,0,'An unavailable request must be explained before sending');assert.match(await a.locator('#requestCheckForm [role=status]').textContent(),/condiciones/);a.off('request',countRequests);
+   const restored=await guest.request.post(url+'/api/action',{headers:gh,data:{id:'restore-check-condition',version,type:'character',character:original}});assert.ok(restored.ok());await b.evaluate(()=>refresh());await a.evaluate(()=>refresh());await a.locator('#requestCheckForm [name=selection]').selectOption('1');assert.equal(await a.locator('#requestCheckForm button.primary').isEnabled(),true);assert.equal(await a.locator('#requestCheckForm [role=status]').count(),0);await a.keyboard.press('Escape');
   }
   const countBeforeChoice=await b.evaluate(()=>snapshot.version);
   await b.locator('[data-sheet-selection]').selectOption('0');

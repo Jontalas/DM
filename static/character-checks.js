@@ -43,7 +43,7 @@ function selectedCharacterCheck(select,c){const option=select.selectedOptions[0]
 function sheetCheckUnavailable(character,check){
  if(!character)return 'Esta ficha ya no est\u00e1 disponible. Cierra la ventana y vuelve a elegir.';
  if(!snapshot.me.host&&character.owner!==snapshot.me.id)return 'Ya no controlas esta ficha. Vuelve a elegir tu personaje.';
- return pendingCheckUnavailable({},character)||(!check?'Esta prueba ya no est\u00e1 disponible. Cierra la ficha y vuelve a elegir.':'');
+ return pendingCheckUnavailable({},character)||(!check?'Esta prueba ya no est\u00e1 disponible. Cierra esta ventana y vuelve a elegir.':'');
 }
 function showSheetCheckIssue(sheet,button,message){
  let status=sheet.querySelector('[data-sheet-check-status]');
@@ -105,9 +105,11 @@ function requestCheckForm(){
  if(!snapshot.state.characters.length){toast('Crea primero un personaje');return}
  modal(`<h2>Solicitar una prueba</h2><form id="requestCheckForm"><label>Personaje<select name="character">${snapshot.state.characters.map(c=>`<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('')}</select></label><label>Prueba<select name="selection"></select></label><label>CD de la tarea o efecto<input name="dc" type="number" min="0" max="1000" value="15" required></label><label>Motivo<input name="reason" maxlength="500" required></label><p class="hint">Se pide al jugador que tire; el servidor aplica su modificador y determina el éxito. Daño, acciones y consecuencias especiales siguen su procedimiento correspondiente.</p><button class="primary">Solicitar tirada</button></form>`);
  const form=$('#requestCheckForm');
- function update(){if(!checkCharacterView(form))return;const c=snapshot.state.characters.find(c=>c.id===form.elements.character.value);if(!c){form.elements.selection.innerHTML='';form.querySelector('button.primary').disabled=true;toast('Esta ficha ya no está disponible. Cierra la solicitud y vuelve a elegir.');return}form.elements.selection.innerHTML=characterChecks(c).map((v,i)=>`<option value="${i}" data-option-kind="${esc(v.kind)}" data-option-key="${esc(v.key)}">${esc(v.name)} (${v.total>=0?'+':''}${v.total})</option>`).join('')}
+ function validate(){const c=snapshot.state.characters.find(c=>c.id===form.elements.character.value),issue=sheetCheckUnavailable(c,selectedCharacterCheck(form.elements.selection,c));form.querySelector('button.primary').disabled=!!issue;showSheetCheckIssue(form,form.querySelector('button.primary'),issue);return issue}
+ form.elements.selection.onchange=()=>{if(checkCharacterView(form))validate()};
+ function update(){if(!checkCharacterView(form))return;const c=snapshot.state.characters.find(c=>c.id===form.elements.character.value);if(!c){form.elements.selection.innerHTML='';form.querySelector('button.primary').disabled=true;toast('Esta ficha ya no está disponible. Cierra la solicitud y vuelve a elegir.');return}form.elements.selection.innerHTML=characterChecks(c).map((v,i)=>`<option value="${i}" data-option-kind="${esc(v.kind)}" data-option-key="${esc(v.key)}">${esc(v.name)} (${v.total>=0?'+':''}${v.total})</option>`).join('');validate()}
  form.elements.character.onchange=update;update();
- form.onsubmit=run(async()=>{if(characterViewSaving.has(form)||!checkCharacterView(form))return;const c=snapshot.state.characters.find(c=>c.id===form.elements.character.value),check=selectedCharacterCheck(form.elements.selection,c);if(!check){toast('La prueba ya no est\u00e1 disponible. Cierra la solicitud y vuelve a elegir.');return}const body={character:c.id,checkKind:check.kind,key:check.key,dc:Number(form.elements.dc.value),reason:form.elements.reason.value};await saveCharacterView(form,()=>act('request_check',body));if(characterViewIsCurrent(form)){$('#modal').close();chooseTab('story')}});
+ form.onsubmit=run(async()=>{if(characterViewSaving.has(form)||!checkCharacterView(form))return;const c=snapshot.state.characters.find(c=>c.id===form.elements.character.value),check=selectedCharacterCheck(form.elements.selection,c);if(validate())return;const body={character:c.id,checkKind:check.kind,key:check.key,dc:Number(form.elements.dc.value),reason:form.elements.reason.value};await saveCharacterView(form,()=>act('request_check',body));if(characterViewIsCurrent(form)){$('#modal').close();chooseTab('story')}});
 }
 document.addEventListener('click',e=>{
  const button=e.target.closest('[data-sheet-check],[data-resolve-check],[data-cancel-check]');if(!button)return;
