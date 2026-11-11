@@ -83,6 +83,7 @@ function pendingCheckUnavailable(p,c){
  if(p.investigation&&c.owner!==snapshot.me.id)return 'Esta búsqueda la resuelve su propietario. Espera su tirada.';
  if(!characterIsConscious(c))return 'El personaje no puede tirar mientras esté inconsciente o muerto.';
  if(c.conditions?.trim())return 'Hay condiciones que requieren revisar esta prueba antes de resolverla.';
+ if(p.check&&!characterChecks(c).some(check=>check.kind===p.check.kind&&check.key===p.check.key))return 'Esta prueba ya no est\u00e1 en la ficha actual. El anfitri\u00f3n puede cancelarla y solicitar la correcta.';
  if(p.investigation&&snapshot.state.board.active)return 'La investigación automática no está disponible durante el combate.';
  if(p.investigation&&!canExplorePrepared(c))return 'Esta investigación todavía no cubre el estado actual de tu personaje.';
  if(p.investigation&&snapshot.state.pfContinuation){
