@@ -53,6 +53,13 @@ const path=require('node:path'),assert=require('node:assert/strict');
 
 
   }
+  if(process.env.TEST_OPEN_SHEET_CHECK_STATE==='1'){
+   await b.locator('[data-sheet-selection]').selectOption('9');const initial=await b.evaluate(()=>snapshot),original=initial.state.characters[0];
+   const changed=await guest.request.post(url+'/api/action',{headers:gh,data:{id:'check-condition-change',version:initial.version,type:'character',character:{...original,conditions:'Needs review'}}});assert.ok(changed.ok());await b.evaluate(()=>refresh());
+   let posts=0;const count=r=>{if(r.url().endsWith('/api/action'))posts++};b.on('request',count);const version=await b.evaluate(()=>snapshot.version);
+   await b.locator('[data-sheet-check]').click();await b.waitForTimeout(150);assert.equal(posts,0,'A known unavailable check must be explained without sending it');assert.equal(await b.evaluate(()=>snapshot.version),version);assert.match(await b.locator('.sheet-checks [role=status]').textContent(),/condiciones/);b.off('request',count);
+   const restored=await guest.request.post(url+'/api/action',{headers:gh,data:{id:'restore-check-condition',version,type:'character',character:original}});assert.ok(restored.ok());await b.evaluate(()=>refresh());
+  }
   const countBeforeChoice=await b.evaluate(()=>snapshot.version);
   await b.locator('[data-sheet-selection]').selectOption('0');
   assert.equal(await b.locator('[data-check-key="str"]').textContent(),'Tirar Fuerza (-1)');

@@ -40,6 +40,17 @@ function characterChecks(c){
  return [...checkAbilities.map(([key,name],i)=>({kind:'ability',key,name,total:Math.floor((c.abilities[i]-10)/2)})),...checkSaves.map(([key,name],i)=>({kind:'save',key,name,total:c.saves?.[i]})),...(c.skillTotals||[]).map(row=>({kind:'skill',key:row.name,name:row.name,total:row.total}))];
 }
 function selectedCharacterCheck(select,c){const option=select.selectedOptions[0];return c&&option?characterChecks(c).find(check=>check.kind===option.dataset.optionKind&&check.key===option.dataset.optionKey):null}
+function sheetCheckUnavailable(character,check){
+ if(!character)return 'Esta ficha ya no est\u00e1 disponible. Cierra la ventana y vuelve a elegir.';
+ if(!snapshot.me.host&&character.owner!==snapshot.me.id)return 'Ya no controlas esta ficha. Vuelve a elegir tu personaje.';
+ return pendingCheckUnavailable({},character)||(!check?'Esta prueba ya no est\u00e1 disponible. Cierra la ficha y vuelve a elegir.':'');
+}
+function showSheetCheckIssue(sheet,button,message){
+ let status=sheet.querySelector('[data-sheet-check-status]');
+ if(!message){status?.remove();return}
+ if(!status){status=document.createElement('p');status.className='notice';status.setAttribute('role','status');status.setAttribute('data-sheet-check-status','');sheet.append(status)}
+ status.textContent=message;button.disabled=true;
+}
 function sheetChecks(c,showEditReminder=true){
  const mayControl=snapshot.me.host||c.owner===snapshot.me.id,allowed=mayControl&&characterIsConscious(c);
  const subject=c.npcCreation?'Este PNJ':c.owner===snapshot.me.id&&!c.enemy?'Tu personaje':'Este personaje';
@@ -59,6 +70,7 @@ document.addEventListener('change',e=>{
  button.disabled=!check||sheet.dataset.rollAllowed!=='1';
  button.dataset.sheetCheck=check?.kind||'';button.dataset.checkKey=check?.key||'';
  button.textContent=check?`Tirar ${check.name} (${check.total>=0?'+':''}${check.total})`:select.value?'Vuelve a abrir la ficha':'Tirar d20';
+ showSheetCheckIssue(sheet,button,select.value?sheetCheckUnavailable(character,check):'');
 });
 function skillFields(c){
  return `<label>Habilidades preparadas para tirar · una por línea: nombre | total<textarea name="skillTotalsInput" placeholder="Percepción | 6">${esc((c.skillTotals||[]).map(row=>row.name+' | '+row.total).join('\n'))}</textarea></label><p class="hint">Prepara solo habilidades cuyo uso sea legal y sus totales estén verificados: característica, rangos, bonificador de clase y demás modificadores ya incluidos. Las notas antiguas de habilidades se conservan.</p>`;
@@ -100,7 +112,7 @@ function requestCheckForm(){
 document.addEventListener('click',e=>{
  const button=e.target.closest('[data-sheet-check],[data-resolve-check],[data-cancel-check]');if(!button)return;
  run(async()=>{
- if(button.dataset.sheetCheck){const sheet=button.closest('.sheet-checks');if(!checkCharacterView(sheet))return;await act('check',{character:button.dataset.checkCharacter,checkKind:button.dataset.sheetCheck,key:button.dataset.checkKey});if(characterViewIsCurrent(sheet)){if(button.closest('.sheet-free-roll')?.dataset.fromDice==='1'){$('#modal').close();chooseTab('story')}toast(snapshot.state.messages.at(-1).text)}}
+ if(button.dataset.sheetCheck){const sheet=button.closest('.sheet-checks');if(!checkCharacterView(sheet))return;const character=snapshot.state.characters.find(c=>c.id===button.dataset.checkCharacter),check=character&&characterChecks(character).find(c=>c.kind===button.dataset.sheetCheck&&c.key===button.dataset.checkKey),issue=sheetCheckUnavailable(character,check);if(issue){showSheetCheckIssue(sheet,button,issue);return}await act('check',{character:button.dataset.checkCharacter,checkKind:button.dataset.sheetCheck,key:button.dataset.checkKey});if(characterViewIsCurrent(sheet)){if(button.closest('.sheet-free-roll')?.dataset.fromDice==='1'){$('#modal').close();chooseTab('story')}toast(snapshot.state.messages.at(-1).text)}}
  else if(button.dataset.resolveCheck)await act('check',{request:button.dataset.resolveCheck,...(button.dataset.checkMethod?{method:button.dataset.checkMethod}:{})});
  else await act('cancel_check',{request:button.dataset.cancelCheck});
  })(e);
