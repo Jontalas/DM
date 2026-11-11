@@ -76,7 +76,7 @@ const path=require('node:path'),assert=require('node:assert/strict');
   await page.locator('#modal').waitFor({state:'visible'});
   assert.equal(await page.locator('#modalContent > h2').textContent(),'Yslen Abernathy');
   assert.match(await page.locator('#campaignMeta').textContent(),/Cairn 1e/);
-  if(process.env.TEST_MESSAGE_HISTORY_SCOPE==='1'){assert.equal(await page.locator('#messages > *').count(),0);assert.equal(await page.evaluate(()=>window.pfPrivateHistory.isConnected),false);assert.equal(await page.evaluate(()=>window.pfHistoryIntro.isConnected),false);for(const id of ['journalOverview','campaignWorldNotes','chapterHistoryNotes'])assert.equal(await page.locator('#'+id+' > *').count(),0)}
+  if(process.env.TEST_MESSAGE_HISTORY_SCOPE==='1'){assert.equal(await page.locator('#messages > *').count(),0);assert.equal(await page.evaluate(()=>window.pfPrivateHistory.isConnected),false);assert.equal(await page.evaluate(()=>window.pfHistoryIntro.isConnected),false);for(const id of ['journalOverview','campaignWorldNotes','chapterHistoryNotes','checkRequests'])assert.equal(await page.locator('#'+id+' > *').count(),0);assert.equal(await page.evaluate(()=>checkRequestsView===undefined),true)}
   await page.locator('#closeModal').click();
   const beforeScene=actions.length;
   await page.locator('#startCairnAdventure').click();

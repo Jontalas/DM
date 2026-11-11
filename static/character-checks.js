@@ -2,6 +2,7 @@
 const checkAbilities=[['str','Fuerza'],['dex','Destreza'],['con','Constitución'],['int','Inteligencia'],['wis','Sabiduría'],['cha','Carisma']];
 const checkSaves=[['fort','Fortaleza'],['ref','Reflejos'],['will','Voluntad']];
 const characterViews=new WeakMap();
+let checkRequestsView;
 const characterViewSaving=new WeakSet();
 async function saveCharacterView(view,send){
  characterViewSaving.add(view);
@@ -95,11 +96,12 @@ function pendingCheckUnavailable(p,c){
 function renderChecks(){
  const rows=snapshot.state.pending.filter(p=>p.check),me=snapshot.me;
  $('#requestCheck').hidden=!me.host||!snapshot.state.characters.some(c=>!c.enemy&&characterIsConscious(c)&&!c.conditions?.trim());
- $('#checkRequests').innerHTML=rows.map(p=>{
+ const root=$('#checkRequests'),html=rows.map(p=>{
   const c=snapshot.state.characters.find(c=>c.id===p.check.character),blocked=pendingCheckUnavailable(p,c),allowed=c&&(me.host||c.owner===me.id)&&!blocked;
   const name=c&&characterChecks(c).find(v=>v.kind===p.check.kind&&v.key===p.check.key)?.name||p.check.key;
   return `<article class="check-request"><strong>${esc(c?.name||'Personaje')} · ${esc(name)} · CD ${p.check.dc}</strong><p>${esc(p.reason)}</p><small>${esc(p.source)}</small>${blocked?`<p class="notice">${esc(blocked)}</p>`:''}<div class="toolbar"><button class="primary" data-resolve-check="${esc(p.check.id)}" ${!allowed?'disabled':''}>Tirar d20 y resolver</button>${p.investigation?`<button data-resolve-check="${esc(p.check.id)}" data-check-method="take10" ${!allowed?'disabled':''}>Elegir 10</button><button data-resolve-check="${esc(p.check.id)}" data-check-method="take20" ${!allowed?'disabled':''}>Elegir 20 · veinte búsquedas</button>`:''}${me.host?`<button data-cancel-check="${esc(p.check.id)}">Cancelar</button>`:''}</div></article>`;
  }).join('');
+ if(!readViewIsCurrent(checkRequestsView,root)||checkRequestsView.html!==html){root.innerHTML=html;checkRequestsView={...readViewScope(root),html}}
 }
 function requestCheckForm(){
  if(!snapshot.me.host)return;

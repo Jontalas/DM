@@ -127,6 +127,12 @@ const path=require('node:path'),assert=require('node:assert/strict');
   await b.locator('#playGuidanceAction').click();
   assert.equal(await b.locator('[data-resolve-check]').evaluate(el=>el===document.activeElement),true);
   assert.equal(await b.evaluate(()=>snapshot.version),beforeGuide);
+  if(process.env.TEST_PENDING_CHECK_FOCUS==='1'){
+   await b.evaluate(()=>window.pendingCheckButton=document.querySelector('[data-resolve-check]'));
+   await a.locator('#messageKind').selectOption('private');await a.locator('#message').fill('Private note while the player prepares their check');await a.locator('#send').click();await a.waitForFunction(()=>!busy&&snapshot.state.messages.at(-1).text==='Private note while the player prepares their check');await b.evaluate(()=>refresh());
+   assert.equal(await b.evaluate(()=>document.activeElement===window.pendingCheckButton),true,'An unrelated update must keep the pending roll button focused');assert.equal(await b.evaluate(()=>document.querySelector('[data-resolve-check]')===window.pendingCheckButton),true);
+   await b.evaluate(()=>{const access=token,button=document.querySelector('[data-resolve-check]');try{token='scope-only-local-probe';renderChecks();if(button.isConnected)throw Error('A prior access must not retain a live pending control')}finally{token=access;renderChecks()}});
+  }
   await b.setViewportSize({width:390,height:1000});
   await b.locator('#playGuidance').scrollIntoViewIfNeeded();
   assert.ok(await b.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
