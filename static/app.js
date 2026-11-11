@@ -5,6 +5,7 @@ let composerScope,composerRestoreSpeaker;
 let messageHistory;
 const composerDrafts=new Map();
 const journalViews=new Map();
+const readingPanelPositions=new WeakMap();
 const names={reglas:'Reglas básicas',bestiario:'Bestiario',trey:'TREY'};
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const characterIsConscious=c=>!!c&&(c.hp>=0||(c.hp>-c.abilities[2]&&c.stable===true&&c.recoveryState?.conscious===true));
@@ -251,7 +252,24 @@ async function refresh(force=false){
  snapshot=next;snapshotToken=requestedToken;rememberCampaign();renderSyncStatus();
  if(!force&&!completed&&lastVersion===next.version)return;lastVersion=next.version;render();
 }
-function chooseTab(id,loadDocument=true){if(id==='board'&&window.matchMedia('(min-width:1100px)').matches)id='story';if(id==='books'&&window.matchMedia('(max-width:1099px)').matches)readerExpanded=true;document.body.classList.toggle('board-tab-active',id==='board');$$('.tab').forEach(x=>x.classList.toggle('active',x.id===id));$$('[data-tab]').forEach(x=>x.classList.toggle('active',x.dataset.tab===id));renderReaderMode();if(id==='books'&&loadDocument)openBook();}
+function chooseTab(id,loadDocument=true){
+ if(id==='board'&&window.matchMedia('(min-width:1100px)').matches)id='story';
+ if(id==='books'&&window.matchMedia('(max-width:1099px)').matches)readerExpanded=true;
+ const returningToReading=['story','journal'].includes(id)&&!$('#'+id).classList.contains('active');
+ if(snapshot)for(const panel of $$('#story.active,#journal.active'))if(panel.id!==id){
+  const heading=panel.id==='story'?$('#routeProgress h4'):null,box=heading?.getBoundingClientRect(),bounds=panel.getBoundingClientRect();
+  const anchor=box&&box.y>=bounds.y&&box.bottom<=bounds.bottom?{selector:'#routeProgress h4',offset:box.y-bounds.y}:null;
+  readingPanelPositions.set(panel,{...readViewScope(panel),scene:snapshot.state.boardScenes?.current||snapshot.state.location,top:panel.scrollTop,anchor});
+ }
+ document.body.classList.toggle('board-tab-active',id==='board');
+ $$('.tab').forEach(x=>x.classList.toggle('active',x.id===id));$$('[data-tab]').forEach(x=>x.classList.toggle('active',x.dataset.tab===id));renderReaderMode();
+ const panel=['story','journal'].includes(id)?$('#'+id):null,position=panel&&readingPanelPositions.get(panel);
+ if(returningToReading&&snapshot&&position&&readViewIsCurrent(position,panel)&&(panel.id!=='story'||position.scene===(snapshot.state.boardScenes?.current||snapshot.state.location))){
+  panel.scrollTop=position.top;const anchor=position.anchor&&panel.querySelector(position.anchor.selector);
+  if(anchor)panel.scrollTop+=anchor.getBoundingClientRect().y-panel.getBoundingClientRect().y-position.anchor.offset;
+ }
+ if(id==='books'&&loadDocument)openBook();
+}
 function renderReaderMode(){
  const expanded=readerExpanded&&$('#books').classList.contains('active');
  document.body.classList.toggle('reader-wide',expanded);$('#expandReader').textContent=expanded?'Cerrar vista ampliada':'Ampliar lectura';$('#expandReader').setAttribute('aria-pressed',String(expanded));
@@ -537,7 +555,7 @@ function render(){restoreCampaignComposer();if(messageHistory&&!messageHistoryIs
  renderSpeakerChoices();
  const boardAvailable=boardCharacters(s).filter(c=>me.host||c.owner===me.id);
  $('#boardCharacter').innerHTML=boardAvailable.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('');if(boardAvailable.some(c=>c.id===boardPrev))$('#boardCharacter').value=boardPrev;
- const area=$('#story'),history=$('#messages'),selection=getSelection(),readingHistory=history.contains(document.activeElement)||selection&&!selection.isCollapsed&&history.contains(selection.anchorNode),near=!readingHistory&&area.scrollHeight-area.scrollTop-area.clientHeight<150;
+ const area=$('#story'),history=$('#messages'),selection=getSelection(),readingHistory=history.contains(document.activeElement)||selection&&!selection.isCollapsed&&history.contains(selection.anchorNode),near=area.classList.contains('active')&&!readingHistory&&area.scrollHeight-area.scrollTop-area.clientHeight<150;
  const intro=!available.length?`<div class="card"><div class="eyebrow">PASO 1 · TU PERSONAJE</div><h3>¿Quién vivirá esta aventura?</h3><p>Elige un estilo y un nombre. El creador calcula tu ficha. ${me.host?'Después podrás elegir la aventura.':'Después podrás participar con tu personaje en la historia del grupo.'}</p><button class="primary" data-create-hero>Crear mi personaje</button></div>`:'';
  renderMessageHistory(s.messages,intro);
  document.body.classList.toggle('preparing-adventure',!s.adventure&&!s.pfEncounter&&!s.board.active&&s.location==='Por decidir');document.body.classList.toggle('adventure-active',!!(s.adventure||s.pfEncounter));renderAdventure();renderChecks();renderPlayGuidance(s);

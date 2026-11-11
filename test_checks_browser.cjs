@@ -44,6 +44,13 @@ const path=require('node:path'),assert=require('node:assert/strict');
    const requested=await a.evaluate(()=>snapshot);assert.equal(requested.state.pending.find(p=>p.check).check.key,'Percepci\u00f3n');
    const cancelled=await host.request.post(url+'/api/action',{headers,data:{id:'cancel-identity-request',version:requested.version,type:'cancel_check',request:requested.state.pending.find(p=>p.check).check.id}});assert.ok(cancelled.ok());
    await save(original.skillTotals,'restore-request-skills');await a.evaluate(()=>refresh());
+   await a.evaluate(()=>requestCheckForm());await a.locator('#requestCheckForm [name=selection]').selectOption('9');await a.locator('#requestCheckForm [name=reason]').fill('Removed skill');
+   await save([{name:'Sigilo',total:5}],'remove-selected-skill');await a.evaluate(()=>refresh());
+   await b.locator('[data-sheet-selection]').selectOption('0');await b.locator('[data-sheet-selection]').selectOption('9');assert.equal(await b.locator('[data-sheet-check]').isDisabled(),true);assert.match(await b.locator('[data-sheet-check]').textContent(),/Vuelve a abrir/);
+   const removedVersion=await a.evaluate(()=>snapshot.version);let removedPosts=0;const countRemoved=r=>{if(r.url().endsWith('/api/action'))removedPosts++};a.on('request',countRemoved);
+   await a.locator('#requestCheckForm button.primary').click();await a.waitForTimeout(100);assert.equal(removedPosts,0);assert.equal(await a.evaluate(()=>snapshot.version),removedVersion);assert.equal(await a.locator('#requestCheckForm').isVisible(),true);a.off('request',countRemoved);
+   await a.keyboard.press('Escape');await save(original.skillTotals,'restore-removed-skill');await a.evaluate(()=>refresh());
+
 
   }
   const countBeforeChoice=await b.evaluate(()=>snapshot.version);
@@ -131,6 +138,14 @@ const path=require('node:path'),assert=require('node:assert/strict');
   // Saving a legacy-style sheet retains the new prepared skill totals.
   await b.locator('.party-person').click();
   assert.equal(await b.locator('[name=skillTotalsInput]').inputValue(),'Percepción | 8');
+  if(process.env.TEST_CHARACTER_SAVE_ERRORS==='1'){
+   const before=await b.evaluate(()=>snapshot.version),invalid='Percepci\u00f3n | 8\nPercepci\u00f3n | 5';
+   await b.locator('#characterForm [name=skillTotalsInput]').fill(invalid);await b.locator('#characterForm button.primary').click();
+   await b.waitForFunction(()=>!busy&&!characterViewSaving.has(document.querySelector('#characterForm')));
+   assert.equal(await b.locator('#characterForm [name=skillTotalsInput]').inputValue(),invalid);assert.equal(await b.locator('#characterForm [name=skillTotalsInput]').isEnabled(),true);
+   assert.equal(await b.locator('#characterForm button.primary').isEnabled(),true);assert.equal(await b.evaluate(()=>snapshot.version),before);
+   assert.equal(await b.locator('#characterForm [role=status]').count(),0);assert.equal(await b.evaluate(()=>localStorage.getItem('cronicas-pending')),null);
+  }
   await b.locator('#characterForm [name=skillTotalsInput]').fill('Percepción | 8\nSigilo | 5');
   if(process.env.TEST_CHARACTER_SAVE_WAIT==='1'){
    let release,started;const waiting=new Promise(resolve=>started=resolve),held=new Promise(resolve=>release=resolve);
