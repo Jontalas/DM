@@ -1,6 +1,16 @@
 /* Character checks use existing campaign actions; opening a sheet is local. */
 const checkAbilities=[['str','Fuerza'],['dex','Destreza'],['con','Constitución'],['int','Inteligencia'],['wis','Sabiduría'],['cha','Carisma']];
 const checkSaves=[['fort','Fortaleza'],['ref','Reflejos'],['will','Voluntad']];
+const characterViews=new WeakMap();
+function bindCharacterViews(){for(const view of $$('#modal .sheet-checks,#modal #characterForm,#modal #requestCheckForm'))characterViews.set(view,readViewScope(view))}
+function characterViewIsCurrent(view){return !!view&&$('#modal').open&&$('#modal').contains(view)&&readViewIsCurrent(characterViews.get(view),view)}
+function checkCharacterView(view){
+ if(characterViewIsCurrent(view))return true;
+ if(!view?.isConnected||!$('#modal').open||!$('#modal').contains(view))return false;
+ const message=view.id==='requestCheckForm'?'La partida ha cambiado. Cierra esta solicitud y vuelve a abrirla en la partida correcta.':'La partida ha cambiado. Cierra esta ficha y vuelve a abrir la que quieras consultar.';
+ let status=$('#modal .sheet-context-status');if(!status){status=document.createElement('p');status.className='notice sheet-context-status';status.setAttribute('role','status');status.tabIndex=-1;$('#modalContent').prepend(status)}
+ status.textContent=message;view.querySelectorAll('[data-sheet-check],button.primary').forEach(button=>button.disabled=true);status.focus();toast(message);return false;
+}
 function renderDiceEntry(){
  const characters=snapshot.state.characters.filter(c=>c.owner===snapshot.me.id&&!c.enemy);
  $('#diceCharacters').innerHTML='<h3>Tira desde tu ficha</h3>'+(characters.length?'<p>Elige qué quieres comprobar. El juego suma el modificador guardado en tu ficha; las tiradas solicitadas se resuelven en la conversación.</p>'+characters.map(c=>`<button type="button" data-dice-character="${esc(c.id)}">Abrir tiradas de ${esc(c.name)}</button>`).join(' '):'<p>Crea tu personaje para tirar con los valores de su ficha. Las herramientas manuales están disponibles más abajo.</p><button type="button" data-dice-create>Crear mi personaje</button>');
@@ -9,6 +19,7 @@ document.addEventListener('click',e=>{
  const button=e.target.closest('[data-dice-character],[data-dice-create],[data-dice-view]');if(!button)return;
  run(()=>{
   if(button.hasAttribute('data-dice-create')){characterForm();return}
+  if(button.dataset.diceView&&!checkCharacterView($('#modal .sheet-checks')))return;
   const character=snapshot.state.characters.find(c=>c.id===(button.dataset.diceCharacter||button.dataset.diceView)&&c.owner===snapshot.me.id&&!c.enemy);
   if(!character)throw Error('Esta ficha ya no está disponible. Vuelve a elegir tu personaje.');
   if(button.dataset.diceView){characterForm(character.id);return}
@@ -30,6 +41,7 @@ function sheetChecks(c,showEditReminder=true){
 document.addEventListener('change',e=>{
  const select=e.target.closest('[data-sheet-selection]');if(!select)return;
  const sheet=select.closest('.sheet-checks'),button=sheet.querySelector('[data-sheet-check]');
+ if(!checkCharacterView(sheet))return;
  const character=snapshot.state.characters.find(c=>c.id===select.dataset.sheetSelection);
  if(!character){button.disabled=true;button.textContent='Vuelve a abrir la ficha';return;}
  sheet.dataset.rollAllowed=((snapshot.me.host||character.owner===snapshot.me.id)&&characterIsConscious(character)&&!character.conditions?.trim())?'1':'0';
@@ -71,14 +83,14 @@ function requestCheckForm(){
  if(!snapshot.state.characters.length){toast('Crea primero un personaje');return}
  modal(`<h2>Solicitar una prueba</h2><form id="requestCheckForm"><label>Personaje<select name="character">${snapshot.state.characters.map(c=>`<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('')}</select></label><label>Prueba<select name="selection"></select></label><label>CD de la tarea o efecto<input name="dc" type="number" min="0" max="1000" value="15" required></label><label>Motivo<input name="reason" maxlength="500" required></label><p class="hint">Se pide al jugador que tire; el servidor aplica su modificador y determina el éxito. Daño, acciones y consecuencias especiales siguen su procedimiento correspondiente.</p><button class="primary">Solicitar tirada</button></form>`);
  const form=$('#requestCheckForm');
- function update(){const c=snapshot.state.characters.find(c=>c.id===form.elements.character.value);form.elements.selection.innerHTML=characterChecks(c).map((v,i)=>`<option value="${i}">${esc(v.name)} (${v.total>=0?'+':''}${v.total})</option>`).join('')}
+ function update(){if(!checkCharacterView(form))return;const c=snapshot.state.characters.find(c=>c.id===form.elements.character.value);if(!c){form.elements.selection.innerHTML='';form.querySelector('button.primary').disabled=true;toast('Esta ficha ya no está disponible. Cierra la solicitud y vuelve a elegir.');return}form.elements.selection.innerHTML=characterChecks(c).map((v,i)=>`<option value="${i}">${esc(v.name)} (${v.total>=0?'+':''}${v.total})</option>`).join('')}
  form.elements.character.onchange=update;update();
- form.onsubmit=run(async()=>{const c=snapshot.state.characters.find(c=>c.id===form.elements.character.value),check=characterChecks(c)[Number(form.elements.selection.value)];await act('request_check',{character:c.id,checkKind:check.kind,key:check.key,dc:Number(form.elements.dc.value),reason:form.elements.reason.value});$('#modal').close();chooseTab('story')});
+ form.onsubmit=run(async()=>{if(!checkCharacterView(form))return;const c=snapshot.state.characters.find(c=>c.id===form.elements.character.value),check=characterChecks(c)[Number(form.elements.selection.value)];await act('request_check',{character:c.id,checkKind:check.kind,key:check.key,dc:Number(form.elements.dc.value),reason:form.elements.reason.value});if(characterViewIsCurrent(form)){$('#modal').close();chooseTab('story')}});
 }
 document.addEventListener('click',e=>{
  const button=e.target.closest('[data-sheet-check],[data-resolve-check],[data-cancel-check]');if(!button)return;
  run(async()=>{
- if(button.dataset.sheetCheck){await act('check',{character:button.dataset.checkCharacter,checkKind:button.dataset.sheetCheck,key:button.dataset.checkKey});if(button.closest('.sheet-free-roll')?.dataset.fromDice==='1'){$('#modal').close();chooseTab('story')}toast(snapshot.state.messages.at(-1).text)}
+ if(button.dataset.sheetCheck){const sheet=button.closest('.sheet-checks');if(!checkCharacterView(sheet))return;await act('check',{character:button.dataset.checkCharacter,checkKind:button.dataset.sheetCheck,key:button.dataset.checkKey});if(characterViewIsCurrent(sheet)){if(button.closest('.sheet-free-roll')?.dataset.fromDice==='1'){$('#modal').close();chooseTab('story')}toast(snapshot.state.messages.at(-1).text)}}
  else if(button.dataset.resolveCheck)await act('check',{request:button.dataset.resolveCheck,...(button.dataset.checkMethod?{method:button.dataset.checkMethod}:{})});
  else await act('cancel_check',{request:button.dataset.cancelCheck});
  })(e);
